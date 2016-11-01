@@ -1,0 +1,14 @@
+{
+    "testbed":
+    [
+        {
+            "name": "Sanity",
+            "icecream": 42,
+            "MagicDevice": ["Magic!"]
+        }
+    ],
+    "logpath": "/tmp/logs",
+    "testpaths": ["./"],
+    "icecream": "mememe",
+    "extra_param": "haha"
+}

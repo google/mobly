@@ -1,0 +1,29 @@
+This package includes Mobly, a test framework that specializes in supporting
+test cases that require complex environment and/or hardware setups.
+
+The test logic runs on a host machine and controls a collection of components
+in a test bed. A component can be a device, a piece of equipment, a cloud
+service, or anything else needed for a test.
+
+The Mobly pakcage also comes with a set of useful controller libraries to get
+you started, like the controller lib for Android devices.
+
+This is not an official Google product.
+
+System dependencies:
+  - adb (1.0.36+ recommended)
+  - python2.7 or python3.4+
+  - python-setuptools or python3.4-setuptools and above
+
+To run unit tests:
+$ python setup.py test
+or
+$ python3 setup.py test
+
+Setup:
+  1. Install the system dependencies.
+     On Ubuntu,
+     "sudo apt-get install python python-setuptools"
+     or
+     "sudo apt-get install python3.4 python3-setuptools"
+  2. "sudo python setup.py install" or "sudo python3.4 setup.py install"
