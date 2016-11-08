@@ -207,8 +207,15 @@ def get_instances_with_configs(configs):
             raise Error(
                 "Required value 'serial' is missing in AndroidDevice config %s."
                 % c)
-        ad = AndroidDevice(serial)
-        ad.load_config(c)
+        is_required = c.pop("required", True)
+        try:
+            ad = AndroidDevice(serial)
+            ad.load_config(c)
+        except:
+            if not is_required:
+                logging.warning("Failed to initialize Android device %s", serial)
+                continue
+            raise
         results.append(ad)
     return results
 
