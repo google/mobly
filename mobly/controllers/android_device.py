@@ -136,8 +136,8 @@ def _start_services_on_ads(ads):
                 destroy(running_ads)
                 raise
             else:
-                logging.warning("Failed to start some service on %s: %s",
-                                ad.serial, e)
+                logging.warning(("Skipping device %s because some service "
+                                 "failed to start: %s"), ad.serial, e)
 
 
 def _parse_device_list(device_list_str, key):
@@ -224,8 +224,7 @@ def get_instances_with_configs(configs):
         except Exception as e:
             if is_required:
                 raise
-            logging.warning("Failed to initialize optional device %s: %s",
-                            serial, e)
+            logging.warning("Skipping device %s due to error: %s", serial, e)
             continue
         results.append(ad)
     return results
