@@ -49,16 +49,18 @@ class PyTest(test.test):
 
 
 def main():
-    setuptools.setup(name='mobly',
-                     version='1.0',
-                     description='Automation framework for special end-to-end test cases',
-                     license='Apache2.0',
-                     packages=setuptools.find_packages(),
-                     include_package_data=False,
-                     tests_require=['pytest'],
-                     install_requires=install_requires,
-                     cmdclass={'test': PyTest},
-                     )
+    setuptools.setup(
+        name='mobly',
+        version='1.0',
+        description='Automation framework for special end-to-end test cases',
+        license='Apache2.0',
+        packages=setuptools.find_packages(),
+        include_package_data=False,
+        scripts=['tools/sl4a_client.py'],
+        tests_require=['pytest'],
+        install_requires=install_requires,
+        cmdclass={'test': PyTest},
+    )
 
 
 if __name__ == '__main__':
