@@ -21,7 +21,7 @@ import mock
 import socket
 import unittest
 
-from mobly.controllers.android_device_lib import sl4a_client
+from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 MOCK_RESP = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1}'
 MOCK_RESP_TEMPLATE = '{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1}'
@@ -44,9 +44,13 @@ class MockSocketFile(object):
         pass
 
 
-class Sl4aClientTest(unittest.TestCase):
-    """This test class has unit tests for the implementation of everything
-    under mobly.controllers.android, which is the RPC client module for sl4a.
+class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
+    def __init__(self):
+      super(FakeRpcClient, self).__init__(adb_proxy=None)
+
+
+class JsonRpcClientBaseTest(unittest.TestCase):
+    """Unit tests for mobly.controllers.android_device_lib.jsonrpc_client_base.
     """
 
     def setup_mock_socket_file(self, mock_create_connection):
@@ -62,7 +66,6 @@ class Sl4aClientTest(unittest.TestCase):
         fake_conn = mock.MagicMock()
         fake_conn.makefile.return_value = fake_file
         mock_create_connection.return_value = fake_conn
-
         return fake_file
 
     @mock.patch('socket.create_connection')
@@ -73,41 +76,38 @@ class Sl4aClientTest(unittest.TestCase):
         will eventually exit with an IOError.
         """
         mock_create_connection.side_effect = IOError()
-
         with self.assertRaises(IOError):
-            client = sl4a_client.Sl4aClient()
-            client.open(connection_timeout=0.1)
+            client = FakeRpcClient()
+            client.connect(port=80, connection_timeout=0.1)
 
     @mock.patch('socket.create_connection')
-    def test_open_timeout(self, mock_create_connection):
+    def test_connect_timeout(self, mock_create_connection):
         """Test socket timeout
 
         Test that a timeout exception will be raised if the socket gives a
         timeout.
         """
         mock_create_connection.side_effect = socket.timeout
-
         with self.assertRaises(socket.timeout):
-            client = sl4a_client.Sl4aClient()
-            client.open(connection_timeout=0.1)
+            client = FakeRpcClient()
+            client.connect(port=80)
 
     @mock.patch('socket.create_connection')
     def test_handshake_error(self, mock_create_connection):
-        """Test error in sl4a handshake
+        """Test error in jsonrpc handshake
 
-        Test that if there is an error in the sl4a handshake then a protocol
+        Test that if there is an error in the jsonrpc handshake then a protocol
         error will be raised.
         """
         fake_conn = mock.MagicMock()
         fake_conn.makefile.return_value = MockSocketFile(None)
         mock_create_connection.return_value = fake_conn
-
-        with self.assertRaises(sl4a_client.Sl4aProtocolError):
-            client = sl4a_client.Sl4aClient()
-            client.open()
+        with self.assertRaises(jsonrpc_client_base.ProtocolError):
+            client = FakeRpcClient()
+            client.connect(port=80)
 
     @mock.patch('socket.create_connection')
-    def test_open_handshake(self, mock_create_connection):
+    def test_connect_handshake(self, mock_create_connection):
         """Test sl4a client handshake
 
         Test that at the end of a handshake with no errors the client object
@@ -117,13 +117,13 @@ class Sl4aClientTest(unittest.TestCase):
         fake_conn.makefile.return_value = MockSocketFile(MOCK_RESP)
         mock_create_connection.return_value = fake_conn
 
-        client = sl4a_client.Sl4aClient()
-        client.open()
+        client = FakeRpcClient()
+        client.connect(port=80)
 
         self.assertEqual(client.uid, 1)
 
     @mock.patch('socket.create_connection')
-    def test_open_handshake_unknown_status(self, mock_create_connection):
+    def test_connect_handshake_unknown_status(self, mock_create_connection):
         """Test handshake with unknown status response
 
         Test that when the handshake is given an unknown status then the client
@@ -134,13 +134,13 @@ class Sl4aClientTest(unittest.TestCase):
             MOCK_RESP_UNKWN_STATUS)
         mock_create_connection.return_value = fake_conn
 
-        client = sl4a_client.Sl4aClient()
-        client.open()
+        client = FakeRpcClient()
+        client.connect(port=80)
 
-        self.assertEqual(client.uid, sl4a_client.UNKNOWN_UID)
+        self.assertEqual(client.uid, jsonrpc_client_base.UNKNOWN_UID)
 
     @mock.patch('socket.create_connection')
-    def test_open_no_response(self, mock_create_connection):
+    def test_connect_no_response(self, mock_create_connection):
         """Test handshake no response
 
         Test that if a handshake recieves no response then it will give a
@@ -148,14 +148,15 @@ class Sl4aClientTest(unittest.TestCase):
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
-        client.open()
+        client = FakeRpcClient()
+        client.connect(port=80)
 
         fake_file.resp = None
 
         with self.assertRaises(
-                sl4a_client.Sl4aProtocolError,
-                msg=sl4a_client.Sl4aProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
+                jsonrpc_client_base.ProtocolError,
+                msg=
+                jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
@@ -167,12 +168,12 @@ class Sl4aClientTest(unittest.TestCase):
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
-        client.open()
+        client = FakeRpcClient()
+        client.connect(port=80)
 
         fake_file.resp = MOCK_RESP_WITH_ERROR
 
-        with self.assertRaises(sl4a_client.Sl4aApiError, msg=1):
+        with self.assertRaises(jsonrpc_client_base.ApiError, msg=1):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
@@ -184,14 +185,14 @@ class Sl4aClientTest(unittest.TestCase):
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
-        client.open()
+        client = FakeRpcClient()
+        client.connect(port=80)
 
         fake_file.resp = (MOCK_RESP_TEMPLATE % 52).encode('utf8')
 
         with self.assertRaises(
-                sl4a_client.Sl4aProtocolError,
-                msg=sl4a_client.Sl4aProtocolError.MISMATCHED_API_ID):
+                jsonrpc_client_base.ProtocolError,
+                msg=jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
@@ -203,14 +204,14 @@ class Sl4aClientTest(unittest.TestCase):
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
-        client.open()
+        client = FakeRpcClient()
+        client.connect(port=80)
 
         fake_file.resp = None
 
         with self.assertRaises(
-                sl4a_client.Sl4aProtocolError,
-                msg=sl4a_client.Sl4aProtocolError.NO_RESPONSE_FROM_SERVER):
+                jsonrpc_client_base.ProtocolError,
+                msg=jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
@@ -222,8 +223,8 @@ class Sl4aClientTest(unittest.TestCase):
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
-        client.open()
+        client = FakeRpcClient()
+        client.connect(port=80)
 
         result = client.some_rpc(1, 2, 3)
         self.assertEquals(result, 123)
@@ -241,8 +242,8 @@ class Sl4aClientTest(unittest.TestCase):
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-        client = sl4a_client.Sl4aClient()
-        client.open()
+        client = FakeRpcClient()
+        client.connect(port=80)
 
         for i in range(0, 10):
             fake_file.resp = (MOCK_RESP_TEMPLATE % i).encode('utf-8')

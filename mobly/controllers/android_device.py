@@ -27,6 +27,7 @@ from mobly import utils
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import event_dispatcher
 from mobly.controllers.android_device_lib import fastboot
+from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import sl4a_client
 
 MOBLY_CONTROLLER_CONFIG_NAME = "AndroidDevice"
@@ -396,7 +397,6 @@ class AndroidDevice(object):
         if self._adb_logcat_process:
             self.stop_adb_logcat()
         self._terminate_sl4a()
-        sl4a_client.stop_sl4a(self.adb)
 
     @property
     def build_info(self):
@@ -500,17 +500,18 @@ class AndroidDevice(object):
             self.h_port = utils.get_available_host_port()
         self.adb.tcp_forward(self.h_port, self.d_port)
 
-        self.sl4a = sl4a_client.Sl4aClient(port=self.h_port)
+        self.sl4a = sl4a_client.Sl4aClient(self.adb)
         try:
-            self.sl4a.open()
+            self.sl4a.connect(port=self.h_port)
         except:
-            sl4a_client.start_sl4a(self.adb)
-            self.sl4a.open()
+            self.sl4a.start_app()
+            self.sl4a.connect(port=self.h_port)
 
         # Start an EventDispatcher for the current sl4a session
-        event_client = sl4a_client.Sl4aClient(
-            port=self.h_port, uid=self.sl4a.uid)
-        event_client.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
+        event_client = sl4a_client.Sl4aClient(self.adb)
+        event_client.connect(
+            port=self.h_port, uid=self.sl4a.uid,
+            cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         self.ed = event_dispatcher.EventDispatcher(event_client)
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
@@ -648,13 +649,14 @@ class AndroidDevice(object):
         Send terminate signal to sl4a server; stop dispatcher associated with
         the session. Clear corresponding droids and dispatchers from cache.
         """
-        if self.sl4a:
-            self.sl4a.closeSl4aSession()
-            self.sl4a.close()
-            self.sl4a = None
         if self.ed:
             self.ed.clean_up()
             self.ed = None
+        if self.sl4a:
+            self.sl4a.closeSl4aSession()
+            self.sl4a.close()
+            self.sl4a.stop_app()
+            self.sl4a = None
         if self.h_port:
             self.adb.forward("--remove tcp:%d" % self.h_port)
             self.h_port = None
