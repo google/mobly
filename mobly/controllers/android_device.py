@@ -33,10 +33,15 @@ from mobly.controllers.android_device_lib import sl4a_client
 MOBLY_CONTROLLER_CONFIG_NAME = "AndroidDevice"
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
+
 # Key name for adb logcat extra params in config file.
 ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
+
+# Keys for attributes in configs that alternate device behavior
+KEY_SKIP_SL4A = "skip_sl4a"
+KEY_DEVICE_REQUIRED = "required"
 
 
 class Error(signals.ControllerError):
@@ -123,11 +128,16 @@ def _start_services_on_ads(ads):
     for ad in ads:
         running_ads.append(ad)
         try:
-            ad.start_services(skip_sl4a=getattr(ad, "skip_sl4a", False))
-        except:
-            ad.log.exception("Failed to start some services, abort!")
-            destroy(running_ads)
-            raise
+            ad.start_services(skip_sl4a=getattr(ad, KEY_SKIP_SL4A, False))
+        except Exception as e:
+            is_required = getattr(ad, KEY_DEVICE_REQUIRED, True)
+            if is_required:
+                ad.log.exception("Failed to start some services, abort!")
+                destroy(running_ads)
+                raise
+            else:
+                logging.warning(("Skipping device %s because some service "
+                                 "failed to start: %s"), ad.serial, e)
 
 
 def _parse_device_list(device_list_str, key):
@@ -207,8 +217,15 @@ def get_instances_with_configs(configs):
             raise Error(
                 "Required value 'serial' is missing in AndroidDevice config %s."
                 % c)
-        ad = AndroidDevice(serial)
-        ad.load_config(c)
+        is_required = c.get(KEY_DEVICE_REQUIRED, True)
+        try:
+            ad = AndroidDevice(serial)
+            ad.load_config(c)
+        except Exception as e:
+            if is_required:
+                raise
+            logging.warning("Skipping device %s due to error: %s", serial, e)
+            continue
         results.append(ad)
     return results
 
