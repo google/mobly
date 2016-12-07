@@ -130,9 +130,11 @@ def is_sl4a_running(adb_proxy):
     # Grep for process with a preceding S which means it is truly started.
     try:
         out = adb_proxy.shell('ps | grep "S com.googlecode.android_scripting"')
-        return True
+        return bool(out.strip())
     except adb.AdbError as e:
-        return False
+        if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
+            return False
+        raise
 
 
 class Sl4aCommand(object):
