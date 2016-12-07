@@ -21,7 +21,6 @@ import shutil
 import tempfile
 import unittest
 
-from mobly import base_test
 from mobly.controllers import android_device
 
 # Mock log path for a test run.
@@ -204,7 +203,7 @@ class MoblyAndroidDeviceTest(unittest.TestCase):
         expected_msg = "More than one device matched: \[0, 0\]"
         with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
-            ad = android_device.get_device(ads, serial=target_serial)
+            android_device.get_device(ads, serial=target_serial)
 
     def test_start_services_on_ads(self):
         """Makes sure when an AndroidDevice fails to start some services, all
@@ -213,17 +212,17 @@ class MoblyAndroidDeviceTest(unittest.TestCase):
         msg = "Some error happened."
         ads = get_mock_ads(3)
         ads[0].start_services = mock.MagicMock()
-        ads[0].clean_up = mock.MagicMock()
+        ads[0].stop_services = mock.MagicMock()
         ads[1].start_services = mock.MagicMock()
-        ads[1].clean_up = mock.MagicMock()
+        ads[1].stop_services = mock.MagicMock()
         ads[2].start_services = mock.MagicMock(
             side_effect=android_device.Error(msg))
-        ads[2].clean_up = mock.MagicMock()
+        ads[2].stop_services = mock.MagicMock()
         with self.assertRaisesRegexp(android_device.Error, msg):
             android_device._start_services_on_ads(ads)
-        ads[0].clean_up.assert_called_once_with()
-        ads[1].clean_up.assert_called_once_with()
-        ads[2].clean_up.assert_called_once_with()
+        ads[0].stop_services.assert_called_once_with()
+        ads[1].stop_services.assert_called_once_with()
+        ads[2].stop_services.assert_called_once_with()
 
     # Tests for android_device.AndroidDevice class.
     # These tests mock out any interaction with the OS and real android device
@@ -240,7 +239,7 @@ class MoblyAndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         self.assertEqual(ad.serial, 1)
         self.assertEqual(ad.model, "fakemodel")
-        self.assertIsNone(ad.adb_logcat_process)
+        self.assertIsNone(ad._adb_logcat_process)
         self.assertIsNone(ad.adb_logcat_file_path)
         expected_lp = os.path.join(logging.log_path,
                                    "AndroidDevice%s" % mock_serial)
@@ -334,7 +333,7 @@ class MoblyAndroidDeviceTest(unittest.TestCase):
             ad.stop_adb_logcat()
         ad.start_adb_logcat()
         # Verify start did the correct operations.
-        self.assertTrue(ad.adb_logcat_process)
+        self.assertTrue(ad._adb_logcat_process)
         expected_log_path = os.path.join(logging.log_path,
                                          "AndroidDevice%s" % ad.serial,
                                          "adblog,fakemodel,%s.txt" % ad.serial)
@@ -352,7 +351,7 @@ class MoblyAndroidDeviceTest(unittest.TestCase):
         # Verify stop did the correct operations.
         ad.stop_adb_logcat()
         stop_proc_mock.assert_called_with("process")
-        self.assertIsNone(ad.adb_logcat_process)
+        self.assertIsNone(ad._adb_logcat_process)
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy', return_value=MockAdbProxy(1))
@@ -379,7 +378,7 @@ class MoblyAndroidDeviceTest(unittest.TestCase):
             ad.stop_adb_logcat()
         ad.start_adb_logcat()
         # Verify start did the correct operations.
-        self.assertTrue(ad.adb_logcat_process)
+        self.assertTrue(ad._adb_logcat_process)
         expected_log_path = os.path.join(logging.log_path,
                                          "AndroidDevice%s" % ad.serial,
                                          "adblog,fakemodel,%s.txt" % ad.serial)

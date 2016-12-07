@@ -154,7 +154,7 @@ class BaseTestClass(object):
         try:
             # Write test start token to adb log if android device is attached.
             for ad in self.android_devices:
-                ad.droid.logV("%s BEGIN %s" % (TEST_CASE_TOKEN, test_name))
+                ad.sl4a.logV("%s BEGIN %s" % (TEST_CASE_TOKEN, test_name))
         except:
             pass
         return self.setup_test()
@@ -177,7 +177,7 @@ class BaseTestClass(object):
         try:
             # Write test end token to adb log if android device is attached.
             for ad in self.android_devices:
-                ad.droid.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
+                ad.sl4a.logV("%s END %s" % (TEST_CASE_TOKEN, test_name))
         except:
             pass
         try:
