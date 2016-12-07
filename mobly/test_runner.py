@@ -383,13 +383,13 @@ class TestRunner(object):
             raise signals.ControllerError(
                 "Controller module %s did not return a list of objects, abort."
                 % module_ref_name)
-        if min_number is not None:
-            actual_number = len(objects)
-            if actual_number < min_number:
-                module.destroy(objects)
-                raise signals.ControllerError(
-                    "Expected to get at least %d controller objects, got %d." %
-                    (min_number, actual_number))
+        # Check we got enough controller objects to continue.
+        actual_number = len(objects)
+        if actual_number < min_number:
+            module.destroy(objects)
+            raise signals.ControllerError(
+                "Expected to get at least %d controller objects, got %d." %
+                (min_number, actual_number))
         self.controller_registry[module_ref_name] = objects
         # Collect controller information and write to test result.
         # Implementation of "get_info" is optional for a controller module.
