@@ -44,7 +44,7 @@ class MockSocketFile(object):
         pass
 
 
-class MoblySl4aClientTest(unittest.TestCase):
+class Sl4aClientTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.controllers.android, which is the RPC client module for sl4a.
     """

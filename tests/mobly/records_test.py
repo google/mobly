@@ -19,7 +19,7 @@ import unittest
 from mobly import records
 from mobly import signals
 
-class MoblyRecordsTest(unittest.TestCase):
+class RecordsTest(unittest.TestCase):
     """This test class tests the implementation of classes in mobly.records.
     """
 

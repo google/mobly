@@ -23,11 +23,11 @@ from mobly import keys
 from mobly import signals
 from mobly import test_runner
 
-import mobly_android_device_test
-import mock_controller
+from tests import mock_controller
+from tests.mobly.controllers import android_device_test
 
 
-class MoblyTestRunnerTest(unittest.TestCase):
+class TestRunnerTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.test_runner.
     """
@@ -151,13 +151,13 @@ class MoblyTestRunnerTest(unittest.TestCase):
         self.assertEqual(tr.results.controller_info, expected_info)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
-                return_value=mobly_android_device_test.MockAdbProxy(1))
+                return_value=android_device_test.MockAdbProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-                return_value=mobly_android_device_test.MockFastbootProxy(1))
+                return_value=android_device_test.MockFastbootProxy(1))
     @mock.patch('mobly.controllers.android_device.list_adb_devices',
                 return_value=["1"])
     @mock.patch('mobly.controllers.android_device.get_all_instances',
-                return_value=mobly_android_device_test.get_mock_ads(1))
+                return_value=android_device_test.get_mock_ads(1))
     def test_run_two_test_classes(self, mock_get_all, mock_list_adb,
                                   mock_fastboot, mock_adb,):
         """Verifies that runing more than one test class in one test run works

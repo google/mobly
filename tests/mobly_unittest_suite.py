@@ -17,26 +17,25 @@
 import sys
 import unittest
 
-import mobly_android_device_test
-import mobly_asserts_test
-import mobly_base_class_test
-import mobly_logger_test
-import mobly_records_test
-import mobly_sl4a_client_test
-import mobly_test_runner_test
-import mobly_utils_test
-
+from tests.mobly import asserts_test
+from tests.mobly import base_test_test
+from tests.mobly import logger_test
+from tests.mobly import records_test
+from tests.mobly import test_runner_test
+from tests.mobly import utils_test
+from tests.mobly.controllers import android_device_test
+from tests.mobly.controllers.android_device_lib import sl4a_client_test
 
 def compile_suite():
     test_classes_to_run = [
-        mobly_asserts_test.MoblyAssertsTest,
-        mobly_base_class_test.MoblyBaseClassTest,
-        mobly_test_runner_test.MoblyTestRunnerTest,
-        mobly_android_device_test.MoblyAndroidDeviceTest,
-        mobly_records_test.MoblyRecordsTest,
-        mobly_sl4a_client_test.MoblySl4aClientTest,
-        mobly_utils_test.MoblyUtilsTest,
-        mobly_logger_test.MoblyLoggerTest
+        android_device_test.AndroidDeviceTest,
+        asserts_test.AssertsTest,
+        base_test_test.BaseTestTest,
+        logger_test.LoggerTest,
+        records_test.RecordsTest,
+        sl4a_client_test.Sl4aClientTest,
+        test_runner_test.TestRunnerTest,
+        utils_test.UtilsTest,
     ]
 
     loader = unittest.TestLoader()

@@ -130,7 +130,7 @@ class MockFastbootProxy():
         return fastboot_call
 
 
-class MoblyAndroidDeviceTest(unittest.TestCase):
+class AndroidDeviceTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.controllers.android_device.
     """

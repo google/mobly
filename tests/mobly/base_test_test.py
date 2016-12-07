@@ -34,7 +34,7 @@ def never_call():
 class SomeError(Exception):
     """A custom exception class used for tests in this module."""
 
-class MoblyBaseClassTest(unittest.TestCase):
+class BaseTestTest(unittest.TestCase):
 
     def setUp(self):
         self.mock_test_cls_configs = {

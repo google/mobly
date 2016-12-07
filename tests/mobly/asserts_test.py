@@ -22,7 +22,7 @@ from mobly import signals
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 
 
-class MoblyAssertsTest(unittest.TestCase):
+class AssertsTest(unittest.TestCase):
     """Verifies that asserts.xxx functions raise the correct test signals.
     """
 
