@@ -35,10 +35,6 @@ from mobly import signals
 from mobly import utils
 
 
-class Error(Exception):
-    """Throw this for exceptions in test runner."""
-
-
 def main():
     """Execute the test class in a test module.
 
