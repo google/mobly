@@ -253,7 +253,7 @@ from mobly.controllerse import android_device
 class HelloWorldTest(base_test.BaseTestClass):
 
   def setup_class(self):
-    self.ads = self.register_controller(android_device)
+    self.ads = self.register_controller(android_device, min_number=2)
     self.dut = android_device.get_device(self.ads, label="dut")
     self.discoverer = android_device.get_device(self.ads, label="discoverer")
     self.dut.ed.clear_all_events()
