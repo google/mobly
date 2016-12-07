@@ -283,7 +283,7 @@ class TestRunner(object):
                     ("Controller interface %s in %s cannot be null.") % (
                      attr, module.__name__))
 
-    def register_controller(self, module, required=True):
+    def register_controller(self, module, required=True, min_number=1):
         """Registers an Mobly controller module for a test run.
 
         An Mobly controller module is a Python lib that can be used to control
@@ -329,8 +329,12 @@ class TestRunner(object):
         Args:
             module: A module that follows the controller module interface.
             required: A bool. If True, failing to register the specified
-                      controller module raises exceptions. If False, returns
-                      None upon failures.
+                      controller module raises exceptions. If False, the objects
+                      failed to instantiate will be skipped.
+            min_number: An integer that is the minimum number of controller
+                        objects to be created. Default is one, since you should
+                        not register a controller module without expecting at
+                        least one object.
 
         Returns:
             A list of controller objects instantiated from controller_module, or
@@ -342,6 +346,8 @@ class TestRunner(object):
             Regardless of the value of "required", ControllerError is raised if
             the controller module has already been registered or any other error
             occurred in the registration process.
+            If the actual number of objects instantiated is less than the
+            min_number, ControllerError is raised.
         """
         TestRunner.verify_controller_module(module)
         # Use the module's name as the ref name
@@ -377,6 +383,13 @@ class TestRunner(object):
             raise signals.ControllerError(
                 "Controller module %s did not return a list of objects, abort."
                 % module_ref_name)
+        # Check we got enough controller objects to continue.
+        actual_number = len(objects)
+        if actual_number < min_number:
+            module.destroy(objects)
+            raise signals.ControllerError(
+                "Expected to get at least %d controller objects, got %d." %
+                (min_number, actual_number))
         self.controller_registry[module_ref_name] = objects
         # Collect controller information and write to test result.
         # Implementation of "get_info" is optional for a controller module.
