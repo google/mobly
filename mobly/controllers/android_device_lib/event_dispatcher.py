@@ -17,7 +17,6 @@
 from concurrent.futures import ThreadPoolExecutor
 import queue
 import re
-import socket
 import threading
 import time
 import traceback
@@ -43,8 +42,8 @@ class EventDispatcher:
 
     DEFAULT_TIMEOUT = 60
 
-    def __init__(self, droid):
-        self.droid = droid
+    def __init__(self, sl4a):
+        self._sl4a = sl4a
         self.started = False
         self.executor = None
         self.poller = None
@@ -64,7 +63,7 @@ class EventDispatcher:
             event_obj = None
             event_name = None
             try:
-                event_obj = self.droid.eventWait(50000)
+                event_obj = self._sl4a.eventWait(50000)
             except:
                 if self.started:
                     print("Exception happened during polling.")
@@ -81,7 +80,7 @@ class EventDispatcher:
             if event_name in self.handlers:
                 self.handle_subscribed_event(event_obj, event_name)
             if event_name == "EventDispatcherShutdown":
-                self.droid.closeSl4aSession()
+                self._sl4a.closeSl4aSession()
                 break
             else:
                 self.lock.acquire()
@@ -146,12 +145,11 @@ class EventDispatcher:
         2. Close the sl4a client the event_dispatcher object holds.
         3. Shut down executor without waiting.
         """
-        uid = self.droid.uid
         if not self.started:
             return
         self.started = False
         self.clear_all_events()
-        self.droid.close()
+        self._sl4a.close()
         self.poller.set_result("Done")
         # The polling thread is guaranteed to finish after a max of 60 seconds,
         # so we don't wait here.

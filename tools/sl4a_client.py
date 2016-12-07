@@ -52,11 +52,10 @@ def _start_console(banner=None):
 
 def _connect():
     ad = gConsoleEnv['ad']
-    (droid, ed) = ad.get_droid()
-    gConsoleEnv['s'] = droid
-    gConsoleEnv['sl4a'] = droid
-    gConsoleEnv['ed'] = ed
-    gConsoleEnv['ed'].start()
+    ad.start_services()
+    gConsoleEnv['s'] = ad.sl4a
+    gConsoleEnv['sl4a'] = ad.sl4a
+    gConsoleEnv['ed'] = ad.ed
     print('Connection succeeded')
 
 
@@ -84,7 +83,7 @@ Connected to {}. Call methods against:
     sl4a or s (SL4A)
     ed (EventDispatcher)
 """.format(serial))
-    gConsoleEnv['ad'].terminate_all_sessions()
+    gConsoleEnv['ad'].stop_services()
 
 
 if __name__ == '__main__':

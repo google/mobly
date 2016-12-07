@@ -85,7 +85,7 @@ class HelloWorldTest(base_test.BaseTestClass):
     self.dut = self.ads[0]
 
   def test_hello(self):
-    self.dut.droid.makeToast('Hello World!')
+    self.dut.sl4a.makeToast('Hello World!')
 
 if __name__ == "__main__":
   test_runner.main()
@@ -129,10 +129,10 @@ class HelloWorldTest(base_test.BaseTestClass):
     self.dut = self.ads[0]
 
   def test_hello(self):
-    self.dut.droid.makeToast('Hello World!')
+    self.dut.sl4a.makeToast('Hello World!')
 
   def test_bye(self):
-    self.dut.droid.makeToast('Goodbye!')
+    self.dut.sl4a.makeToast('Goodbye!')
 
 if __name__ == "__main__":
   test_runner.main()
@@ -184,9 +184,9 @@ In the test script, you could access the user parameter:
   def test_favorite_food(self):
     food = self.user_params.get('favorite_food')
     if food:
-      self.dut.droid.makeToast("I'd like to eat %s." % food)
+      self.dut.sl4a.makeToast("I'd like to eat %s." % food)
     else:
-      self.dut.droid.makeToast("I'm not hungry.")
+      self.dut.sl4a.makeToast("I'm not hungry.")
 ```
 
 ## Example 4: Multiple Test Beds
@@ -261,27 +261,27 @@ class HelloWorldTest(base_test.BaseTestClass):
 
   def setup_test(self):
     # Make sure bluetooth is on
-    self.dut.droid.bluetoothToggleState(True)
-    self.discoverer.droid.bluetoothToggleState(True)
+    self.dut.sl4a.bluetoothToggleState(True)
+    self.discoverer.sl4a.bluetoothToggleState(True)
     self.dut.ed.pop_event(event_name='BluetoothStateChangedOn',
                           timeout=10)
     self.discoverer.ed.pop_event(event_name='BluetoothStateChangedOn',
                                  timeout=10)
-    if (not self.dut.droid.bluetoothCheckState() or
-           not self.discoverer.droid.bluetoothCheckState()):
+    if (not self.dut.sl4a.bluetoothCheckState() or
+           not self.discoverer.sl4a.bluetoothCheckState()):
       asserts.abort_class('Could not turn on Bluetooth on both devices.')
 
     # Set the name of device #1 and verify the name properly registered.
-    self.dut.droid.bluetoothSetLocalName(self.bluetooth_name)
-    asserts.assert_equal(self.dut.droid.bluetoothGetLocalName(),
+    self.dut.sl4a.bluetoothSetLocalName(self.bluetooth_name)
+    asserts.assert_equal(self.dut.sl4a.bluetoothGetLocalName(),
                          self.bluetooth_name,
                          'Failed to set bluetooth name to %s on %s' %
                          (self.bluetooth_name, self.dut.serial))
 
   def test_bluetooth_discovery(self):
     # Make dut discoverable.
-    self.dut.droid.bluetoothMakeDiscoverable()
-    scan_mode = self.dut.droid.bluetoothGetScanMode()
+    self.dut.sl4a.bluetoothMakeDiscoverable()
+    scan_mode = self.dut.sl4a.bluetoothGetScanMode()
     asserts.assert_equal(
         scan_mode, 3,  # 3 signifies CONNECTABLE and DISCOVERABLE
         'Android device %s failed to make blueooth discoverable.' %
@@ -289,7 +289,7 @@ class HelloWorldTest(base_test.BaseTestClass):
 
     # Start the discovery process on #discoverer.
     self.discoverer.ed.clear_all_events()
-    self.discoverer.droid.bluetoothStartDiscovery()
+    self.discoverer.sl4a.bluetoothStartDiscovery()
     self.discoverer.ed.pop_event(
         event_name='BluetoothDiscoveryFinished',
         timeout=self.bluetooth_timeout)
@@ -299,7 +299,7 @@ class HelloWorldTest(base_test.BaseTestClass):
     self.discoverer.log.info('Discovering other bluetooth devices.')
 
     # Get a list of discovered devices
-    discovered_devices = self.discoverer.droid.bluetoothGetDiscoveredDevices()
+    discovered_devices = self.discoverer.sl4a.bluetoothGetDiscoveredDevices()
     self.discoverer.log.info('Found devices: %s', discovered_devices)
     matching_devices = [d for d in discovered_devices
                         if d.get('name') == self.bluetooth_name]

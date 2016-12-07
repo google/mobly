@@ -1,13 +1,13 @@
 #!/usr/bin/env python3.4
 #
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,6 @@ from builtins import open
 
 import logging
 import os
-import re
 import time
 
 from mobly import logger as mobly_logger
@@ -49,8 +48,7 @@ class Error(signals.ControllerError):
 
 
 class DoesNotExistError(Error):
-    """Raised when something that does not exist is referenced.
-    """
+    """Raised when something that does not exist is referenced."""
 
 
 def create(configs):
@@ -93,7 +91,7 @@ def destroy(ads):
     """
     for ad in ads:
         try:
-            ad.clean_up()
+            ad.stop_services()
         except:
             ad.log.exception("Failed to clean up properly.")
 
@@ -327,7 +325,7 @@ def take_bug_reports(ads, test_name, begin_time):
     utils.concurrent_exec(take_br, args)
 
 
-class AndroidDevice:
+class AndroidDevice(object):
     """Class representing an android device.
 
     Each object of this class represents one Android device in Mobly, including
@@ -345,7 +343,6 @@ class AndroidDevice:
                   android device should be stored.
         log: A logger adapted from root logger with added token specific to an
              AndroidDevice instance.
-        adb_logcat_process: A process that collects the adb logcat.
         adb_logcat_file_path: A string that's the full path to the adb logcat
                               file collected, if any.
         adb: An AdbProxy object used for interacting with the device via adb.
@@ -363,22 +360,14 @@ class AndroidDevice:
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
             "serial": self.serial
         })
-        self._droid_sessions = {}
-        self._event_dispatchers = {}
-        self.adb_logcat_process = None
+        self.sl4a = None
+        self.ed = None
+        self._adb_logcat_process = None
         self.adb_logcat_file_path = None
         self.adb = adb.AdbProxy(serial)
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader:
             self.root_adb()
-
-    def clean_up(self):
-        """Cleans up the AndroidDevice object and releases any resources it
-        claimed.
-        """
-        self.stop_services()
-        if self.h_port:
-            self.adb.forward("--remove tcp:%d" % self.h_port)
 
     # TODO(angli): This function shall be refactored to accommodate all services
     # and not have hard coded switch for SL4A when b/29157104 is done.
@@ -397,21 +386,16 @@ class AndroidDevice:
             self.log.exception("Failed to start adb logcat!")
             raise
         if not skip_sl4a:
-            try:
-                self.get_droid()
-                self.ed.start()
-            except:
-                self.log.exception("Failed to start sl4a!")
-                raise
+            self._start_sl4a()
 
     def stop_services(self):
         """Stops long running services on the android device.
 
         Stop adb logcat and terminate sl4a sessions if exist.
         """
-        if self.adb_logcat_process:
+        if self._adb_logcat_process:
             self.stop_adb_logcat()
-        self.terminate_all_sessions()
+        self._terminate_sl4a()
         sl4a_client.stop_sl4a(self.adb)
 
     @property
@@ -472,61 +456,6 @@ class AndroidDevice:
         else:
             return self.adb.getprop("ro.product.name").lower()
 
-    @property
-    def droid(self):
-        """The first sl4a session initiated on this device. None if there isn't
-        one.
-        """
-        try:
-            session_id = sorted(self._droid_sessions)[0]
-            return self._droid_sessions[session_id][0]
-        except IndexError:
-            return None
-
-    @property
-    def ed(self):
-        """The first event_dispatcher instance created on this device. None if
-        there isn't one.
-        """
-        try:
-            session_id = sorted(self._event_dispatchers)[0]
-            return self._event_dispatchers[session_id]
-        except IndexError:
-            return None
-
-    @property
-    def droids(self):
-        """A list of the active sl4a sessions on this device.
-
-        If multiple connections exist for the same session, only one connection
-        is listed.
-        """
-        keys = sorted(self._droid_sessions)
-        results = []
-        for k in keys:
-            results.append(self._droid_sessions[k][0])
-        return results
-
-    @property
-    def eds(self):
-        """A list of the event_dispatcher objects on this device.
-
-        The indexing of the list matches that of the droids property.
-        """
-        keys = sorted(self._event_dispatchers)
-        results = []
-        for k in keys:
-            results.append(self._event_dispatchers[k])
-        return results
-
-    @property
-    def is_adb_logcat_on(self):
-        """Whether there is an ongoing adb logcat collection.
-        """
-        if self.adb_logcat_process:
-            return True
-        return False
-
     def load_config(self, config):
         """Add attributes to the AndroidDevice object based on json config.
 
@@ -553,67 +482,31 @@ class AndroidDevice:
         self.adb.root()
         self.adb.wait_for_device()
 
-    def get_droid(self, handle_event=True):
+    def _start_sl4a(self):
         """Create an sl4a connection to the device.
 
-        Return the connection handler 'droid'. By default, another connection
-        on the same session is made for EventDispatcher, and the dispatcher is
-        returned to the caller as well.
-        If sl4a server is not started on the device, try to start it.
+        Assigns the open sl4a client to self.sl4a. By default, another
+        connection on the same session is made for EventDispatcher, and the
+        dispatcher is bound to self.ed.
 
-        Args:
-            handle_event: True if this droid session will need to handle
-                events.
-
-        Returns:
-            droid: Android object used to communicate with sl4a on the android
-                device.
-            ed: An optional EventDispatcher to organize events for this droid.
-
-        Examples:
-            Don't need event handling:
-            >>> ad = AndroidDevice()
-            >>> droid = ad.get_droid(False)
-
-            Need event handling:
-            >>> ad = AndroidDevice()
-            >>> droid, ed = ad.get_droid()
+        If sl4a server is not started on the device, tries to start it.
         """
         if not self.h_port or not utils.is_port_available(self.h_port):
             self.h_port = utils.get_available_host_port()
         self.adb.tcp_forward(self.h_port, self.d_port)
 
+        self.sl4a = sl4a_client.Sl4aClient(port=self.h_port)
         try:
-            droid = self.start_new_session()
+            self.sl4a.open()
         except:
             sl4a_client.start_sl4a(self.adb)
-            droid = self.start_new_session()
+            self.sl4a.open()
 
-        if handle_event:
-            ed = self.get_dispatcher(droid)
-            return droid, ed
-        return droid
-
-    def get_dispatcher(self, droid):
-        """Return an EventDispatcher for an sl4a session
-
-        Args:
-            droid: Session to create EventDispatcher for.
-
-        Returns:
-            ed: An EventDispatcher for specified session.
-        """
-        ed_key = self.serial + str(droid.uid)
-        if ed_key in self._event_dispatchers:
-            if self._event_dispatchers[ed_key] is None:
-                raise Error("EventDispatcher Key Empty")
-            self.log.debug("Returning existing key %s for event dispatcher!",
-                           ed_key)
-            return self._event_dispatchers[ed_key]
-        event_droid = self.add_new_connection_to_session(droid.uid)
-        ed = event_dispatcher.EventDispatcher(event_droid)
-        self._event_dispatchers[ed_key] = ed
-        return ed
+        # Start an EventDispatcher for the current sl4a session
+        event_client = sl4a_client.Sl4aClient(
+            port=self.h_port, uid=self.sl4a.uid)
+        event_client.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
+        self.ed = event_dispatcher.EventDispatcher(event_client)
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
         low = mobly_logger.logline_timestamp_comparator(begin_time, target) <= 0
@@ -673,10 +566,10 @@ class AndroidDevice:
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
         """
-        if self.is_adb_logcat_on:
-            raise Error(("Android device {} already has an adb "
-                                      "logcat thread going on. Cannot start "
-                                      "another one.").format(self.serial))
+        if self._adb_logcat_process:
+            raise Error(
+              'Android device %s already has an adb logcat thread going on. '
+              'Cannot start another one.' % self.serial)
         # Disable adb log spam filter. Have to stop and clear settings first
         # because 'start' doesn't support --clear option before Android N.
         self.adb.shell("logpersist.stop --clear")
@@ -690,18 +583,18 @@ class AndroidDevice:
             extra_params = "-b all"
         cmd = "adb -s {} logcat -v threadtime {} >> {}".format(
             self.serial, extra_params, logcat_file_path)
-        self.adb_logcat_process = utils.start_standing_subprocess(cmd)
+        self._adb_logcat_process = utils.start_standing_subprocess(cmd)
         self.adb_logcat_file_path = logcat_file_path
 
     def stop_adb_logcat(self):
         """Stops the adb logcat collection subprocess.
         """
-        if not self.is_adb_logcat_on:
+        if not self._adb_logcat_process:
             raise Error(
-                "Android device %s does not have an ongoing adb logcat collection."
-                % self.serial)
-        utils.stop_standing_subprocess(self.adb_logcat_process)
-        self.adb_logcat_process = None
+                'Android device %s does not have an ongoing adb logcat '
+                'collection.' % self.serial)
+        utils.stop_standing_subprocess(self._adb_logcat_process)
+        self._adb_logcat_process = None
 
     def take_bug_report(self, test_name, begin_time):
         """Takes a bug report on the device and stores it in a file.
@@ -726,7 +619,7 @@ class AndroidDevice:
             base_name = base_name.replace(".txt", ".zip")
         test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
         out_name = test_name[:test_name_len] + base_name
-        full_out_path = os.path.join(br_path, out_name.replace(' ', '\ '))
+        full_out_path = os.path.join(br_path, out_name.replace(' ', r'\ '))
         # in case device restarted, wait for adb interface to return
         self.wait_for_boot_completion()
         self.log.info("Taking bugreport for %s.", test_name)
@@ -742,82 +635,22 @@ class AndroidDevice:
         self.log.info("Bugreport for %s taken at %s.", test_name,
                       full_out_path)
 
-    def start_new_session(self):
-        """Start a new session in sl4a.
-
-        Also caches the droid in a dict with its uid being the key.
-
-        Returns:
-            An Android object used to communicate with sl4a on the android
-                device.
-
-        Raises:
-            Sl4aException: Something is wrong with sl4a and it returned an
-            existing uid to a new session.
-        """
-        droid = sl4a_client.Sl4aClient(port=self.h_port)
-        droid.open()
-        if droid.uid in self._droid_sessions:
-            raise sl4a_client.Sl4aException(
-                "SL4A returned an existing uid for a new session. Abort.")
-        self._droid_sessions[droid.uid] = [droid]
-        return droid
-
-    def add_new_connection_to_session(self, session_id):
-        """Create a new connection to an existing sl4a session.
-
-        Args:
-            session_id: UID of the sl4a session to add connection to.
-
-        Returns:
-            An Android object used to communicate with sl4a on the android
-                device.
-
-        Raises:
-            DoesNotExistError: Raised if the session it's trying to connect to
-            does not exist.
-        """
-        if session_id not in self._droid_sessions:
-            raise DoesNotExistError("Session %d doesn't exist." % session_id)
-        droid = sl4a_client.Sl4aClient(port=self.h_port, uid=session_id)
-        droid.open(cmd=sl4a_client.Sl4aCommand.CONTINUE)
-        return droid
-
-    def terminate_session(self, session_id):
-        """Terminate a session in sl4a.
+    def _terminate_sl4a(self):
+        """Terminate the current sl4a session.
 
         Send terminate signal to sl4a server; stop dispatcher associated with
         the session. Clear corresponding droids and dispatchers from cache.
-
-        Args:
-            session_id: UID of the sl4a session to terminate.
         """
-        if self._droid_sessions and (session_id in self._droid_sessions):
-            for droid in self._droid_sessions[session_id]:
-                droid.closeSl4aSession()
-                droid.close()
-            del self._droid_sessions[session_id]
-        ed_key = self.serial + str(session_id)
-        if ed_key in self._event_dispatchers:
-            self._event_dispatchers[ed_key].clean_up()
-            del self._event_dispatchers[ed_key]
-
-    def terminate_all_sessions(self):
-        """Terminate all sl4a sessions on the AndroidDevice instance.
-
-        Terminate all sessions and clear caches.
-        """
-        if self._droid_sessions:
-            session_ids = list(self._droid_sessions.keys())
-            for session_id in session_ids:
-                try:
-                    self.terminate_session(session_id)
-                except:
-                    self.log.exception("Failed to terminate session %d.",
-                                       session_id)
-            if self.h_port:
-                self.adb.forward("--remove tcp:%d" % self.h_port)
-                self.h_port = None
+        if self.sl4a:
+            self.sl4a.closeSl4aSession()
+            self.sl4a.close()
+            self.sl4a = None
+        if self.ed:
+            self.ed.clean_up()
+            self.ed = None
+        if self.h_port:
+            self.adb.forward("--remove tcp:%d" % self.h_port)
+            self.h_port = None
 
     def run_iperf_client(self, server_host, extra_args=""):
         """Start iperf client on the device.
@@ -873,31 +706,18 @@ class AndroidDevice:
         This is probably going to print some error messages in console. Only
         use if there's no other option.
 
-        Example:
-            droid, ed = ad.reboot()
-
-        Returns:
-            An sl4a session with an event_dispatcher.
-
         Raises:
-            Error is raised if waiting for completion timed
-            out.
+            Error is raised if waiting for completion timed out.
         """
         if self.is_bootloader:
             self.fastboot.reboot()
             return
-        has_adb_log = self.is_adb_logcat_on
-        if has_adb_log:
-            self.stop_adb_logcat()
-        self.terminate_all_sessions()
+        self.stop_adb_logcat()
+        self._terminate_sl4a()
         self.adb.reboot()
         self.wait_for_boot_completion()
         self.root_adb()
-        droid, ed = self.get_droid()
-        ed.start()
-        if has_adb_log:
-            self.start_adb_logcat()
-        return droid, ed
+        self.start_services()
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):

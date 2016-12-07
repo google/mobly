@@ -883,7 +883,7 @@ class Monsoon(object):
                 self.dut.start_services(skip_sl4a=getattr(self.dut,
                                                           "skip_sl4a", False))
                 # Release wake lock to put device into sleep.
-                self.dut.droid.goToSleepNow()
+                self.dut.sl4a.goToSleepNow()
         return results
 
     def measure_power(self, hz, duration, tag, offset=30):
@@ -926,6 +926,6 @@ class Monsoon(object):
             self.dut.start_services(skip_sl4a=getattr(self.dut,
                                                       "skip_sl4a", False))
             # Release wake lock to put device into sleep.
-            self.dut.droid.goToSleepNow()
+            self.dut.sl4a.goToSleepNow()
             self.log.info("Dut reconnected.")
             return data
