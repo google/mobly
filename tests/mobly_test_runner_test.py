@@ -56,13 +56,13 @@ class MoblyTestRunnerTest(unittest.TestCase):
                                      "No corresponding config found for"):
             tr.register_controller(mock_controller)
 
-    def test_register_optional_controller_no_config(self):
+    def test_register_controller_no_config(self):
         tr = test_runner.TestRunner(self.base_mock_test_config,
                                     self.mock_run_list)
         self.assertIsNone(tr.register_controller(mock_controller,
                                                  required=False))
 
-    def test_register_controller_third_party_dup_register(self):
+    def test_register_controller_dup_register(self):
         """Verifies correctness of registration, internal tally of controllers
         objects, and the right error happen when a controller module is
         registered twice.
@@ -82,21 +82,6 @@ class MoblyTestRunnerTest(unittest.TestCase):
         expected_msg = "Controller module .* has already been registered."
         with self.assertRaisesRegexp(signals.ControllerError, expected_msg):
             tr.register_controller(mock_controller)
-
-    def test_register_optional_controller_third_party_dup_register(self):
-        """Verifies correctness of registration, internal tally of controllers
-        objects, and the right error happen when an optional controller module
-        is registered twice.
-        """
-        mock_test_config = dict(self.base_mock_test_config)
-        tb_key = keys.Config.key_testbed.value
-        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        mock_test_config[tb_key][mock_ctrlr_config_name] = ["magic1", "magic2"]
-        tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
-        tr.register_controller(mock_controller, required=False)
-        expected_msg = "Controller module .* has already been registered."
-        with self.assertRaisesRegexp(signals.ControllerError, expected_msg):
-            tr.register_controller(mock_controller, required=False)
 
     def test_register_controller_no_get_info(self):
         mock_test_config = dict(self.base_mock_test_config)
@@ -123,6 +108,16 @@ class MoblyTestRunnerTest(unittest.TestCase):
         magic_devices = tr.register_controller(mock_controller)
         self.assertEqual(magic_devices[0].magic, "magic1")
         self.assertEqual(magic_devices[1].magic, "magic2")
+
+    def test_register_controller_less_than_min_number(self):
+        mock_test_config = dict(self.base_mock_test_config)
+        tb_key = keys.Config.key_testbed.value
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_test_config[tb_key][mock_ctrlr_config_name] = ["magic1", "magic2"]
+        tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
+        expected_msg = "Expected to get at least 3 controller objects, got 2."
+        with self.assertRaisesRegexp(signals.ControllerError, expected_msg):
+            tr.register_controller(mock_controller, min_number=3)
 
     def test_run_twice(self):
         """Verifies that:
