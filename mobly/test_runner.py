@@ -257,28 +257,6 @@ class TestRunner(object):
                             test_classes[member_name] = test_class
         return test_classes
 
-    def _import_builtin_controllers(self):
-        """Import built-in controller modules.
-
-        Go through the testbed configs, find any built-in controller configs
-        and import the corresponding controller module from mobly.controllers
-        package.
-
-        TODO(angli): Remove this when all scripts change to explicitly declare
-                     controller dependency.
-
-        Returns:
-            A list of controller modules.
-        """
-        builtin_controllers = []
-        for ctrl_name in keys.Config.builtin_controller_names.value:
-            if ctrl_name in self.testbed_configs:
-                module_name = keys.get_module_name(ctrl_name)
-                module = importlib.import_module("mobly.controllers.%s" %
-                                                 module_name)
-                builtin_controllers.append(module)
-        return builtin_controllers
-
     @staticmethod
     def verify_controller_module(module):
         """Verifies a module object follows the required interface for
@@ -366,18 +344,12 @@ class TestRunner(object):
             occurred in the registration process.
         """
         TestRunner.verify_controller_module(module)
-        try:
-            # If this is a builtin controller module, use the default ref name.
-            module_ref_name = module.MOBLY_CONTROLLER_REFERENCE_NAME
-            builtin = True
-        except AttributeError:
-            # Or use the module's name
-            builtin = False
-            module_ref_name = module.__name__.split('.')[-1]
+        # Use the module's name as the ref name
+        module_ref_name = module.__name__.split('.')[-1]
         if module_ref_name in self.controller_registry:
             raise signals.ControllerError(
-                ("Controller module %s has already been registered. It can not"
-                 " be registered again.") % module_ref_name)
+                ("Controller module %s has already been registered. It cannot "
+                 "be registered again.") % module_ref_name)
         # Create controller objects.
         create = module.create
         module_config_name = module.MOBLY_CONTROLLER_CONFIG_NAME
@@ -402,7 +374,7 @@ class TestRunner(object):
                 module_config_name)
             raise
         if not isinstance(objects, list):
-            raise ControllerError(
+            raise signals.ControllerError(
                 "Controller module %s did not return a list of objects, abort."
                 % module_ref_name)
         self.controller_registry[module_ref_name] = objects
@@ -417,10 +389,6 @@ class TestRunner(object):
         else:
             self.log.warning("No controller info obtained for %s",
                              module_config_name)
-        # TODO(angli): After all tests move to register_controller, stop
-        # tracking controller objs in test_run_info.
-        if builtin:
-            self.test_run_info[module_ref_name] = objects
         self.log.debug("Found %d objects for controller %s", len(objects),
                       module_config_name)
         destroy_func = module.destroy
@@ -526,10 +494,6 @@ class TestRunner(object):
             else:
                 self.log.debug("Executing test class %s", test_cls_name)
             try:
-                # Import and register the built-in controller modules specified
-                # in testbed config.
-                for module in self._import_builtin_controllers():
-                    self.register_controller(module)
                 self.run_test_class(test_cls_name, test_case_names)
             except signals.TestAbortAll as e:
                 self.log.warning(

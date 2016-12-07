@@ -98,35 +98,6 @@ class MoblyTestRunnerTest(unittest.TestCase):
         with self.assertRaisesRegexp(signals.ControllerError, expected_msg):
             tr.register_controller(mock_controller, required=False)
 
-    def test_register_controller_builtin_dup_register(self):
-        """Same as test_register_controller_third_party_dup_register, except
-        this is for a builtin controller module.
-        """
-        mock_test_config = dict(self.base_mock_test_config)
-        tb_key = keys.Config.key_testbed.value
-        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        mock_ref_name = "haha"
-        setattr(mock_controller, "MOBLY_CONTROLLER_REFERENCE_NAME",
-                mock_ref_name)
-        try:
-            mock_ctrlr_ref_name = mock_controller.MOBLY_CONTROLLER_REFERENCE_NAME
-            mock_test_config[tb_key][mock_ctrlr_config_name] = ["magic1",
-                                                                "magic2"]
-            tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
-            tr.register_controller(mock_controller)
-            self.assertTrue(mock_ref_name in tr.test_run_info)
-            self.assertTrue(mock_ref_name in tr.controller_registry)
-            mock_ctrlrs = tr.test_run_info[mock_ctrlr_ref_name]
-            self.assertEqual(mock_ctrlrs[0].magic, "magic1")
-            self.assertEqual(mock_ctrlrs[1].magic, "magic2")
-            self.assertTrue(tr.controller_destructors[mock_ctrlr_ref_name])
-            expected_msg = "Controller module .* has already been registered."
-            with self.assertRaisesRegexp(signals.ControllerError,
-                                         expected_msg):
-                tr.register_controller(mock_controller)
-        finally:
-            delattr(mock_controller, "MOBLY_CONTROLLER_REFERENCE_NAME")
-
     def test_register_controller_no_get_info(self):
         mock_test_config = dict(self.base_mock_test_config)
         tb_key = keys.Config.key_testbed.value

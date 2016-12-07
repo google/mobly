@@ -33,32 +33,16 @@ class Config(enum.Enum):
     key_test_paths = "testpaths"
     key_port = "Port"
     key_address = "Address"
-    # Config names for controllers packaged in Mobly.
-    key_android_device = "AndroidDevice"
-    key_iperf_server = "IPerfServer"
-    key_monsoon = "Monsoon"
-    key_sniffer = "Sniffer"
     # Internal keys, used internally, not exposed to user's config files.
     ikey_user_param = "user_params"
     ikey_testbed_name = "testbed_name"
     ikey_logger = "log"
     ikey_logpath = "log_path"
     ikey_cli_args = "cli_args"
-    # module name of controllers packaged in Mobly.
-    m_key_monsoon = "monsoon"
-    m_key_android_device = "android_device"
-    m_key_iperf_server = "iperf_server"
-    m_key_sniffer = "sniffer"
 
     # A list of keys whose values in configs should not be passed to test
     # classes without unpacking first.
     reserved_keys = (key_testbed, key_log_path, key_test_paths)
-
-    # Controller names packaged with Mobly.
-    builtin_controller_names = [
-        key_android_device, key_iperf_server, key_monsoon,
-        key_sniffer
-    ]
 
 
 def get_name_by_value(value):
