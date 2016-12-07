@@ -306,16 +306,13 @@ class BaseTestClass(object):
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
-        verdict = None
         try:
             try:
-                ret = self._setup_test(test_name)
-                asserts.assert_true(ret is not False,
-                                    "Setup for %s failed." % test_name)
+                self._setup_test(test_name)
                 if args or kwargs:
-                    verdict = test_func(*args, **kwargs)
+                    test_func(*args, **kwargs)
                 else:
-                    verdict = test_func()
+                    test_func()
             finally:
                 try:
                     self._teardown_test(test_name)
@@ -351,17 +348,8 @@ class BaseTestClass(object):
             tr_record.test_error(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         else:
-            # Keep supporting return False for now.
-            # TODO(angli): Deprecate return False support.
-            if verdict or (verdict is None):
-                # Test passed.
-                tr_record.test_pass()
-                self._exec_procedure_func(self._on_pass, tr_record)
-                return
-            # Test failed because it didn't return True.
-            # This should be removed eventually.
-            tr_record.test_fail()
-            self._exec_procedure_func(self._on_fail, tr_record)
+            tr_record.test_pass()
+            self._exec_procedure_func(self._on_pass, tr_record)
         finally:
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
