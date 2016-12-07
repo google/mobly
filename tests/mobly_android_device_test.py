@@ -93,6 +93,8 @@ class MockAdbProxy():
             return "FakeModel"
         elif params == "sys.boot_completed":
             return "1"
+        elif params == "ro.build.type":
+            return "userdebug"
 
     def bugreport(self, params):
         expected = os.path.join(logging.log_path,
