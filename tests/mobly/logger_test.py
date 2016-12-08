@@ -19,7 +19,7 @@ import unittest
 from mobly import logger
 
 
-class MoblyLoggerTest(unittest.TestCase):
+class LoggerTest(unittest.TestCase):
     """Verifies code in mobly.logger module.
     """
     def test_epoch_to_log_line_timestamp(self):

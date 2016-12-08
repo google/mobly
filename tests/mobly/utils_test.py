@@ -21,7 +21,7 @@ import unittest
 from mobly import utils
 
 
-class MoblyUtilsTest(unittest.TestCase):
+class UtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.utils.
     """
