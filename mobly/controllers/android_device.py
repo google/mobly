@@ -366,7 +366,7 @@ class AndroidDevice(object):
         self.adb_logcat_file_path = None
         self.adb = adb.AdbProxy(serial)
         self.fastboot = fastboot.FastbootProxy(serial)
-        if not self.is_bootloader:
+        if not self.is_bootloader and self.is_rootable:
             self.root_adb()
 
     # TODO(angli): This function shall be refactored to accommodate all services
@@ -434,6 +434,11 @@ class AndroidDevice(object):
             # Wait a bit and retry to work around adb flakiness for this cmd.
             time.sleep(0.2)
             return "0" == self.adb.shell("id -u").decode("utf-8").strip()
+
+    @property
+    def is_rootable(self):
+        build_type = self.adb.getprop("ro.build.type").lower()
+        return build_type != 'user'
 
     @property
     def model(self):
@@ -692,8 +697,7 @@ class AndroidDevice(object):
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise Error("Device %s booting process timed out." %
-                                 self.serial)
+        raise Error("Device %s booting process timed out." % self.serial)
 
     def reboot(self):
         """Reboots the device.
@@ -716,7 +720,8 @@ class AndroidDevice(object):
         self._terminate_sl4a()
         self.adb.reboot()
         self.wait_for_boot_completion()
-        self.root_adb()
+        if self.is_rootable:
+            self.root_adb()
         self.start_services()
 
 
