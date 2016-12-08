@@ -81,6 +81,9 @@ from mobly.controllers import android_device
 class HelloWorldTest(base_test.BaseTestClass):
 
   def setup_class(self):
+    # Registering android_device controller module declares the test's
+    # dependency on Android device hardware. By default, we expect at least one
+    # object is created from this.
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
 
@@ -253,7 +256,9 @@ from mobly.controllerse import android_device
 class HelloWorldTest(base_test.BaseTestClass):
 
   def setup_class(self):
-    self.ads = self.register_controller(android_device)
+    # Registering android_device controller module, and declaring that the test
+    # requires at least two Android devices.
+    self.ads = self.register_controller(android_device, min_number=2)
     self.dut = android_device.get_device(self.ads, label="dut")
     self.discoverer = android_device.get_device(self.ads, label="discoverer")
     self.dut.ed.clear_all_events()
