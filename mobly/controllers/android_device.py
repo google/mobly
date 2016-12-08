@@ -697,8 +697,7 @@ class AndroidDevice(object):
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise Error("Device %s booting process timed out." %
-                                 self.serial)
+        raise Error("Device %s booting process timed out." % self.serial)
 
     def reboot(self):
         """Reboots the device.
@@ -721,7 +720,8 @@ class AndroidDevice(object):
         self._terminate_sl4a()
         self.adb.reboot()
         self.wait_for_boot_completion()
-        self.root_adb()
+        if self.is_rootable:
+            self.root_adb()
         self.start_services()
 
 
