@@ -125,15 +125,15 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
         """
-        return self.setup_class()
+        self.setup_class()
 
     def setup_class(self):
         """Setup function that will be called before executing any test case in
         the test class.
 
-        To signal setup failure, return False or raise an exception. If
-        exceptions were raised, the stack trace would appear in log, but the
-        exceptions would not propagate to upper levels.
+        To signal setup failure, user asserts or raise your own exception. The
+        stack trace would appear in log, but the exceptions would not propagate
+        to upper levels.
 
         Implementation is optional.
         """
@@ -156,15 +156,15 @@ class BaseTestClass(object):
                 ad.sl4a.logV("%s BEGIN %s" % (TEST_CASE_TOKEN, test_name))
         except:
             pass
-        return self.setup_test()
+        self.setup_test()
 
     def setup_test(self):
         """Setup function that will be called every time before executing each
         test case in the test class.
 
-        To signal setup failure, return False or raise an exception. If
-        exceptions were raised, the stack trace would appear in log, but the
-        exceptions would not propagate to upper levels.
+        To signal setup failure, user asserts or raise your own exception. The
+        stack trace would appear in log, but the exceptions would not propagate
+        to upper levels.
 
         Implementation is optional.
         """
@@ -507,8 +507,7 @@ class BaseTestClass(object):
         class_record.test_begin()
         # Setup for the class.
         try:
-            if self._setup_class() is False:
-                asserts.fail("Failed to setup %s." % self.TAG)
+            self._setup_class()
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
             class_record.test_fail(e)
