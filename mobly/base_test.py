@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import os
-import traceback
 
 from mobly import asserts
 from mobly import keys
@@ -267,30 +266,6 @@ class BaseTestClass(object):
             begin_time: Logline format timestamp taken when the test started.
         """
 
-    def _on_exception(self, record):
-        """Proxy function to guarantee the base implementation of on_exception
-        is called.
-
-        Args:
-            record: The records.TestResultRecord object for the failed test
-                    case.
-        """
-        test_name = record.test_name
-        self.log.exception(record.details)
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.on_exception(test_name, begin_time)
-
-    def on_exception(self, test_name, begin_time):
-        """A function that is executed upon an unhandled exception from a test
-        case.
-
-        Implementation is optional.
-
-        Args:
-            test_name: Name of the test that triggered this function.
-            begin_time: Logline format timestamp taken when the test started.
-        """
-
     def _exec_procedure_func(self, func, tr_record):
         """Executes a procedure function like on_pass, on_fail etc.
 
@@ -347,11 +322,11 @@ class BaseTestClass(object):
                 except signals.TestAbortAll:
                     raise
                 except Exception as e:
-                    self.log.error(traceback.format_exc())
+                    self.log.exception(e)
                     tr_record.add_error("teardown_test", e)
-                    self._exec_procedure_func(self._on_exception, tr_record)
+                    self._exec_procedure_func(self._on_fail, tr_record)
         except (signals.TestFailure, AssertionError) as e:
-            self.log.error(traceback.format_exc())
+            self.log.exception(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
@@ -371,10 +346,9 @@ class BaseTestClass(object):
             is_generate_trigger = True
             self.results.requested.remove(test_name)
         except Exception as e:
-            self.log.error(traceback.format_exc())
+            self.log.exception(e)
             # Exception happened during test.
-            tr_record.test_unknown(e)
-            self._exec_procedure_func(self._on_exception, tr_record)
+            tr_record.test_error(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         else:
             # Keep supporting return False for now.
@@ -428,7 +402,7 @@ class BaseTestClass(object):
         kwargs = kwargs or {}
         failed_settings = []
         for s in settings:
-            test_name = "{} {}".format(tag, s)
+            test_name = "%s %s" % (tag, s)
             if name_func:
                 try:
                     test_name = name_func(s, *args, **kwargs)

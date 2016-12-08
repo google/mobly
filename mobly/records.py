@@ -44,7 +44,7 @@ class TestResultEnums(object):
     TEST_RESULT_PASS = "PASS"
     TEST_RESULT_FAIL = "FAIL"
     TEST_RESULT_SKIP = "SKIP"
-    TEST_RESULT_UNKNOWN = "UNKNOWN"
+    TEST_RESULT_ERROR = "ERROR"
 
 
 class TestResultRecord(object):
@@ -90,7 +90,7 @@ class TestResultRecord(object):
         self.end_time = utils.get_current_epoch_time()
         self.result = result
         if self.extra_errors:
-            self.result = TestResultEnums.TEST_RESULT_UNKNOWN
+            self.result = TestResultEnums.TEST_RESULT_ERROR
         if isinstance(e, signals.TestSignal):
             self.details = e.details
             self.extras = e.extras
@@ -125,17 +125,17 @@ class TestResultRecord(object):
         """
         self._test_end(TestResultEnums.TEST_RESULT_SKIP, e)
 
-    def test_unknown(self, e=None):
-        """To mark the test as unknown in this record.
+    def test_error(self, e=None):
+        """To mark the test as error in this record.
 
         Args:
             e: An exception object.
         """
-        self._test_end(TestResultEnums.TEST_RESULT_UNKNOWN, e)
+        self._test_end(TestResultEnums.TEST_RESULT_ERROR, e)
 
     def add_error(self, tag, e):
         """Add extra error happened during a test mark the test result as
-        UNKNOWN.
+        ERROR.
 
         If an error is added the test record, the record's result is equivalent
         to the case where an uncaught exception happened.
@@ -144,7 +144,7 @@ class TestResultRecord(object):
             tag: A string describing where this error came from, e.g. 'on_pass'.
             e: An exception object.
         """
-        self.result = TestResultEnums.TEST_RESULT_UNKNOWN
+        self.result = TestResultEnums.TEST_RESULT_ERROR
         self.extra_errors[tag] = str(e)
 
     def __str__(self):
@@ -205,7 +205,7 @@ class TestResult(object):
         self.executed: A list of records for tests that were actually executed.
         self.passed: A list of records for tests passed.
         self.skipped: A list of records for tests skipped.
-        self.unknown: A list of records for tests with unknown result token.
+        self.error: A list of records for tests with error result token.
     """
 
     def __init__(self):
@@ -214,7 +214,7 @@ class TestResult(object):
         self.executed = []
         self.passed = []
         self.skipped = []
-        self.unknown = []
+        self.error = []
         self.controller_info = {}
 
     def __add__(self, r):
@@ -262,7 +262,7 @@ class TestResult(object):
         elif record.result == TestResultEnums.TEST_RESULT_PASS:
             self.passed.append(record)
         else:
-            self.unknown.append(record)
+            self.error.append(record)
 
     def add_controller_info(self, name, info):
         try:
@@ -287,7 +287,7 @@ class TestResult(object):
     @property
     def is_all_pass(self):
         """True if no tests failed or threw errors, False otherwise."""
-        num_of_failures = len(self.failed) + len(self.unknown)
+        num_of_failures = len(self.failed) + len(self.error)
         if num_of_failures == 0:
             return True
         return False
@@ -347,5 +347,5 @@ class TestResult(object):
         d["Passed"] = len(self.passed)
         d["Failed"] = len(self.failed)
         d["Skipped"] = len(self.skipped)
-        d["Unknown"] = len(self.unknown)
+        d["Error"] = len(self.error)
         return d
