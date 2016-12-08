@@ -234,7 +234,7 @@ class RecordsTest(unittest.TestCase):
         record1.test_fail(s)
         record2 = records.TestResultRecord(self.tn)
         record2.test_begin()
-        record2.test_unknown(s)
+        record2.test_error(s)
         tr = records.TestResult()
         tr.add_record(record1)
         tr.add_record(record2)
