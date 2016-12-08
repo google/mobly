@@ -81,6 +81,7 @@ from mobly.controllers import android_device
 class HelloWorldTest(base_test.BaseTestClass):
 
   def setup_class(self):
+    # Declaring that this test requires at least one Android device to work.
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
 
@@ -253,6 +254,7 @@ from mobly.controllerse import android_device
 class HelloWorldTest(base_test.BaseTestClass):
 
   def setup_class(self):
+    # Declaring that this test requires at least two Android devices to work.
     self.ads = self.register_controller(android_device, min_number=2)
     self.dut = android_device.get_device(self.ads, label="dut")
     self.discoverer = android_device.get_device(self.ads, label="discoverer")
