@@ -23,8 +23,8 @@ from mobly import keys
 from mobly import signals
 from mobly import test_runner
 
-from tests import mock_controller
-from tests import mock_android_device
+from tests.lib import mock_android_device
+from tests.lib import mock_controller
 
 
 class TestRunnerTest(unittest.TestCase):

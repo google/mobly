@@ -22,7 +22,8 @@ import tempfile
 import unittest
 
 from mobly.controllers import android_device
-from tests import mock_android_device
+
+from tests.lib import mock_android_device
 
 # Mock log path for a test run.
 MOCK_LOG_PATH = "/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/"

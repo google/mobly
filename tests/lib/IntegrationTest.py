@@ -18,7 +18,7 @@ from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
 
-import mock_controller
+from tests.lib import mock_controller
 
 
 class IntegrationTest(base_test.BaseTestClass):
