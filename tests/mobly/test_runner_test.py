@@ -164,7 +164,7 @@ class TestRunnerTest(unittest.TestCase):
         proerly.
 
         This requires using a built-in controller module. Using AndroidDevice
-        module since it has all the mock_android_device needed already.
+        module since it has all the mocks needed already.
         """
         mock_test_config = dict(self.base_mock_test_config)
         tb_key = keys.Config.key_testbed.value
