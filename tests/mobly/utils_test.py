@@ -45,14 +45,14 @@ class UtilsTest(unittest.TestCase):
         # on some port and then binding again to the wildcard address
         # with SO_REUSEADDR seems to be allowed.
         test_s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        test_s.bind(('localhost', 0))
+        test_s.bind(('', 0))
         port = test_s.getsockname()[1]
         test_s.close()
         self.assertTrue(utils.is_port_available(port))
 
     def test_detects_udp_port_in_use(self):
         test_s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        test_s.bind(('localhost', 0))
+        test_s.bind(('', 0))
         port = test_s.getsockname()[1]
         try:
             self.assertFalse(utils.is_port_available(port))
@@ -61,7 +61,7 @@ class UtilsTest(unittest.TestCase):
 
     def test_detects_tcp_port_in_use(self):
         test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        test_s.bind(('localhost', 0))
+        test_s.bind(('', 0))
         port = test_s.getsockname()[1]
         try:
             self.assertFalse(utils.is_port_available(port))
