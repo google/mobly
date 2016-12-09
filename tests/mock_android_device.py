@@ -14,7 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This module has common mock objects and functions used in Mobly unit tests.
+# This module has common mock objects and functions used in unit tests for
+# mobly.controllers.android_device module.
 
 import logging
 import mock
@@ -37,11 +38,11 @@ def get_mock_ads(num):
     return ads
 
 
-def mock_get_all_instances():
+def get_all_instances():
     return get_mock_ads(5)
 
 
-def mock_list_adb_devices():
+def list_adb_devices():
     return [ad.serial for ad in get_mock_ads(5)]
 
 
@@ -109,7 +110,3 @@ class MockFastbootProxy(object):
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
         return fastboot_call
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -63,10 +63,10 @@ class AndroidDeviceTest(unittest.TestCase):
 
     @mock.patch.object(android_device,
                        "get_all_instances",
-                       new=mock_android_device.mock_get_all_instances)
+                       new=mock_android_device.get_all_instances)
     @mock.patch.object(android_device,
                        "list_adb_devices",
-                       new=mock_android_device.mock_list_adb_devices)
+                       new=mock_android_device.list_adb_devices)
     def test_create_with_pickup_all(self):
         pick_all_token = android_device.ANDROID_DEVICE_PICK_ALL_TOKEN
         actual_ads = android_device.create(pick_all_token)
