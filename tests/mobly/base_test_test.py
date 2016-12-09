@@ -199,24 +199,6 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
-    def test_setup_test_fail_by_return_False(self):
-        class MockBaseTest(base_test.BaseTestClass):
-            def setup_test(self):
-                return False
-            def test_something(self):
-                # This should not execute because setup_test failed.
-                never_call()
-        bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run(test_names=["test_something"])
-        actual_record = bt_cls.results.failed[0]
-        expected_msg = "Setup for %s failed." % self.mock_test_name
-        self.assertEqual(actual_record.test_name, self.mock_test_name)
-        self.assertEqual(actual_record.details, expected_msg)
-        self.assertIsNone(actual_record.extras)
-        expected_summary = ("Executed 1, Failed 1, Passed 0, Requested 1, "
-                            "Skipped 0, Unknown 0")
-        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
-
     def test_teardown_test_assert_fail(self):
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
@@ -363,26 +345,6 @@ class BaseTestTest(unittest.TestCase):
         self.assertIsNone(actual_record.extras)
         expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                             "Requested 1, Skipped 0")
-        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
-
-    def test_on_fail_executed_if_test_setup_fails_by_return_False(self):
-        my_mock = mock.MagicMock()
-        class MockBaseTest(base_test.BaseTestClass):
-            def setup_test(self):
-                return False
-            def on_fail(self, test_name, begin_time):
-                my_mock("on_fail")
-            def test_something(self):
-                pass
-        bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run()
-        my_mock.assert_called_once_with("on_fail")
-        actual_record = bt_cls.results.failed[0]
-        self.assertEqual(actual_record.test_name, self.mock_test_name)
-        self.assertEqual(actual_record.details, 'Setup for test_something failed.')
-        self.assertIsNone(actual_record.extras)
-        expected_summary = ("Executed 1, Failed 1, Passed 0, Requested 1, "
-                            "Skipped 0, Unknown 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_failure_to_call_procedure_function_is_recorded(self):

@@ -69,7 +69,7 @@ class BaseTestClass(object):
         return self
 
     def __exit__(self, *args):
-        self._exec_func(self.clean_up)
+        self._safe_exec_func(self.clean_up)
 
     def unpack_userparams(self,
                           req_param_names=[],
@@ -125,15 +125,13 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
         """
-        return self.setup_class()
+        self.setup_class()
 
     def setup_class(self):
         """Setup function that will be called before executing any test case in
         the test class.
 
-        To signal setup failure, return False or raise an exception. If
-        exceptions were raised, the stack trace would appear in log, but the
-        exceptions would not propagate to upper levels.
+        To signal setup failure, use asserts or raise your own exception.
 
         Implementation is optional.
         """
@@ -156,15 +154,13 @@ class BaseTestClass(object):
                 ad.sl4a.logV("%s BEGIN %s" % (TEST_CASE_TOKEN, test_name))
         except:
             pass
-        return self.setup_test()
+        self.setup_test()
 
     def setup_test(self):
         """Setup function that will be called every time before executing each
         test case in the test class.
 
-        To signal setup failure, return False or raise an exception. If
-        exceptions were raised, the stack trace would appear in log, but the
-        exceptions would not propagate to upper levels.
+        To signal setup failure, use asserts or raise your own exception.
 
         Implementation is optional.
         """
@@ -306,16 +302,13 @@ class BaseTestClass(object):
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
         self.log.info("%s %s", TEST_CASE_TOKEN, test_name)
-        verdict = None
         try:
             try:
-                ret = self._setup_test(test_name)
-                asserts.assert_true(ret is not False,
-                                    "Setup for %s failed." % test_name)
+                self._setup_test(test_name)
                 if args or kwargs:
-                    verdict = test_func(*args, **kwargs)
+                    test_func(*args, **kwargs)
                 else:
-                    verdict = test_func()
+                    test_func()
             finally:
                 try:
                     self._teardown_test(test_name)
@@ -351,17 +344,8 @@ class BaseTestClass(object):
             tr_record.test_error(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         else:
-            # Keep supporting return False for now.
-            # TODO(angli): Deprecate return False support.
-            if verdict or (verdict is None):
-                # Test passed.
-                tr_record.test_pass()
-                self._exec_procedure_func(self._on_pass, tr_record)
-                return
-            # Test failed because it didn't return True.
-            # This should be removed eventually.
-            tr_record.test_fail()
-            self._exec_procedure_func(self._on_fail, tr_record)
+            tr_record.test_pass()
+            self._exec_procedure_func(self._on_pass, tr_record)
         finally:
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
@@ -420,7 +404,7 @@ class BaseTestClass(object):
                 failed_settings.append(s)
         return failed_settings
 
-    def _exec_func(self, func, *args):
+    def _safe_exec_func(self, func, *args):
         """Executes a function with exception safeguard.
 
         This will let signals.TestAbortAll through so abort_all works in all
@@ -431,8 +415,7 @@ class BaseTestClass(object):
             args: Arguments to be passed to the function.
 
         Returns:
-            Whatever the function returns, or False if unhandled exception
-            occured.
+            Whatever the function returns.
         """
         try:
             return func(*args)
@@ -441,7 +424,6 @@ class BaseTestClass(object):
         except:
             self.log.exception("Exception happened when executing %s in %s.",
                                func.__name__, self.TAG)
-            return False
 
     def _get_all_test_names(self):
         """Finds all the function names that match the test case naming
@@ -519,13 +501,12 @@ class BaseTestClass(object):
         class_record.test_begin()
         # Setup for the class.
         try:
-            if self._setup_class() is False:
-                asserts.fail("Failed to setup %s." % self.TAG)
+            self._setup_class()
         except Exception as e:
             self.log.exception("Failed to setup %s.", self.TAG)
             class_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, class_record)
-            self._exec_func(self.teardown_class)
+            self._safe_exec_func(self.teardown_class)
             self.results.fail_class(class_record)
             return self.results
         # Run tests in order.
@@ -541,7 +522,7 @@ class BaseTestClass(object):
             setattr(e, "results", self.results)
             raise e
         finally:
-            self._exec_func(self.teardown_class)
+            self._safe_exec_func(self.teardown_class)
             self.log.info("Summary for test class %s: %s", self.TAG,
                           self.results.summary_str())
 
