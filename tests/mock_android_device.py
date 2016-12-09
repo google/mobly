@@ -45,7 +45,7 @@ def mock_list_adb_devices():
     return [ad.serial for ad in get_mock_ads(5)]
 
 
-class MockAdbProxy():
+class MockAdbProxy(object):
     """Mock class that swaps out calls to adb with mock calls."""
 
     def __init__(self, serial, fail_br=False, fail_br_before_N=False):
@@ -95,7 +95,7 @@ class MockAdbProxy():
         return adb_call
 
 
-class MockFastbootProxy():
+class MockFastbootProxy(object):
     """Mock class that swaps out calls to adb with mock calls."""
 
     def __init__(self, serial):

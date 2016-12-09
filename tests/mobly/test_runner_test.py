@@ -24,7 +24,7 @@ from mobly import signals
 from mobly import test_runner
 
 from tests import mock_controller
-from tests import mocks
+from tests import mock_android_device
 
 
 class TestRunnerTest(unittest.TestCase):
@@ -151,20 +151,20 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(tr.results.controller_info, expected_info)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
-                return_value=mocks.MockAdbProxy(1))
+                return_value=mock_android_device.MockAdbProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-                return_value=mocks.MockFastbootProxy(1))
+                return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.controllers.android_device.list_adb_devices',
                 return_value=["1"])
     @mock.patch('mobly.controllers.android_device.get_all_instances',
-                return_value=mocks.get_mock_ads(1))
+                return_value=mock_android_device.get_mock_ads(1))
     def test_run_two_test_classes(self, mock_get_all, mock_list_adb,
                                   mock_fastboot, mock_adb,):
         """Verifies that runing more than one test class in one test run works
         proerly.
 
         This requires using a built-in controller module. Using AndroidDevice
-        module since it has all the mocks needed already.
+        module since it has all the mock_android_device needed already.
         """
         mock_test_config = dict(self.base_mock_test_config)
         tb_key = keys.Config.key_testbed.value
