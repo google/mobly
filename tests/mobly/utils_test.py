@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import mock
 import socket
 import time
 import unittest
@@ -37,37 +38,23 @@ class UtilsTest(unittest.TestCase):
                                      "Process .* has terminated"):
             utils.stop_standing_subprocess(p)
 
-    def test_is_port_available_positive(self):
-        # Unfortunately, we cannot do this test reliably for SOCK_STREAM
-        # because the kernel allow this socket to linger about for some
-        # small amount of time.  We're not using SO_REUSEADDR because we
-        # are working around behavior on darwin where binding to localhost
-        # on some port and then binding again to the wildcard address
-        # with SO_REUSEADDR seems to be allowed.
-        test_s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        test_s.bind(('', 0))
+    @mock.patch('mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
+    def test_is_port_available_positive(self, mock_list_occupied_adb_ports):
+        test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        test_s.bind(('localhost', 0))
         port = test_s.getsockname()[1]
         test_s.close()
         self.assertTrue(utils.is_port_available(port))
 
-    def test_detects_udp_port_in_use(self):
-        test_s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        test_s.bind(('', 0))
-        port = test_s.getsockname()[1]
-        try:
-            self.assertFalse(utils.is_port_available(port))
-        finally:
-            test_s.close()
-
-    def test_detects_tcp_port_in_use(self):
+    @mock.patch('mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
+    def test_is_port_available_negative(self, mock_list_occupied_adb_ports):
         test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        test_s.bind(('', 0))
+        test_s.bind(('localhost', 0))
         port = test_s.getsockname()[1]
         try:
             self.assertFalse(utils.is_port_available(port))
         finally:
             test_s.close()
-
 
 if __name__ == "__main__":
    unittest.main()

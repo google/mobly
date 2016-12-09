@@ -30,6 +30,7 @@ import subprocess
 import time
 import traceback
 
+from mobly.controllers.android_device_lib import adb
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
@@ -429,21 +430,15 @@ def timeout(sec):
 
 
 def get_available_host_port():
-    """Finds a semi-random available port.
-
-    A race condition is still possible after the port number is returned, if
-    another process happens to bind it.
+    """Gets a host port number available for adb forward.
 
     Returns:
-        A port number that is unused on both TCP and UDP.
+        An integer representing a port number on the host available for adb
+        forward.
     """
-    # On the 2.6 kernel, calling _try_bind() on UDP socket returns the
-    # same port over and over. So always try TCP first.
     while True:
-        # Ask the OS for an unused port.
-        port = _try_bind(0, socket.SOCK_STREAM, socket.IPPROTO_TCP)
-        # Check if this port is unused on the other protocol.
-        if port and _try_bind(port, socket.SOCK_DGRAM, socket.IPPROTO_UDP):
+        port = random.randint(1024, 9900)
+        if is_port_available(port):
             return port
 
 
@@ -456,19 +451,18 @@ def is_port_available(port):
     Returns:
         True if the port is available; False otherwise.
     """
-    return (_try_bind(port, socket.SOCK_STREAM, socket.IPPROTO_TCP) and
-            _try_bind(port, socket.SOCK_DGRAM, socket.IPPROTO_UDP))
-
-
-def _try_bind(port, socket_type, socket_proto):
-    s = socket.socket(socket.AF_INET, socket_type, socket_proto)
+    # Make sure adb is not using this port so we don't accidentally interrupt
+    # ongoing runs by trying to bind to the port.
+    if port in adb.list_occupied_adb_ports():
+        return False
+    s = None
     try:
-        try:
-            s.bind(('', port))
-            # The result of getsockname() is protocol dependent, but for both
-            # IPv4 and IPv6 the second field is a port number.
-            return s.getsockname()[1]
-        except socket.error:
-            return None
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('localhost', port))
+        return True
+    except socket.error:
+        return False
     finally:
-        s.close()
+        if s:
+            s.close()
