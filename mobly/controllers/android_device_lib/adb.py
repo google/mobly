@@ -37,6 +37,28 @@ class AdbError(Exception):
                 ) % (self.cmd, self.ret_code, self.stdout, self.stderr)
 
 
+def list_occupied_adb_ports():
+    """Lists all the host ports occupied by adb forward.
+
+    This is useful because adb will silently override the binding if an attempt
+    to bind to a port already used by adb was made, instead of throwing binding
+    error. So one should always check what ports adb is using before trying to
+    bind to a port with adb.
+
+    Returns:
+        A list of integers representing occupied host ports.
+    """
+    out = AdbProxy().forward("--list")
+    clean_lines = str(out, 'utf-8').strip().split('\n')
+    used_ports = []
+    for line in clean_lines:
+        tokens = line.split(" tcp:")
+        if len(tokens) != 3:
+            continue
+        used_ports.append(int(tokens[1]))
+    return used_ports
+
+
 class AdbProxy():
     """Proxy class for ADB.
 
