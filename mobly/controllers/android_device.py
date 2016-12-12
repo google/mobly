@@ -575,10 +575,12 @@ class AndroidDevice(object):
             raise Error(
               'Android device %s already has an adb logcat thread going on. '
               'Cannot start another one.' % self.serial)
-        # Disable adb log spam filter. Have to stop and clear settings first
-        # because 'start' doesn't support --clear option before Android N.
-        self.adb.shell("logpersist.stop --clear")
-        self.adb.shell("logpersist.start")
+        # Disable adb log spam filter for rootable. Have to stop and clear
+        # settings first because 'start' doesn't support --clear option before
+        # Android N.
+        if self.is_rootable:
+            self.adb.shell("logpersist.stop --clear")
+            self.adb.shell("logpersist.start")
         f_name = "adblog,{},{}.txt".format(self.model, self.serial)
         utils.create_dir(self.log_path)
         logcat_file_path = os.path.join(self.log_path, f_name)
