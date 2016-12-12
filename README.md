@@ -52,6 +52,9 @@ For Python2
 sudo python setup.py install
 ```
 
+Use the Python version you installed Mobly with to run the tests. So if you
+installed with 'python3', execute tests with 'python3'.
+
 __Python compatibility__
 
 Mobly is compatible with both python 3.4+ and python 2.7.
