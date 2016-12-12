@@ -28,6 +28,12 @@ from tests.lib import mock_controller
 from tests.lib import IntegrationTest
 
 
+class Integration2Test(IntegrationTest.IntegrationTest):
+    """Same as the IntegrationTest class, created this so we have two
+    'different' test classes to use in unit tests.
+    """
+
+
 class TestRunnerTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.test_runner.
@@ -178,9 +184,10 @@ class TestRunnerTest(unittest.TestCase):
              "skip_sl4a": True}
         ]
         tr = test_runner.TestRunner(mock_test_config,
-                                    [('IntegrationTest', None),
+                                    [('Integration2Test', None),
                                      ('IntegrationTest', None)])
-        tr.run([IntegrationTest.IntegrationTest])
+        tr.run([IntegrationTest.IntegrationTest,
+                Integration2Test])
         tr.stop()
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)
