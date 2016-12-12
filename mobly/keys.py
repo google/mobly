@@ -30,7 +30,6 @@ class Config(enum.Enum):
     key_testbed = "testbed"
     key_testbed_name = "name"
     key_config_path = "configpath"
-    key_test_paths = "testpaths"
     key_port = "Port"
     key_address = "Address"
     # Internal keys, used internally, not exposed to user's config files.
@@ -42,7 +41,7 @@ class Config(enum.Enum):
 
     # A list of keys whose values in configs should not be passed to test
     # classes without unpacking first.
-    reserved_keys = (key_testbed, key_log_path, key_test_paths)
+    reserved_keys = (key_testbed, key_log_path)
 
 
 def get_name_by_value(value):

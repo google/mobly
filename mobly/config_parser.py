@@ -25,10 +25,6 @@ from mobly import utils
 # An environment variable defining the base location for Mobly logs.
 _ENV_MOBLY_LOGPATH = 'MOBLY_LOGPATH'
 
-# An environment variable defining the test search paths for Mobly.
-_ENV_MOBLY_TESTPATHS = 'MOBLY_TESTPATHS'
-_PATH_SEPARATOR = ':'
-
 
 class MoblyConfigError(Exception):
     """Raised when there is a problem in test configuration file."""
@@ -190,12 +186,6 @@ def load_test_config_file(test_config_path, tb_filters=None):
         print('Using environment log path: %s' %
               (os.environ[_ENV_MOBLY_LOGPATH]))
         configs[keys.Config.key_log_path.value] = os.environ[_ENV_MOBLY_LOGPATH]
-    if (not keys.Config.key_test_paths.value in configs and
-            _ENV_MOBLY_TESTPATHS in os.environ):
-        print('Using environment test paths: %s' %
-              (os.environ[_ENV_MOBLY_TESTPATHS]))
-        configs[keys.Config.key_test_paths.value] = os.environ[
-            _ENV_MOBLY_TESTPATHS].split(_PATH_SEPARATOR)
 
     _validate_test_config(configs)
     _validate_testbed_configs(configs[keys.Config.key_testbed.value])
@@ -203,7 +193,6 @@ def load_test_config_file(test_config_path, tb_filters=None):
     configs[k_log_path] = utils.abs_path(configs[k_log_path])
     config_path, _ = os.path.split(utils.abs_path(test_config_path))
     configs[keys.Config.key_config_path] = config_path
-    tps = configs[keys.Config.key_test_paths.value]
     # Unpack testbeds into separate json objects.
     beds = configs.pop(keys.Config.key_testbed.value)
     config_jsons = []
