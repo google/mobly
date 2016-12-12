@@ -41,6 +41,17 @@ project `<aosp>/external/sl4a`
 It can be built like a regular system app with `mm` commands. It needs to be
 signed with the build you use on your Android devices.
 
+__Installation__
+
+For Python3
+```
+sudo python3 setup.py install
+```
+For Python2
+```
+sudo python setup.py install
+```
+
 __Python compatibility__
 
 Mobly is compatible with both python 3.4+ and python 2.7.
