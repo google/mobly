@@ -56,7 +56,7 @@ def main():
         license='Apache2.0',
         packages=setuptools.find_packages(),
         include_package_data=False,
-        scripts=['tools/sl4a_client.py'],
+        scripts=['tools/sl4a_shell.py'],
         tests_require=['pytest'],
         install_requires=install_requires,
         cmdclass={'test': PyTest},

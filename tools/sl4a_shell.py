@@ -29,7 +29,7 @@ actions. For more information see the Mobly codelab:
 https://github.com/google/mobly#event-dispatcher
 
 Usage:
-$ sl4a_client
+$ sl4a_shell
 >>> s.getBuildID()
 u'N2F52'
 """
