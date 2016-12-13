@@ -25,6 +25,13 @@ from mobly import test_runner
 
 from tests.lib import mock_android_device
 from tests.lib import mock_controller
+from tests.lib import IntegrationTest
+
+
+class Integration2Test(IntegrationTest.IntegrationTest):
+    """Same as the IntegrationTest class, created this so we have two
+    'different' test classes to use in unit tests.
+    """
 
 
 class TestRunnerTest(unittest.TestCase):
@@ -134,11 +141,11 @@ class TestRunnerTest(unittest.TestCase):
         mock_test_config[tb_key][mock_ctrlr_config_name] = my_config
         tr = test_runner.TestRunner(mock_test_config, [('IntegrationTest',
                                                         None)])
-        tr.run()
+        tr.run([IntegrationTest.IntegrationTest])
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)
         self.assertTrue(mock_test_config[tb_key][mock_ctrlr_config_name][0])
-        tr.run()
+        tr.run([IntegrationTest.IntegrationTest])
         tr.stop()
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)
@@ -177,9 +184,10 @@ class TestRunnerTest(unittest.TestCase):
              "skip_sl4a": True}
         ]
         tr = test_runner.TestRunner(mock_test_config,
-                                    [('IntegrationTest', None),
+                                    [('Integration2Test', None),
                                      ('IntegrationTest', None)])
-        tr.run()
+        tr.run([IntegrationTest.IntegrationTest,
+                Integration2Test])
         tr.stop()
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)

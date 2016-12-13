@@ -146,7 +146,7 @@ def execute_one_test_class(test_class, test_config, test_identifier):
     """
     tr = TestRunner(test_config, test_identifier)
     try:
-        tr.run(test_class)
+        tr.run([test_class])
         return tr.results.is_all_pass
     except signals.TestAbortAll:
         raise
@@ -204,58 +204,7 @@ class TestRunner(object):
         self.run_list = run_list
         self.results = records.TestResult()
         self.running = False
-
-    def import_test_modules(self, test_paths):
-        """Imports test classes from test scripts.
-
-        1. Locate all .py files under test paths.
-        2. Import the .py files as modules.
-        3. Find the module members that are test classes.
-        4. Categorize the test classes by name.
-
-        Args:
-            test_paths: A list of directory paths where the test files reside.
-
-        Returns:
-            A dictionary where keys are test class name strings, values are
-            actual test classes that can be instantiated.
-        """
-
-        def is_testfile_name(name, ext):
-            if ext == ".py":
-                if name.endswith("Test") or name.endswith("_test"):
-                    return True
-            return False
-
-        file_list = utils.find_files(test_paths, is_testfile_name)
-        test_classes = {}
-        for path, name, _ in file_list:
-            sys.path.append(path)
-            try:
-                module = importlib.import_module(name)
-            except:
-                for test_cls_name, _ in self.run_list:
-                    alt_name = name.replace('_', '').lower()
-                    alt_cls_name = test_cls_name.lower()
-                    # Only block if a test class on the run list causes an
-                    # import error. We need to check against both naming
-                    # conventions: AaaBbb and aaa_bbb.
-                    if name == test_cls_name or alt_name == alt_cls_name:
-                        msg = ("Encountered error importing test class %s, "
-                               "abort.") % test_cls_name
-                        # This exception is logged here to help with debugging
-                        # under py2, because "raise X from Y" syntax is only
-                        # supported under py3.
-                        self.log.exception(msg)
-                        raise ValueError(msg)
-                continue
-            for member_name in dir(module):
-                if not member_name.startswith("__"):
-                    if member_name.endswith("Test"):
-                        test_class = getattr(module, member_name)
-                        if inspect.isclass(test_class):
-                            test_classes[member_name] = test_class
-        return test_classes
+        self.test_classes = {}
 
     @staticmethod
     def verify_controller_module(module):
@@ -422,7 +371,7 @@ class TestRunner(object):
         self.controller_registry = {}
         self.controller_destructors = {}
 
-    def parse_config(self, test_configs):
+    def _parse_config(self, test_configs):
         """Parses the test configuration and unpacks objects and parameters
         into a dictionary to be passed to test classes.
 
@@ -444,7 +393,7 @@ class TestRunner(object):
         self.test_run_info[keys.Config.ikey_user_param.value] = copy.deepcopy(
             dict(user_param_pairs))
 
-    def run_test_class(self, test_cls_name, test_cases=None):
+    def _run_test_class(self, test_cls_name, test_cases=None):
         """Instantiates and executes a test class.
 
         If test_cases is None, the test cases listed by self.tests will be
@@ -462,8 +411,8 @@ class TestRunner(object):
         try:
             test_cls = self.test_classes[test_cls_name]
         except KeyError:
-            raise ValueError(("Unable to locate class %s in any of the test "
-                             "paths specified.") % test_cls_name)
+            raise ValueError(("Test class %s is not found, did you add it to "
+                              "this TestRunner?") % test_cls_name)
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
                 cls_result = test_cls_instance.run(test_cases)
@@ -472,7 +421,7 @@ class TestRunner(object):
                 self.results += e.results
                 raise e
 
-    def run(self, test_class=None):
+    def run(self, test_classes):
         """Executes test cases.
 
         This will instantiate controller and test classes, and execute test
@@ -483,20 +432,16 @@ class TestRunner(object):
         cycle of a TestRunner.
 
         Args:
-            test_class: The python module of a test class. If provided, run this
-                        class; otherwise, import modules in under test_paths
-                        based on run_list.
+            test_classes: A list of test classes. They should be subclasses of
+                          base_test.BaseTestClass
         """
         if not self.running:
             self.running = True
+        for tc in test_classes:
+            self.test_classes[tc.__name__] = tc
         # Initialize controller objects and pack appropriate objects/params
         # to be passed to test class.
-        self.parse_config(self.test_configs)
-        if test_class:
-            self.test_classes = {test_class.__name__: test_class}
-        else:
-            t_paths = self.test_configs[keys.Config.key_test_paths.value]
-            self.test_classes = self.import_test_modules(t_paths)
+        self._parse_config(self.test_configs)
         self.log.debug("Executing run list %s.", self.run_list)
         for test_cls_name, test_case_names in self.run_list:
             if not self.running:
@@ -507,7 +452,7 @@ class TestRunner(object):
             else:
                 self.log.debug("Executing test class %s", test_cls_name)
             try:
-                self.run_test_class(test_cls_name, test_case_names)
+                self._run_test_class(test_cls_name, test_case_names)
             except signals.TestAbortAll as e:
                 self.log.warning(
                     "Abort all subsequent test classes. Reason: %s", e)
