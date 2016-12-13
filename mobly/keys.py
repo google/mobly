@@ -30,8 +30,6 @@ class Config(enum.Enum):
     key_testbed = "testbed"
     key_testbed_name = "name"
     key_config_path = "configpath"
-    key_port = "Port"
-    key_address = "Address"
     # Internal keys, used internally, not exposed to user's config files.
     ikey_user_param = "user_params"
     ikey_testbed_name = "testbed_name"
