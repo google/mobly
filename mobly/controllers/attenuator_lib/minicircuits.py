@@ -31,12 +31,10 @@ class AttenuatorDevice(object):
 
     Attributes:
         path_count: The number of signal attenuation path this device has.
-        _telnet_client: The telnet client used to communicate with the
-                        attenuator device.
     """
-
     def __init__(self, path_count=1):
         self.path_count = path_count
+        # The telnet client used to communicate with the attenuator device.
         self._telnet_client = telnet_client.TelnetClient(
             tx_cmd_separator="\r\n", rx_cmd_separator="\r\n", prompt="")
 

@@ -14,6 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Controller module for attenuators.
+
+Sample Config:
+"Attenuator": [
+    {
+        "Address": "192.168.1.12",
+        "Port": 23,
+        "Model": "minicircuits",
+        "PathCount": 4,
+        "Paths": ["AP1-2G", "AP1-5G", "AP2-2G", "AP2-5G"]
+    },
+    {
+        "Address": "192.168.1.14",
+        "Port": 23,
+        "Model": "minicircuits",
+        "PathCount": 1,
+        "Paths": ["AP-DUT"]
+    }
+]
+"""
 import importlib
 import logging
 
@@ -24,23 +44,21 @@ KEY_PORT = "Port"
 
 def create(configs):
     objs = []
-    for c in configs:
-        attn_model = c["Model"]
-        # Default to telnet.
-        protocol = c.get("Protocol", "telnet")
+    for config in configs:
+        attn_model = config["Model"]
         # Import the correct driver module for the attenuator device
         module_name = "mobly.controllers.attenuator_lib.%s" % attn_model
         module = importlib.import_module(module_name)
         # Create each
-        path_cnt = c["PathCount"]
+        path_cnt = config["PathCount"]
         attn_device = module.AttenuatorDevice(path_cnt)
         attn_device.model = attn_model
-        insts = attn_device.open(c[KEY_ADDRESS], c[KEY_PORT])
+        instances = attn_device.open(config[KEY_ADDRESS], config[KEY_PORT])
         for i in range(path_cnt):
             path_name = None
             if "Paths" in c:
                 try:
-                    path_name = c["Paths"][i]
+                    path_name = config["Paths"][i]
                 except IndexError:
                     logging.error(
                         "No path specified for attenuation path %d.", i)
@@ -94,7 +112,7 @@ class AttenuatorPath(object):
 
         Args:
             value: This is a floating point value for nominal attenuation to be
-                   set.
+                   set. Unit is db.
         """
         self.attn_device.set_attn(self.idx, value)
 
@@ -102,7 +120,7 @@ class AttenuatorPath(object):
         """Gets the current attenuation setting of Attenuator.
 
         Returns:
-            A float that is the current attenuation value.
+            A float that is the current attenuation value. Unit is db.
         """
 
         return self.attn_device.get_attn(self.idx)
