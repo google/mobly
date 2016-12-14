@@ -16,16 +16,12 @@
 
 """JSON RPC interface to android scripting engine."""
 
-import os
-
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-HOST = os.environ.get('SL4A_HOST_ADDRESS', None)
-PORT = os.environ.get('SL4A_HOST_PORT', 9999)
-DEVICE_SIDE_PORT = 8080
+_DEVICE_SIDE_PORT = 8080
 
-_SL4A_LAUNCH_CMD = (
+_LAUNCH_CMD = (
     "am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER "
     "--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT {} "
     "com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher")
@@ -35,7 +31,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _do_start_app(self):
         """Overrides superclass."""
-        self._adb.shell(_SL4A_LAUNCH_CMD.format(DEVICE_SIDE_PORT))
+        self._adb.shell(_LAUNCH_CMD.format(_DEVICE_SIDE_PORT))
 
     def stop_app(self):
         """Overrides superclass."""
@@ -44,10 +40,10 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     def _is_app_installed(self):
         """Overrides superclass."""
         try:
-            self._adb.shell("pm path com.googlecode.android_scripting")
-            return True
+            out = self._adb.shell("pm path com.googlecode.android_scripting")
+            return bool(out.strip())
         except adb.AdbError as e:
-            if not e.stderr:
+            if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
                 return False
             raise
 
@@ -62,7 +58,3 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
                 return False
             raise
-
-    def connect(self, port, addr='localhost', **kwargs):
-        """Overrides superclass."""
-        super(Sl4aClient, self).connect(port=port, addr=addr, **kwargs)
