@@ -29,6 +29,10 @@ _LAUNCH_CMD = (
 
 class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
+    def __init__(self, adb_proxy):
+      super(Sl4aClient, self).__init__(adb_proxy)
+      self.app_name = 'sl4a'
+
     def _do_start_app(self):
         """Overrides superclass."""
         self._adb.shell(_LAUNCH_CMD.format(DEVICE_SIDE_PORT))

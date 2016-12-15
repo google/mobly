@@ -50,6 +50,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
           adb_proxy: (adb.AdbProxy) The adb proxy to use to start the app.
         """
         super(SnippetClient, self).__init__(adb_proxy)
+        self.app_name = package
         self._package = package
         self._port = port
 

@@ -486,7 +486,7 @@ class AndroidDevice(object):
         self.adb.root()
         self.adb.wait_for_device()
 
-    def load_snippets(self, name, package):
+    def load_snippet(self, name, package):
         """Starts the snippet apk with the given package name and connects.
 
         Args:
@@ -497,7 +497,7 @@ class AndroidDevice(object):
 
         Examples:
             >>> ad = AndroidDevice()
-            >>> ad.load_snippets(
+            >>> ad.load_snippet(
                     name='maps', package='com.google.maps.snippets')
             >>> ad.maps.activateZoom('3')
         """

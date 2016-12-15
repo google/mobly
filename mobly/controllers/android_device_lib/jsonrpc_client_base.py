@@ -94,7 +94,9 @@ class JsonRpcClientBase(object):
     of communication.
 
     Attributes:
-        uid: int, The uid of this session.
+        uid: (int) The uid of this session.
+        app_name: (str) The user-visible name of the app being communicated
+          with. Must be set by the superclass.
     """
     def __init__(self, adb_proxy):
         """
@@ -151,7 +153,8 @@ class JsonRpcClientBase(object):
 
     def check_app_installed(self):
       if not self._is_app_installed():
-            raise AppStartError('App is not installed on %s' % self._adb.serial)
+            raise AppStartError(
+                '%s is not installed on %s' % (self.app_name, self._adb.serial))
 
     def start_app(self, wait_time=APP_START_WAIT_TIME):
         """Starts the server app on the android device.
@@ -169,7 +172,8 @@ class JsonRpcClientBase(object):
             time.sleep(1)
             if self._is_app_running():
                 return
-        raise AppStartError("App failed to start on %s." % self._adb.serial)
+        raise AppStartError(
+            '%s failed to start on %s.' % (self.app_name, self._adb.serial))
 
     def connect(self, port, addr='localhost', uid=UNKNOWN_UID,
                 connection_timeout=None, cmd=JsonRpcCommand.INIT):
