@@ -35,7 +35,7 @@ from mobly import signals
 from mobly import utils
 
 
-def main(argv=sys.argv[1:]):
+def main(argv=None):
     """Execute the test class in a test module.
 
     This is the default entry point for running a test script file directly.
@@ -74,6 +74,8 @@ def main(argv=sys.argv[1:]):
         type=str,
         metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
         help="Specify which test beds to run tests on.")
+    if not argv:
+        argv = sys.argv[1:]
     args = parser.parse_args(argv)
     # Load test config file.
     test_configs = config_parser.load_test_config_file(args.config[0],
