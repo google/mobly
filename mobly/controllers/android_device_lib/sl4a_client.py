@@ -31,7 +31,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def __init__(self, adb_proxy):
       super(Sl4aClient, self).__init__(adb_proxy)
-      self.app_name = 'sl4a'
+      self.app_name = 'SL4A'
 
     def _do_start_app(self):
         """Overrides superclass."""
