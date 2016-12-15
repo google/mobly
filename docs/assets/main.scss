@@ -41,11 +41,11 @@ $on-laptop:        800px;
 
 // Import partials from `sass_dir` (defaults to `_sass`)
 @import
-        "config",
-        "mdl",
-        "base",
-        "layout",
-        "syntax-highlighting"
+        "_config",
+        "_mdl",
+        "_base",
+        "_layout",
+        "_syntax-highlighting"
 ;
 
 /**
