@@ -29,9 +29,10 @@ Response:
 {
     "id": <int id of request that this response maps to>,
     "result": <Arbitrary JSON object containing the result of executing the
-               method, if any>,
-    "error": <String containing the error thrown by executing the method,
-              if any>
+               method. If the method could not be executed or returned void,
+               contains 'null'.>,
+    "error": <String containing the error thrown by executing the method.
+              If no error occurred, contains 'null'.>
 }
 """
 
