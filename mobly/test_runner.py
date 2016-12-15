@@ -35,7 +35,7 @@ from mobly import signals
 from mobly import utils
 
 
-def main():
+def main(argv=None):
     """Execute the test class in a test module.
 
     This is the default entry point for running a test script file directly.
@@ -50,6 +50,10 @@ def main():
 
     If you want to implement your own cli entry point, you could use function
     execute_one_test_class(test_class, test_config, test_identifier)
+
+    Args:
+        argv: A list that is then parsed as cli args. If None, defaults to cli
+              input.
     """
     # Parse cli args.
     parser = argparse.ArgumentParser(description="Mobly Test Executable.")
@@ -74,7 +78,9 @@ def main():
         type=str,
         metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
         help="Specify which test beds to run tests on.")
-    args = parser.parse_args(sys.argv[1:])
+    if not argv:
+        argv = sys.argv[1:]
+    args = parser.parse_args(argv)
     # Load test config file.
     test_configs = config_parser.load_test_config_file(args.config[0],
                                                        args.test_bed)
