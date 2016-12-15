@@ -33,57 +33,27 @@ $ sl4a_shell
 >>> s.getBuildID()
 u'N2F52'
 """
-from __future__ import print_function
 
 import argparse
-import code
-import pprint
-import sys
 
-from mobly.controllers import android_device
-
-# Dictionary of variables available by default to the console shell.
-gConsoleEnv = {}
+from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
 
-def _start_console(banner=None):
-    code.interact(banner=banner, local=gConsoleEnv)
+class Sl4aShell(jsonrpc_shell_base.JsonRpcShellBase):
+    def _start_services(self, console_env):
+        """Overrides superclass."""
+        self._ad.start_services()
+        console_env['s'] = self._ad.sl4a
+        console_env['sl4a'] = self._ad.sl4a
+        console_env['ed'] = self._ad.ed
 
-
-def _connect():
-    ad = gConsoleEnv['ad']
-    ad.start_services()
-    gConsoleEnv['s'] = ad.sl4a
-    gConsoleEnv['sl4a'] = ad.sl4a
-    gConsoleEnv['ed'] = ad.ed
-    print('Connection succeeded')
-
-
-def main(serial):
-    if not serial:
-        serials = android_device.list_adb_devices()
-        if len(serials) != 1:
-            print('ERROR: Expected 1 phone, but %d found. Use the -s flag.' %
-                      len(serials),
-                  file=sys.stderr)
-            sys.exit(1)
-        serial = serials[0]
-    ads = android_device.get_instances([serial])
-    assert len(ads) == 1
-
-    # Set up initial console environment
-    gConsoleEnv.update({
-        'ad': ads[0],
-        'pprint': pprint.pprint,
-    })
-    _connect()
-    _start_console("""
+    def _get_banner(self, serial):
+        return """
 Connected to {}. Call methods against:
     ad (android_device.AndroidDevice)
     sl4a or s (SL4A)
     ed (EventDispatcher)
-""".format(serial))
-    gConsoleEnv['ad'].stop_services()
+    """.format(serial)
 
 
 if __name__ == '__main__':
@@ -93,4 +63,4 @@ if __name__ == '__main__':
         help=
         'Device serial to connect to (if more than one device is connected)')
     args = parser.parse_args()
-    main(args.serial)
+    Sl4aShell().main(args.serial)
