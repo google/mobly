@@ -15,6 +15,24 @@
 # limitations under the License.
 
 """Base class for clients that communicate with apps over a JSON RPC interface.
+
+The JSON protocol expected by this module is:
+
+Request:
+{
+    "id": <monotonically increasing integer containing the ID of this request>
+    "method": <string containing the name of the method to execute>
+    "params": <JSON array containing the arguments to the method>
+}
+
+Response:
+{
+    "id": <int id of request that this response maps to>,
+    "result": <Arbitrary JSON object containing the result of executing the
+               method, if any>,
+    "error": <String containing the error thrown by executing the method,
+              if any>
+}
 """
 
 from builtins import str

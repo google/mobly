@@ -513,6 +513,7 @@ class AndroidDevice(object):
             port=self.h_port, uid=self.sl4a.uid,
             cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         self.ed = event_dispatcher.EventDispatcher(event_client)
+        self.ed.start()
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
         low = mobly_logger.logline_timestamp_comparator(begin_time, target) <= 0
@@ -649,12 +650,13 @@ class AndroidDevice(object):
         Send terminate signal to sl4a server; stop dispatcher associated with
         the session. Clear corresponding droids and dispatchers from cache.
         """
+        if self.sl4a:
+            self.sl4a.closeSl4aSession()
+            self.sl4a.close()
         if self.ed:
             self.ed.clean_up()
             self.ed = None
         if self.sl4a:
-            self.sl4a.closeSl4aSession()
-            self.sl4a.close()
             self.sl4a.stop_app()
             self.sl4a = None
         if self.h_port:
