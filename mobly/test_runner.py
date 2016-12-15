@@ -50,6 +50,10 @@ def main(argv=None):
 
     If you want to implement your own cli entry point, you could use function
     execute_one_test_class(test_class, test_config, test_identifier)
+
+    Args:
+        argv: A list that is then parsed as cli args. If None, defaults to cli
+              input.
     """
     # Parse cli args.
     parser = argparse.ArgumentParser(description="Mobly Test Executable.")
