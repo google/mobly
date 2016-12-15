@@ -149,6 +149,10 @@ class JsonRpcClientBase(object):
 
     # Rest of the client methods.
 
+    def check_app_installed(self):
+      if not self._is_app_installed():
+            raise AppStartError('App is not installed on %s' % self._adb.serial)
+
     def start_app(self, wait_time=APP_START_WAIT_TIME):
         """Starts the server app on the android device.
 
@@ -159,8 +163,7 @@ class JsonRpcClientBase(object):
         Raises:
             AppStartError: When the app was not able to be started.
         """
-        if not self._is_app_installed():
-            raise AppStartError("App is not installed on %s" % self._adb.serial)
+        self.check_app_installed()
         self._do_start_app()
         for _ in range(wait_time):
             time.sleep(1)
@@ -214,7 +217,7 @@ class JsonRpcClientBase(object):
                     logging.exception("Failed to create socket connection!")
                     raise
                 time.sleep(1)
-
+        self.port = port
         self._client = self._conn.makefile(mode="brw")
 
         resp = self._cmd(cmd, uid)
