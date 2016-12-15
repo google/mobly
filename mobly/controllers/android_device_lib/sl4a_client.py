@@ -19,7 +19,7 @@
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-_DEVICE_SIDE_PORT = 8080
+DEVICE_SIDE_PORT = 8080
 
 _LAUNCH_CMD = (
     "am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER "
@@ -29,9 +29,13 @@ _LAUNCH_CMD = (
 
 class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
+    def __init__(self, adb_proxy):
+      super(Sl4aClient, self).__init__(adb_proxy)
+      self.app_name = 'SL4A'
+
     def _do_start_app(self):
         """Overrides superclass."""
-        self._adb.shell(_LAUNCH_CMD.format(_DEVICE_SIDE_PORT))
+        self._adb.shell(_LAUNCH_CMD.format(DEVICE_SIDE_PORT))
 
     def stop_app(self):
         """Overrides superclass."""

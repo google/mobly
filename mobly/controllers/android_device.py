@@ -29,6 +29,7 @@ from mobly.controllers.android_device_lib import event_dispatcher
 from mobly.controllers.android_device_lib import fastboot
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import sl4a_client
+from mobly.controllers.android_device_lib import snippet_client
 
 MOBLY_CONTROLLER_CONFIG_NAME = "AndroidDevice"
 
@@ -336,10 +337,6 @@ class AndroidDevice(object):
 
     Attributes:
         serial: A string that's the serial number of the Androi device.
-        h_port: An integer that's the port number for adb port forwarding used
-                on the computer the Android device is connected
-        d_port: An integer  that's the port number used on the Android device
-                for adb port forwarding.
         log_path: A string that is the path where all logs collected on this
                   android device should be stored.
         log: A logger adapted from root logger with added token specific to an
@@ -351,10 +348,8 @@ class AndroidDevice(object):
                   via fastboot.
     """
 
-    def __init__(self, serial="", host_port=None, device_port=8080):
+    def __init__(self, serial=""):
         self.serial = serial
-        self.h_port = host_port
-        self.d_port = device_port
         # logging.log_path only exists when this is used in an Mobly test run.
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
@@ -369,6 +364,7 @@ class AndroidDevice(object):
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader and self.is_rootable:
             self.root_adb()
+        self._snippet_clients = []
 
     # TODO(angli): This function shall be refactored to accommodate all services
     # and not have hard coded switch for SL4A when b/29157104 is done.
@@ -397,6 +393,9 @@ class AndroidDevice(object):
         if self._adb_logcat_process:
             self.stop_adb_logcat()
         self._terminate_sl4a()
+        for client in self._snippet_clients:
+            self._terminate_jsonrpc_client(client)
+        self._snippet_clients = []
 
     @property
     def build_info(self):
@@ -487,6 +486,31 @@ class AndroidDevice(object):
         self.adb.root()
         self.adb.wait_for_device()
 
+    def load_snippet(self, name, package):
+        """Starts the snippet apk with the given package name and connects.
+
+        Args:
+          name: The attribute name to which to attach the snippet server.
+            e.g. name='maps' will attach the snippet server to ad.maps.
+          package: The package name defined in AndroidManifest.xml of the
+            snippet apk.
+
+        Examples:
+            >>> ad = AndroidDevice()
+            >>> ad.load_snippet(
+                    name='maps', package='com.google.maps.snippets')
+            >>> ad.maps.activateZoom('3')
+        """
+        host_port = utils.get_available_host_port()
+        # TODO(adorokhine): Don't assume that a free host-side port is free on
+        # the device as well. Both sides should allocate a unique port.
+        device_port = host_port
+        client = snippet_client.SnippetClient(
+            package=package, port=host_port, adb_proxy=self.adb)
+        self._start_jsonrpc_client(client, host_port, device_port)
+        self._snippet_clients.append(client)
+        setattr(self, name, client)
+
     def _start_sl4a(self):
         """Create an sl4a connection to the device.
 
@@ -496,24 +520,41 @@ class AndroidDevice(object):
 
         If sl4a server is not started on the device, tries to start it.
         """
-        if not self.h_port or not utils.is_port_available(self.h_port):
-            self.h_port = utils.get_available_host_port()
-        self.adb.tcp_forward(self.h_port, self.d_port)
-
+        host_port = utils.get_available_host_port()
+        device_port = sl4a_client.DEVICE_SIDE_PORT
         self.sl4a = sl4a_client.Sl4aClient(self.adb)
-        try:
-            self.sl4a.connect(port=self.h_port)
-        except:
-            self.sl4a.start_app()
-            self.sl4a.connect(port=self.h_port)
+        self._start_jsonrpc_client(self.sl4a, host_port, device_port)
 
         # Start an EventDispatcher for the current sl4a session
         event_client = sl4a_client.Sl4aClient(self.adb)
         event_client.connect(
-            port=self.h_port, uid=self.sl4a.uid,
+            port=host_port, uid=self.sl4a.uid,
             cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         self.ed = event_dispatcher.EventDispatcher(event_client)
         self.ed.start()
+
+    def _start_jsonrpc_client(self, client, host_port, device_port):
+        """Create a connection to a jsonrpc server running on the device.
+
+        If the connection cannot be made, tries to restart it.
+        """
+        client.check_app_installed()
+        self.adb.tcp_forward(host_port, device_port)
+        try:
+            client.connect(port=host_port)
+        except:
+            try:
+                client.stop_app()
+            except Exception as e:
+                self.log.warning(e)
+            client.start_app()
+            client.connect(port=host_port)
+
+    def _terminate_jsonrpc_client(self, client):
+        client.closeSl4aSession()
+        client.close()
+        client.stop_app()
+        self.adb.forward("--remove tcp:%d" % client.port)
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
         low = mobly_logger.logline_timestamp_comparator(begin_time, target) <= 0
@@ -657,11 +698,8 @@ class AndroidDevice(object):
             self.ed.clean_up()
             self.ed = None
         if self.sl4a:
-            self.sl4a.stop_app()
+            self._terminate_jsonrpc_client(self.sl4a)
             self.sl4a = None
-        if self.h_port:
-            self.adb.forward("--remove tcp:%d" % self.h_port)
-            self.h_port = None
 
     def run_iperf_client(self, server_host, extra_args=""):
         """Start iperf client on the device.
@@ -722,8 +760,7 @@ class AndroidDevice(object):
         if self.is_bootloader:
             self.fastboot.reboot()
             return
-        self.stop_adb_logcat()
-        self._terminate_sl4a()
+        self.stop_services()
         self.adb.reboot()
         self.wait_for_boot_completion()
         if self.is_rootable:
