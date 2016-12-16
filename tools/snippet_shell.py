@@ -40,7 +40,7 @@ class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
 
     def _start_services(self, console_env):
         """Overrides superclass."""
-        self._ad.load_snippets(name='snippet', package=self._package)
+        self._ad.load_snippet(name='snippet', package=self._package)
         console_env['snippet'] = self._ad.snippet
         console_env['s'] = self._ad.snippet
 
