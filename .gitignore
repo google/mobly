@@ -3,3 +3,5 @@
 *.egg/
 *.eggs/
 *.pyc
+build/
+dist/
