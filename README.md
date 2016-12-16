@@ -44,7 +44,10 @@ signed with the build you use on your Android devices.
 ### __System dependencies__
   - adb (1.0.36+ recommended)
   - python2.7 or python3.4+
-  - python-setuptools or python3.4-setuptools or later
+  - python-setuptools
+
+**If you use Python3, use `pip3` and `python3` (or python3.x) accordingly
+throughout this tutorial.**
 
 ### Installation
 
@@ -56,9 +59,10 @@ $ pip install mobly
 ```
 or download the source to use the bleeding edge:
 ```
-$ sudo python setup.py install
+$ python setup.py install
 ```
-If you use Python3, use `pip3` and `python3` accordingly throughout this tutorial.
+You may need `sudo` for the above commands if your system has certain permission
+restrictions.
 
 
 ## Example 1: Hello World!
