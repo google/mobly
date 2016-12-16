@@ -52,6 +52,8 @@ def main():
     setuptools.setup(
         name='mobly',
         version='1.0',
+        maintainer = 'Ang Li',
+        maintainer_email = 'mobly-github@googlegroups.com',
         description='Automation framework for special end-to-end test cases',
         license='Apache2.0',
         url = 'https://github.com/google/mobly',

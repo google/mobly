@@ -1,7 +1,6 @@
 # Getting Started with Mobly
-__What is Mobly?__
 
-Mobly is a Python-based test framework that specializes in
+**Mobly** is a Python-based test framework that specializes in
 supporting test cases that require multiple devices, complex environments, or
 custom hardware setups. Examples:
 
@@ -18,14 +17,14 @@ Mobly comes with a set of libs to control common devices like Android devices.
 
 While developed by Googlers, Mobly is not an official Google product.
 
-__What will I learn here?__
+### What will I learn here?
 
 Writing and executing simple test cases that use Android devices. We are
 focusing on Android devices here since they are the most accessible devices.
 Mobly supports various devices and you can also use your own custom
 hardware/equipment.
 
-__Before you start, you need:__
+### Setup Requirements
 
 *   A computer with 2 USB ports (or a USB hub).
 *   Mobly package and its system dependencies installed on the computer.
@@ -41,28 +40,26 @@ project `<aosp>/external/sl4a`
 It can be built like a regular system app with `mm` commands. It needs to be
 signed with the build you use on your Android devices.
 
-__Installation__
 
-For Python3
-```
-sudo python3 setup.py install
-```
-For Python2
-```
-sudo python setup.py install
-```
-
-Use the Python version you installed Mobly with to run the tests. So if you
-installed with 'python3', execute tests with 'python3'.
-
-__Python compatibility__
-
-Mobly is compatible with both python 3.4+ and python 2.7.
-
-__System dependencies__
+### __System dependencies__
   - adb (1.0.36+ recommended)
   - python2.7 or python3.4+
   - python-setuptools or python3.4-setuptools or later
+
+### Installation
+
+Mobly is compatible with both python 3.4+ and python 2.7.
+
+You can install the released package from pip
+```
+$ pip install mobly
+```
+or download the source to use the bleeding edge:
+```
+$ sudo python setup.py install
+```
+If you use Python3, use `pip3` and `python3` accordingly throughout this tutorial.
+
 
 ## Example 1: Hello World!
 
