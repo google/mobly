@@ -14,53 +14,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tool to interactively call sl4a methods.
+"""Tool to interactively call methods of code snippets.
 
-SL4A (Scripting Layer for Android) is an RPC service exposing API calls on
-Android.
-
-Original version: https://github.com/damonkohler/sl4a
-
-Fork in AOSP (can make direct system privileged calls):
-https://android.googlesource.com/platform/external/sl4a/
-
-Also allows access to Event Dispatcher, which allows waiting for asynchronous
-actions. For more information see the Mobly codelab:
-https://github.com/google/mobly#event-dispatcher
+Mobly Code Snippet Lib (https://github.com/google/mobly-snippet-lib/) is a
+library for triggering custom actions on Android devices by means of an RPC
+service.
 
 Usage:
-$ sl4a_shell
->>> s.getBuildID()
-u'N2F52'
+$ snippet_shell com.my.package.snippets
+>>> s.mySnippet('example')
+u'You said: example'
 """
+from __future__ import print_function
 
 import argparse
+import logging
+import sys
 
 from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
 
-class Sl4aShell(jsonrpc_shell_base.JsonRpcShellBase):
+class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
+    def __init__(self, package):
+      self._package = package
+
     def _start_services(self, console_env):
         """Overrides superclass."""
-        self._ad.start_services()
-        console_env['s'] = self._ad.sl4a
-        console_env['sl4a'] = self._ad.sl4a
-        console_env['ed'] = self._ad.ed
+        self._ad.load_snippet(name='snippet', package=self._package)
+        console_env['snippet'] = self._ad.snippet
+        console_env['s'] = self._ad.snippet
 
     def _get_banner(self, serial):
         return """
 Connected to {}. Call methods against:
     ad (android_device.AndroidDevice)
-    sl4a or s (SL4A)
-    ed (EventDispatcher)
+    snippet or s (Snippet)
     """.format(serial)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Interactive client for sl4a.')
+    parser = argparse.ArgumentParser(
+        description='Interactive client for Mobly code snippets.')
     parser.add_argument(
         '-s', '--serial',
         help=
         'Device serial to connect to (if more than one device is connected)')
-    args = parser.parse_args()
-    Sl4aShell().main(args.serial)
+    args, argv = parser.parse_known_args()
+    if len(argv) != 1:
+        print('ERROR: Snippet package not specified on command line',
+              file=sys.stderr)
+        sys.exit(1)
+    logging.basicConfig(level=logging.INFO)
+    SnippetShell(argv[0]).main(args.serial)
