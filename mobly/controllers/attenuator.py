@@ -45,15 +45,16 @@ KEY_PORT = "Port"
 def create(configs):
     objs = []
     for config in configs:
-        attn_model = config["Model"]
+        attenuator_model = config["Model"]
         # Import the correct driver module for the attenuator device
-        module_name = "mobly.controllers.attenuator_lib.%s" % attn_model
+        module_name = "mobly.controllers.attenuator_lib.%s" % attenuator_model
         module = importlib.import_module(module_name)
         # Create each
         path_cnt = config["PathCount"]
-        attn_device = module.AttenuatorDevice(path_cnt)
-        attn_device.model = attn_model
-        instances = attn_device.open(config[KEY_ADDRESS], config[KEY_PORT])
+        attenuation_device = module.AttenuatorDevice(path_cnt)
+        attenuation_device.model = attenuator_model
+        instances = attenuation_device.open(config[KEY_ADDRESS],
+                                            config[KEY_PORT])
         for i in range(path_cnt):
             path_name = None
             if "Paths" in c:
@@ -63,14 +64,14 @@ def create(configs):
                     logging.error(
                         "No path specified for attenuation path %d.", i)
                     raise
-            attn = AttenuatorPath(attn_device, idx=i, name=path_name)
-            objs.append(attn)
+            path = AttenuatorPath(attenuation_device, idx=i, name=path_name)
+            objs.append(path)
     return objs
 
 
 def destroy(objs):
-    for attn_path in objs:
-        attn_path.attn_device.close()
+    for attenuation_path in objs:
+        attenuation_path.attenuation_device.close()
 
 
 class Error(Exception):
@@ -89,46 +90,45 @@ class AttenuatorPath(object):
 
     For example, if a test needs to attenuate four signal paths, this allows the
     test to do:
-        self.attenuation_paths[0].set_attn(50)
-        self.attenuation_paths[1].set_attn(40)
+        self.attenuation_paths[0].set_atten(50)
+        self.attenuation_paths[1].set_atten(40)
     instead of:
-        self.attenuators[0].set_attn(0, 50)
-        self.attenuators[0].set_attn(1, 40)
+        self.attenuators[0].set_atten(0, 50)
+        self.attenuators[0].set_atten(1, 40)
 
     The benefit the former is that the physical test bed can use either four
     single-channel attenuators, or one four-channel attenuators. Whereas the
     latter forces the test bed to use a four-channel attenuator.
     """
-    def __init__(self, attn_device, idx=0, name=None):
-        self.model = attn_device.model
-        self.attn_device = attn_device
+    def __init__(self, attenuation_device, idx=0, name=None):
+        self.model = attenuation_device.model
+        self.attenuation_device = attenuation_device
         self.idx = idx
-        if (self.idx >= attn_device.path_count):
-            raise IndexError(
-                "Attenuator index out of range for attenuator attn_device")
+        if (self.idx >= attenuation_device.path_count):
+            raise IndexError("Attenuator index out of range!")
 
-    def set_attn(self, value):
+    def set_atten(self, value):
         """This function sets the attenuation of Attenuator.
 
         Args:
             value: This is a floating point value for nominal attenuation to be
                    set. Unit is db.
         """
-        self.attn_device.set_attn(self.idx, value)
+        self.attenuation_device.set_atten(self.idx, value)
 
-    def get_attn(self):
+    def get_atten(self):
         """Gets the current attenuation setting of Attenuator.
 
         Returns:
             A float that is the current attenuation value. Unit is db.
         """
 
-        return self.attn_device.get_attn(self.idx)
+        return self.attenuation_device.get_atten(self.idx)
 
-    def get_max_attn(self):
+    def get_max_atten(self):
         """Gets the max attenuation supported by the Attenuator.
 
         Returns:
             A float that is the max attenuation value.
         """
-        return self.attn_device.max_attn
+        return self.attenuation_device.max_atten

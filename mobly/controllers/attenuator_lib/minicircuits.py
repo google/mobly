@@ -63,8 +63,8 @@ class AttenuatorDevice(object):
         if config_str.startswith("MN="):
             config_str = config_str[len("MN="):]
         self.properties = dict(
-            zip(['model', 'max_freq', 'max_attn'], config_str.split("-", 2)))
-        self.max_attn = float(self.properties['max_attn'])
+            zip(['model', 'max_freq', 'max_atten'], config_str.split("-", 2)))
+        self.max_atten = float(self.properties['max_atten'])
 
     def close(self):
         """Closes a telnet connection to the desired attenuator device.
@@ -75,7 +75,7 @@ class AttenuatorDevice(object):
         if self.is_open:
             self._telnet_client.close()
 
-    def set_attn(self, idx, value):
+    def set_atten(self, idx, value):
         """Sets the attenuation value for a particular signal path.
 
         Args:
@@ -99,13 +99,13 @@ class AttenuatorDevice(object):
         if idx + 1 > self.path_count:
             raise IndexError("Attenuator index out of range!", self.path_count,
                              idx)
-        if value > self.max_attn:
-            raise ValueError("Attenuator value out of range!", self.max_attn,
+        if value > self.max_atten:
+            raise ValueError("Attenuator value out of range!", self.max_atten,
                              value)
         # The actual device uses one-based index for channel numbers.
         self._telnet_client.cmd("CHAN:%s:SETATT:%s" % (idx + 1, value))
 
-    def get_attn(self, idx=0):
+    def get_atten(self, idx=0):
         """This function returns the current attenuation from an attenuator at a
         given index in the instrument.
 
