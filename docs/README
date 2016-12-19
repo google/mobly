@@ -1,0 +1,90 @@
+These are brief instructions on adding content to the webpage.
+
+## Content management
+
+Content should be in the form of a markdown file and will likely fall in one of three catgories
+
+*   Documentation stored under /docs/docs/
+*   Tutorials stored under /docs/tutorials/
+*   News, stored under /docs/_posts
+
+Where the file is stored is for conevenience and clarity rather than any functionality.
+
+## Markdown file headers
+
+Jekyll will build the site based on the headers provided at the top of in each file.
+
+Some important keys in the headers are 
+
+*   layout : this specifies which layout template to use.
+*   title : specifies the page title
+*   permalink : specifies the subpath for where the generated html file will be
+*   site_nav_category : For pages with a sidebar, this is a tag that 
+    1) specifies that there should be a side bar, and 2) will create the sidebar
+    based on other files with the same label *unless* the following key is true
+*   is_site_nav_category : This should be reserved for the landing page of the 
+    main navigational bar. It prevents the sidebar from creating an entry for 
+    this page.
+*   site_nav_category_order : number that will be used to sort sidebar elements
+*   is_site_nav_category2 : Designates this page should appear emphasized in the 
+    sidebar (looks like a parent of the subsequent elements). Note that the 
+    sorting is still goverened by site_nav_category_order. 
+
+### Example docs/tutorials headers
+
+Main landing page for docs
+
+'''
+---
+layout: page
+title: Title
+permalink: /docs/index.html
+site_nav_category: docs
+is_site_nav_category: true
+---
+'''
+
+Parent docs page
+
+'''
+---
+layout: page
+title: Documentation example
+permalink: /docs/example.html
+site_nav_category: docs
+site_nav_category_order: 100
+is_site_nav_category2: true
+---
+'''
+
+Child docs page
+
+'''
+---
+layout: page
+title: Documentation example
+permalink: /docs/example1.html
+site_nav_category: docs
+site_nav_category_order: 101
+---
+'''
+
+### Example news header and filename convention:
+
+'''
+---
+layout: post
+title: My news item title
+---
+'''
+
+In order to auto-generate the timestamp for posts, the individual markdown files 
+should also follow the file naming format of: YEAR-MONTH-DAY-title.MARKUP
+
+For example, "2016-12-15-mobly-website-is-live.md"
+
+## Generating the site locally
+
+github-pages is responsible for generating the static site. For development and 
+debugging purposes build the jekyll site locally by following 
+https://help.github.com/articles/setting-up-your-github-pages-site-locally-with-jekyll/.

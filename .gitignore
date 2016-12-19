@@ -2,6 +2,10 @@
 *.egg-info/
 *.egg/
 *.eggs/
+Gemfile.lock
+.jekyll-metadata
 *.pyc
+.sass-cache
+_site
 build/
 dist/
