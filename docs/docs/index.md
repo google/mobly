@@ -11,13 +11,4 @@ site_nav_category_order: 10
 * TOC
 {:toc}
 
-## Android devices
-
-### adb
-
-### Snippets
-
-### sl4a
-
-
 
