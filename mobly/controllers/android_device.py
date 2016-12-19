@@ -339,8 +339,10 @@ class AndroidDevice(object):
         serial: A string that's the serial number of the Androi device.
         log_path: A string that is the path where all logs collected on this
                   android device should be stored.
-        log: A logger adapted from root logger with added token specific to an
-             AndroidDevice instance.
+        log: A logger adapted from root logger with an added prefix specific
+             to an AndroidDevice instance. The default prefix is
+             [AndroidDevice|<serial>]. Use self.set_logger_prefix_tag to use
+             a different tag in the prefix.
         adb_logcat_file_path: A string that's the full path to the adb logcat
                               file collected, if any.
         adb: An AdbProxy object used for interacting with the device via adb.
@@ -354,7 +356,7 @@ class AndroidDevice(object):
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            "token": self.serial
+            "tag": self.serial
         })
         self.sl4a = None
         self.ed = None
@@ -366,10 +368,10 @@ class AndroidDevice(object):
             self.root_adb()
         self._snippet_clients = []
 
-    def set_logger_token(self, token):
-        """Set a token for the log line prefix of this instance.
+    def set_logger_prefix_tag(self, tag):
+        """Set a tag for the log line prefix of this instance.
 
-        By default, the token is the serial of the device, but sometimes having
+        By default, the tag is the serial of the device, but sometimes having
         the serial number in the log line doesn't help much with debugging. It
         could be more helpful if users can mark the role of the device instead.
 
@@ -380,9 +382,9 @@ class AndroidDevice(object):
             "INFO [AndroidDevice|Caller] One pending call ringing."
 
         Args:
-            token: A string that is the token to use
+            tag: A string that is the tag to use.
         """
-        self.log.extra["token"] = token
+        self.log.extra["tag"] = tag
 
     # TODO(angli): This function shall be refactored to accommodate all services
     # and not have hard coded switch for SL4A when b/29157104 is done.
@@ -791,12 +793,12 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
 
     Usage:
         my_log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            "token": <token>
+            "tag": <custom tag>
         })
 
         Then each log line added by my_log will have a prefix
-        "[AndroidDevice|<token>]"
+        "[AndroidDevice|<tag>]"
     """
     def process(self, msg, kwargs):
-        msg = "[AndroidDevice|%s] %s" % (self.extra["token"], msg)
+        msg = "[AndroidDevice|%s] %s" % (self.extra["tag"], msg)
         return (msg, kwargs)
