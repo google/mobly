@@ -7,3 +7,5 @@ Gemfile.lock
 *.pyc
 .sass-cache
 _site
+build/
+dist/
