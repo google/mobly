@@ -354,7 +354,7 @@ class AndroidDevice(object):
         log_path_base = getattr(logging, "log_path", "/tmp/logs")
         self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            "serial": self.serial
+            "token": self.serial
         })
         self.sl4a = None
         self.ed = None
@@ -365,6 +365,24 @@ class AndroidDevice(object):
         if not self.is_bootloader and self.is_rootable:
             self.root_adb()
         self._snippet_clients = []
+
+    def set_logger_token(self, token):
+        """Set a token for the log line prefix of this instance.
+
+        By default, the token is the serial of the device, but sometimes having
+        the serial number in the log line doesn't help much with debugging. It
+        could be more helpful if users can mark the role of the device instead.
+
+        For example, instead of marking the serial number:
+            "INFO [AndroidDevice|abcdefg12345] One pending call ringing."
+
+        marking the role of the device here is  more useful here:
+            "INFO [AndroidDevice|Caller] One pending call ringing."
+
+        Args:
+            token: A string that is the token to use
+        """
+        self.log.extra["token"] = token
 
     # TODO(angli): This function shall be refactored to accommodate all services
     # and not have hard coded switch for SL4A when b/29157104 is done.
@@ -769,6 +787,16 @@ class AndroidDevice(object):
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
+    """A wrapper class that adds a prefix to each log line.
+
+    Usage:
+        my_log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
+            "token": <token>
+        })
+
+        Then each log line added by my_log will have a prefix
+        "[AndroidDevice|<token>]"
+    """
     def process(self, msg, kwargs):
-        msg = "[AndroidDevice|%s] %s" % (self.extra["serial"], msg)
+        msg = "[AndroidDevice|%s] %s" % (self.extra["token"], msg)
         return (msg, kwargs)
