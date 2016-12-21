@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/google/mobly.svg?branch=master)](https://travis-ci.org/google/mobly)
+
 # Getting Started with Mobly
 
 **Mobly** is a Python-based test framework that specializes in
