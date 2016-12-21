@@ -177,13 +177,12 @@ class JsonRpcClientBase(object):
 
     def connect(self, port, addr='localhost', uid=UNKNOWN_UID,
                 cmd=JsonRpcCommand.INIT):
-        """
-        Opens a connection to the remote client.
+        """Opens a connection to a JSON RPC server.
 
-        Opens a connection to a remote client. The connection will error out if
-        it takes longer than the _SOCKET_TIMEOUT seconds. Once connected if the
-        socket takes longer than _SOCKET_TIMEOUT to respond the connection will
-        be closed.
+        Opens a connection to a remote client. The connection attempt will time
+        out if it takes longer than _SOCKET_TIMEOUT seconds. Each subsequent
+        operation over this socket will time out after _SOCKET_TIMEOUT seconds
+        as well.
 
         Args:
             port: int, The port this client should connect to.
@@ -200,15 +199,13 @@ class JsonRpcClientBase(object):
             ProtocolError: Raised when there is an error in the protocol.
         """
         self._counter = self._id_counter()
-        while True:
-            try:
-                self._conn = socket.create_connection((addr, port),
-                                                      _SOCKET_TIMEOUT)
-                self._conn.settimeout(_SOCKET_TIMEOUT)
-                break
-            except (socket.timeout, socket.error, IOError):
-                logging.exception("Failed to create socket connection!")
-                raise
+        try:
+            self._conn = socket.create_connection((addr, port),
+                                                  _SOCKET_TIMEOUT)
+            self._conn.settimeout(_SOCKET_TIMEOUT)
+        except (socket.timeout, socket.error, IOError):
+            logging.exception("Failed to create socket connection!")
+            raise
         self.port = port
         self._client = self._conn.makefile(mode="brw")
 
