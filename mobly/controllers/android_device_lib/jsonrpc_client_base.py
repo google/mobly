@@ -176,12 +176,12 @@ class JsonRpcClientBase(object):
             '%s failed to start on %s.' % (self.app_name, self._adb.serial))
 
     def connect(self, port, addr='localhost', uid=UNKNOWN_UID,
-                connection_timeout=None, cmd=JsonRpcCommand.INIT):
+                cmd=JsonRpcCommand.INIT):
         """
         Opens a connection to the remote client.
 
         Opens a connection to a remote client. The connection will error out if
-        it takes longer than the connection_timeout time. Once connected if the
+        it takes longer than the _SOCKET_TIMEOUT seconds. Once connected if the
         socket takes longer than _SOCKET_TIMEOUT to respond the connection will
         be closed.
 
@@ -199,28 +199,16 @@ class JsonRpcClientBase(object):
             socket.timeout: Raised when the socket waits to long for connection.
             ProtocolError: Raised when there is an error in the protocol.
         """
-        if connection_timeout:
-            timeout_time = time.time() + connection_timeout
-        else:
-            timeout_time = sys.maxsize
         self._counter = self._id_counter()
         while True:
             try:
-                self._conn = socket.create_connection(
-                    (addr, port), max(1, timeout_time - time.time()))
+                self._conn = socket.create_connection((addr, port),
+                                                      _SOCKET_TIMEOUT)
                 self._conn.settimeout(_SOCKET_TIMEOUT)
                 break
-            except socket.timeout:
+            except (socket.timeout, socket.error, IOError):
                 logging.exception("Failed to create socket connection!")
                 raise
-            except (socket.error, IOError):
-                # TODO: optimize to only forgive some errors here
-                # error values are OS-specific so this will require
-                # additional tuning to fail faster
-                if time.time() + 1 >= timeout_time:
-                    logging.exception("Failed to create socket connection!")
-                    raise
-                time.sleep(1)
         self.port = port
         self._client = self._conn.makefile(mode="brw")
 
