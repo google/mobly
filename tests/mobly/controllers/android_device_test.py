@@ -42,6 +42,10 @@ MOCK_ADB_LOGCAT_BEGIN_TIME = "02-29 14:02:20.123"
 MOCK_ADB_LOGCAT_END_TIME = "02-29 14:02:22.000"
 MOCK_SNIPPET_PACKAGE_NAME = "com.my.snippet"
 
+# A mock SnippetClient used for testing snippet management logic.
+MockSnippetClient = mock.MagicMock()
+MockSnippetClient.app_name = MOCK_SNIPPET_PACKAGE_NAME
+
 
 class AndroidDeviceTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
@@ -357,7 +361,8 @@ class AndroidDeviceTest(unittest.TestCase):
                 return_value=mock_android_device.MockAdbProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
-    @mock.patch('mobly.controllers.android_device_lib.snippet_client.SnippetClient')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.SnippetClient',
+                return_value=MockSnippetClient)
     @mock.patch('mobly.utils.get_available_host_port')
     def test_AndroidDevice_load_snippet_dup_package(
         self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
@@ -373,7 +378,8 @@ class AndroidDeviceTest(unittest.TestCase):
                 return_value=mock_android_device.MockAdbProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
-    @mock.patch('mobly.controllers.android_device_lib.snippet_client.SnippetClient')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.SnippetClient',
+                return_value=MockSnippetClient)
     @mock.patch('mobly.utils.get_available_host_port')
     def test_AndroidDevice_load_snippet_dup_snippet_name(
         self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):

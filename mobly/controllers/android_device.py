@@ -40,9 +40,6 @@ ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 
-SNIPPET_KEY_CLIENT = 'client'
-SNIPPET_KEY_PACKAGE = 'name'
-
 # Keys for attributes in configs that alternate device behavior
 KEY_SKIP_SL4A = "skip_sl4a"
 KEY_DEVICE_REQUIRED = "required"
@@ -422,7 +419,7 @@ class AndroidDevice(object):
             self.stop_adb_logcat()
         self._terminate_sl4a()
         for name in list(self._snippet_clients.keys()):
-            client = self._snippet_clients[name][SNIPPET_KEY_CLIENT]
+            client = self._snippet_clients[name]
             self._terminate_jsonrpc_client(client)
             delattr(self, name)
         self._snippet_clients = {}
@@ -538,15 +535,15 @@ class AndroidDevice(object):
             raise SnippetError(
                 ('Attribute "%s" is already registered with '
                  'package "%s", it cannot be used again.') % (
-                     name, self._snippet_clients[name][SNIPPET_KEY_PACKAGE]))
+                     name, self._snippet_clients[name].app_name))
         # Should not load snippet with an existing attribute.
         if hasattr(self, name):
             raise SnippetError(
                 'Attribute "%s" already exists, please use a different name.' %
                 name)
         # Should not load the same snippet package more than once.
-        for client_name, client_info in self._snippet_clients.items():
-            if package == client_info[SNIPPET_KEY_PACKAGE]:
+        for client_name, client in self._snippet_clients.items():
+            if package == client.app_name:
                 raise SnippetError(
                     'Snippet package "%s" has already been loaded under name "%s".'
                     % (package, client_name))
@@ -557,10 +554,7 @@ class AndroidDevice(object):
         client = snippet_client.SnippetClient(
             package=package, port=host_port, adb_proxy=self.adb)
         self._start_jsonrpc_client(client, host_port, device_port)
-        self._snippet_clients[name] = {
-            SNIPPET_KEY_CLIENT: client,
-            SNIPPET_KEY_PACKAGE: package
-        }
+        self._snippet_clients[name] = client
         setattr(self, name, client)
 
     def _start_sl4a(self):
