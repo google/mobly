@@ -712,14 +712,11 @@ class AndroidDevice(object):
         the session. Clear corresponding droids and dispatchers from cache.
         """
         if self.sl4a:
-            self.sl4a.closeSl4aSession()
-            self.sl4a.close()
+            self._terminate_jsonrpc_client(self.sl4a)
+            self.sl4a = None
         if self.ed:
             self.ed.clean_up()
             self.ed = None
-        if self.sl4a:
-            self._terminate_jsonrpc_client(self.sl4a)
-            self.sl4a = None
 
     def run_iperf_client(self, server_host, extra_args=""):
         """Start iperf client on the device.
