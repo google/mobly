@@ -40,6 +40,9 @@ ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
 
+SNIPPET_KEY_CLIENT = 'client'
+SNIPPET_KEY_PACKAGE = 'name'
+
 # Keys for attributes in configs that alternate device behavior
 KEY_SKIP_SL4A = "skip_sl4a"
 KEY_DEVICE_REQUIRED = "required"
@@ -47,6 +50,10 @@ KEY_DEVICE_REQUIRED = "required"
 
 class Error(signals.ControllerError):
     pass
+
+
+class SnippetError(signals.ControllerError):
+    """Raised when somethig wrong with snippet happens."""
 
 
 class DoesNotExistError(Error):
@@ -366,7 +373,8 @@ class AndroidDevice(object):
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader and self.is_rootable:
             self.root_adb()
-        self._snippet_clients = []
+        # A dict for tracking snippet clients
+        self._snippet_clients = {}
 
     def set_logger_prefix_tag(self, tag):
         """Set a tag for the log line prefix of this instance.
@@ -413,9 +421,11 @@ class AndroidDevice(object):
         if self._adb_logcat_process:
             self.stop_adb_logcat()
         self._terminate_sl4a()
-        for client in self._snippet_clients:
+        for name in list(self._snippet_clients.keys()):
+            client = self._snippet_clients[name][SNIPPET_KEY_CLIENT]
             self._terminate_jsonrpc_client(client)
-        self._snippet_clients = []
+            delattr(self, name)
+        self._snippet_clients = {}
 
     @property
     def build_info(self):
@@ -492,9 +502,8 @@ class AndroidDevice(object):
         """
         for k, v in config.items():
             if hasattr(self, k):
-                raise Error(
-                    "Attempting to set existing attribute %s on %s" %
-                    (k, self.serial))
+                raise Error("Attempting to set existing attribute %s on %s" %
+                            (k, self.serial))
             setattr(self, k, v)
 
     def root_adb(self):
@@ -509,18 +518,38 @@ class AndroidDevice(object):
     def load_snippet(self, name, package):
         """Starts the snippet apk with the given package name and connects.
 
-        Args:
-          name: The attribute name to which to attach the snippet server.
-            e.g. name='maps' will attach the snippet server to ad.maps.
-          package: The package name defined in AndroidManifest.xml of the
-            snippet apk.
-
         Examples:
             >>> ad = AndroidDevice()
             >>> ad.load_snippet(
                     name='maps', package='com.google.maps.snippets')
             >>> ad.maps.activateZoom('3')
+
+        Args:
+            name: The attribute name to which to attach the snippet server.
+                  e.g. name='maps' will attach the snippet server to ad.maps.
+            package: The package name defined in AndroidManifest.xml of the
+                     snippet apk.
+
+        Raises:
+            SnippetError is raised if illegal load operations are attempted.
         """
+        # Should not load snippet with the same attribute more than once.
+        if name in self._snippet_clients:
+            raise SnippetError(
+                ('Attribute "%s" is already registered with '
+                 'package "%s", it cannot be used again.') % (
+                     name, self._snippet_clients[name][SNIPPET_KEY_PACKAGE]))
+        # Should not load snippet with an existing attribute.
+        if hasattr(self, name):
+            raise SnippetError(
+                'Attribute "%s" already exists, please use a different name.' %
+                name)
+        # Should not load the same snippet package more than once.
+        for client_name, client_info in self._snippet_clients.items():
+            if package == client_info[SNIPPET_KEY_PACKAGE]:
+                raise SnippetError(
+                    'Snippet package "%s" has already been loaded under name "%s".'
+                    % (package, client_name))
         host_port = utils.get_available_host_port()
         # TODO(adorokhine): Don't assume that a free host-side port is free on
         # the device as well. Both sides should allocate a unique port.
@@ -528,7 +557,10 @@ class AndroidDevice(object):
         client = snippet_client.SnippetClient(
             package=package, port=host_port, adb_proxy=self.adb)
         self._start_jsonrpc_client(client, host_port, device_port)
-        self._snippet_clients.append(client)
+        self._snippet_clients[name] = {
+            SNIPPET_KEY_CLIENT: client,
+            SNIPPET_KEY_PACKAGE: package
+        }
         setattr(self, name, client)
 
     def _start_sl4a(self):
@@ -548,7 +580,8 @@ class AndroidDevice(object):
         # Start an EventDispatcher for the current sl4a session
         event_client = sl4a_client.Sl4aClient(self.adb)
         event_client.connect(
-            port=host_port, uid=self.sl4a.uid,
+            port=host_port,
+            uid=self.sl4a.uid,
             cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         self.ed = event_dispatcher.EventDispatcher(event_client)
         self.ed.start()
@@ -577,7 +610,8 @@ class AndroidDevice(object):
         self.adb.forward("--remove tcp:%d" % client.port)
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
-        low = mobly_logger.logline_timestamp_comparator(begin_time, target) <= 0
+        low = mobly_logger.logline_timestamp_comparator(begin_time,
+                                                        target) <= 0
         high = mobly_logger.logline_timestamp_comparator(end_time, target) >= 0
         return low and high
 
@@ -636,8 +670,8 @@ class AndroidDevice(object):
         """
         if self._adb_logcat_process:
             raise Error(
-              'Android device %s already has an adb logcat thread going on. '
-              'Cannot start another one.' % self.serial)
+                'Android device %s already has an adb logcat thread going on. '
+                'Cannot start another one.' % self.serial)
         # Disable adb log spam filter for rootable. Have to stop and clear
         # settings first because 'start' doesn't support --clear option before
         # Android N.
@@ -697,7 +731,7 @@ class AndroidDevice(object):
             out = self.adb.shell("bugreportz").decode("utf-8")
             if not out.startswith("OK"):
                 raise Error("Failed to take bugreport on %s: %s" %
-                                         (self.serial, out))
+                            (self.serial, out))
             br_out_path = out.split(':')[1].strip()
             self.adb.pull("%s %s" % (br_out_path, full_out_path))
         else:
@@ -796,6 +830,7 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
         Then each log line added by my_log will have a prefix
         "[AndroidDevice|<tag>]"
     """
+
     def process(self, msg, kwargs):
         msg = "[AndroidDevice|%s] %s" % (self.extra["tag"], msg)
         return (msg, kwargs)
