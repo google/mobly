@@ -62,4 +62,4 @@ if __name__ == '__main__':
                         help='The pacakge name of the snippet to use.')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
-    SnippetShell(args.package).main(args.serial)
+    SnippetShell(args.package[0]).main(args.serial)
