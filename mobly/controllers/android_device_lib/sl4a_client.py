@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """JSON RPC interface to android scripting engine."""
 
 from mobly.controllers.android_device_lib import adb
@@ -28,10 +27,9 @@ _LAUNCH_CMD = (
 
 
 class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
-
     def __init__(self, adb_proxy):
-      super(Sl4aClient, self).__init__(adb_proxy)
-      self.app_name = 'SL4A'
+        super(Sl4aClient, self).__init__(adb_proxy)
+        self.app_name = 'SL4A'
 
     def _do_start_app(self):
         """Overrides superclass."""
@@ -44,8 +42,9 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     def _is_app_installed(self):
         """Overrides superclass."""
         try:
-            out = self._adb.shell("pm path com.googlecode.android_scripting")
-            return bool(out.strip())
+            out = self._adb.shell("pm path com.googlecode.android_scripting"
+                                  ).decode('utf-8').strip()
+            return bool(out)
         except adb.AdbError as e:
             if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
                 return False
@@ -56,8 +55,9 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         # Grep for process with a preceding S which means it is truly started.
         try:
             out = self._adb.shell(
-                'ps | grep "S com.googlecode.android_scripting"')
-            return bool(out.strip())
+                'ps | grep "S com.googlecode.android_scripting"').decode(
+                    'utf-8').strip()
+            return bool(out)
         except adb.AdbError as e:
             if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
                 return False

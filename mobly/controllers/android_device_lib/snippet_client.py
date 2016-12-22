@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """JSON RPC interface to Mobly Snippet Lib."""
 import logging
 import socket
@@ -21,13 +20,11 @@ import socket
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-_LAUNCH_CMD = (
-    'am instrument -e action start -e port {} '
-    '{}/com.google.android.mobly.snippet.SnippetRunner')
+_LAUNCH_CMD = ('am instrument -e action start -e port {} '
+               '{}/com.google.android.mobly.snippet.SnippetRunner')
 
-_STOP_CMD = (
-    'am instrument -w -e action stop '
-    '{}/com.google.android.mobly.snippet.SnippetRunner')
+_STOP_CMD = ('am instrument -w -e action stop '
+             '{}/com.google.android.mobly.snippet.SnippetRunner')
 
 
 class Error(Exception):
@@ -35,7 +32,6 @@ class Error(Exception):
 
 
 class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
-
     def __init__(self, package, port, adb_proxy):
         """Initialzies a SnippetClient.
   
@@ -64,7 +60,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass."""
         cmd = _STOP_CMD.format(self._package)
         logging.info('Stopping snippet apk with: %s', cmd)
-        out = self._adb.shell(_STOP_CMD.format(self._package))
+        out = self._adb.shell(_STOP_CMD.format(self._package)).decode('utf-8')
         if 'OK (0 tests)' not in out:
             raise Error('Failed to stop existing apk. Unexpected output: ' +
                         out)
@@ -73,8 +69,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass."""
         try:
             out = self._adb.shell(
-              'pm list instrumentation | grep ^instrumentation:%s/' %
-              self._package)
+                'pm list instrumentation | grep ^instrumentation:%s/' %
+                self._package).decode('utf-8')
             return bool(out)
         except adb.AdbError as e:
             if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
@@ -89,7 +85,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # our destination port is alive.
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-          result = sock.connect_ex(('127.0.0.1', self._port))
-          return result == 0
+            result = sock.connect_ex(('127.0.0.1', self._port))
+            return result == 0
         finally:
-          sock.close()
+            sock.close()
