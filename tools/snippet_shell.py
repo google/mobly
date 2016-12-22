@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Tool to interactively call methods of code snippets.
 
 Mobly Code Snippet Lib (https://github.com/google/mobly-snippet-lib/) is a
@@ -36,7 +35,7 @@ from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
 class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
     def __init__(self, package):
-      self._package = package
+        self._package = package
 
     def _start_services(self, console_env):
         """Overrides superclass."""
@@ -45,24 +44,21 @@ class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
         console_env['s'] = self._ad.snippet
 
     def _get_banner(self, serial):
-        return """
-Connected to {}. Call methods against:
-    ad (android_device.AndroidDevice)
-    snippet or s (Snippet)
-    """.format(serial)
+        return """Connected to {}. Call methods against: ad
+                  (android_device.AndroidDevice) snippet or s (Snippet)
+               """.format(serial)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Interactive client for Mobly code snippets.')
     parser.add_argument(
-        '-s', '--serial',
-        help=
-        'Device serial to connect to (if more than one device is connected)')
-    args, argv = parser.parse_known_args()
-    if len(argv) != 1:
-        print('ERROR: Snippet package not specified on command line',
-              file=sys.stderr)
-        sys.exit(1)
+        '-s',
+        '--serial',
+        help='Device serial to connect to (if more than one device is connected)'
+    )
+    parser.add_argument('package', metavar='PACKAGE_NAME', type=str, nargs=1,
+                        help='The pacakge name of the snippet to use.')
+    args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
-    SnippetShell(argv[0]).main(args.serial)
+    SnippetShell(args.package).main(args.serial)
