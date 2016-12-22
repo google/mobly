@@ -346,8 +346,9 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.SnippetClient')
-    def test_AndroidDevice_load_snippet(self, MockSnippetClient, MockFastboot,
-                                        MockAdbProxy):
+    @mock.patch('mobly.utils.get_available_host_port')
+    def test_AndroidDevice_load_snippet(
+        self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial=1)
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         self.assertTrue(hasattr(ad, 'snippet'))
@@ -357,8 +358,9 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.SnippetClient')
-    def test_AndroidDevice_load_snippet_dup_package(self, MockSnippetClient,
-                                                    MockFastboot, MockAdbProxy):
+    @mock.patch('mobly.utils.get_available_host_port')
+    def test_AndroidDevice_load_snippet_dup_package(
+        self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial=1)
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         expected_msg = ('Snippet package "%s" has already been loaded under '
@@ -372,8 +374,9 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.SnippetClient')
+    @mock.patch('mobly.utils.get_available_host_port')
     def test_AndroidDevice_load_snippet_dup_snippet_name(
-        self, MockSnippetClient, MockFastboot, MockAdbProxy):
+        self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial=1)
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         expected_msg = ('Attribute "%s" is already registered with package '
@@ -388,8 +391,9 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.SnippetClient')
+    @mock.patch('mobly.utils.get_available_host_port')
     def test_AndroidDevice_load_snippet_dup_attribute_name(
-        self, MockSnippetClient, MockFastboot, MockAdbProxy):
+        self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial=1)
         expected_msg = ('Attribute "%s" already exists, please use a different'
                         ' name') % 'adb'
@@ -402,7 +406,8 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.SnippetClient')
-    def test_AndroidDevice_snippet_cleanup(self, MockSnippetClient,
+    @mock.patch('mobly.utils.get_available_host_port')
+    def test_AndroidDevice_snippet_cleanup(self, MockGetPort, MockSnippetClient,
                                            MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial=1)
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
