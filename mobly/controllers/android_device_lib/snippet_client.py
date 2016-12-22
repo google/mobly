@@ -53,13 +53,13 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     def _do_start_app(self):
         """Overrides superclass."""
         cmd = _LAUNCH_CMD.format(self._port, self._package)
-        logging.info('Launching snippet apk with: %s', cmd)
+        logging.debug('Launching snippet apk with: %s', cmd)
         self._adb.shell(_LAUNCH_CMD.format(self._port, self._package))
 
     def stop_app(self):
         """Overrides superclass."""
         cmd = _STOP_CMD.format(self._package)
-        logging.info('Stopping snippet apk with: %s', cmd)
+        logging.debug('Stopping snippet apk with: %s', cmd)
         out = self._adb.shell(_STOP_CMD.format(self._package)).decode('utf-8')
         if 'OK (0 tests)' not in out:
             raise Error('Failed to stop existing apk. Unexpected output: ' +

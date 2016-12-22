@@ -30,6 +30,7 @@ import argparse
 import logging
 import sys
 
+from mobly import logger
 from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
 
@@ -61,5 +62,7 @@ if __name__ == '__main__':
     parser.add_argument('package', metavar='PACKAGE_NAME', type=str, nargs=1,
                         help='The pacakge name of the snippet to use.')
     args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO)
+    logger.setup_test_logger('/tmp/logs/mobly_snippet_shell',
+                             prefix="SnippetShell",
+                             filename="logs")
     SnippetShell(args.package[0]).main(args.serial)
