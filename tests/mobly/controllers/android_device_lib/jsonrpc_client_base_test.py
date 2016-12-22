@@ -72,13 +72,13 @@ class JsonRpcClientBaseTest(unittest.TestCase):
     def test_open_timeout_io_error(self, mock_create_connection):
         """Test socket timeout with io error
 
-        Test that if the net socket gives an io error, then the sl4a client
+        Test that if the net socket gives an io error, then the client
         will eventually exit with an IOError.
         """
         mock_create_connection.side_effect = IOError()
         with self.assertRaises(IOError):
             client = FakeRpcClient()
-            client.connect(port=80, connection_timeout=0.1)
+            client.connect(port=80)
 
     @mock.patch('socket.create_connection')
     def test_connect_timeout(self, mock_create_connection):
@@ -108,7 +108,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
 
     @mock.patch('socket.create_connection')
     def test_connect_handshake(self, mock_create_connection):
-        """Test sl4a client handshake
+        """Test client handshake
 
         Test that at the end of a handshake with no errors the client object
         has the correct parameters.
