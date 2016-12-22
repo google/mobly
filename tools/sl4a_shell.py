@@ -48,12 +48,11 @@ class Sl4aShell(jsonrpc_shell_base.JsonRpcShellBase):
         console_env['ed'] = self._ad.ed
 
     def _get_banner(self, serial):
-        return """
-Connected to {}. Call methods against:
-    ad (android_device.AndroidDevice)
-    sl4a or s (SL4A)
-    ed (EventDispatcher)
-    """.format(serial)
+        return """Connected to {}. Call methods against:
+               ad (android_device.AndroidDevice)
+               sl4a or s (SL4A)
+               ed (EventDispatcher)
+               """.format(serial)
 
 
 if __name__ == '__main__':
