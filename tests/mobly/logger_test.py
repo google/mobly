@@ -23,8 +23,10 @@ class LoggerTest(unittest.TestCase):
     """Verifies code in mobly.logger module.
     """
     def test_epoch_to_log_line_timestamp(self):
-        # actual_stamp = logger.epoch_to_log_line_timestamp(1469134262116)
-        # self.assertEqual("07-21 13:51:02.116", actual_stamp)
+        test_time = time.localtime(1469134262)
+        correct_stamp = time.strftime("%m-%d %H:%M:%S.116", test_time)
+        actual_stamp = logger.epoch_to_log_line_timestamp(1469134262116)
+        self.assertEqual(correct_stamp, actual_stamp)
         pass
 
 if __name__ == "__main__":
