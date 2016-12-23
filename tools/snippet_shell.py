@@ -60,7 +60,7 @@ if __name__ == '__main__':
         help='Device serial to connect to (if more than one device is connected)'
     )
     parser.add_argument('package', metavar='PACKAGE_NAME', type=str, nargs=1,
-                        help='The pacakge name of the snippet to use.')
+                        help='The package name of the snippet to use.')
     args = parser.parse_args()
     logger.setup_test_logger('/tmp/logs/mobly_snippet_shell',
                              prefix="SnippetShell",
