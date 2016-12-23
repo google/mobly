@@ -45,11 +45,11 @@ class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
         console_env['s'] = self._ad.snippet
 
     def _get_banner(self, serial):
-        return """Connected to {}. Call methods against:
-                  ad (android_device.AndroidDevice)
-                  snippet or s (Snippet)
-               """.format(serial)
-
+        lines = ['Connected to %s.' % serial,
+                 'Call methods against:',
+                 '    ad (android_device.AndroidDevice)',
+                 '    snippet or s (Snippet)']
+        return '\n'.join(lines)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
