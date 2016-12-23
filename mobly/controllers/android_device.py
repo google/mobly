@@ -370,7 +370,8 @@ class AndroidDevice(object):
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader and self.is_rootable:
             self.root_adb()
-        # A dict for tracking snippet clients
+        # A dict for tracking snippet clients. Keys are clients' attribute
+        # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
 
     def set_logger_prefix_tag(self, tag):
