@@ -418,8 +418,7 @@ class AndroidDevice(object):
         if self._adb_logcat_process:
             self.stop_adb_logcat()
         self._terminate_sl4a()
-        for name in list(self._snippet_clients.keys()):
-            client = self._snippet_clients[name]
+        for name, client in self._snippet_clients.items():
             self._terminate_jsonrpc_client(client)
             delattr(self, name)
         self._snippet_clients = {}
