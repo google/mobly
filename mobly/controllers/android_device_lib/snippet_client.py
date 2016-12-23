@@ -55,7 +55,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         cmd = _LAUNCH_CMD.format(self._port, self._package)
         # Use info here so people know exactly what's happening here, which is
         # helpful since they need to create their own instrumentations and
-        # anifest.
+        # manifest.
         logging.info('Launching snippet apk with: %s', cmd)
         self._adb.shell(_LAUNCH_CMD.format(self._port, self._package))
 
