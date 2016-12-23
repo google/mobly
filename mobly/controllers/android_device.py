@@ -535,7 +535,7 @@ class AndroidDevice(object):
             raise SnippetError(
                 ('Attribute "%s" is already registered with '
                  'package "%s", it cannot be used again.') % (
-                     name, self._snippet_clients[name].app_name))
+                     name, self._snippet_clients[name].package))
         # Should not load snippet with an existing attribute.
         if hasattr(self, name):
             raise SnippetError(
@@ -543,7 +543,7 @@ class AndroidDevice(object):
                 name)
         # Should not load the same snippet package more than once.
         for client_name, client in self._snippet_clients.items():
-            if package == client.app_name:
+            if package == client.package:
                 raise SnippetError(
                     'Snippet package "%s" has already been loaded under name "%s".'
                     % (package, client_name))

@@ -44,7 +44,7 @@ MOCK_SNIPPET_PACKAGE_NAME = "com.my.snippet"
 
 # A mock SnippetClient used for testing snippet management logic.
 MockSnippetClient = mock.MagicMock()
-MockSnippetClient.app_name = MOCK_SNIPPET_PACKAGE_NAME
+MockSnippetClient.package = MOCK_SNIPPET_PACKAGE_NAME
 
 
 class AndroidDeviceTest(unittest.TestCase):
