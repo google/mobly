@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import unittest
-import time
+from datetime import datetime
 
 from mobly import logger
 
@@ -24,8 +24,10 @@ class LoggerTest(unittest.TestCase):
     """Verifies code in mobly.logger module.
     """
     def test_epoch_to_log_line_timestamp(self):
-        test_time = time.localtime(1469134262)
-        correct_stamp = time.strftime("%m-%d %H:%M:%S.116", test_time)
+        correct_stamp = (
+    		datetime.fromtimestamp(1469134262.116)
+    		.strftime("%m-%d %H:%M:%S.%f")[:-3]
+    	)
         actual_stamp = logger.epoch_to_log_line_timestamp(1469134262116)
         self.assertEqual(correct_stamp, actual_stamp)
         pass
