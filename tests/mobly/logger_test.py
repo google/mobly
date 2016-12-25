@@ -25,7 +25,7 @@ class LoggerTest(unittest.TestCase):
     """
     def test_epoch_to_log_line_timestamp(self):
         correct_stamp = (
-    		datetime.fromtimestamp(1469134262.116000)
+    		datetime.fromtimestamp(1469134262.1161)
     		.strftime("%m-%d %H:%M:%S.%f")[:-3]
     	)
         actual_stamp = logger.epoch_to_log_line_timestamp(1469134262116)
