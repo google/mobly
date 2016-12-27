@@ -57,6 +57,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     def _do_start_app(self):
         """Overrides superclass."""
         cmd = _LAUNCH_CMD.format(self._port, self._package)
+        # Use info here so people know exactly what's happening here, which is
+        # helpful since they need to create their own instrumentations and
+        # manifest.
         logging.info('Launching snippet apk with: %s', cmd)
         self._adb.shell(_LAUNCH_CMD.format(self._port, self._package))
 

@@ -49,13 +49,13 @@ class JsonRpcShellBase(object):
         If no serial is given, it will be read from 'adb devices' if there is
         only one.
         """
-        if not serial:
-            serials = android_device.list_adb_devices()
-            if len(serials) != 1:
-                raise Error('Expected 1 phone, but %d found. Use the -s flag.' %
-                            len(serials))
-            serial = serials[0]
-        self._serial = serial
+        serials = android_device.list_adb_devices()
+        if (not serial) and len(serials) != 1:
+            raise Error('Expected 1 phone, but %d found. Use the -s flag.' %
+                        len(serials))
+        serial = serials[0]
+        if serial not in serials:
+            raise Error("Device '%s' is not found by adb." % serial)
         ads = android_device.get_instances([serial])
         assert len(ads) == 1
         self._ad = ads[0]
@@ -71,7 +71,7 @@ class JsonRpcShellBase(object):
         self._start_services(console_env)
 
         # Start the console
-        console_banner = self._get_banner(self._serial)
+        console_banner = self._get_banner(self._ad.serial)
         code.interact(banner=console_banner, local=console_env)
 
         # Tear everything down
