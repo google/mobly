@@ -132,7 +132,7 @@ def _start_services_on_ads(ads):
     for ad in ads:
         running_ads.append(ad)
         try:
-            ad.start_services(getattr(ad, KEY_SKIP_SL4A, False))
+            ad.start_services(skip_sl4a=getattr(ad, KEY_SKIP_SL4A, False))
         except Exception as e:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED, True)
             if is_required:
@@ -810,7 +810,7 @@ class AndroidDevice(object):
         self.wait_for_boot_completion()
         if self.is_rootable:
             self.root_adb()
-        self.start_services(getattr(self, KEY_SKIP_SL4A, False))
+        self.start_services(skip_sl4a=getattr(self, KEY_SKIP_SL4A, False))
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
