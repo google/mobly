@@ -132,7 +132,7 @@ def _start_services_on_ads(ads):
     for ad in ads:
         running_ads.append(ad)
         try:
-            ad.start_services(skip_sl4a=getattr(ad, KEY_SKIP_SL4A, False))
+            ad.start_services()
         except Exception as e:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED, True)
             if is_required:
@@ -394,7 +394,7 @@ class AndroidDevice(object):
 
     # TODO(angli): This function shall be refactored to accommodate all services
     # and not have hard coded switch for SL4A when b/29157104 is done.
-    def start_services(self, skip_sl4a=False):
+    def start_services(self, skip_sl4a=None):
         """Starts long running services on the android device.
 
         1. Start adb logcat capture.
@@ -408,6 +408,8 @@ class AndroidDevice(object):
         except:
             self.log.exception("Failed to start adb logcat!")
             raise
+        if skip_sl4a is None:
+            skip_sl4a=getattr(ad, KEY_SKIP_SL4A, False)
         if not skip_sl4a:
             self._start_sl4a()
 
