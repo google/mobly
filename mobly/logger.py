@@ -90,7 +90,7 @@ def epoch_to_log_line_timestamp(epoch_time, time_zone=None):
 
     Args:
         epoch_time: integer, an epoch timestamp in ms.
-        time_zone: instance of tzinfo, time zone information. 
+        time_zone: instance of tzinfo, time zone information.
                    Using pytz rather than python 3.2 time_zone implementation
                    for python 2 compatibility reasons.
 
