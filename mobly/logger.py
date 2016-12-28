@@ -90,15 +90,16 @@ def epoch_to_log_line_timestamp(epoch_time, time_zone=None):
 
     Args:
         epoch_time: integer, an epoch timestamp in ms.
-        time_zone: instance of tzinfo, time zone information. Using pytz rather than
-        python 3.2 time_zone implementation for python 2 compatibility reasons
+        time_zone: instance of tzinfo, time zone information. 
+                   Using pytz rather than python 3.2 time_zone implementation
+                   for python 2 compatibility reasons.
 
     Returns:
         A string that is the corresponding timestamp in log line timestamp
         format.
     """
     s, ms = divmod(epoch_time, 1000)
-    d = datetime.datetime.fromtimestamp(s, tz = time_zone)
+    d = datetime.datetime.fromtimestamp(s, tz=time_zone)
     return d.strftime("%m-%d %H:%M:%S.") + str(ms)
 
 
