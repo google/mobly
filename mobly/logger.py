@@ -84,19 +84,22 @@ def _get_timestamp(time_format, delta=None):
     return t.strftime(time_format)[:-3]
 
 
-def epoch_to_log_line_timestamp(epoch_time):
+def epoch_to_log_line_timestamp(epoch_time, time_zone=None):
     """Converts an epoch timestamp in ms to log line timestamp format, which
     is readible for humans.
 
     Args:
         epoch_time: integer, an epoch timestamp in ms.
+        time_zone: instance of tzinfo, time zone information.
+                   Using pytz rather than python 3.2 time_zone implementation
+                   for python 2 compatibility reasons.
 
     Returns:
         A string that is the corresponding timestamp in log line timestamp
         format.
     """
     s, ms = divmod(epoch_time, 1000)
-    d = datetime.datetime.fromtimestamp(s)
+    d = datetime.datetime.fromtimestamp(s, tz=time_zone)
     return d.strftime("%m-%d %H:%M:%S.") + str(ms)
 
 
