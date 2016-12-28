@@ -463,8 +463,15 @@ class AndroidDevice(object):
 
     @property
     def is_rootable(self):
-        build_type = self.adb.getprop("ro.build.type").lower()
-        return build_type != 'user'
+        """If the build type is 'user', the device is not rootable.
+
+        Other possible build types are 'userdebug' and 'eng', both are rootable.
+        We are checking the last four chars of the clean stdout because the
+        stdout of the adb command could be polluted with other info like adb
+        server startup message.
+        """
+        build_type_output = self.adb.getprop("ro.build.type").lower()
+        return build_type_output[-4:] != 'user'
 
     @property
     def model(self):
