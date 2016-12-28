@@ -810,7 +810,7 @@ class AndroidDevice(object):
         self.wait_for_boot_completion()
         if self.is_rootable:
             self.root_adb()
-        self.start_services()
+        self.start_services(skip_sl4a=getattr(self, KEY_SKIP_SL4A, False))
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
