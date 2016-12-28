@@ -84,7 +84,7 @@ def _get_timestamp(time_format, delta=None):
     return t.strftime(time_format)[:-3]
 
 
-def epoch_to_log_line_timestamp(epoch_time, time_zone):
+def epoch_to_log_line_timestamp(epoch_time, time_zone=None):
     """Converts an epoch timestamp in ms to log line timestamp format, which
     is readible for humans.
 
