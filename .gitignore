@@ -1,4 +1,7 @@
-/.cache/
+build/
+.cache/
+dist/
+.DS_Store
 *.egg-info/
 *.egg/
 *.eggs/
@@ -7,5 +10,3 @@ Gemfile.lock
 *.pyc
 .sass-cache
 _site
-build/
-dist/
