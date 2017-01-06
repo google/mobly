@@ -355,8 +355,8 @@ class TestRunner(object):
             self.results.add_controller_info(module_config_name,
                                              controller_info)
         else:
-            self.log.warning(("No optional debug info found for controller %s, "
-                              "carry on."), module_config_name)
+            self.log.warning("No optional debug info found for controller %s, "
+                            "carry on.", module_config_name)
         self.log.debug("Found %d objects for controller %s", len(objects),
                       module_config_name)
         destroy_func = module.destroy
