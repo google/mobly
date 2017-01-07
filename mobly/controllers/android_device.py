@@ -223,7 +223,7 @@ def get_instances_with_configs(configs):
             serial = c.pop('serial')
         except KeyError:
             raise Error(
-                'Required value 'serial' is missing in AndroidDevice config %s.'
+                'Required value "serial" is missing in AndroidDevice config %s.'
                 % c)
         is_required = c.get(KEY_DEVICE_REQUIRED, True)
         try:
@@ -687,8 +687,8 @@ class AndroidDevice(object):
             extra_params = self.adb_logcat_param
         except AttributeError:
             extra_params = '-b all'
-        cmd = 'adb -s %s logcat -v threadtime %s >> %s' % 
-              (self.serial, extra_params, logcat_file_path)
+        cmd = 'adb -s %s logcat -v threadtime %s >> %s' % (
+              self.serial, extra_params, logcat_file_path)
         self._adb_logcat_process = utils.start_standing_subprocess(cmd)
         self.adb_logcat_file_path = logcat_file_path
 
