@@ -32,19 +32,19 @@ class TestResultEnums(object):
     field in TestResultRecord.
     """
 
-    RECORD_NAME = "Test Name"
-    RECORD_CLASS = "Test Class"
-    RECORD_BEGIN_TIME = "Begin Time"
-    RECORD_END_TIME = "End Time"
-    RECORD_RESULT = "Result"
-    RECORD_UID = "UID"
-    RECORD_EXTRAS = "Extras"
-    RECORD_EXTRA_ERRORS = "Extra Errors"
-    RECORD_DETAILS = "Details"
-    TEST_RESULT_PASS = "PASS"
-    TEST_RESULT_FAIL = "FAIL"
-    TEST_RESULT_SKIP = "SKIP"
-    TEST_RESULT_ERROR = "ERROR"
+    RECORD_NAME = 'Test Name'
+    RECORD_CLASS = 'Test Class'
+    RECORD_BEGIN_TIME = 'Begin Time'
+    RECORD_END_TIME = 'End Time'
+    RECORD_RESULT = 'Result'
+    RECORD_UID = 'UID'
+    RECORD_EXTRAS = 'Extras'
+    RECORD_EXTRA_ERRORS = 'Extra Errors'
+    RECORD_DETAILS = 'Details'
+    TEST_RESULT_PASS = 'PASS'
+    TEST_RESULT_FAIL = 'FAIL'
+    TEST_RESULT_SKIP = 'SKIP'
+    TEST_RESULT_ERROR = 'ERROR'
 
 
 class TestResultRecord(object):
@@ -108,7 +108,7 @@ class TestResultRecord(object):
     def test_fail(self, e=None):
         """To mark the test as failed in this record.
 
-        Only test_fail does instance check because we want "assert xxx" to also
+        Only test_fail does instance check because we want 'assert xxx' to also
         fail the test same way assert_true does.
 
         Args:
@@ -149,14 +149,14 @@ class TestResultRecord(object):
 
     def __str__(self):
         d = self.to_dict()
-        l = ["%s = %s" % (k, v) for k, v in d.items()]
+        l = ['%s = %s' % (k, v) for k, v in d.items()]
         s = ', '.join(l)
         return s
 
     def __repr__(self):
         """This returns a short string representation of the test record."""
         t = utils.epoch_to_human_time(self.begin_time)
-        return "%s %s %s" % (t, self.test_name, self.result)
+        return '%s %s %s' % (t, self.test_name, self.result)
 
     def to_dict(self):
         """Gets a dictionary representating the content of this class.
@@ -230,7 +230,7 @@ class TestResult(object):
             A TestResult instance that's the sum of two TestResult instances.
         """
         if not isinstance(r, TestResult):
-            raise TypeError("Operand %s of type %s is not a TestResult." %
+            raise TypeError('Operand %s of type %s is not a TestResult.' %
                             (r, type(r)))
         sum_result = TestResult()
         for name in sum_result.__dict__:
@@ -268,8 +268,8 @@ class TestResult(object):
         try:
             json.dumps(info)
         except TypeError:
-            logging.warning(("Controller info for %s is not JSON serializable!"
-                             " Coercing it to string.") % name)
+            logging.warning('Controller info for %s is not JSON serializable!'
+                            ' Coercing it to string.' % name)
             self.controller_info[name] = str(info)
             return
         self.controller_info[name] = info
@@ -297,21 +297,21 @@ class TestResult(object):
 
         Format of the json string is:
             {
-                "Results": [
+                'Results': [
                     {<executed test record 1>},
                     {<executed test record 2>},
                     ...
                 ],
-                "Summary": <summary dict>
+                'Summary': <summary dict>
             }
 
         Returns:
             A json-format string representing the test results.
         """
         d = {}
-        d["ControllerInfo"] = self.controller_info
-        d["Results"] = [record.to_dict() for record in self.executed]
-        d["Summary"] = self.summary_dict()
+        d['ControllerInfo'] = self.controller_info
+        d['Results'] = [record.to_dict() for record in self.executed]
+        d['Summary'] = self.summary_dict()
         json_str = json.dumps(d, indent=4, sort_keys=True)
         return json_str
 
@@ -319,7 +319,7 @@ class TestResult(object):
         """Gets a string that summarizes the stats of this test result.
 
         The summary rovides the counts of how many test cases fall into each
-        category, like "Passed", "Failed" etc.
+        category, like 'Passed', 'Failed' etc.
 
         Format of the string is:
             Requested <int>, Executed <int>, ...
@@ -327,25 +327,25 @@ class TestResult(object):
         Returns:
             A summary string of this test result.
         """
-        l = ["%s %d" % (k, v) for k, v in self.summary_dict().items()]
+        l = ['%s %d' % (k, v) for k, v in self.summary_dict().items()]
         # Sort the list so the order is the same every time.
-        msg = ", ".join(sorted(l))
+        msg = ', '.join(sorted(l))
         return msg
 
     def summary_dict(self):
         """Gets a dictionary that summarizes the stats of this test result.
 
         The summary rovides the counts of how many test cases fall into each
-        category, like "Passed", "Failed" etc.
+        category, like 'Passed', 'Failed' etc.
 
         Returns:
             A dictionary with the stats of this test result.
         """
         d = {}
-        d["Requested"] = len(self.requested)
-        d["Executed"] = len(self.executed)
-        d["Passed"] = len(self.passed)
-        d["Failed"] = len(self.failed)
-        d["Skipped"] = len(self.skipped)
-        d["Error"] = len(self.error)
+        d['Requested'] = len(self.requested)
+        d['Executed'] = len(self.executed)
+        d['Passed'] = len(self.passed)
+        d['Failed'] = len(self.failed)
+        d['Skipped'] = len(self.skipped)
+        d['Error'] = len(self.error)
         return d

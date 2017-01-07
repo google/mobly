@@ -37,7 +37,7 @@ def _validate_test_config(test_config):
     """
     for k in keys.Config.reserved_keys.value:
         if k not in test_config:
-            raise MoblyConfigError("Required key %s missing in test config." % k)
+            raise MoblyConfigError('Required key %s missing in test config.' % k)
 
 
 def _validate_testbed_name(name):
@@ -55,11 +55,11 @@ def _validate_testbed_name(name):
     if not name:
         raise MoblyConfigError("Test bed names can't be empty.")
     if not isinstance(name, str):
-        raise MoblyConfigError("Test bed names have to be string.")
+        raise MoblyConfigError('Test bed names have to be string.')
     for l in name:
         if l not in utils.valid_filename_chars:
             raise MoblyConfigError(
-                "Char '%s' is not allowed in test bed names." % l)
+                'Char "%s" is not allowed in test bed names.' % l)
 
 
 def _validate_testbed_configs(testbed_configs):
@@ -80,15 +80,15 @@ def _validate_testbed_configs(testbed_configs):
         _validate_testbed_name(name)
         # Test bed names should be unique.
         if name in seen_names:
-            raise MoblyConfigError("Duplicate testbed name %s found." % name)
+            raise MoblyConfigError('Duplicate testbed name %s found.' % name)
         seen_names.add(name)
 
 
 def _verify_test_class_name(test_cls_name):
-    if not test_cls_name.endswith("Test"):
+    if not test_cls_name.endswith('Test'):
         raise MoblyConfigError(
-            ("Requested test class '%s' does not follow the test class naming "
-             "convention *Test.") % test_cls_name)
+            'Requested test class "%s" does not follow the test class naming '
+            'convention *Test.' % test_cls_name)
 
 
 def gen_term_signal_handler(test_runners):
@@ -132,10 +132,10 @@ def _parse_one_test_specifier(item):
         for elem in test_case_names.split(','):
             test_case_name = elem.strip()
             if not test_case_name.startswith("test_"):
-                raise MoblyConfigError(("Requested test case '%s' in test class "
-                                 "'%s' does not follow the test case "
-                                 "naming convention test_*.") %
-                                (test_case_name, test_cls_name))
+                raise MoblyConfigError(
+                    'Requested test case "%s" in test class "%s" does not'
+                    ' follow the test case naming convention test_*.' %
+                    (test_case_name, test_cls_name))
             clean_names.append(test_case_name)
         return (test_cls_name, clean_names)
 
@@ -176,8 +176,8 @@ def load_test_config_file(test_config_path, tb_filters=None):
                 tbs.append(tb)
         if len(tbs) != len(tb_filters):
             raise MoblyConfigError(
-                ("Expect to find %d test bed configs, found %d. Check if"
-                 " you have the correct test bed names.") %
+                'Expect to find %d test bed configs, found %d. Check if'
+                ' you have the correct test bed names.' %
                 (len(tb_filters), len(tbs)))
         configs[keys.Config.key_testbed.value] = tbs
 

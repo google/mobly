@@ -31,18 +31,18 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import sl4a_client
 from mobly.controllers.android_device_lib import snippet_client
 
-MOBLY_CONTROLLER_CONFIG_NAME = "AndroidDevice"
+MOBLY_CONTROLLER_CONFIG_NAME = 'AndroidDevice'
 
-ANDROID_DEVICE_PICK_ALL_TOKEN = "*"
+ANDROID_DEVICE_PICK_ALL_TOKEN = '*'
 
 # Key name for adb logcat extra params in config file.
-ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = "adb_logcat_param"
-ANDROID_DEVICE_EMPTY_CONFIG_MSG = "Configuration is empty, abort!"
-ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = "Configuration should be a list, abort!"
+ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = 'adb_logcat_param'
+ANDROID_DEVICE_EMPTY_CONFIG_MSG = 'Configuration is empty, abort!'
+ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 
 # Keys for attributes in configs that alternate device behavior
-KEY_SKIP_SL4A = "skip_sl4a"
-KEY_DEVICE_REQUIRED = "required"
+KEY_SKIP_SL4A = 'skip_sl4a'
+KEY_DEVICE_REQUIRED = 'required'
 
 
 class Error(signals.ControllerError):
@@ -83,8 +83,8 @@ def create(configs):
 
     for ad in ads:
         if ad.serial not in connected_ads:
-            raise DoesNotExistError(("Android device %s is specified in config"
-                                     " but is not attached.") % ad.serial)
+            raise DoesNotExistError('Android device %s is specified in config'
+                                    ' but is not attached.' % ad.serial)
     _start_services_on_ads(ads)
     return ads
 
@@ -103,7 +103,7 @@ def destroy(ads):
             # stops. It also recovers unresponsive devices in some cases.
             ad.adb.reconnect()
         except:
-            ad.log.exception("Failed to clean up properly.")
+            ad.log.exception('Failed to clean up properly.')
 
 
 def get_info(ads):
@@ -117,7 +117,7 @@ def get_info(ads):
     """
     device_info = []
     for ad in ads:
-        info = {"serial": ad.serial, "model": ad.model}
+        info = {'serial': ad.serial, 'model': ad.model}
         info.update(ad.build_info)
         device_info.append(info)
     return device_info
@@ -140,12 +140,12 @@ def _start_services_on_ads(ads):
         except Exception as e:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED, True)
             if is_required:
-                ad.log.exception("Failed to start some services, abort!")
+                ad.log.exception('Failed to start some services, abort!')
                 destroy(running_ads)
                 raise
             else:
-                logging.warning(("Skipping device %s because some service "
-                                 "failed to start: %s"), ad.serial, e)
+                logging.warning('Skipping device %s because some service '
+                                'failed to start: %s', ad.serial, e)
 
 
 def _parse_device_list(device_list_str, key):
@@ -176,7 +176,7 @@ def list_adb_devices():
         A list of android device serials. Empty if there's none.
     """
     out = adb.AdbProxy().devices()
-    return _parse_device_list(out, "device")
+    return _parse_device_list(out, 'device')
 
 
 def list_fastboot_devices():
@@ -187,7 +187,7 @@ def list_fastboot_devices():
         A list of android device serials. Empty if there's none.
     """
     out = fastboot.FastbootProxy().devices()
-    return _parse_device_list(out, "fastboot")
+    return _parse_device_list(out, 'fastboot')
 
 
 def get_instances(serials):
@@ -208,7 +208,7 @@ def get_instances(serials):
 def get_instances_with_configs(configs):
     """Create AndroidDevice instances from a list of json configs.
 
-    Each config should have the required key-value pair "serial".
+    Each config should have the required key-value pair 'serial'.
 
     Args:
         configs: A list of dicts each representing the configuration of one
@@ -220,10 +220,10 @@ def get_instances_with_configs(configs):
     results = []
     for c in configs:
         try:
-            serial = c.pop("serial")
+            serial = c.pop('serial')
         except KeyError:
             raise Error(
-                "Required value 'serial' is missing in AndroidDevice config %s."
+                'Required value 'serial' is missing in AndroidDevice config %s.'
                 % c)
         is_required = c.get(KEY_DEVICE_REQUIRED, True)
         try:
@@ -232,7 +232,7 @@ def get_instances_with_configs(configs):
         except Exception as e:
             if is_required:
                 raise
-            logging.warning("Skipping device %s due to error: %s", serial, e)
+            logging.warning('Skipping device %s due to error: %s', serial, e)
             continue
         results.append(ad)
     return results
@@ -278,8 +278,8 @@ def get_device(ads, **kwargs):
     attributes of certain values.
 
     Example:
-        get_device(android_devices, label="foo", phone_number="1234567890")
-        get_device(android_devices, model="angler")
+        get_device(android_devices, label='foo', phone_number='1234567890')
+        get_device(android_devices, model='angler')
 
     Args:
         ads: A list of AndroidDevice instances.
@@ -304,13 +304,13 @@ def get_device(ads, **kwargs):
     filtered = filter_devices(ads, _get_device_filter)
     if not filtered:
         raise Error(
-            "Could not find a target device that matches condition: %s." %
+            'Could not find a target device that matches condition: %s.' %
             kwargs)
     elif len(filtered) == 1:
         return filtered[0]
     else:
         serials = [ad.serial for ad in filtered]
-        raise Error("More than one device matched: %s" % serials)
+        raise Error('More than one device matched: %s' % serials)
 
 
 def take_bug_reports(ads, test_name, begin_time):
@@ -358,13 +358,13 @@ class AndroidDevice(object):
                   via fastboot.
     """
 
-    def __init__(self, serial=""):
+    def __init__(self, serial=''):
         self.serial = serial
         # logging.log_path only exists when this is used in an Mobly test run.
-        log_path_base = getattr(logging, "log_path", "/tmp/logs")
-        self.log_path = os.path.join(log_path_base, "AndroidDevice%s" % serial)
+        log_path_base = getattr(logging, 'log_path', '/tmp/logs')
+        self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            "tag": self.serial
+            'tag': self.serial
         })
         self.sl4a = None
         self.ed = None
@@ -386,15 +386,15 @@ class AndroidDevice(object):
         could be more helpful if users can mark the role of the device instead.
 
         For example, instead of marking the serial number:
-            "INFO [AndroidDevice|abcdefg12345] One pending call ringing."
+            'INFO [AndroidDevice|abcdefg12345] One pending call ringing.'
 
         marking the role of the device here is  more useful here:
-            "INFO [AndroidDevice|Caller] One pending call ringing."
+            'INFO [AndroidDevice|Caller] One pending call ringing.'
 
         Args:
             tag: A string that is the tag to use.
         """
-        self.log.extra["tag"] = tag
+        self.log.extra['tag'] = tag
 
     # TODO(angli): This function shall be refactored to accommodate all services
     # and not have hard coded switch for SL4A when b/29157104 is done.
@@ -410,7 +410,7 @@ class AndroidDevice(object):
         try:
             self.start_adb_logcat()
         except:
-            self.log.exception("Failed to start adb logcat!")
+            self.log.exception('Failed to start adb logcat!')
             raise
         if not skip_sl4a:
             self._start_sl4a()
@@ -440,12 +440,12 @@ class AndroidDevice(object):
             device is in bootloader mode.
         """
         if self.is_bootloader:
-            self.log.error("Device is in fastboot mode, could not get build "
-                           "info.")
+            self.log.error('Device is in fastboot mode, could not get build '
+                           'info.')
             return
         info = {}
-        info["build_id"] = self.adb.getprop("ro.build.id")
-        info["build_type"] = self.adb.getprop("ro.build.type")
+        info['build_id'] = self.adb.getprop('ro.build.id')
+        info['build_type'] = self.adb.getprop('ro.build.type')
         return info
 
     @property
@@ -459,11 +459,11 @@ class AndroidDevice(object):
         """True if adb is running as root for this device.
         """
         try:
-            return "0" == self.adb.shell("id -u").decode("utf-8").strip()
+            return '0' == self.adb.shell('id -u').decode('utf-8').strip()
         except adb.AdbError:
             # Wait a bit and retry to work around adb flakiness for this cmd.
             time.sleep(0.2)
-            return "0" == self.adb.shell("id -u").decode("utf-8").strip()
+            return '0' == self.adb.shell('id -u').decode('utf-8').strip()
 
     @property
     def is_rootable(self):
@@ -474,7 +474,7 @@ class AndroidDevice(object):
         stdout of the adb command could be polluted with other info like adb
         server startup message.
         """
-        build_type_output = self.adb.getprop("ro.build.type").lower()
+        build_type_output = self.adb.getprop('ro.build.type').lower()
         return build_type_output[-4:] != 'user'
 
     @property
@@ -483,20 +483,20 @@ class AndroidDevice(object):
         """
         # If device is in bootloader mode, get mode name from fastboot.
         if self.is_bootloader:
-            out = self.fastboot.getvar("product").strip()
-            # "out" is never empty because of the "total time" message fastboot
+            out = self.fastboot.getvar('product').strip()
+            # 'out' is never empty because of the 'total time' message fastboot
             # writes to stderr.
-            lines = out.decode("utf-8").split('\n', 1)
+            lines = out.decode('utf-8').split('\n', 1)
             if lines:
                 tokens = lines[0].split(' ')
                 if len(tokens) > 1:
                     return tokens[1].lower()
             return None
-        model = self.adb.getprop("ro.build.product").lower()
-        if model == "sprout":
+        model = self.adb.getprop('ro.build.product').lower()
+        if model == 'sprout':
             return model
         else:
-            return self.adb.getprop("ro.product.name").lower()
+            return self.adb.getprop('ro.product.name').lower()
 
     def load_config(self, config):
         """Add attributes to the AndroidDevice object based on json config.
@@ -510,7 +510,7 @@ class AndroidDevice(object):
         """
         for k, v in config.items():
             if hasattr(self, k):
-                raise Error("Attempting to set existing attribute %s on %s" %
+                raise Error('Attempting to set existing attribute %s on %s' %
                             (k, self.serial))
             setattr(self, k, v)
 
@@ -544,20 +544,19 @@ class AndroidDevice(object):
         # Should not load snippet with the same attribute more than once.
         if name in self._snippet_clients:
             raise SnippetError(
-                ('Attribute "%s" is already registered with '
-                 'package "%s", it cannot be used again.') % (
-                     name, self._snippet_clients[name].package))
+                'Attribute "%s" is already registered with package "%s", it '
+                'cannot be used again.' %
+                (name, self._snippet_clients[name].package))
         # Should not load snippet with an existing attribute.
         if hasattr(self, name):
-            raise SnippetError(
-                'Attribute "%s" already exists, please use a different name.' %
-                name)
+            raise SnippetError('Attribute "%s" already exists, please use a '
+                               'different name.' % name)
         # Should not load the same snippet package more than once.
         for client_name, client in self._snippet_clients.items():
             if package == client.package:
                 raise SnippetError(
-                    'Snippet package "%s" has already been loaded under name "%s".'
-                    % (package, client_name))
+                    'Snippet package "%s" has already been loaded under name'
+                    ' "%s".' % (package, client_name))
         host_port = utils.get_available_host_port()
         # TODO(adorokhine): Don't assume that a free host-side port is free on
         # the device as well. Both sides should allocate a unique port.
@@ -612,7 +611,7 @@ class AndroidDevice(object):
         client.closeSl4aSession()
         client.close()
         client.stop_app()
-        self.adb.forward("--remove tcp:%d" % client.port)
+        self.adb.forward('--remove tcp:%d' % client.port)
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
         low = mobly_logger.logline_timestamp_comparator(begin_time,
@@ -630,16 +629,15 @@ class AndroidDevice(object):
                 period.
         """
         if not self.adb_logcat_file_path:
-            raise Error(
-                ("Attempting to cat adb log when none has"
-                 " been collected on Android device %s.") % self.serial)
+            raise Error('Attempting to cat adb log when none has been collected'
+                        ' on Android device %s.' % self.serial)
         end_time = mobly_logger.get_log_line_timestamp()
-        self.log.debug("Extracting adb log from logcat.")
-        adb_excerpt_path = os.path.join(self.log_path, "AdbLogExcerpts")
+        self.log.debug('Extracting adb log from logcat.')
+        adb_excerpt_path = os.path.join(self.log_path, 'AdbLogExcerpts')
         utils.create_dir(adb_excerpt_path)
         f_name = os.path.basename(self.adb_logcat_file_path)
-        out_name = f_name.replace("adblog,", "").replace(".txt", "")
-        out_name = ",{},{}.txt".format(begin_time, out_name)
+        out_name = f_name.replace('adblog,', '').replace('.txt', '')
+        out_name = ',%s,%s.txt' % (begin_time, out_name)
         tag_len = utils.MAX_FILENAME_LEN - len(out_name)
         tag = tag[:tag_len]
         out_name = tag + out_name
@@ -674,24 +672,23 @@ class AndroidDevice(object):
         save the logcat in a file.
         """
         if self._adb_logcat_process:
-            raise Error(
-                'Android device %s already has an adb logcat thread going on. '
-                'Cannot start another one.' % self.serial)
+            raise Error('Android device %s already has an adb logcat thread '
+                        'going on. Cannot start another one.' % self.serial)
         # Disable adb log spam filter for rootable. Have to stop and clear
         # settings first because 'start' doesn't support --clear option before
         # Android N.
         if self.is_rootable:
-            self.adb.shell("logpersist.stop --clear")
-            self.adb.shell("logpersist.start")
-        f_name = "adblog,{},{}.txt".format(self.model, self.serial)
+            self.adb.shell('logpersist.stop --clear')
+            self.adb.shell('logpersist.start')
+        f_name = 'adblog,%s,%s.txt' % (self.model, self.serial)
         utils.create_dir(self.log_path)
         logcat_file_path = os.path.join(self.log_path, f_name)
         try:
             extra_params = self.adb_logcat_param
         except AttributeError:
-            extra_params = "-b all"
-        cmd = "adb -s {} logcat -v threadtime {} >> {}".format(
-            self.serial, extra_params, logcat_file_path)
+            extra_params = '-b all'
+        cmd = 'adb -s %s logcat -v threadtime %s >> %s' % 
+              (self.serial, extra_params, logcat_file_path)
         self._adb_logcat_process = utils.start_standing_subprocess(cmd)
         self.adb_logcat_file_path = logcat_file_path
 
@@ -699,9 +696,8 @@ class AndroidDevice(object):
         """Stops the adb logcat collection subprocess.
         """
         if not self._adb_logcat_process:
-            raise Error(
-                'Android device %s does not have an ongoing adb logcat '
-                'collection.' % self.serial)
+            raise Error('Android device %s does not have an ongoing adb logcat '
+                        'collection.' % self.serial)
         utils.stop_standing_subprocess(self._adb_logcat_process)
         self._adb_logcat_process = None
 
@@ -714,34 +710,34 @@ class AndroidDevice(object):
         """
         new_br = True
         try:
-            stdout = self.adb.shell("bugreportz -v").decode("utf-8")
+            stdout = self.adb.shell('bugreportz -v').decode('utf-8')
             # This check is necessary for builds before N, where adb shell's ret
             # code and stderr are not propagated properly.
-            if "not found" in stdout:
+            if 'not found' in stdout:
                 new_br = False
         except adb.AdbError:
             new_br = False
-        br_path = os.path.join(self.log_path, "BugReports")
+        br_path = os.path.join(self.log_path, 'BugReports')
         utils.create_dir(br_path)
-        base_name = ",{},{}.txt".format(begin_time, self.serial)
+        base_name = ',%s,%s.txt' % (begin_time, self.serial)
         if new_br:
-            base_name = base_name.replace(".txt", ".zip")
+            base_name = base_name.replace('.txt', '.zip')
         test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
         out_name = test_name[:test_name_len] + base_name
         full_out_path = os.path.join(br_path, out_name.replace(' ', r'\ '))
         # in case device restarted, wait for adb interface to return
         self.wait_for_boot_completion()
-        self.log.info("Taking bugreport for %s.", test_name)
+        self.log.info('Taking bugreport for %s.', test_name)
         if new_br:
-            out = self.adb.shell("bugreportz").decode("utf-8")
-            if not out.startswith("OK"):
-                raise Error("Failed to take bugreport on %s: %s" %
+            out = self.adb.shell('bugreportz').decode('utf-8')
+            if not out.startswith('OK'):
+                raise Error('Failed to take bugreport on %s: %s' %
                             (self.serial, out))
             br_out_path = out.split(':')[1].strip()
-            self.adb.pull("%s %s" % (br_out_path, full_out_path))
+            self.adb.pull('%s %s' % (br_out_path, full_out_path))
         else:
-            self.adb.bugreport(" > {}".format(full_out_path))
-        self.log.info("Bugreport for %s taken at %s.", test_name,
+            self.adb.bugreport(' > %s' % full_out_path)
+        self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
 
     def _terminate_sl4a(self):
@@ -757,7 +753,7 @@ class AndroidDevice(object):
             self.ed.clean_up()
             self.ed = None
 
-    def run_iperf_client(self, server_host, extra_args=""):
+    def run_iperf_client(self, server_host, extra_args=''):
         """Start iperf client on the device.
 
         Return status as true if iperf client start successfully.
@@ -766,15 +762,15 @@ class AndroidDevice(object):
         Args:
             server_host: Address of the iperf server.
             extra_args: A string representing extra arguments for iperf client,
-                e.g. "-i 1 -t 30".
+                e.g. '-i 1 -t 30'.
 
         Returns:
             status: true if iperf client start successfully.
             results: results have data flow information
         """
-        out = self.adb.shell("iperf3 -c {} {}".format(server_host, extra_args))
+        out = self.adb.shell('iperf3 -c %s %s' % (server_host, extra_args))
         clean_out = str(out, 'utf-8').strip().split('\n')
-        if "error" in clean_out[0].lower():
+        if 'error' in clean_out[0].lower():
             return False, clean_out
         return True, clean_out
 
@@ -789,7 +785,7 @@ class AndroidDevice(object):
         self.adb.wait_for_device()
         while time.time() < timeout_start + timeout:
             try:
-                completed = self.adb.getprop("sys.boot_completed")
+                completed = self.adb.getprop('sys.boot_completed')
                 if completed == '1':
                     return
             except adb.AdbError:
@@ -797,7 +793,7 @@ class AndroidDevice(object):
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise Error("Device %s booting process timed out." % self.serial)
+        raise Error('Device %s booting process timed out.' % self.serial)
 
     def reboot(self):
         """Reboots the device.
@@ -829,13 +825,13 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
 
     Usage:
         my_log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            "tag": <custom tag>
+            'tag': <custom tag>
         })
 
         Then each log line added by my_log will have a prefix
-        "[AndroidDevice|<tag>]"
+        '[AndroidDevice|<tag>]'
     """
 
     def process(self, msg, kwargs):
-        msg = "[AndroidDevice|%s] %s" % (self.extra["tag"], msg)
+        msg = '[AndroidDevice|%s] %s' % (self.extra['tag'], msg)
         return (msg, kwargs)

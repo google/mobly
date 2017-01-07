@@ -45,7 +45,7 @@ def main(argv=None):
 
         from mobly import test_runner
         ...
-        if __name__ == "__main__":
+        if __name__ == '__main__':
             test_runner.main()
 
     If you want to implement your own cli entry point, you could use function
@@ -56,28 +56,28 @@ def main(argv=None):
               input.
     """
     # Parse cli args.
-    parser = argparse.ArgumentParser(description="Mobly Test Executable.")
+    parser = argparse.ArgumentParser(description='Mobly Test Executable.')
     parser.add_argument(
         '-c',
         '--config',
         nargs=1,
         type=str,
         required=True,
-        metavar="<PATH>",
-        help="Path to the test configuration file.")
+        metavar='<PATH>',
+        help='Path to the test configuration file.')
     parser.add_argument(
         '--test_case',
         nargs='+',
         type=str,
-        metavar="[test_a test_b...]",
-        help="A list of test case names in the test script.")
+        metavar='[test_a test_b...]',
+        help='A list of test case names in the test script.')
     parser.add_argument(
         '-tb',
         '--test_bed',
         nargs='+',
         type=str,
-        metavar="[<TEST BED NAME1> <TEST BED NAME2> ...]",
-        help="Specify which test beds to run tests on.")
+        metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
+        help='Specify which test beds to run tests on.')
     if not argv:
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
@@ -102,7 +102,7 @@ def main(argv=None):
         except signals.TestAbortAll:
             pass
         except:
-            logging.exception("Error occurred when executing test bed %s",
+            logging.exception('Error occurred when executing test bed %s',
                               config[keys.Config.key_testbed.value])
             ok = False
     if not ok:
@@ -119,13 +119,13 @@ def _find_test_class():
         The test class in the test module.
     """
     test_classes = []
-    main_module_members = sys.modules["__main__"]
+    main_module_members = sys.modules['__main__']
     for _, module_member in main_module_members.__dict__.items():
         if inspect.isclass(module_member):
             if issubclass(module_member, base_test.BaseTestClass):
                 test_classes.append(module_member)
     if len(test_classes) != 1:
-        logging.error("Expected 1 test class per file, found %s.",
+        logging.error('Expected 1 test class per file, found %s.',
                       [t.__name__ for t in test_classes])
         sys.exit(1)
     return test_classes[0]
@@ -157,7 +157,7 @@ def execute_one_test_class(test_class, test_config, test_identifier):
     except signals.TestAbortAll:
         raise
     except:
-        logging.exception("Exception when executing %s.", tr.testbed_name)
+        logging.exception('Exception when executing %s.', tr.testbed_name)
     finally:
         tr.stop()
 
@@ -197,7 +197,7 @@ class TestRunner(object):
         self.testbed_name = self.testbed_configs[
             keys.Config.key_testbed_name.value]
         start_time = logger.get_log_file_timestamp()
-        self.id = "{}@{}".format(self.testbed_name, start_time)
+        self.id = '%s@%s' % (self.testbed_name, start_time)
         # log_path should be set before parsing configs.
         l_path = os.path.join(
             self.test_configs[keys.Config.key_log_path.value],
@@ -225,18 +225,17 @@ class TestRunner(object):
             ControllerError is raised if the module does not match the Mobly
             controller interface, or one of the required members is null.
         """
-        required_attributes = ("create", "destroy",
-                               "MOBLY_CONTROLLER_CONFIG_NAME")
+        required_attributes = ('create', 'destroy',
+                               'MOBLY_CONTROLLER_CONFIG_NAME')
         for attr in required_attributes:
             if not hasattr(module, attr):
                 raise signals.ControllerError(
-                    ("Module %s missing required "
-                     "controller module attribute %s.") % (module.__name__,
-                                                           attr))
+                     'Module %s missing required controller module attribute'
+                     ' %s.' % (module.__name__, attr))
             if not getattr(module, attr):
                 raise signals.ControllerError(
-                    ("Controller interface %s in %s cannot be null.") % (
-                     attr, module.__name__))
+                    'Controller interface %s in %s cannot be null.' %
+                    (attr, module.__name__))
 
     def register_controller(self, module, required=True, min_number=1):
         """Registers an Mobly controller module for a test run.
@@ -265,7 +264,7 @@ class TestRunner(object):
             def get_info(objects):
                 [Optional] Gets info from the controller objects used in a test
                 run. The info will be included in test_result_summary.json under
-                the key "ControllerInfo". Such information could include unique
+                the key 'ControllerInfo'. Such information could include unique
                 ID, version, or anything that could be useful for describing the
                 test bed and debugging.
                 Args:
@@ -298,7 +297,7 @@ class TestRunner(object):
         Raises:
             When required is True, ControllerError is raised if no corresponding
             config can be found.
-            Regardless of the value of "required", ControllerError is raised if
+            Regardless of the value of 'required', ControllerError is raised if
             the controller module has already been registered or any other error
             occurred in the registration process.
             If the actual number of objects instantiated is less than the
@@ -309,18 +308,18 @@ class TestRunner(object):
         module_ref_name = module.__name__.split('.')[-1]
         if module_ref_name in self.controller_registry:
             raise signals.ControllerError(
-                ("Controller module %s has already been registered. It cannot "
-                 "be registered again.") % module_ref_name)
+                'Controller module %s has already been registered. It cannot '
+                'be registered again.' % module_ref_name)
         # Create controller objects.
         create = module.create
         module_config_name = module.MOBLY_CONTROLLER_CONFIG_NAME
         if module_config_name not in self.testbed_configs:
             if required:
                 raise signals.ControllerError(
-                    "No corresponding config found for %s" %
+                    'No corresponding config found for %s' %
                     module_config_name)
             self.log.warning(
-                "No corresponding config found for optional controller %s",
+                'No corresponding config found for optional controller %s',
                 module_config_name)
             return None
         try:
@@ -331,34 +330,34 @@ class TestRunner(object):
             objects = create(controller_config)
         except:
             self.log.exception(
-                "Failed to initialize objects for controller %s, abort!",
+                'Failed to initialize objects for controller %s, abort!',
                 module_config_name)
             raise
         if not isinstance(objects, list):
             raise signals.ControllerError(
-                "Controller module %s did not return a list of objects, abort."
+                'Controller module %s did not return a list of objects, abort.'
                 % module_ref_name)
         # Check we got enough controller objects to continue.
         actual_number = len(objects)
         if actual_number < min_number:
             module.destroy(objects)
             raise signals.ControllerError(
-                "Expected to get at least %d controller objects, got %d." %
+                'Expected to get at least %d controller objects, got %d.' %
                 (min_number, actual_number))
         self.controller_registry[module_ref_name] = objects
         # Collect controller information and write to test result.
-        # Implementation of "get_info" is optional for a controller module.
-        if hasattr(module, "get_info"):
+        # Implementation of 'get_info' is optional for a controller module.
+        if hasattr(module, 'get_info'):
             controller_info = module.get_info(objects)
-            logging.debug("Controller %s: %s", module_config_name,
+            logging.debug('Controller %s: %s', module_config_name,
                           controller_info)
             self.results.add_controller_info(module_config_name,
                                              controller_info)
         else:
-            self.log.warning("No optional debug info found for controller %s. "
-                             "To provide it, implement get_info in this "
-                             "controller module.", module_config_name)
-        self.log.debug("Found %d objects for controller %s", len(objects),
+            self.log.warning('No optional debug info found for controller %s. '
+                             'To provide it, implement get_info in this '
+                             'controller module.', module_config_name)
+        self.log.debug('Found %d objects for controller %s', len(objects),
                       module_config_name)
         destroy_func = module.destroy
         self.controller_destructors[module_ref_name] = destroy_func
@@ -371,10 +370,10 @@ class TestRunner(object):
         """
         for name, destroy in self.controller_destructors.items():
             try:
-                self.log.debug("Destroying %s.", name)
+                self.log.debug('Destroying %s.', name)
                 destroy(self.controller_registry[name])
             except:
-                self.log.exception("Exception occurred destroying %s.", name)
+                self.log.exception('Exception occurred destroying %s.', name)
         self.controller_registry = {}
         self.controller_destructors = {}
 
@@ -388,7 +387,7 @@ class TestRunner(object):
         self.test_run_info[
             keys.Config.ikey_testbed_name.value] = self.testbed_name
         # Unpack other params.
-        self.test_run_info["register_controller"] = self.register_controller
+        self.test_run_info['register_controller'] = self.register_controller
         self.test_run_info[keys.Config.ikey_logpath.value] = self.log_path
         self.test_run_info[keys.Config.ikey_logger.value] = self.log
         cli_args = test_configs.get(keys.Config.ikey_cli_args.value)
@@ -418,8 +417,8 @@ class TestRunner(object):
         try:
             test_cls = self.test_classes[test_cls_name]
         except KeyError:
-            raise ValueError(("Test class %s is not found, did you add it to "
-                              "this TestRunner?") % test_cls_name)
+            raise ValueError('Test class %s is not found, did you add it to '
+                             'this TestRunner?' % test_cls_name)
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
                 cls_result = test_cls_instance.run(test_cases)
@@ -449,20 +448,20 @@ class TestRunner(object):
         # Initialize controller objects and pack appropriate objects/params
         # to be passed to test class.
         self._parse_config(self.test_configs)
-        self.log.debug("Executing run list %s.", self.run_list)
+        self.log.debug('Executing run list %s.', self.run_list)
         for test_cls_name, test_case_names in self.run_list:
             if not self.running:
                 break
             if test_case_names:
-                self.log.debug("Executing test cases %s in test class %s.",
+                self.log.debug('Executing test cases %s in test class %s.',
                                test_case_names, test_cls_name)
             else:
-                self.log.debug("Executing test class %s", test_cls_name)
+                self.log.debug('Executing test class %s', test_cls_name)
             try:
                 self._run_test_class(test_cls_name, test_case_names)
             except signals.TestAbortAll as e:
                 self.log.warning(
-                    "Abort all subsequent test classes. Reason: %s", e)
+                    'Abort all subsequent test classes. Reason: %s', e)
                 raise
             finally:
                 self.unregister_controllers()
@@ -474,7 +473,7 @@ class TestRunner(object):
         This function concludes a test run and writes out a test report.
         """
         if self.running:
-            msg = "\nSummary for test run %s: %s\n" % (
+            msg = '\nSummary for test run %s: %s\n' % (
                 self.id, self.results.summary_str())
             self._write_results_json_str()
             self.log.info(msg.strip())
@@ -486,6 +485,6 @@ class TestRunner(object):
 
         TODO(angli): This should be replaced by standard log record mechanism.
         """
-        path = os.path.join(self.log_path, "test_run_summary.json")
+        path = os.path.join(self.log_path, 'test_run_summary.json')
         with open(path, 'w') as f:
             f.write(self.results.json_str())
