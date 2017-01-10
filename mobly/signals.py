@@ -32,7 +32,7 @@ def generated_test(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         func(*args, **kwargs)
-        raise TestSilent("Result reporting for %s is suppressed" %
+        raise TestSilent('Result reporting for %s is suppressed' %
                          func.__name__)
 
     return wrapper
@@ -58,11 +58,11 @@ class TestSignal(Exception):
             json.dumps(extras)
             self.extras = extras
         except TypeError:
-            raise TestSignalError(("Extras must be json serializable. %s "
-                                   "is not.") % extras)
+            raise TestSignalError('Extras must be json serializable. %s '
+                                  'is not.' % extras)
 
     def __str__(self):
-        return "Details=%s, Extras=%s" % (self.details, self.extras)
+        return 'Details=%s, Extras=%s' % (self.details, self.extras)
 
 
 class TestFailure(TestSignal):

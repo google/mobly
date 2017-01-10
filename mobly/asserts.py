@@ -281,7 +281,7 @@ class _AssertRaisesContext(object):
                 exc_name = self.expected.__name__
             except AttributeError:
                 exc_name = str(self.expected)
-            raise signals.TestFailure("{} not raised".format(exc_name),
+            raise signals.TestFailure('%s not raised' % exc_name,
                                       extras=self.extras)
         if not issubclass(exc_type, self.expected):
             # let unexpected exceptions pass through

@@ -24,13 +24,13 @@ import sys
 
 from mobly.utils import create_dir
 
-log_line_format = "%(asctime)s.%(msecs).03d %(levelname)s %(message)s"
+log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
 # The micro seconds are added by the format string above,
 # so the time format does not include ms.
-log_line_time_format = "%m-%d %H:%M:%S"
+log_line_time_format = '%m-%d %H:%M:%S'
 log_line_timestamp_len = 18
 
-logline_timestamp_re = re.compile("\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d")
+logline_timestamp_re = re.compile('\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d')
 
 
 def _parse_logline_timestamp(t):
@@ -100,7 +100,7 @@ def epoch_to_log_line_timestamp(epoch_time, time_zone=None):
     """
     s, ms = divmod(epoch_time, 1000)
     d = datetime.datetime.fromtimestamp(s, tz=time_zone)
-    return d.strftime("%m-%d %H:%M:%S.") + str(ms)
+    return d.strftime('%m-%d %H:%M:%S.') + str(ms)
 
 
 def get_log_line_timestamp(delta=None):
@@ -115,7 +115,7 @@ def get_log_line_timestamp(delta=None):
     Returns:
         A timestamp in log line format with an offset.
     """
-    return _get_timestamp("%m-%d %H:%M:%S.%f", delta)
+    return _get_timestamp('%m-%d %H:%M:%S.%f', delta)
 
 
 def get_log_file_timestamp(delta=None):
@@ -130,7 +130,7 @@ def get_log_file_timestamp(delta=None):
     Returns:
         A timestamp in log filen name format with an offset.
     """
-    return _get_timestamp("%m-%d-%Y_%H-%M-%S-%f", delta)
+    return _get_timestamp('%m-%d-%Y_%H-%M-%S-%f', delta)
 
 
 def _setup_test_logger(log_path, prefix=None, filename=None):
@@ -153,7 +153,7 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     # Log info to stream
     terminal_format = log_line_format
     if prefix:
-        terminal_format = "[{}] {}".format(prefix, log_line_format)
+        terminal_format = '[%s] %s' % (prefix, log_line_format)
     c_formatter = logging.Formatter(terminal_format, log_line_time_format)
     ch = logging.StreamHandler(sys.stdout)
     ch.setFormatter(c_formatter)
@@ -191,7 +191,7 @@ def create_latest_log_alias(actual_path):
     Args:
         actual_path: The source directory where the latest test run's logs are.
     """
-    link_path = os.path.join(os.path.dirname(actual_path), "latest")
+    link_path = os.path.join(os.path.dirname(actual_path), 'latest')
     if os.path.islink(link_path):
         os.remove(link_path)
     os.symlink(actual_path, link_path)
