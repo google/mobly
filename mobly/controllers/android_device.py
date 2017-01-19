@@ -795,6 +795,20 @@ class AndroidDevice(object):
             time.sleep(5)
         raise Error('Device %s booting process timed out.' % self.serial)
 
+    def _get_active_snippet_info(self):
+        """Collects information on currently active snippet clients.
+
+        The info is used for restoring the snippet clients after rebooting the
+        device.
+
+        Returns:
+            A list of tuples, each tuple's first element is the 
+        """
+        snippet_info = []
+        for attr_name, client in self._snippet_clients.items():
+            snippet_info.append((attr_name, client.package))
+        return snippet_info
+
     def reboot(self):
         """Reboots the device.
 
@@ -812,12 +826,16 @@ class AndroidDevice(object):
         if self.is_bootloader:
             self.fastboot.reboot()
             return
+        snippet_info = self._get_active_snippet_info()
         self.stop_services()
         self.adb.reboot()
         self.wait_for_boot_completion()
         if self.is_rootable:
             self.root_adb()
-        self.start_services(skip_sl4a=getattr(self, KEY_SKIP_SL4A, False))
+        skip_sl4a = getattr(self, KEY_SKIP_SL4A, False) or self.sl4a is None
+        self.start_services(skip_sl4a=skip_sl4a)
+        for attr_name, package_name in snippet_info:
+            self.load_snippet(attr_name, package_name)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
