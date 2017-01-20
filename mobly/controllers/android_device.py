@@ -802,7 +802,9 @@ class AndroidDevice(object):
         device.
 
         Returns:
-            A list of tuples, each tuple's first element is the 
+            A list of tuples, each tuple's first element is the name of the
+            snippet client's attribute, the second element is the package name
+            of the snippet.
         """
         snippet_info = []
         for attr_name, client in self._snippet_clients.items():
