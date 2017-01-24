@@ -23,23 +23,21 @@ modules.
 class Config(enum.Enum):
     """Enum values for test config related lookups.
     """
-    # Keys used to look up values from test config files.
-    # These keys define the wording of test configs and their internal
-    # references.
-    key_log_path = "logpath"
-    key_testbed = "testbed"
-    key_testbed_name = "name"
-    key_config_path = "configpath"
-    # Internal keys, used internally, not exposed to user's config files.
+    # Reserved keywords for the config.
+    key_log_path = "LogPath"
+    # Top-level keywordss used in a test bed config.
+    key_testbed = "TestBeds"
+    key_testbed_name = "Name"
+    key_testbed_controllers = "Controllers"
+    key_testbed_test_params = "TestParams"
+    # Internal keys, used internally to detach the internal var names from
+    # keywords that define the config format.
     ikey_user_param = "user_params"
     ikey_testbed_name = "testbed_name"
+    ikey_testbed_controllers = "controller_configs"
     ikey_logger = "log"
     ikey_logpath = "log_path"
     ikey_cli_args = "cli_args"
-
-    # A list of keys whose values in configs should not be passed to test
-    # classes without unpacking first.
-    reserved_keys = (key_testbed, key_log_path)
 
 
 def get_name_by_value(value):
