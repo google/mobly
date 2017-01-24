@@ -17,7 +17,6 @@
 import base64
 import concurrent.futures
 import datetime
-import json
 import functools
 import logging
 import os
@@ -171,17 +170,6 @@ def find_files(paths, file_predicate):
                 if file_predicate(name, ext):
                     file_list.append((dirPath, name, ext))
     return file_list
-
-
-def load_config(file_full_path):
-    """Loads a JSON config file.
-
-    Returns:
-        A JSON object.
-    """
-    with open(file_full_path, 'r') as f:
-        conf = json.load(f)
-        return conf
 
 
 def load_file_to_base64_str(f_path):
