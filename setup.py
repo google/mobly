@@ -24,7 +24,8 @@ install_requires = [
     'pytz',
     # mock-1.0.1 is the last version compatible with setuptools <17.1,
     # which is what comes with Ubuntu 14.04 LTS.
-    'mock<=1.0.1'
+    'mock<=1.0.1',
+    'pyyaml'
 ]
 
 if sys.version_info < (3, ):

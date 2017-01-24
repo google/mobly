@@ -1,0 +1,8 @@
+TestBeds:
+  - Name: Sanity
+    Controllers:
+      MagicDevice:
+        - "Magic!"
+    TestParams:
+      icecream: 42
+      extra_param: haha
