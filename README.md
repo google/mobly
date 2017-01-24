@@ -72,20 +72,14 @@ restrictions.
 Let's start with the simple example of posting "Hello World" on the Android
 device's screen. Create the following files:
 
-**sample_config.json**
+**sample_config.yml**
 
-```python
-{
-    "testbed":
-    [
-        {
-            "_description": "A testbed where adb will find Android devices.",
-            "name": "SampleTestBed",
-            "AndroidDevice": "*"
-        }
-    ],
-    "logpath": "/tmp/logs"
-}
+```yaml
+TestBeds:
+  # A testbed where adb will find Android devices.
+  - Name: SampleTestBed,
+    Controllers:
+        "AndroidDevice": "*"
 ```
 
 **hello_world_test.py**
@@ -113,21 +107,22 @@ if __name__ == "__main__":
 
 *To execute:*
 
-    $ python hello_world_test.py -c sample_config.json
+    $ python hello_world_test.py -c sample_config.yml
 
 *Expect*
 
 A "Hello World!" toast notification appears on your device's screen.
 
-Within SampleTestBed, we used `"AndroidDevice" : "*"` to tell the test runner to
-automatically find all connected Android devices. You can also specify
-particular devices by serial number and attach extra attributes to the object:
+Within SampleTestBed's `Controllers` section, we used `"AndroidDevice" : "*"` to tell
+the test runner to automatically find all connected Android devices. You can also
+specify particular devices by serial number and attach extra attributes to the object:
 
-```python
-"AndroidDevice": [
-  {"serial": "xyz", "phone_number": "123456"},
-  {"serial": "abc", "label": "golden_device"},
-]
+```yaml
+AndroidDevice:
+  - serial: xyz,
+    phone_number: 123456,
+  - serial: abc,
+    label: golden_device
 ```
 
 ## Example 2: Invoking specific test case
@@ -160,7 +155,7 @@ if __name__ == "__main__":
 
 *To execute:*
 
-    $ python hello_world_test.py -c sample_config.json --test_case test_bye
+    $ python hello_world_test.py -c sample_config.yml --test_case test_bye
 
 
 *Expect*
@@ -170,7 +165,7 @@ A "Goodbye!" toast notification appears on your device's screen.
 You can dictate what test cases to execute within a test script and their
 execution order, shown below:
 
-    $ python hello_world_test.py -c sample_config.json --test_case test_bye test_hello test_bye
+    $ python hello_world_test.py -c sample_config.yml --test_case test_bye test_hello test_bye
 
 *Expect*
 
@@ -182,22 +177,17 @@ Toast notifications appear on your device's screen in the following order:
 You could specify user parameters to be passed into your test class in the
 config file.
 
-In the following config, we added a user parameter `favorite_food`.
+In the following config, we added a parameter `favorite_food` to be used in the test case.
 
-**sample_config.json**
+**sample_config.yml**
 
-```python
-{
-    "testbed":
-    [
-        {
-            "name" : "SampleTestBed",
-            "AndroidDevice" : "*"
-        }
-    ],
-    "logpath" : "/tmp/logs",
-    "favorite_food" : "Green eggs and ham."
-}
+```yaml
+TestBeds:
+  - Name: SampleTestBed,
+    Controllers:
+        AndroidDevice" : "*"
+    TestParams:
+        favorite_food: Green eggs and ham.
 ```
 
 In the test script, you could access the user parameter:
@@ -211,33 +201,37 @@ In the test script, you could access the user parameter:
       self.dut.sl4a.makeToast("I'm not hungry.")
 ```
 
-## Example 4: Multiple Test Beds
+## Example 4: Multiple Test Beds and Default Test Params
 
 Multiple test beds can be configured in one configuration file.
 
-**sample_config.json**
+**sample_config.yaml**
 
-```python
-{
-    "testbed":[
-        {
-            "name" : "XyzTestBed",
-            "AndroidDevice" : [{"serial": "xyz", "phone_number": "123456"}]
-        },
-        {
-            "name" : "AbcTestBed",
-            "AndroidDevice" : [{"serial": "abc", "label": "golden_device"}]
-        }
-    ],
-    "logpath" : "/tmp/logs",
-    "favorite_food": "green eggs and ham"
-}
+```yaml
+DefaultParams: &DefaultParams
+    favorite_food: green eggs and ham.
+
+TestBeds:
+  - Name: XyzTestBed,
+    Controllers:
+        AndroidDevice:
+          - serial: xyz,
+            phone_number: 123456
+    TestParams:
+        <<: *DefaultParams
+  - Name: AbcTestBed,
+    Controllers:
+        AndroidDevice:
+          - serial: abc,
+            label: golden_device
+    TestParams:
+        <<: *DefaultParams
 ```
 
 You can choose which one to execute on with the command line argument
 `--test_bed`:
 
-    $ python hello_world_test.py -c sample_config.json --test_bed AbcTestBed
+    $ python hello_world_test.py -c sample_config.yml --test_bed AbcTestBed
 
 *Expect*
 
@@ -251,21 +245,20 @@ In this example, we use one Android device to discover another Android device
 via bluetooth. This test demonstrates several essential elements in test
 writing, like logging and asserts.
 
-**sample_config.json**
+**sample_config.yml**
 
-```python
-{
-    "testbed":[
-        {
-            "name" : "TwoDeviceTestBed",
-            "AndroidDevice" : [{"serial": "xyz", "label": "dut"},
-                               {"serial": "abc", "label": "discoverer"}]
-        }
-    ],
-    "logpath" : "/tmp/logs",
-    "bluetooth_name": "MagicBluetooth",
-    "bluetooth_timeout": 5
-}
+```yaml
+TestBeds:
+  - Name: TwoDeviceTestBed,
+    Controllers:
+        AndroidDevice:
+          - serial: xyz,
+            label: dut
+          - serial: abc,
+            label: discoverer
+    TestParams:
+        bluetooth_name: MagicBluetooth,
+        bluetooth_timeout: 5
 ```
 
 **sample_test.py**
