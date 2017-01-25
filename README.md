@@ -185,6 +185,7 @@ config file.
 In the following config, we added a user parameter `favorite_food`.
 
 **sample_config.json**
+
 ```python
 {
     "testbed":
@@ -200,6 +201,7 @@ In the following config, we added a user parameter `favorite_food`.
 ```
 
 In the test script, you could access the user parameter:
+
 ```python
   def test_favorite_food(self):
     food = self.user_params.get('favorite_food')
@@ -214,6 +216,7 @@ In the test script, you could access the user parameter:
 Multiple test beds can be configured in one configuration file.
 
 **sample_config.json**
+
 ```python
 {
     "testbed":[
@@ -249,6 +252,7 @@ via bluetooth. This test demonstrates several essential elements in test
 writing, like logging and asserts.
 
 **sample_config.json**
+
 ```python
 {
     "testbed":[
@@ -265,6 +269,7 @@ writing, like logging and asserts.
 ```
 
 **sample_test.py**
+
 ```python
 from mobly import base_test
 from mobly import test_runner
