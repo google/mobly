@@ -40,8 +40,7 @@ ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = 'adb_logcat_param'
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = 'Configuration is empty, abort!'
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 
-# Keys for attributes in configs that alternate device behavior
-KEY_SKIP_SL4A = 'skip_sl4a'
+# Keys for attributes in configs that alternate the controller module behavior.
 KEY_DEVICE_REQUIRED = 'required'
 
 
@@ -136,7 +135,7 @@ def _start_services_on_ads(ads):
     for ad in ads:
         running_ads.append(ad)
         try:
-            ad.start_services(skip_sl4a=getattr(ad, KEY_SKIP_SL4A, False))
+            ad.start_services()
         except Exception as e:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED, True)
             if is_required:
@@ -338,10 +337,9 @@ def take_bug_reports(ads, test_name, begin_time):
 class AndroidDevice(object):
     """Class representing an android device.
 
-    Each object of this class represents one Android device in Mobly, including
-    handles to adb, fastboot, and sl4a clients. In addition to direct adb
-    commands, this object also uses adb port forwarding to talk to the Android
-    device.
+    Each object of this class represents one Android device in Mobly. This class
+    provides various ways, like adb, fastboot, sl4a, and snippets, to control an
+    Android device, whether it's a real device or an emulator instance.
 
     Attributes:
         serial: A string that's the serial number of the Androi device.
@@ -396,29 +394,22 @@ class AndroidDevice(object):
         """
         self.log.extra['tag'] = tag
 
-    # TODO(angli): This function shall be refactored to accommodate all services
-    # and not have hard coded switch for SL4A when b/29157104 is done.
-    def start_services(self, skip_sl4a=False):
+    def start_services(self):
         """Starts long running services on the android device.
 
         1. Start adb logcat capture.
-        2. Start SL4A if not skipped.
-
-        Args:
-            skip_sl4a: Does not attempt to start SL4A if True.
         """
         try:
             self.start_adb_logcat()
         except:
             self.log.exception('Failed to start adb logcat!')
             raise
-        if not skip_sl4a:
-            self._start_sl4a()
 
     def stop_services(self):
-        """Stops long running services on the android device.
+        """Stops long running services on the Android device.
 
-        Stop adb logcat and terminate sl4a sessions if exist.
+        Stop adb logcat, terminate sl4a sessions if exist, terminate all
+        snippet clients.
         """
         if self._adb_logcat_process:
             self.stop_adb_logcat()
@@ -567,14 +558,14 @@ class AndroidDevice(object):
         self._snippet_clients[name] = client
         setattr(self, name, client)
 
-    def _start_sl4a(self):
-        """Create an sl4a connection to the device.
+    def load_sl4a(self):
+        """Start sl4a service on the Android device.
 
-        Assigns the open sl4a client to self.sl4a. By default, another
-        connection on the same session is made for EventDispatcher, and the
-        dispatcher is bound to self.ed.
+        Launch sl4a server if not already running, spin up a session on the
+        server, and two connections to this session.
 
-        If sl4a server is not started on the device, tries to start it.
+        Creates an sl4a client (self.sl4a) with one connection, and one
+        EventDispatcher obj (self.ed) with the other connection.
         """
         host_port = utils.get_available_host_port()
         device_port = sl4a_client.DEVICE_SIDE_PORT
@@ -829,13 +820,15 @@ class AndroidDevice(object):
             self.fastboot.reboot()
             return
         snippet_info = self._get_active_snippet_info()
+        use_sl4a = self.sl4a is not None
         self.stop_services()
         self.adb.reboot()
         self.wait_for_boot_completion()
         if self.is_rootable:
             self.root_adb()
-        skip_sl4a = getattr(self, KEY_SKIP_SL4A, False) or self.sl4a is None
-        self.start_services(skip_sl4a=skip_sl4a)
+        self.start_services()
+        if use_sl4a:
+            self.load_sl4a()
         for attr_name, package_name in snippet_info:
             self.load_snippet(attr_name, package_name)
 
