@@ -40,6 +40,7 @@ class HelloWorldTest(base_test.BaseTestClass):
     # object is created from this.
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
+    self.dut.load_sl4a()
 
   def test_hello(self):
     self.dut.sl4a.makeToast('Hello World!')

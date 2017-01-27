@@ -41,7 +41,9 @@ class HelloWorldTest(base_test.BaseTestClass):
     # requires at least two Android devices.
     self.ads = self.register_controller(android_device, min_number=2)
     self.dut = android_device.get_device(self.ads, label="dut")
+    self.dut.load_sl4a()
     self.discoverer = android_device.get_device(self.ads, label="discoverer")
+    self.discoverer.load_sl4a()
     self.dut.ed.clear_all_events()
     self.discoverer.ed.clear_all_events()
 
