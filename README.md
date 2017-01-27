@@ -201,7 +201,7 @@ In the test script, you could access the user parameter:
       self.dut.sl4a.makeToast("I'm not hungry.")
 ```
 
-## Example 4: Multiple Test Beds and Default Test Params
+## Example 4: Multiple Test Beds and Default Test Parameters
 
 Multiple test beds can be configured in one configuration file.
 
