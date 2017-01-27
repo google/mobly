@@ -28,7 +28,6 @@ from __future__ import print_function
 
 import argparse
 import logging
-import sys
 
 from mobly.controllers.android_device_lib import jsonrpc_shell_base
 

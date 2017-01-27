@@ -27,13 +27,14 @@ _LAUNCH_CMD = (
 
 
 class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
-    def __init__(self, adb_proxy):
-        super(Sl4aClient, self).__init__(adb_proxy)
+    def __init__(self, host_port, adb_proxy):
+        super(Sl4aClient, self).__init__(host_port, adb_proxy)
         self.app_name = 'SL4A'
+        self.device_port = DEVICE_SIDE_PORT
 
     def _do_start_app(self):
         """Overrides superclass."""
-        self._adb.shell(_LAUNCH_CMD.format(DEVICE_SIDE_PORT))
+        self._adb.shell(_LAUNCH_CMD.format(self.device_port))
 
     def stop_app(self):
         """Overrides superclass."""
@@ -44,19 +45,6 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         try:
             out = self._adb.shell("pm path com.googlecode.android_scripting"
                                   ).decode('utf-8').strip()
-            return bool(out)
-        except adb.AdbError as e:
-            if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
-                return False
-            raise
-
-    def _is_app_running(self):
-        """Overrides superclass."""
-        # Grep for process with a preceding S which means it is truly started.
-        try:
-            out = self._adb.shell(
-                'ps | grep "S com.googlecode.android_scripting"').decode(
-                    'utf-8').strip()
             return bool(out)
         except adb.AdbError as e:
             if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
