@@ -395,9 +395,8 @@ class AndroidDevice(object):
         self.log.extra['tag'] = tag
 
     def start_services(self):
-        """Starts long running services on the android device.
-
-        1. Start adb logcat capture.
+        """Starts long running services on the android device, like adb logcat
+        capture.
         """
         try:
             self.start_adb_logcat()
