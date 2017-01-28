@@ -31,24 +31,27 @@ class Error(Exception):
 
 
 class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
+    """A client for interacting with snippet APKs using Mobly Snippet Lib.
+
+    See superclass documentation for a list of public attributes.
+    """
+
     def __init__(self, package, host_port, adb_proxy):
-        """Initialzies a SnippetClient.
+        """Initializes a SnippetClient.
   
         Args:
-          package: (str) The package name of the apk where the snippets are
-            defined.
-          host_port: (int) The port at which to start the snippet client. Note
-            that the same port will currently be used for both the device and
-            host side of the connection.
-            TODO(adorokhine): allocate a distinct free port for both sides of
-            the connection; it is not safe in general to reuse the same one.
-          adb_proxy: (adb.AdbProxy) The adb proxy to use to start the app.
+            package: (str) The package name of the apk where the snippets are
+                     defined.
+            host_port: (int) The port at which to start the snippet client. Note
+                       that the same port will currently be used for both the
+                      device and host side of the connection.
+            adb_proxy: (adb.AdbProxy) The adb proxy to use to start the app.
         """
-        super(SnippetClient, self).__init__(host_port, adb_proxy)
-        self.app_name = package
         # TODO(adorokhine): Don't assume that a free host-side port is free on
         # the device as well. Both sides should allocate a unique port.
-        self.device_port = host_port
+        super(SnippetClient, self).__init__(
+            host_port=host_port, device_port=host_port, app_name=package,
+            adb_proxy=adb_proxy)
         self.package = package
 
     def _do_start_app(self):

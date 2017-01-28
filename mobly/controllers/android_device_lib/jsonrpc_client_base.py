@@ -94,20 +94,24 @@ class JsonRpcClientBase(object):
 
     Attributes:
         host_port: (int) The host port of this RPC client.
-        device_port: (int) The device port of this RPC client. Must be set by
-          the superclass.
-        uid: (int) The uid of this session.
+        device_port: (int) The device port of this RPC client.
         app_name: (str) The user-visible name of the app being communicated
-          with. Must be set by the superclass.
+                  with.
+        uid: (int) The uid of this session.
     """
 
-    def __init__(self, host_port, adb_proxy):
+    def __init__(self, host_port, device_port, app_name, adb_proxy):
         """
         Args:
-            port: (int) the host-side port this server will listen on
-            adb_proxy: adb.AdbProxy, The adb proxy to use to start the app
+            host_port: (int) The host port of this RPC client.
+            device_port: (int) The device port of this RPC client.
+            app_name: (str) The user-visible name of the app being communicated
+                      with.
+            adb_proxy: (adb.AdbProxy) The adb proxy to use to start the app.
         """
         self.host_port = host_port
+        self.device_port = device_port
+        self.app_name = app_name
         self.uid = None
         self._adb = adb_proxy
         self._client = None  # prevent close errors on connect failure
@@ -156,7 +160,7 @@ class JsonRpcClientBase(object):
 
         Args:
             wait_time: float, The time to wait for the app to come up before
-                raising an error.
+                       raising an error.
 
         Raises:
             AppStartError: When the app was not able to be started.

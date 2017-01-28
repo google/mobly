@@ -46,7 +46,9 @@ class MockSocketFile(object):
 
 class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
     def __init__(self):
-      super(FakeRpcClient, self).__init__(host_port=80, adb_proxy=None)
+        super(FakeRpcClient, self).__init__(
+            host_port=80, device_port=90, app_name='FakeRpcClient',
+            adb_proxy=None)
 
 
 class JsonRpcClientBaseTest(unittest.TestCase):
