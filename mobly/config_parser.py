@@ -57,10 +57,9 @@ def _validate_testbed_name(name):
     """
     if not name:
         raise MoblyConfigError("Test bed names can't be empty.")
-    if not isinstance(name, str):
-        raise MoblyConfigError('Test bed names have to be string.')
-    for l in name:
-        if l not in utils.valid_filename_chars:
+    name = str(name)
+    for char in name:
+        if char not in utils.valid_filename_chars:
             raise MoblyConfigError(
                 'Char "%s" is not allowed in test bed names.' % l)
 
