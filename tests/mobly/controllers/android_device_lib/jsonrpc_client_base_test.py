@@ -46,7 +46,9 @@ class MockSocketFile(object):
 
 class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
     def __init__(self):
-      super(FakeRpcClient, self).__init__(adb_proxy=None)
+        super(FakeRpcClient, self).__init__(
+            host_port=80, device_port=90, app_name='FakeRpcClient',
+            adb_proxy=None)
 
 
 class JsonRpcClientBaseTest(unittest.TestCase):
@@ -78,7 +80,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         mock_create_connection.side_effect = IOError()
         with self.assertRaises(IOError):
             client = FakeRpcClient()
-            client.connect(port=80)
+            client.connect()
 
     @mock.patch('socket.create_connection')
     def test_connect_timeout(self, mock_create_connection):
@@ -90,7 +92,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         mock_create_connection.side_effect = socket.timeout
         with self.assertRaises(socket.timeout):
             client = FakeRpcClient()
-            client.connect(port=80)
+            client.connect()
 
     @mock.patch('socket.create_connection')
     def test_handshake_error(self, mock_create_connection):
@@ -104,7 +106,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         mock_create_connection.return_value = fake_conn
         with self.assertRaises(jsonrpc_client_base.ProtocolError):
             client = FakeRpcClient()
-            client.connect(port=80)
+            client.connect()
 
     @mock.patch('socket.create_connection')
     def test_connect_handshake(self, mock_create_connection):
@@ -118,7 +120,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         mock_create_connection.return_value = fake_conn
 
         client = FakeRpcClient()
-        client.connect(port=80)
+        client.connect()
 
         self.assertEqual(client.uid, 1)
 
@@ -135,7 +137,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         mock_create_connection.return_value = fake_conn
 
         client = FakeRpcClient()
-        client.connect(port=80)
+        client.connect()
 
         self.assertEqual(client.uid, jsonrpc_client_base.UNKNOWN_UID)
 
@@ -149,7 +151,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
         client = FakeRpcClient()
-        client.connect(port=80)
+        client.connect()
 
         fake_file.resp = None
 
@@ -169,7 +171,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
         client = FakeRpcClient()
-        client.connect(port=80)
+        client.connect()
 
         fake_file.resp = MOCK_RESP_WITH_ERROR
 
@@ -186,7 +188,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
         client = FakeRpcClient()
-        client.connect(port=80)
+        client.connect()
 
         fake_file.resp = (MOCK_RESP_TEMPLATE % 52).encode('utf8')
 
@@ -205,7 +207,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
         client = FakeRpcClient()
-        client.connect(port=80)
+        client.connect()
 
         fake_file.resp = None
 
@@ -224,7 +226,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
         client = FakeRpcClient()
-        client.connect(port=80)
+        client.connect()
 
         result = client.some_rpc(1, 2, 3)
         self.assertEquals(result, 123)
@@ -243,7 +245,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         fake_file = self.setup_mock_socket_file(mock_create_connection)
 
         client = FakeRpcClient()
-        client.connect(port=80)
+        client.connect()
 
         for i in range(0, 10):
             fake_file.resp = (MOCK_RESP_TEMPLATE % i).encode('utf-8')

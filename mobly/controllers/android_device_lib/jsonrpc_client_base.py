@@ -41,7 +41,6 @@ from builtins import str
 import json
 import logging
 import socket
-import sys
 import threading
 import time
 
@@ -94,15 +93,25 @@ class JsonRpcClientBase(object):
     of communication.
 
     Attributes:
-        uid: (int) The uid of this session.
+        host_port: (int) The host port of this RPC client.
+        device_port: (int) The device port of this RPC client.
         app_name: (str) The user-visible name of the app being communicated
-          with. Must be set by the superclass.
+                  with.
+        uid: (int) The uid of this session.
     """
-    def __init__(self, adb_proxy):
+
+    def __init__(self, host_port, device_port, app_name, adb_proxy):
         """
         Args:
-            adb_proxy: adb.AdbProxy, The adb proxy to use to start the app
+            host_port: (int) The host port of this RPC client.
+            device_port: (int) The device port of this RPC client.
+            app_name: (str) The user-visible name of the app being communicated
+                      with.
+            adb_proxy: (adb.AdbProxy) The adb proxy to use to start the app.
         """
+        self.host_port = host_port
+        self.device_port = device_port
+        self.app_name = app_name
         self.uid = None
         self._adb = adb_proxy
         self._client = None  # prevent close errors on connect failure
@@ -139,16 +148,6 @@ class JsonRpcClientBase(object):
         """
         raise NotImplementedError()
 
-    def _is_app_running(self):
-        """Checks if the app is currently running on an android device.
-
-        Must be implemented by subclasses.
-
-        Returns:
-            True if the app is running, False otherwise.
-        """
-        raise NotImplementedError()
-
     # Rest of the client methods.
 
     def check_app_installed(self):
@@ -161,7 +160,7 @@ class JsonRpcClientBase(object):
 
         Args:
             wait_time: float, The time to wait for the app to come up before
-                raising an error.
+                       raising an error.
 
         Raises:
             AppStartError: When the app was not able to be started.
@@ -175,8 +174,7 @@ class JsonRpcClientBase(object):
         raise AppStartError(
             '%s failed to start on %s.' % (self.app_name, self._adb.serial))
 
-    def connect(self, port, addr='localhost', uid=UNKNOWN_UID,
-                cmd=JsonRpcCommand.INIT):
+    def connect(self, uid=UNKNOWN_UID, cmd=JsonRpcCommand.INIT):
         """Opens a connection to a JSON RPC server.
 
         Opens a connection to a remote client. The connection attempt will time
@@ -185,12 +183,8 @@ class JsonRpcClientBase(object):
         as well.
 
         Args:
-            port: int, The port this client should connect to.
-            addr: str, The address this client should connect to.
             uid: int, The uid of the session to join, or UNKNOWN_UID to start a
                  new session.
-            connection_timeout: int, The time to wait for the connection to come
-                 up.
             cmd: JsonRpcCommand, The command to use for creating the connection.
 
         Raises:
@@ -200,13 +194,12 @@ class JsonRpcClientBase(object):
         """
         self._counter = self._id_counter()
         try:
-            self._conn = socket.create_connection((addr, port),
+            self._conn = socket.create_connection(('127.0.0.1', self.host_port),
                                                   _SOCKET_TIMEOUT)
             self._conn.settimeout(_SOCKET_TIMEOUT)
         except (socket.timeout, socket.error, IOError):
             logging.exception("Failed to create socket connection!")
             raise
-        self.port = port
         self._client = self._conn.makefile(mode="brw")
 
         resp = self._cmd(cmd, uid)
@@ -270,6 +263,20 @@ class JsonRpcClientBase(object):
         if result['id'] != apiid:
             raise ProtocolError(ProtocolError.MISMATCHED_API_ID)
         return result['result']
+
+    def _is_app_running(self):
+        """Checks if the app is currently running on an android device.
+
+        May be overridden by subclasses with custom sanity checks.
+        """
+        running = False
+        try:
+          self.connect()
+          running = True
+        finally:
+          self.close()
+          # This 'return' squashes exceptions from connect()
+          return running
 
     def __getattr__(self, name):
         """Wrapper for python magic to turn method calls into RPC calls."""

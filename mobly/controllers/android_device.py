@@ -558,12 +558,9 @@ class AndroidDevice(object):
                     'Snippet package "%s" has already been loaded under name'
                     ' "%s".' % (package, client_name))
         host_port = utils.get_available_host_port()
-        # TODO(adorokhine): Don't assume that a free host-side port is free on
-        # the device as well. Both sides should allocate a unique port.
-        device_port = host_port
         client = snippet_client.SnippetClient(
-            package=package, port=host_port, adb_proxy=self.adb)
-        self._start_jsonrpc_client(client, host_port, device_port)
+            package=package, host_port=host_port, adb_proxy=self.adb)
+        self._start_jsonrpc_client(client)
         self._snippet_clients[name] = client
         setattr(self, name, client)
 
@@ -577,41 +574,41 @@ class AndroidDevice(object):
         If sl4a server is not started on the device, tries to start it.
         """
         host_port = utils.get_available_host_port()
-        device_port = sl4a_client.DEVICE_SIDE_PORT
-        self.sl4a = sl4a_client.Sl4aClient(self.adb)
-        self._start_jsonrpc_client(self.sl4a, host_port, device_port)
+        self.sl4a = sl4a_client.Sl4aClient(
+            host_port=host_port, adb_proxy=self.adb)
+        self._start_jsonrpc_client(self.sl4a)
 
         # Start an EventDispatcher for the current sl4a session
-        event_client = sl4a_client.Sl4aClient(self.adb)
+        event_client = sl4a_client.Sl4aClient(
+            host_port=host_port, adb_proxy=self.adb)
         event_client.connect(
-            port=host_port,
             uid=self.sl4a.uid,
             cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         self.ed = event_dispatcher.EventDispatcher(event_client)
         self.ed.start()
 
-    def _start_jsonrpc_client(self, client, host_port, device_port):
+    def _start_jsonrpc_client(self, client):
         """Create a connection to a jsonrpc server running on the device.
 
         If the connection cannot be made, tries to restart it.
         """
         client.check_app_installed()
-        self.adb.tcp_forward(host_port, device_port)
+        self.adb.tcp_forward(client.host_port, client.device_port)
         try:
-            client.connect(port=host_port)
+            client.connect()
         except:
             try:
                 client.stop_app()
             except Exception as e:
                 self.log.warning(e)
             client.start_app()
-            client.connect(port=host_port)
+            client.connect()
 
     def _terminate_jsonrpc_client(self, client):
         client.closeSl4aSession()
         client.close()
         client.stop_app()
-        self.adb.forward('--remove tcp:%d' % client.port)
+        self.adb.forward('--remove tcp:%d' % client.host_port)
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
         low = mobly_logger.logline_timestamp_comparator(begin_time,
