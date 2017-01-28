@@ -275,7 +275,7 @@ class JsonRpcClientBase(object):
           running = True
         finally:
           self.close()
-          # This 'return' squashes exceptions fron connect()
+          # This 'return' squashes exceptions from connect()
           return running
 
     def __getattr__(self, name):

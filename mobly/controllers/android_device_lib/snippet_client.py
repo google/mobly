@@ -44,7 +44,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                      defined.
             host_port: (int) The port at which to start the snippet client. Note
                        that the same port will currently be used for both the
-                      device and host side of the connection.
+                       device and host side of the connection.
             adb_proxy: (adb.AdbProxy) The adb proxy to use to start the app.
         """
         # TODO(adorokhine): Don't assume that a free host-side port is free on
