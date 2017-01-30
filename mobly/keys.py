@@ -25,7 +25,7 @@ class Config(enum.Enum):
     """
     # Reserved keywords for the config.
     key_mobly_params = "MoblyParams"
-    key_mobly_params_log_path = "LogPath"
+    key_log_path = "LogPath"
     # Top-level keywordss used in a test bed config.
     key_testbed = "TestBeds"
     key_testbed_name = "Name"
