@@ -11,20 +11,15 @@ config file.
 
 In the following config, we added a user parameter `favorite_food`.
 
-**sample_config.json**
+**sample_config.yml**
 
-```python
-{
-    "testbed":
-    [
-        {
-            "name" : "SampleTestBed",
-            "AndroidDevice" : "*"
-        }
-    ],
-    "logpath" : "/tmp/logs",
-    "favorite_food" : "Green eggs and ham."
-}
+```yaml
+TestBeds:
+  - Name: SampleTestBed,
+    Controllers:
+        AndroidDevice" : "*"
+    TestParams:
+        favorite_food: Green eggs and ham.
 ```
 
 In the test script, you could access the user parameter:
