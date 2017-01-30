@@ -183,11 +183,13 @@ def load_test_config_file(test_config_path, tb_filters=None):
                 ' you have the correct test bed names.' %
                 (len(tb_filters), len(tbs)))
         configs[keys.Config.key_testbed.value] = tbs
+    mobly_params = configs.get(keys.Config.key_mobly_params.value, {})
     # Decide log path.
-    log_path = configs.get(keys.Config.key_log_path.value, _DEFAULT_LOG_PATH)
+    log_path = mobly_params.get(keys.Config.key_log_path.value, _DEFAULT_LOG_PATH)
     if _ENV_MOBLY_LOGPATH in os.environ:
         log_path = os.environ[_ENV_MOBLY_LOGPATH]
     log_path = utils.abs_path(log_path)
+    print(log_path)
     # Validate configs
     _validate_test_config(configs)
     _validate_testbed_configs(configs[keys.Config.key_testbed.value])

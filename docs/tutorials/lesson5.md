@@ -10,21 +10,20 @@ In this example, we use one Android device to discover another Android device
 via bluetooth. This test demonstrates several essential elements in test
 writing, like logging and asserts.
 
-**sample_config.json**
+**sample_config.yml**
 
-```python
-{
-    "testbed":[
-        {
-            "name" : "TwoDeviceTestBed",
-            "AndroidDevice" : [{"serial": "xyz", "label": "dut"},
-                               {"serial": "abc", "label": "discoverer"}]
-        }
-    ],
-    "logpath" : "/tmp/logs",
-    "bluetooth_name": "MagicBluetooth",
-    "bluetooth_timeout": 5
-}
+```yaml
+TestBeds:
+  - Name: TwoDeviceTestBed,
+    Controllers:
+        AndroidDevice:
+          - serial: xyz,
+            label: dut
+          - serial: abc,
+            label: discoverer
+    TestParams:
+        bluetooth_name: MagicBluetooth,
+        bluetooth_timeout: 5
 ```
 
 **sample_test.py**

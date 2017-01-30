@@ -9,20 +9,14 @@ site_nav_category_order: 101
 Let's start with the simple example of posting "Hello World" on the Android
 device's screen. Create the following files:
 
-**sample_config.json**
+**sample_config.yml**
 
-```python
-{
-    "testbed":
-    [
-        {
-            "_description": "A testbed where adb will find Android devices.",
-            "name": "SampleTestBed",
-            "AndroidDevice": "*"
-        }
-    ],
-    "logpath": "/tmp/logs"
-}
+```yaml
+TestBeds:
+  # A test bed where adb will find Android devices.
+  - Name: SampleTestBed,
+    Controllers:
+        "AndroidDevice": "*"
 ```
 
 **hello_world_test.py**
@@ -58,10 +52,11 @@ Within SampleTestBed, we used `"AndroidDevice" : "*"` to tell the test runner to
 automatically find all connected Android devices. You can also specify
 particular devices by serial number and attach extra attributes to the object:
 
-```python
-"AndroidDevice": [
-  {"serial": "xyz", "phone_number": "123456"},
-  {"serial": "abc", "label": "golden_device"},
-]
+```yaml
+AndroidDevice:
+  - serial: xyz,
+    phone_number: 123456,
+  - serial: abc,
+    label: golden_device
 ```
 

@@ -8,23 +8,27 @@ site_nav_category_order: 104
 
 Multiple test beds can be configured in one configuration file.
 
-**sample_config.json**
+**sample_config.yml**
 
-```python
-{
-    "testbed":[
-        {
-            "name" : "XyzTestBed",
-            "AndroidDevice" : [{"serial": "xyz", "phone_number": "123456"}]
-        },
-        {
-            "name" : "AbcTestBed",
-            "AndroidDevice" : [{"serial": "abc", "label": "golden_device"}]
-        }
-    ],
-    "logpath" : "/tmp/logs",
-    "favorite_food": "green eggs and ham"
-}
+```yaml
+DefaultParams: &DefaultParams
+    favorite_food: green eggs and ham.
+
+TestBeds:
+  - Name: XyzTestBed,
+    Controllers:
+        AndroidDevice:
+          - serial: xyz,
+            phone_number: 123456
+    TestParams:
+        <<: *DefaultParams
+  - Name: AbcTestBed,
+    Controllers:
+        AndroidDevice:
+          - serial: abc,
+            label: golden_device
+    TestParams:
+        <<: *DefaultParams
 ```
 
 You can choose which one to execute on with the command line argument
