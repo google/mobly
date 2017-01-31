@@ -98,10 +98,6 @@ def destroy(ads):
     for ad in ads:
         try:
             ad.stop_services()
-            # Refresh the adb connection to this device so we don't have any
-            # adb processes/ports started by the test lingering on after test
-            # stops. It also recovers unresponsive devices in some cases.
-            ad.adb.reconnect()
         except:
             ad.log.exception('Failed to clean up properly.')
 
