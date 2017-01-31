@@ -180,8 +180,7 @@ class TestRunnerTest(unittest.TestCase):
                      {"serial": "xxxx", "magic": "Magic2"}]
         mock_test_config[tb_key][mock_ctrlr_config_name] = my_config
         mock_test_config[tb_key]["AndroidDevice"] = [
-            {"serial": "1",
-             "skip_sl4a": True}
+            {"serial": "1"}
         ]
         tr = test_runner.TestRunner(mock_test_config,
                                     [('Integration2Test', None),
