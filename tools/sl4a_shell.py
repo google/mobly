@@ -43,6 +43,7 @@ class Sl4aShell(jsonrpc_shell_base.JsonRpcShellBase):
     def _start_services(self, console_env):
         """Overrides superclass."""
         self._ad.start_services()
+        self._ad.load_sl4a()
         console_env['s'] = self._ad.sl4a
         console_env['sl4a'] = self._ad.sl4a
         console_env['ed'] = self._ad.ed
