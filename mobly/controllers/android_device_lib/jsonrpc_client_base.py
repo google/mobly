@@ -153,7 +153,8 @@ class JsonRpcClientBase(object):
     def check_app_installed(self):
       if not self._is_app_installed():
             raise AppStartError(
-                '%s is not installed on %s' % (self.app_name, self._adb.serial))
+                '%s is not installed on %s' % (
+                self.app_name, self._adb.getprop('ro.boot.serialno')))
 
     def start_app(self, wait_time=APP_START_WAIT_TIME):
         """Starts the server app on the android device.

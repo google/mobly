@@ -74,12 +74,26 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _is_app_installed(self):
         """Overrides superclass."""
+        # Check if app is installed
         try:
             out = self._adb.shell(
-                'pm list instrumentation | grep ^instrumentation:%s/' %
-                self.package).decode('utf-8')
-            return bool(out)
+                'pm list package | grep %s' % self.package).decode('utf-8')
+            if not bool(out):
+                return False
         except adb.AdbError as e:
             if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
                 return False
             raise
+        # If app is installed, is it listed as an instrumented package.
+        try:
+            out = self._adb.shell(
+                'pm list instrumentation | grep ^instrumentation:%s/' %
+                self.package).decode('utf-8')
+            is_instrumented = bool(out)
+        except adb.AdbError as e:
+            if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
+                is_instrumented = False
+            raise
+        if not is_instrumented:
+            raise Error('%s is installed on %s, but it is not instrumented.' %
+                        (self.app_name, self._adb.getprop('ro.boot.serialno')))
