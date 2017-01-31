@@ -51,13 +51,10 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass."""
         self._adb.shell('am force-stop com.googlecode.android_scripting')
 
-    def _is_app_installed(self):
+    def check_app_installed(self):
         """Overrides superclass."""
-        try:
-            out = self._adb.shell("pm path com.googlecode.android_scripting"
-                                  ).decode('utf-8').strip()
-            return bool(out)
-        except adb.AdbError as e:
-            if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
-                return False
-            raise
+        if not self._adb_grep_wrapper(
+            "pm list package | grep com.googlecode.android_scripting"):
+            raise jsonrpc_client_base.AppStartError(
+                '%s is not installed on %s' % (
+                self.app_name, self._adb.getprop('ro.boot.serialno')))

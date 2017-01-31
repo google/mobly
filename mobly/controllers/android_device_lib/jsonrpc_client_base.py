@@ -43,6 +43,8 @@ import socket
 import threading
 import time
 
+from mobly.controllers.android_device_lib import adb
+
 # Maximum time to wait for the app to start on the device.
 APP_START_WAIT_TIME = 15
 
@@ -137,22 +139,14 @@ class JsonRpcClientBase(object):
         """
         raise NotImplementedError()
 
-    def _is_app_installed(self):
+    def check_app_installed(self):
         """Checks if app is installed.
 
         Must be implemented by subclasses.
-
-        Returns:
-            True if installed, False otherwise.
         """
         raise NotImplementedError()
 
     # Rest of the client methods.
-
-    def check_app_installed(self):
-      if not self._is_app_installed():
-            raise AppStartError(
-                '%s is not installed on %s' % (self.app_name, self._adb.serial))
 
     def start_app(self, wait_time=APP_START_WAIT_TIME):
         """Starts the server app on the android device.
@@ -211,6 +205,25 @@ class JsonRpcClientBase(object):
         if self._conn:
             self._conn.close()
             self._conn = None
+
+    def _adb_grep_wrapper(self, adb_shell_cmd):
+        """A wrapper for the specific usage of adb shell grep in this class.
+
+        This surpresses AdbError if the grep fails to find anything.
+
+        Args:
+            adb_shell_cmd: A string that is an adb shell cmd with grep.
+
+        Returns:
+            The stdout of the grep result if the grep found something, False
+            otherwise.
+        """
+        try:
+            return self._adb.shell(adb_shell_cmd).decode('utf-8')
+        except adb.AdbError as e:
+            if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
+                return False
+            raise
 
     def _cmd(self, command, uid=None):
         """Send a command to the server.
