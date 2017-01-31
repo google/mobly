@@ -39,7 +39,6 @@ Response:
 from builtins import str
 
 import json
-import logging
 import socket
 import threading
 import time
