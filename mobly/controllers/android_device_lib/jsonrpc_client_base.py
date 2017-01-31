@@ -39,7 +39,6 @@ Response:
 from builtins import str
 
 import json
-import logging
 import socket
 import threading
 import time
@@ -193,13 +192,9 @@ class JsonRpcClientBase(object):
             ProtocolError: Raised when there is an error in the protocol.
         """
         self._counter = self._id_counter()
-        try:
-            self._conn = socket.create_connection(('127.0.0.1', self.host_port),
-                                                  _SOCKET_TIMEOUT)
-            self._conn.settimeout(_SOCKET_TIMEOUT)
-        except (socket.timeout, socket.error, IOError):
-            logging.exception("Failed to create socket connection!")
-            raise
+        self._conn = socket.create_connection(('127.0.0.1', self.host_port),
+                                              _SOCKET_TIMEOUT)
+        self._conn.settimeout(_SOCKET_TIMEOUT)
         self._client = self._conn.makefile(mode="brw")
 
         resp = self._cmd(cmd, uid)
