@@ -44,6 +44,8 @@ import socket
 import threading
 import time
 
+from mobly.controllers.android_device_lib import adb
+
 # Maximum time to wait for the app to start on the device.
 APP_START_WAIT_TIME = 15
 
@@ -218,11 +220,11 @@ class JsonRpcClientBase(object):
             adb_shell_cmd: A string that is an adb shell cmd with grep.
 
         Returns:
-            True if the grep found something, False otherwise.
+            The stdout of the grep result if the grep found something, False
+            otherwise.
         """
         try:
-            out = self._adb.shell(adb_shell_cmd).decode('utf-8')
-            return bool(out)
+            return self._adb.shell(adb_shell_cmd).decode('utf-8')
         except adb.AdbError as e:
             if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
                 return False

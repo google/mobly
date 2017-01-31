@@ -15,15 +15,16 @@
 # limitations under the License.
 """JSON RPC interface to Mobly Snippet Lib."""
 import logging
+import re
 
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-_LAUNCH_CMD = ('am instrument -e action start -e port {} '
-               '{}/com.google.android.mobly.snippet.SnippetRunner')
+_INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunner'
 
-_STOP_CMD = ('am instrument -w -e action stop '
-             '{}/com.google.android.mobly.snippet.SnippetRunner')
+_LAUNCH_CMD = 'am instrument -e action start -e port %s %s/' + _INSTRUMENTATION_RUNNER_PACKAGE
+
+_STOP_CMD = 'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE
 
 
 class Error(Exception):
@@ -53,10 +54,11 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             host_port=host_port, device_port=host_port, app_name=package,
             adb_proxy=adb_proxy)
         self.package = package
+        self._serial = self._adb.getprop('ro.boot.serialno')
 
     def _do_start_app(self):
         """Overrides superclass."""
-        cmd = _LAUNCH_CMD.format(self.device_port, self.package)
+        cmd = _LAUNCH_CMD % (self.device_port, self.package)
         # Use info here so people know exactly what's happening here, which is
         # helpful since they need to create their own instrumentations and
         # manifest.
@@ -65,23 +67,36 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def stop_app(self):
         """Overrides superclass."""
-        cmd = _STOP_CMD.format(self.package)
+        cmd = _STOP_CMD % self.package
         logging.info('Stopping snippet apk with: %s', cmd)
-        out = self._adb.shell(_STOP_CMD.format(self.package)).decode('utf-8')
+        out = self._adb.shell(_STOP_CMD % self.package).decode('utf-8')
         if 'OK (0 tests)' not in out:
             raise Error('Failed to stop existing apk. Unexpected output: %s' %
                         out)
 
     def check_app_installed(self):
         """Overrides superclass."""
+        # Check that the Mobly Snippet app is installed.
         if not self._adb_grep_wrapper(
-            'pm list package | grep %s' % self.package):
+            'pm list package | grep ^package:%s$' % self.package):
             raise jsonrpc_client_base.AppStartError(
-                '%s is not installed on %s' % (
-                self.app_name, self._adb.getprop('ro.boot.serialno')))
-        if not self._adb_grep_wrapper(
-            'pm list instrumentation | grep ^instrumentation:%s/' %
-            self.package):
+                '%s is not installed on %s' %
+                (self.package, self._serial))
+        # Check that the app is instrumented.
+        out = self._adb_grep_wrapper(
+            'pm list instrumentation | grep ^instrumentation:%s/%s' %
+            (self.package, _INSTRUMENTATION_RUNNER_PACKAGE))
+        if not out:
             raise jsonrpc_client_base.AppStartError(
                 '%s is installed on %s, but it is not instrumented.' %
-                    (self.app_name, self._adb.getprop('ro.boot.serialno')))
+                    (self.package, self._serial))
+        match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$', out)
+        target_name = match.group(3)
+        # Check that the instrumentation target is installed if it's not the
+        # same as the snippet package.
+        if target_name != self.package:
+            if not self._adb_grep_wrapper(
+                'pm list package | grep ^package:%s$' % target_name):
+                raise jsonrpc_client_base.AppStartError(
+                    'Instrumentation target %s is not installed on %s' %
+                    (target_name, self._serial))
