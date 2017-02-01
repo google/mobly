@@ -99,7 +99,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         if target_name != self.package:
             out = self._adb_grep_wrapper(
                 'pm list package | grep ^package:%s$' % target_name)
-            print(out)
             if not out:
                 raise jsonrpc_client_base.AppStartError(
                     'Instrumentation target %s is not installed on %s' %
