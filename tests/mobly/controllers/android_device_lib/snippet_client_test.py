@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.4
 #
-# Copyright 2016 Google Inc.
+# Copyright 2017 Google Inc.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,16 +42,16 @@ class MockAdbProxy(object):
                 return b''
             if self.target_not_installed and MOCK_MISSING_PACKAGE_NAME in params:
                 return b''
-            return bytes('package:%s^M' % MOCK_PACKAGE_NAME, 'utf-8')
+            return bytes('package:%s\\r' % MOCK_PACKAGE_NAME, 'utf-8')
         elif 'pm list instrumentation' in params:
             if self.apk_not_instrumented:
                 return b''
             if self.target_not_installed:
-                return bytes('instrumentation:{p}^M/{r} (target={mp})'.format(
+                return bytes('instrumentation:{p}\\r/{r} (target={mp})'.format(
                     p=MOCK_PACKAGE_NAME,
                     r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
                     mp=MOCK_MISSING_PACKAGE_NAME), 'utf-8')
-            return bytes('instrumentation:{p}^M/{r} (target={p})'.format(
+            return bytes('instrumentation:{p}\\r/{r} (target={p})'.format(
                 p=MOCK_PACKAGE_NAME,
                 r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE), 'utf-8')
 

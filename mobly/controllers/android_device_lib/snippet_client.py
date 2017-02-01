@@ -80,7 +80,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass."""
         # Check that the Mobly Snippet app is installed.
         if not self._adb_grep_wrapper(
-                'pm list package | grep "^package:%s[^M]\?$"' % self.package):
+                'pm list package | grep "^package:%s\\r\?$"' % self.package):
             raise jsonrpc_client_base.AppStartError(
                 '%s is not installed on %s' % (self.package, self._serial))
         # Check that the app is instrumented.
@@ -91,7 +91,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             raise jsonrpc_client_base.AppStartError(
                 '%s is installed on %s, but it is not instrumented.' %
                 (self.package, self._serial))
-        match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)[^M]?$',
+        match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)\r?$',
                           out)
         target_name = match.group(3)
         # Check that the instrumentation target is installed if it's not the
