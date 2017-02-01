@@ -42,16 +42,16 @@ class MockAdbProxy(object):
                 return b''
             if self.target_not_installed and MOCK_MISSING_PACKAGE_NAME in params:
                 return b''
-            return bytes('package:%s\\r' % MOCK_PACKAGE_NAME, 'utf-8')
+            return bytes(r'package:%s\r' % MOCK_PACKAGE_NAME, 'utf-8')
         elif 'pm list instrumentation' in params:
             if self.apk_not_instrumented:
                 return b''
             if self.target_not_installed:
-                return bytes('instrumentation:{p}\\r/{r} (target={mp})'.format(
+                return bytes(r'instrumentation:{p}\r/{r} (target={mp})'.format(
                     p=MOCK_PACKAGE_NAME,
                     r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
                     mp=MOCK_MISSING_PACKAGE_NAME), 'utf-8')
-            return bytes('instrumentation:{p}\\r/{r} (target={p})'.format(
+            return bytes(r'instrumentation:{p}\r/{r} (target={p})'.format(
                 p=MOCK_PACKAGE_NAME,
                 r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE), 'utf-8')
 
