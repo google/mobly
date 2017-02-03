@@ -614,8 +614,8 @@ class AndroidDevice(object):
         """
         if not self.adb_logcat_file_path:
             raise Error(
-                'Attempting to cat adb log when none has been collected'
-                ' on Android device %s.' % self.serial)
+                'Attempting to cat adb log when none has been collected on '
+                'Android device %s.' % self.serial)
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
         adb_excerpt_path = os.path.join(self.log_path, 'AdbLogExcerpts')
@@ -798,13 +798,13 @@ class AndroidDevice(object):
         return snippet_info
 
     def stop_services_with_cache(self):
-        """Same as the services, but caches the tally of services.
+        """Same as the services, but caches information of running services.
 
         This is used for situation where the Android device will go offline
         temporarily, e.g. device reboot.
 
-        The tally is used to restore the running services after the device
-        comes back online.
+        The cached information is used to restore the running services after
+        the device comes back online.
         """
         self._service_state_cache[
             'snippet_info'] = self._get_active_snippet_info()
