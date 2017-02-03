@@ -861,7 +861,7 @@ class Monsoon(object):
                     self.log.info("Skip taking samples for %s", step_name)
                     continue
                 time.sleep(1)
-                self.dut.stop_services()
+                self.dut.stop_services_with_cache()
                 time.sleep(1)
                 self.log.info("Taking samples for %s.", step_name)
                 data = self.take_samples(hz, num, sample_offset=oset)
@@ -880,7 +880,7 @@ class Monsoon(object):
                 self._wait_for_device(self.dut)
                 # Wait for device to come back online.
                 time.sleep(10)
-                self.dut.start_services()
+                self.dut.restore_services()
         return results
 
     def measure_power(self, hz, duration, tag, offset=30):
@@ -905,7 +905,7 @@ class Monsoon(object):
         try:
             self.usb("auto")
             time.sleep(1)
-            self.dut.stop_services()
+            self.dut.stop_services_with_cache()
             time.sleep(1)
             data = self.take_samples(hz, num, sample_offset=oset)
             if not data:
@@ -920,6 +920,6 @@ class Monsoon(object):
             self._wait_for_device(self.dut)
             # Wait for device to come back online.
             time.sleep(10)
-            self.dut.start_services()
+            self.dut.restore_services()
             self.log.info("Dut reconnected.")
             return data

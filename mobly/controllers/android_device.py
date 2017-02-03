@@ -357,9 +357,8 @@ class AndroidDevice(object):
         # logging.log_path only exists when this is used in an Mobly test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            'tag': self.serial
-        })
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                              {'tag': self.serial})
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -371,6 +370,9 @@ class AndroidDevice(object):
         # A dict for tracking snippet clients. Keys are clients' attribute
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
+        # A dict used to store the states of running services, exclusively
+        # used by self.stop_services_with_cache and self.restore_services
+        self._service_state_cache = {}
 
     def set_logger_prefix_tag(self, tag):
         """Set a tag for the log line prefix of this instance.
@@ -568,8 +570,7 @@ class AndroidDevice(object):
         event_client = sl4a_client.Sl4aClient(
             host_port=host_port, adb_proxy=self.adb)
         event_client.connect(
-            uid=self.sl4a.uid,
-            cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
+            uid=self.sl4a.uid, cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         self.ed = event_dispatcher.EventDispatcher(event_client)
         self.ed.start()
 
@@ -612,8 +613,9 @@ class AndroidDevice(object):
                 period.
         """
         if not self.adb_logcat_file_path:
-            raise Error('Attempting to cat adb log when none has been collected'
-                        ' on Android device %s.' % self.serial)
+            raise Error(
+                'Attempting to cat adb log when none has been collected'
+                ' on Android device %s.' % self.serial)
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
         adb_excerpt_path = os.path.join(self.log_path, 'AdbLogExcerpts')
@@ -671,7 +673,7 @@ class AndroidDevice(object):
         except AttributeError:
             extra_params = '-b all'
         cmd = 'adb -s %s logcat -v threadtime %s >> %s' % (
-              self.serial, extra_params, logcat_file_path)
+            self.serial, extra_params, logcat_file_path)
         self._adb_logcat_process = utils.start_standing_subprocess(cmd)
         self.adb_logcat_file_path = logcat_file_path
 
@@ -679,8 +681,9 @@ class AndroidDevice(object):
         """Stops the adb logcat collection subprocess.
         """
         if not self._adb_logcat_process:
-            raise Error('Android device %s does not have an ongoing adb logcat '
-                        'collection.' % self.serial)
+            raise Error(
+                'Android device %s does not have an ongoing adb logcat '
+                'collection.' % self.serial)
         utils.stop_standing_subprocess(self._adb_logcat_process)
         self._adb_logcat_process = None
 
@@ -794,6 +797,43 @@ class AndroidDevice(object):
             snippet_info.append((attr_name, client.package))
         return snippet_info
 
+    def stop_services_with_cache(self):
+        """Same as the services, but caches the tally of services.
+
+        This is used for situation where the Android device will go offline
+        temporarily, e.g. device reboot.
+
+        The tally is used to restore the running services after the device
+        comes back online.
+        """
+        self._service_state_cache[
+            'snippet_info'] = self._get_active_snippet_info()
+        self._service_state_cache['use_sl4a'] = self.sl4a is not None
+        self.stop_services()
+
+    def restore_services(self):
+        """Restores services after a device has come back from temporary
+        being offline.
+
+        To use this, self.stop_services_with_cache must have be called before
+        the device went offline.
+        """
+        if not self._service_state_cache:
+            raise Error(
+                'No service state cache found, was stop_services_with_cache '
+                'called before device going offline?')
+        if self.is_rootable:
+            self.root_adb()
+        self.start_services()
+        # Restore snippets.
+        snippet_info = self._service_state_cache['snippet_info']
+        for attr_name, package_name in snippet_info:
+            self.load_snippet(attr_name, package_name)
+        # Restore sl4a if needed.
+        if self._service_state_cache['use_sl4a']:
+            self.load_sl4a()
+        self._service_state_cache = {}
+
     def reboot(self):
         """Reboots the device.
 
@@ -811,18 +851,10 @@ class AndroidDevice(object):
         if self.is_bootloader:
             self.fastboot.reboot()
             return
-        snippet_info = self._get_active_snippet_info()
-        use_sl4a = self.sl4a is not None
-        self.stop_services()
+        self.stop_services_with_cache()
         self.adb.reboot()
         self.wait_for_boot_completion()
-        if self.is_rootable:
-            self.root_adb()
-        self.start_services()
-        if use_sl4a:
-            self.load_sl4a()
-        for attr_name, package_name in snippet_info:
-            self.load_snippet(attr_name, package_name)
+        self.restore_services()
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
