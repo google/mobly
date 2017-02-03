@@ -810,9 +810,9 @@ class Monsoon(object):
         For each step function, the following steps are followed:
         1. The function is executed to put the android device in a state.
         2. If the function returns False, skip to next step function.
-        3. If the function returns True, sl4a session is disconnected.
+        3. If the function returns True, services are stopped.
         4. Monsoon takes samples.
-        5. Sl4a is reconnected.
+        5. Services are restarted.
 
         Because it takes some time for the device to calm down after the usb
         connection is cut, an offset is set for each measurement. The default
@@ -881,8 +881,6 @@ class Monsoon(object):
                 # Wait for device to come back online.
                 time.sleep(10)
                 self.dut.start_services()
-                # Release wake lock to put device into sleep.
-                self.dut.sl4a.goToSleepNow()
         return results
 
     def measure_power(self, hz, duration, tag, offset=30):
@@ -923,7 +921,5 @@ class Monsoon(object):
             # Wait for device to come back online.
             time.sleep(10)
             self.dut.start_services()
-            # Release wake lock to put device into sleep.
-            self.dut.sl4a.goToSleepNow()
             self.log.info("Dut reconnected.")
             return data
