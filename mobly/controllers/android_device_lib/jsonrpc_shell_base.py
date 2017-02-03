@@ -60,7 +60,7 @@ class JsonRpcShellBase(object):
                         len(serials))
             serial = serials[0]
         if serial not in serials:
-            raise Error('Device '%s' is not found by adb.' % serial)
+            raise Error('Device "%s" is not found by adb.' % serial)
         ads = android_device.get_instances([serial])
         assert len(ads) == 1
         self._ad = ads[0]
