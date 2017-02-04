@@ -35,6 +35,7 @@ from mobly.controllers.android_device_lib import snippet_client
 MOBLY_CONTROLLER_CONFIG_NAME = 'AndroidDevice'
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = '*'
+_LOG_TAG_TEMPLATE = '[AndroidDevice|%s] %s'
 
 # Key name for adb logcat extra params in config file.
 ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = 'adb_logcat_param'
@@ -49,12 +50,25 @@ class Error(signals.ControllerError):
     pass
 
 
-class SnippetError(signals.ControllerError):
-    """Raised when somethig wrong with snippet happens."""
+def _generate_error_class(device_id):
+    """Generate an exception class specific to a device object.
 
+    The class's msg will be prefixed with a tag that's consistent with that used
+    by the device's logger.
 
-class DoesNotExistError(Error):
-    """Raised when something that does not exist is referenced."""
+    Arg:
+        device_id: A string that is an ID for the device.
+    """
+
+    class DeviceError(Error):
+        def __init__(self, msg):
+            self.device_id = device_id
+            self.msg = msg
+
+        def __str__(self):
+            return _LOG_TAG_TEMPLATE % (self.device_id, self.msg)
+
+    return DeviceError
 
 
 def create(configs):
@@ -83,8 +97,8 @@ def create(configs):
 
     for ad in ads:
         if ad.serial not in connected_ads:
-            raise DoesNotExistError('Android device %s is specified in config'
-                                    ' but is not attached.' % ad.serial)
+            raise ad.Error('Android device is specified in config but is not '
+                           'attached.')
     _start_services_on_ads(ads)
     return ads
 
@@ -140,8 +154,8 @@ def _start_services_on_ads(ads):
                 destroy(running_ads)
                 raise
             else:
-                logging.warning('Skipping device %s because some service '
-                                'failed to start: %s', ad.serial, e)
+                ad.log.exception('Skipping this optional device because some '
+                                 'services failed to start: %s', e)
 
 
 def _parse_device_list(device_list_str, key):
@@ -228,7 +242,7 @@ def get_instances_with_configs(configs):
         except Exception as e:
             if is_required:
                 raise
-            logging.warning('Skipping device %s due to error: %s', serial, e)
+            ad.log.warning('Skipping this device due to error: %s', e)
             continue
         results.append(ad)
     return results
@@ -344,13 +358,15 @@ class AndroidDevice(object):
                   android device should be stored.
         log: A logger adapted from root logger with an added prefix specific
              to an AndroidDevice instance. The default prefix is
-             [AndroidDevice|<serial>]. Use self.set_logger_prefix_tag to use
-             a different tag in the prefix.
+             [AndroidDevice|<serial>]. Use self.set_prefix_tag to use a
+             different tag in the prefix.
         adb_logcat_file_path: A string that's the full path to the adb logcat
                               file collected, if any.
         adb: An AdbProxy object used for interacting with the device via adb.
         fastboot: A FastbootProxy object used for interacting with the device
                   via fastboot.
+        Error: A DeviceError class whose message contains specific info of a
+               device object.
     """
 
     def __init__(self, serial=''):
@@ -360,6 +376,7 @@ class AndroidDevice(object):
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
                                               {'tag': self.serial})
+        self.Error = _generate_error_class(self.log.extra['tag'])
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -372,23 +389,25 @@ class AndroidDevice(object):
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
 
-    def set_logger_prefix_tag(self, tag):
-        """Set a tag for the log line prefix of this instance.
+    def set_debug_tag(self, tag):
+        """Set a tag to be the prefix of debugging messages emitted by this
+        device object, like log lines and the message of DeviceError.
 
-        By default, the tag is the serial of the device, but sometimes having
-        the serial number in the log line doesn't help much with debugging. It
-        could be more helpful if users can mark the role of the device instead.
+        By default, the tag is the serial of the device, but sometimes it may
+        be more descriptive to use a different tag of the user's choose.
 
-        For example, instead of marking the serial number:
-            'INFO [AndroidDevice|abcdefg12345] One pending call ringing.'
-
-        marking the role of the device here is  more useful here:
-            'INFO [AndroidDevice|Caller] One pending call ringing.'
+        Example:
+            By default, the device's serial number is used:
+                'INFO [AndroidDevice|abcdefg12345] One pending call ringing.'
+            By calling `ad.set_prefix_tag('Caller')`, the user can customize the
+            tag:
+                'INFO [AndroidDevice|Caller] One pending call ringing.'
 
         Args:
             tag: A string that is the tag to use.
         """
         self.log.extra['tag'] = tag
+        self.Error = _generate_error_class(tag)
 
     def start_services(self):
         """Starts long running services on the android device, like adb logcat
@@ -542,8 +561,8 @@ class AndroidDevice(object):
         """
         for k, v in config.items():
             if hasattr(self, k):
-                raise Error('Attempting to set existing attribute %s on %s' %
-                            (k, self.serial))
+                raise self.Error(
+                    'Attribute %s already exists, cannot set again.')
             setattr(self, k, v)
 
     def root_adb(self):
@@ -575,18 +594,18 @@ class AndroidDevice(object):
         """
         # Should not load snippet with the same attribute more than once.
         if name in self._snippet_clients:
-            raise SnippetError(
+            raise self.Error(
                 'Attribute "%s" is already registered with package "%s", it '
                 'cannot be used again.' %
                 (name, self._snippet_clients[name].package))
         # Should not load snippet with an existing attribute.
         if hasattr(self, name):
-            raise SnippetError('Attribute "%s" already exists, please use a '
-                               'different name.' % name)
+            raise self.Error('Attribute "%s" already exists, please use a '
+                             'different name.' % name)
         # Should not load the same snippet package more than once.
         for client_name, client in self._snippet_clients.items():
             if package == client.package:
-                raise SnippetError(
+                raise self.Error(
                     'Snippet package "%s" has already been loaded under name'
                     ' "%s".' % (package, client_name))
         host_port = utils.get_available_host_port()
@@ -660,9 +679,8 @@ class AndroidDevice(object):
                 period.
         """
         if not self.adb_logcat_file_path:
-            raise Error(
-                'Attempting to cat adb log when none has been collected on '
-                'Android device %s.' % self.serial)
+            raise self.Error(
+                'Attempting to cat adb log when none has been collected.')
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
         adb_excerpt_path = os.path.join(self.log_path, 'AdbLogExcerpts')
@@ -704,8 +722,8 @@ class AndroidDevice(object):
         save the logcat in a file.
         """
         if self._adb_logcat_process:
-            raise Error('Android device %s already has an adb logcat thread '
-                        'going on. Cannot start another one.' % self.serial)
+            raise self.Error(
+                'Logcat thread is already running, cannot start another one.')
         # Disable adb log spam filter for rootable. Have to stop and clear
         # settings first because 'start' doesn't support --clear option before
         # Android N.
@@ -728,9 +746,7 @@ class AndroidDevice(object):
         """Stops the adb logcat collection subprocess.
         """
         if not self._adb_logcat_process:
-            raise Error(
-                'Android device %s does not have an ongoing adb logcat '
-                'collection.' % self.serial)
+            raise self.Error('No ongoing adb logcat collection found.')
         utils.stop_standing_subprocess(self._adb_logcat_process)
         self._adb_logcat_process = None
 
@@ -764,8 +780,7 @@ class AndroidDevice(object):
         if new_br:
             out = self.adb.shell('bugreportz').decode('utf-8')
             if not out.startswith('OK'):
-                raise Error('Failed to take bugreport on %s: %s' %
-                            (self.serial, out))
+                raise self.Error('Failed to take bugreport: %s' % out)
             br_out_path = out.split(':')[1].strip()
             self.adb.pull('%s %s' % (br_out_path, full_out_path))
         else:
@@ -826,7 +841,7 @@ class AndroidDevice(object):
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise Error('Device %s booting process timed out.' % self.serial)
+        raise self.Error('Booting process timed out.')
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.
@@ -878,5 +893,5 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
     """
 
     def process(self, msg, kwargs):
-        msg = '[AndroidDevice|%s] %s' % (self.extra['tag'], msg)
+        msg = _LOG_TAG_TEMPLATE % (self.extra['tag'], msg)
         return (msg, kwargs)
