@@ -826,13 +826,13 @@ class Monsoon(object):
                     raise MonsoonError("No data was collected in measurement %s." %
                                        tag)
                 data.tag = tag
-                self.log.info("Measurement summary: %s", repr(data))
+                self.dut.log.info("Measurement summary: %s", repr(data))
                 return data
             finally:
                 self.mon.StopDataCollection()
                 self.log.info("Finished taking samples, reconnecting to dut.")
                 self.usb("on")
+                self._wait_for_device(self.dut)
                 # Wait for device to come back online.
                 time.sleep(10)
-                self._wait_for_device(self.dut)
-                self.dut.info("Dut reconnected.")
+                self.dut.log.info("Dut reconnected.")
