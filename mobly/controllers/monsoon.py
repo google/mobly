@@ -861,10 +861,10 @@ class Monsoon(object):
                     self.log.info("Skip taking samples for %s", step_name)
                     continue
                 time.sleep(1)
-                self.dut.stop_services_with_cache()
-                time.sleep(1)
-                self.log.info("Taking samples for %s.", step_name)
-                data = self.take_samples(hz, num, sample_offset=oset)
+                with self.dut.handle_device_disconnect():
+                    time.sleep(1)
+                    self.log.info("Taking samples for %s.", step_name)
+                    data = self.take_samples(hz, num, sample_offset=oset)
                 if not data:
                     raise MonsoonError("Sampling for %s failed." % step_name)
                 self.log.info("Sample summary: %s", repr(data))
@@ -878,9 +878,6 @@ class Monsoon(object):
                 self.mon.StopDataCollection()
                 self.usb("on")
                 self._wait_for_device(self.dut)
-                # Wait for device to come back online.
-                time.sleep(10)
-                self.dut.restore_services()
         return results
 
     def measure_power(self, hz, duration, tag, offset=30):
@@ -905,21 +902,20 @@ class Monsoon(object):
         try:
             self.usb("auto")
             time.sleep(1)
-            self.dut.stop_services_with_cache()
-            time.sleep(1)
-            data = self.take_samples(hz, num, sample_offset=oset)
+            with self.dut.handle_device_disconnect():
+                time.sleep(1)
+                data = self.take_samples(hz, num, sample_offset=oset)
             if not data:
-                raise MonsoonError((
-                    "No data was collected in measurement %s.") % tag)
+                raise MonsoonError("No data was collected in measurement %s." %
+                                   tag)
             data.tag = tag
             self.log.info("Measurement summary: %s", repr(data))
         finally:
             self.mon.StopDataCollection()
             self.log.info("Finished taking samples, reconnecting to dut.")
             self.usb("on")
-            self._wait_for_device(self.dut)
             # Wait for device to come back online.
             time.sleep(10)
-            self.dut.restore_services()
-            self.log.info("Dut reconnected.")
+            self._wait_for_device(self.dut)
+            self.dut.info("Dut reconnected.")
             return data

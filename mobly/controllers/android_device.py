@@ -17,6 +17,7 @@
 from builtins import str
 from builtins import open
 
+import contextlib
 import logging
 import os
 import time
@@ -370,9 +371,6 @@ class AndroidDevice(object):
         # A dict for tracking snippet clients. Keys are clients' attribute
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
-        # A dict used to store the states of running services, exclusively
-        # used by self.stop_services_with_cache and self.restore_services
-        self._service_state_cache = {}
 
     def set_logger_prefix_tag(self, tag):
         """Set a tag for the log line prefix of this instance.
@@ -407,7 +405,15 @@ class AndroidDevice(object):
 
         Stop adb logcat, terminate sl4a sessions if exist, terminate all
         snippet clients.
+
+        Returns:
+            A dict containing information on the running services before they
+            are torn down. This can be used to restore these services, which
+            includes snippets and sl4a.
         """
+        service_info = {}
+        service_info['snippet_info'] = self._get_active_snippet_info()
+        service_info['use_sl4a'] = self.sl4a is not None
         if self._adb_logcat_process:
             self.stop_adb_logcat()
         self._terminate_sl4a()
@@ -415,6 +421,44 @@ class AndroidDevice(object):
             self._terminate_jsonrpc_client(client)
             delattr(self, name)
         self._snippet_clients = {}
+        return service_info
+
+    @contextlib.contextmanager
+    def handle_device_disconnect(self):
+        """Properly manage the service life cycle when the device needs to
+        temporarily disconnect.
+
+        The device can temporarily lose adb connection due to user-triggered
+        reboot or power measurement. Use this function to make sure the services
+        started by Mobly are properly stopped and restored afterwards.
+
+        For sample usage, see self.reboot().
+        """
+        service_info = self.stop_services()
+        try:
+            yield
+        finally:
+            self._restore_services(service_info)
+
+    def _restore_services(self, service_info):
+        """Restores services after a device has come back from temporary
+        being offline.
+
+        Args:
+            service_info: A dict containing information on the services to
+                          restore, which could include snippet and sl4a.
+        """
+        self.wait_for_boot_completion()
+        if self.is_rootable:
+            self.root_adb()
+        self.start_services()
+        # Restore snippets.
+        snippet_info = service_info['snippet_info']
+        for attr_name, package_name in snippet_info:
+            self.load_snippet(attr_name, package_name)
+        # Restore sl4a if needed.
+        if service_info['use_sl4a']:
+            self.load_sl4a()
 
     @property
     def build_info(self):
@@ -797,43 +841,6 @@ class AndroidDevice(object):
             snippet_info.append((attr_name, client.package))
         return snippet_info
 
-    def stop_services_with_cache(self):
-        """Same as the services, but caches information of running services.
-
-        This is used for situation where the Android device will go offline
-        temporarily, e.g. device reboot.
-
-        The cached information is used to restore the running services after
-        the device comes back online.
-        """
-        self._service_state_cache[
-            'snippet_info'] = self._get_active_snippet_info()
-        self._service_state_cache['use_sl4a'] = self.sl4a is not None
-        self.stop_services()
-
-    def restore_services(self):
-        """Restores services after a device has come back from temporary
-        being offline.
-
-        To use this, self.stop_services_with_cache must have be called before
-        the device went offline.
-        """
-        if not self._service_state_cache:
-            raise Error(
-                'No service state cache found, was stop_services_with_cache '
-                'called before device going offline?')
-        if self.is_rootable:
-            self.root_adb()
-        self.start_services()
-        # Restore snippets.
-        snippet_info = self._service_state_cache['snippet_info']
-        for attr_name, package_name in snippet_info:
-            self.load_snippet(attr_name, package_name)
-        # Restore sl4a if needed.
-        if self._service_state_cache['use_sl4a']:
-            self.load_sl4a()
-        self._service_state_cache = {}
-
     def reboot(self):
         """Reboots the device.
 
@@ -851,10 +858,8 @@ class AndroidDevice(object):
         if self.is_bootloader:
             self.fastboot.reboot()
             return
-        self.stop_services_with_cache()
-        self.adb.reboot()
-        self.wait_for_boot_completion()
-        self.restore_services()
+        with self.handle_device_disconnect():
+            self.adb.reboot()
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
