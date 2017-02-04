@@ -899,23 +899,23 @@ class Monsoon(object):
         num = duration * hz
         oset = offset * hz
         data = None
-        try:
-            self.usb("auto")
+        self.usb("auto")
+        time.sleep(1)
+        with self.dut.handle_device_disconnect():
             time.sleep(1)
-            with self.dut.handle_device_disconnect():
-                time.sleep(1)
+            try:
                 data = self.take_samples(hz, num, sample_offset=oset)
-            if not data:
-                raise MonsoonError("No data was collected in measurement %s." %
-                                   tag)
-            data.tag = tag
-            self.log.info("Measurement summary: %s", repr(data))
-        finally:
-            self.mon.StopDataCollection()
-            self.log.info("Finished taking samples, reconnecting to dut.")
-            self.usb("on")
-            # Wait for device to come back online.
-            time.sleep(10)
-            self._wait_for_device(self.dut)
-            self.dut.info("Dut reconnected.")
-            return data
+                if not data:
+                    raise MonsoonError("No data was collected in measurement %s." %
+                                       tag)
+                data.tag = tag
+                self.log.info("Measurement summary: %s", repr(data))
+                return data
+            finally:
+                self.mon.StopDataCollection()
+                self.log.info("Finished taking samples, reconnecting to dut.")
+                self.usb("on")
+                # Wait for device to come back online.
+                time.sleep(10)
+                self._wait_for_device(self.dut)
+                self.dut.info("Dut reconnected.")
