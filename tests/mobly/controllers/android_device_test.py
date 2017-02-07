@@ -206,7 +206,7 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
-        expected_msg = "Failed to take bugreport on 1: OMG I died!"
+        expected_msg = ".* Failed to take bugreport."
         with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
             ad.take_bug_report("test_something", "sometime")
@@ -244,8 +244,7 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
-        expected_msg = ("Android device .* does not have an ongoing adb logcat"
-                        " collection.")
+        expected_msg = ".* No ongoing adb logcat collection found."
         # Expect error if stop is called before start.
         with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
@@ -261,8 +260,8 @@ class AndroidDeviceTest(unittest.TestCase):
         start_proc_mock.assert_called_with(adb_cmd % (ad.serial,
                                                       expected_log_path))
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
-        expected_msg = ("Android device .* already has an adb logcat thread "
-                        "going on. Cannot start another one.")
+        expected_msg = ('Logcat thread is already running, cannot start another'
+                        ' one.')
         # Expect error if start is called back to back.
         with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
@@ -289,8 +288,7 @@ class AndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         ad.adb_logcat_param = "-b radio"
-        expected_msg = ("Android device .* does not have an ongoing adb logcat"
-                        " collection.")
+        expected_msg = '.* No ongoing adb logcat collection found.'
         # Expect error if stop is called before start.
         with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
@@ -324,8 +322,8 @@ class AndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         # Expect error if attempted to cat adb log before starting adb logcat.
-        expected_msg = ("Attempting to cat adb log when none has been "
-                        "collected on Android device .*")
+        expected_msg = (".* Attempting to cat adb log when none"
+                        " has been collected.")
         with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
             ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
@@ -370,7 +368,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         expected_msg = ('Snippet package "%s" has already been loaded under '
                         'name "snippet".') % MOCK_SNIPPET_PACKAGE_NAME
-        with self.assertRaisesRegexp(android_device.SnippetError,
+        with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
             ad.load_snippet('snippet2', MOCK_SNIPPET_PACKAGE_NAME)
 
@@ -388,7 +386,7 @@ class AndroidDeviceTest(unittest.TestCase):
         expected_msg = ('Attribute "%s" is already registered with package '
                         '"%s", it cannot be used again.') % (
                         'snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        with self.assertRaisesRegexp(android_device.SnippetError,
+        with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
             ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME + 'haha')
 
@@ -403,7 +401,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=1)
         expected_msg = ('Attribute "%s" already exists, please use a different'
                         ' name') % 'adb'
-        with self.assertRaisesRegexp(android_device.SnippetError,
+        with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
             ad.load_snippet('adb', MOCK_SNIPPET_PACKAGE_NAME)
 
