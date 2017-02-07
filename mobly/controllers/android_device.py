@@ -59,7 +59,6 @@ def _generate_error_class(device_id):
     Arg:
         device_id: A string that is an ID for the device.
     """
-
     class DeviceError(Error):
         def __init__(self, msg):
             self.device_id = device_id
@@ -67,7 +66,6 @@ def _generate_error_class(device_id):
 
         def __str__(self):
             return _LOG_TAG_TEMPLATE % (self.device_id, self.msg)
-
     return DeviceError
 
 
@@ -239,10 +237,10 @@ def get_instances_with_configs(configs):
         try:
             ad = AndroidDevice(serial)
             ad.load_config(c)
-        except Exception as e:
+        except Exception:
             if is_required:
                 raise
-            ad.log.warning('Skipping this device due to error: %s', e)
+            ad.log.warning('Skipping this optional device due to error.')
             continue
         results.append(ad)
     return results
@@ -358,7 +356,7 @@ class AndroidDevice(object):
                   android device should be stored.
         log: A logger adapted from root logger with an added prefix specific
              to an AndroidDevice instance. The default prefix is
-             [AndroidDevice|<serial>]. Use self.set_prefix_tag to use a
+             [AndroidDevice|<serial>]. Use self.set_debug_tag to use a
              different tag in the prefix.
         adb_logcat_file_path: A string that's the full path to the adb logcat
                               file collected, if any.
