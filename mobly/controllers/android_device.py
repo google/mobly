@@ -17,6 +17,7 @@
 from builtins import str
 from builtins import open
 
+import contextlib
 import logging
 import os
 import time
@@ -357,9 +358,8 @@ class AndroidDevice(object):
         # logging.log_path only exists when this is used in an Mobly test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            'tag': self.serial
-        })
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                              {'tag': self.serial})
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -405,7 +405,15 @@ class AndroidDevice(object):
 
         Stop adb logcat, terminate sl4a sessions if exist, terminate all
         snippet clients.
+
+        Returns:
+            A dict containing information on the running services before they
+            are torn down. This can be used to restore these services, which
+            includes snippets and sl4a.
         """
+        service_info = {}
+        service_info['snippet_info'] = self._get_active_snippet_info()
+        service_info['use_sl4a'] = self.sl4a is not None
         if self._adb_logcat_process:
             self.stop_adb_logcat()
         self._terminate_sl4a()
@@ -413,6 +421,44 @@ class AndroidDevice(object):
             self._terminate_jsonrpc_client(client)
             delattr(self, name)
         self._snippet_clients = {}
+        return service_info
+
+    @contextlib.contextmanager
+    def handle_device_disconnect(self):
+        """Properly manage the service life cycle when the device needs to
+        temporarily disconnect.
+
+        The device can temporarily lose adb connection due to user-triggered
+        reboot or power measurement. Use this function to make sure the services
+        started by Mobly are properly stopped and restored afterwards.
+
+        For sample usage, see self.reboot().
+        """
+        service_info = self.stop_services()
+        try:
+            yield
+        finally:
+            self._restore_services(service_info)
+
+    def _restore_services(self, service_info):
+        """Restores services after a device has come back from temporary
+        being offline.
+
+        Args:
+            service_info: A dict containing information on the services to
+                          restore, which could include snippet and sl4a.
+        """
+        self.wait_for_boot_completion()
+        if self.is_rootable:
+            self.root_adb()
+        self.start_services()
+        # Restore snippets.
+        snippet_info = service_info['snippet_info']
+        for attr_name, package_name in snippet_info:
+            self.load_snippet(attr_name, package_name)
+        # Restore sl4a if needed.
+        if service_info['use_sl4a']:
+            self.load_sl4a()
 
     @property
     def build_info(self):
@@ -568,8 +614,7 @@ class AndroidDevice(object):
         event_client = sl4a_client.Sl4aClient(
             host_port=host_port, adb_proxy=self.adb)
         event_client.connect(
-            uid=self.sl4a.uid,
-            cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
+            uid=self.sl4a.uid, cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         self.ed = event_dispatcher.EventDispatcher(event_client)
         self.ed.start()
 
@@ -612,8 +657,9 @@ class AndroidDevice(object):
                 period.
         """
         if not self.adb_logcat_file_path:
-            raise Error('Attempting to cat adb log when none has been collected'
-                        ' on Android device %s.' % self.serial)
+            raise Error(
+                'Attempting to cat adb log when none has been collected on '
+                'Android device %s.' % self.serial)
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
         adb_excerpt_path = os.path.join(self.log_path, 'AdbLogExcerpts')
@@ -671,7 +717,7 @@ class AndroidDevice(object):
         except AttributeError:
             extra_params = '-b all'
         cmd = 'adb -s %s logcat -v threadtime %s >> %s' % (
-              self.serial, extra_params, logcat_file_path)
+            self.serial, extra_params, logcat_file_path)
         self._adb_logcat_process = utils.start_standing_subprocess(cmd)
         self.adb_logcat_file_path = logcat_file_path
 
@@ -679,8 +725,9 @@ class AndroidDevice(object):
         """Stops the adb logcat collection subprocess.
         """
         if not self._adb_logcat_process:
-            raise Error('Android device %s does not have an ongoing adb logcat '
-                        'collection.' % self.serial)
+            raise Error(
+                'Android device %s does not have an ongoing adb logcat '
+                'collection.' % self.serial)
         utils.stop_standing_subprocess(self._adb_logcat_process)
         self._adb_logcat_process = None
 
@@ -811,18 +858,8 @@ class AndroidDevice(object):
         if self.is_bootloader:
             self.fastboot.reboot()
             return
-        snippet_info = self._get_active_snippet_info()
-        use_sl4a = self.sl4a is not None
-        self.stop_services()
-        self.adb.reboot()
-        self.wait_for_boot_completion()
-        if self.is_rootable:
-            self.root_adb()
-        self.start_services()
-        if use_sl4a:
-            self.load_sl4a()
-        for attr_name, package_name in snippet_info:
-            self.load_snippet(attr_name, package_name)
+        with self.handle_device_disconnect():
+            self.adb.reboot()
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):

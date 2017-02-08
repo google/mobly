@@ -797,94 +797,6 @@ class Monsoon(object):
             pass
         ad.adb.wait_for_device()
 
-    def execute_sequence_and_measure(self,
-                                     step_funcs,
-                                     hz,
-                                     duration,
-                                     offset_sec=20,
-                                     *args,
-                                     **kwargs):
-        """@Deprecated.
-        Executes a sequence of steps and take samples in-between.
-
-        For each step function, the following steps are followed:
-        1. The function is executed to put the android device in a state.
-        2. If the function returns False, skip to next step function.
-        3. If the function returns True, sl4a session is disconnected.
-        4. Monsoon takes samples.
-        5. Sl4a is reconnected.
-
-        Because it takes some time for the device to calm down after the usb
-        connection is cut, an offset is set for each measurement. The default
-        is 20s.
-
-        Args:
-            hz: Number of samples to take per second.
-            durations: Number(s) of minutes to take samples for in each step.
-                If this is an integer, all the steps will sample for the same
-                amount of time. If this is an iterable of the same length as
-                step_funcs, then each number represents the number of minutes
-                to take samples for after each step function.
-                e.g. If durations[0] is 10, we'll sample for 10 minutes after
-                step_funcs[0] is executed.
-            step_funcs: A list of funtions, whose first param is an android
-                device object. If a step function returns True, samples are
-                taken after this step, otherwise we move on to the next step
-                function.
-            ad: The android device object connected to this monsoon.
-            offset_sec: The number of seconds of initial data to discard.
-            *args, **kwargs: Extra args to be passed into each step functions.
-
-        Returns:
-            The MonsoonData objects from samplings.
-        """
-        self._check_dut()
-        sample_nums = []
-        try:
-            if len(duration) != len(step_funcs):
-                raise MonsoonError(("The number of durations need to be the "
-                                    "same as the number of step functions."))
-            for d in duration:
-                sample_nums.append(d * 60 * hz)
-        except TypeError:
-            num = duration * 60 * hz
-            sample_nums = [num] * len(step_funcs)
-        results = []
-        oset = offset_sec * hz
-        for func, num in zip(step_funcs, sample_nums):
-            try:
-                self.usb("auto")
-                step_name = func.__name__
-                self.log.info("Executing step function %s.", step_name)
-                take_sample = func(ad, *args, **kwargs)
-                if not take_sample:
-                    self.log.info("Skip taking samples for %s", step_name)
-                    continue
-                time.sleep(1)
-                self.dut.stop_services()
-                time.sleep(1)
-                self.log.info("Taking samples for %s.", step_name)
-                data = self.take_samples(hz, num, sample_offset=oset)
-                if not data:
-                    raise MonsoonError("Sampling for %s failed." % step_name)
-                self.log.info("Sample summary: %s", repr(data))
-                data.tag = step_name
-                results.append(data)
-            except Exception:
-                self.log.exception("Exception happened during step %s, abort!"
-                                   % func.__name__)
-                return results
-            finally:
-                self.mon.StopDataCollection()
-                self.usb("on")
-                self._wait_for_device(self.dut)
-                # Wait for device to come back online.
-                time.sleep(10)
-                self.dut.start_services()
-                # Release wake lock to put device into sleep.
-                self.dut.sl4a.goToSleepNow()
-        return results
-
     def measure_power(self, hz, duration, tag, offset=30):
         """Measure power consumption of the attached device.
 
@@ -904,26 +816,23 @@ class Monsoon(object):
         num = duration * hz
         oset = offset * hz
         data = None
-        try:
-            self.usb("auto")
+        self.usb("auto")
+        time.sleep(1)
+        with self.dut.handle_device_disconnect():
             time.sleep(1)
-            self.dut.stop_services()
-            time.sleep(1)
-            data = self.take_samples(hz, num, sample_offset=oset)
-            if not data:
-                raise MonsoonError((
-                    "No data was collected in measurement %s.") % tag)
-            data.tag = tag
-            self.log.info("Measurement summary: %s", repr(data))
-        finally:
-            self.mon.StopDataCollection()
-            self.log.info("Finished taking samples, reconnecting to dut.")
-            self.usb("on")
-            self._wait_for_device(self.dut)
-            # Wait for device to come back online.
-            time.sleep(10)
-            self.dut.start_services()
-            # Release wake lock to put device into sleep.
-            self.dut.sl4a.goToSleepNow()
-            self.log.info("Dut reconnected.")
-            return data
+            try:
+                data = self.take_samples(hz, num, sample_offset=oset)
+                if not data:
+                    raise MonsoonError("No data was collected in measurement %s." %
+                                       tag)
+                data.tag = tag
+                self.dut.log.info("Measurement summary: %s", repr(data))
+                return data
+            finally:
+                self.mon.StopDataCollection()
+                self.log.info("Finished taking samples, reconnecting to dut.")
+                self.usb("on")
+                self._wait_for_device(self.dut)
+                # Wait for device to come back online.
+                time.sleep(10)
+                self.dut.log.info("Dut reconnected.")
