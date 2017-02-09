@@ -61,7 +61,7 @@ def _validate_testbed_name(name):
     for char in name:
         if char not in utils.valid_filename_chars:
             raise MoblyConfigError(
-                'Char "%s" is not allowed in test bed names.' % l)
+                'Char "%s" is not allowed in test bed names.' % char)
 
 
 def _validate_testbed_configs(testbed_configs):
@@ -189,14 +189,12 @@ def load_test_config_file(test_config_path, tb_filters=None):
     if _ENV_MOBLY_LOGPATH in os.environ:
         log_path = os.environ[_ENV_MOBLY_LOGPATH]
     log_path = utils.abs_path(log_path)
-    print(log_path)
     # Validate configs
     _validate_test_config(configs)
     _validate_testbed_configs(configs[keys.Config.key_testbed.value])
     # Transform config dict from user-facing key mapping to internal key mapping.
     test_configs = []
     for original_bed_config in configs[keys.Config.key_testbed.value]:
-        # Throw an error for users using old config format.
         controller_configs = original_bed_config.get(
             keys.Config.key_testbed_controllers.value, {})
         test_params = original_bed_config.get(

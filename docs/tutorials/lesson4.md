@@ -34,7 +34,7 @@ TestBeds:
 You can choose which one to execute on with the command line argument
 `--test_bed`:
 
-    $ python hello_world_test.py -c sample_config.json --test_bed AbcTestBed
+    $ python hello_world_test.py -c sample_config.yml --test_bed AbcTestBed
 
 *Expect:* A "Hello World!" and a "Goodbye!" toast notification appear on your device's
 screen.

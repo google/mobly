@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
 *To execute:*
 
-    $ python hello_world_test.py -c sample_config.json
+    $ python hello_world_test.py -c sample_config.yml
 
 *Expect:* A "Hello World!" toast notification appears on your device's screen.
 
