@@ -202,7 +202,7 @@ def get_instances(serials):
 
 
 def get_instances_with_configs(configs):
-    """Create AndroidDevice instances from a list of json configs.
+    """Create AndroidDevice instances from a list of dict configs.
 
     Each config should have the required key-value pair 'serial'.
 
@@ -531,7 +531,7 @@ class AndroidDevice(object):
             return self.adb.getprop('ro.product.name').lower()
 
     def load_config(self, config):
-        """Add attributes to the AndroidDevice object based on json config.
+        """Add attributes to the AndroidDevice object based on config.
 
         Args:
             config: A dictionary representing the configs.
