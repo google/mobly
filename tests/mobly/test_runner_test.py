@@ -14,11 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import mock
 import shutil
 import tempfile
 import unittest
 
+from mobly import config_parser
 from mobly import keys
 from mobly import signals
 from mobly import test_runner
@@ -41,16 +43,15 @@ class TestRunnerTest(unittest.TestCase):
 
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
-        self.base_mock_test_config = {
-            keys.Config.ikey_testbed_name.value: "SampleTestBed",
-            keys.Config.ikey_testbed_controllers.value: {},
-            keys.Config.ikey_user_param.value: {
+        self.base_mock_test_config = config_parser.TestRunConfig()
+        self.base_mock_test_config.test_bed_name = "SampleTestBed"
+        self.base_mock_test_config.controller_configs = {}
+        self.base_mock_test_config.user_params = {
                 "cli_args": None,
                 "icecream": 42,
                 "extra_param": "haha"
-            },
-            keys.Config.ikey_logpath.value: self.tmp_dir,
-        }
+            }
+        self.base_mock_test_config.log_path = self.tmp_dir
         self.mock_run_list = [('SampleTest', None)]
 
     def tearDown(self):
@@ -74,10 +75,10 @@ class TestRunnerTest(unittest.TestCase):
         objects, and the right error happen when a controller module is
         registered twice.
         """
-        mock_test_config = dict(self.base_mock_test_config)
+        mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_key = keys.Config.ikey_testbed_controllers.value
-        mock_test_config[controller_key] = {
+        mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ["magic1", "magic2"]
         }
         tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
@@ -93,14 +94,14 @@ class TestRunnerTest(unittest.TestCase):
             tr.register_controller(mock_controller)
 
     def test_register_controller_no_get_info(self):
-        mock_test_config = dict(self.base_mock_test_config)
+        mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_ref_name = "haha"
         get_info = getattr(mock_controller, "get_info")
         delattr(mock_controller, "get_info")
         try:
             controller_key = keys.Config.ikey_testbed_controllers.value
-            mock_test_config[controller_key] = {
+            mock_test_config.controller_configs = {
                 mock_ctrlr_config_name: ["magic1", "magic2"]
             }
             tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
@@ -110,10 +111,10 @@ class TestRunnerTest(unittest.TestCase):
             setattr(mock_controller, "get_info", get_info)
 
     def test_register_controller_return_value(self):
-        mock_test_config = dict(self.base_mock_test_config)
+        mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_key = keys.Config.ikey_testbed_controllers.value
-        mock_test_config[controller_key] = {
+        mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ["magic1", "magic2"]
         }
         tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
@@ -122,10 +123,10 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(magic_devices[1].magic, "magic2")
 
     def test_register_controller_less_than_min_number(self):
-        mock_test_config = dict(self.base_mock_test_config)
+        mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_key = keys.Config.ikey_testbed_controllers.value
-        mock_test_config[controller_key] = {
+        mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ["magic1", "magic2"]
         }
         tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
@@ -139,20 +140,19 @@ class TestRunnerTest(unittest.TestCase):
         2. The original configuration is not altered if a test controller
            module modifies configuration.
         """
-        mock_test_config = dict(self.base_mock_test_config)
+        mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         my_config = [{"serial": "xxxx",
                       "magic": "Magic1"}, {"serial": "xxxx",
                                            "magic": "Magic2"}]
         controller_key = keys.Config.ikey_testbed_controllers.value
-        mock_test_config[controller_key][mock_ctrlr_config_name] = my_config
-        print(mock_test_config)
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
         tr = test_runner.TestRunner(mock_test_config, [('IntegrationTest',
                                                         None)])
         tr.run([IntegrationTest.IntegrationTest])
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)
-        self.assertTrue(mock_test_config[controller_key][mock_ctrlr_config_name][0])
+        self.assertTrue(mock_test_config.controller_configs[mock_ctrlr_config_name][0])
         tr.run([IntegrationTest.IntegrationTest])
         tr.stop()
         self.assertFalse(tr.controller_registry)
@@ -181,13 +181,13 @@ class TestRunnerTest(unittest.TestCase):
         This requires using a built-in controller module. Using AndroidDevice
         module since it has all the mocks needed already.
         """
-        mock_test_config = dict(self.base_mock_test_config)
+        mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_key = keys.Config.ikey_testbed_controllers.value
         my_config = [{"serial": "xxxx", "magic": "Magic1"},
                      {"serial": "xxxx", "magic": "Magic2"}]
-        mock_test_config[controller_key][mock_ctrlr_config_name] = my_config
-        mock_test_config["AndroidDevice"] = [
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs["AndroidDevice"] = [
             {"serial": "1"}
         ]
         tr = test_runner.TestRunner(mock_test_config,
