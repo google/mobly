@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import os
 
 from mobly import asserts
@@ -60,7 +61,7 @@ class BaseTestClass(object):
         if not self.TAG:
             self.TAG = self.__class__.__name__
         # Set all the controller objects and params.
-        for name, value in configs.items():
+        for name, value in configs.__dict__.items():
             setattr(self, name, value)
         self.results = records.TestResult()
         self.current_test_name = None
@@ -432,7 +433,7 @@ class BaseTestClass(object):
             A list of strings, each is a test case name.
         """
         test_names = []
-        for name in dir(self):
+        for name, _ in inspect.getmembers(self, inspect.ismethod):
             if name.startswith('test_'):
                 test_names.append(name)
         return test_names
