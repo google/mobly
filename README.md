@@ -210,8 +210,8 @@ Multiple test beds can be configured in one configuration file.
 **sample_config.yaml**
 
 ```yaml
-// DefaultParams is optional here. It uses yaml's anchor feature to easily share
-// a set of parameters between multiple test bed configs
+# DefaultParams is optional here. It uses yaml's anchor feature to easily share
+# a set of parameters between multiple test bed configs
 DefaultParams: &DefaultParams
     favorite_food: green eggs and ham.
 

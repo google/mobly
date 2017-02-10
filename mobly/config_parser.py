@@ -171,7 +171,7 @@ def load_test_config_file(test_config_path, tb_filters=None):
         A list of test configuration dicts to be passed to
         test_runner.TestRunner.
     """
-    configs = load_config_file(test_config_path)
+    configs = _load_config_file(test_config_path)
     if tb_filters:
         tbs = []
         for tb in configs[keys.Config.key_testbed.value]:
@@ -192,21 +192,17 @@ def load_test_config_file(test_config_path, tb_filters=None):
     # Validate configs
     _validate_test_config(configs)
     _validate_testbed_configs(configs[keys.Config.key_testbed.value])
-    # Transform config dict from user-facing key mapping to internal key mapping.
+    # Transform config dict from user-facing key mapping to internal config object.
     test_configs = []
     for original_bed_config in configs[keys.Config.key_testbed.value]:
-        controller_configs = original_bed_config.get(
+        test_run_config = TestRunConfig()
+        test_run_config.test_bed_name = original_bed_config[keys.Config.key_testbed_name.value]
+        test_run_config.log_path = log_path
+        test_run_config.controller_configs = original_bed_config.get(
             keys.Config.key_testbed_controllers.value, {})
-        test_params = original_bed_config.get(
+        test_run_config.user_params = original_bed_config.get(
             keys.Config.key_testbed_test_params.value, {})
-        new_test_config = {
-            keys.Config.ikey_testbed_name.value:
-            original_bed_config[keys.Config.key_testbed_name.value],
-            keys.Config.ikey_logpath.value: log_path,
-            keys.Config.ikey_testbed_controllers.value: controller_configs,
-            keys.Config.ikey_user_param.value: test_params
-        }
-        test_configs.append(new_test_config)
+        test_configs.append(test_run_config)
     return test_configs
 
 
@@ -232,7 +228,7 @@ def parse_test_file(fpath):
         return tf
 
 
-def load_config_file(path):
+def _load_config_file(path):
     """Loads a test config file.
 
     The test config file has to be in YAML format.
@@ -247,3 +243,25 @@ def load_config_file(path):
     with open(utils.abs_path(path), 'r') as f:
         conf = yaml.load(f)
         return conf
+
+
+class TestRunConfig(object):
+    """The data class that holds all the information needed for a test run.
+
+    Attributes:
+        log_path: string, specifies the root directory for all logs written by
+                  a test run.
+        test_bed_name: string, the name of the test bed used by a test run.
+        controller_configs: dict, configs used for instantiating controller
+                            objects.
+        user_params: dict, all the parameters to be consumed by the test logic.
+    """
+
+    def __init__(self):
+        self.log_path = None
+        self._test_bed_name = None
+        self.controller_configs = None
+        self.user_params = None
+
+    def __str__(self):
+        return str(self.__dict__)
