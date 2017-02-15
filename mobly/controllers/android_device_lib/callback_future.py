@@ -96,7 +96,7 @@ class CallbackFuture(object):
             if time.time() > deadline:
                 raise Error('No event received after %ss.' % timeout)
 
-    def waitUtil(self, event_name, predicate, timeout=DEFAULT_TIMEOUT):
+    def waitUntil(self, event_name, predicate, timeout=DEFAULT_TIMEOUT):
         """Blocks until an event of a particular name makes the predicate return
         True.
 
