@@ -31,14 +31,6 @@ class Config(enum.Enum):
     key_testbed_name = "Name"
     key_testbed_controllers = "Controllers"
     key_testbed_test_params = "TestParams"
-    # Internal keys, used internally to detach the internal var names from
-    # keywords that define the config format.
-    ikey_user_param = "user_params"
-    ikey_testbed_name = "testbed_name"
-    ikey_testbed_controllers = "controller_configs"
-    ikey_logger = "log"
-    ikey_logpath = "log_path"
-    ikey_cli_args = "cli_args"
 
 
 def get_name_by_value(value):
@@ -46,19 +38,6 @@ def get_name_by_value(value):
         if member.value == value:
             return name
     return None
-
-
-def get_internal_value(external_value):
-    """Translates the value of an external key to the value of its
-    corresponding internal key.
-    """
-    return value_to_value(external_value, "i%s")
-
-
-def get_module_name(name_in_config):
-    """Translates the name of a controller in config file to its module name.
-    """
-    return value_to_value(name_in_config, "m_%s")
 
 
 def value_to_value(ref_value, pattern):

@@ -57,10 +57,20 @@ class BaseTestClass(object):
     TAG = None
 
     def __init__(self, configs):
+        """Constructor of BaseTestClass.
+
+        The constructor takes a config_parser.TestRunConfig object and which has
+        all the information needed to execute this test class, like log_path
+        and controller configurations. For details, see the definition of class
+        config_parser.TestRunConfig.
+
+        Args:
+            configs: A config_parser.TestRunConfig object.
+        """
         self.tests = []
         if not self.TAG:
             self.TAG = self.__class__.__name__
-        # Set all the controller objects and params.
+        # Set params.
         for name, value in configs.__dict__.items():
             setattr(self, name, value)
         self.results = records.TestResult()

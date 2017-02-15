@@ -167,13 +167,14 @@ class TestRunner(object):
     report results.
 
     Attributes:
-        self.test_run_info: A dictionary containing the information needed by
-                            test classes for this test run, including params,
-                            controllers, and other objects. All of these will
-                            be passed to test classes.
+        self.test_run_info: A config_parser.TestRunConfig object containing
+                            the information needed by test classes for this
+                            test run, including params, controllers, and other
+                            objects, all of which will be passed to test
+                            classes.
         self.test_configs: A TestRunConfig object with the information needed
                            to execute a test run.
-        test_bed_name: The name of the test bed to execute the test on.
+        self.test_bed_name: The name of the test bed to execute the test on.
         self.id: A string that is the unique identifier of this test run.
         self.log_path: A string representing the path of the dir under which
                        all logs from this test run should be written.
@@ -192,6 +193,16 @@ class TestRunner(object):
     """
 
     def __init__(self, test_configs, run_list):
+        """Constructor for TestRunner.
+
+        During construction, the input config_parser.TestRunConfig object is
+        processed and populated with information specific to a test run. The
+        config object is later passed to each test class for execution.
+
+        Args:
+            test_configs: A config_parser.TestRunConfig object.
+            run_list:  A list of tuples specifying what tests to run.
+        """
         self.test_run_info = None
         self.test_configs = test_configs
         test_bed_name = self.test_configs.test_bed_name

@@ -77,7 +77,6 @@ class TestRunnerTest(unittest.TestCase):
         """
         mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        controller_key = keys.Config.ikey_testbed_controllers.value
         mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ["magic1", "magic2"]
         }
@@ -100,7 +99,6 @@ class TestRunnerTest(unittest.TestCase):
         get_info = getattr(mock_controller, "get_info")
         delattr(mock_controller, "get_info")
         try:
-            controller_key = keys.Config.ikey_testbed_controllers.value
             mock_test_config.controller_configs = {
                 mock_ctrlr_config_name: ["magic1", "magic2"]
             }
@@ -113,7 +111,6 @@ class TestRunnerTest(unittest.TestCase):
     def test_register_controller_return_value(self):
         mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        controller_key = keys.Config.ikey_testbed_controllers.value
         mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ["magic1", "magic2"]
         }
@@ -125,7 +122,6 @@ class TestRunnerTest(unittest.TestCase):
     def test_register_controller_less_than_min_number(self):
         mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        controller_key = keys.Config.ikey_testbed_controllers.value
         mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ["magic1", "magic2"]
         }
@@ -145,7 +141,6 @@ class TestRunnerTest(unittest.TestCase):
         my_config = [{"serial": "xxxx",
                       "magic": "Magic1"}, {"serial": "xxxx",
                                            "magic": "Magic2"}]
-        controller_key = keys.Config.ikey_testbed_controllers.value
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
         tr = test_runner.TestRunner(mock_test_config, [('IntegrationTest',
                                                         None)])
@@ -183,7 +178,6 @@ class TestRunnerTest(unittest.TestCase):
         """
         mock_test_config = copy.deepcopy(self.base_mock_test_config)
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        controller_key = keys.Config.ikey_testbed_controllers.value
         my_config = [{"serial": "xxxx", "magic": "Magic1"},
                      {"serial": "xxxx", "magic": "Magic2"}]
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
