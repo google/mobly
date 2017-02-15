@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Base class for clients that communicate with apps over a JSON RPC interface.
 
 The JSON protocol expected by this module is:
@@ -44,6 +43,7 @@ import threading
 import time
 
 from mobly.controllers.android_device_lib import adb
+from mobly.controllers.android_device_lib import callback_future
 
 # Maximum time to wait for the app to start on the device.
 APP_START_WAIT_TIME = 15
@@ -119,6 +119,7 @@ class JsonRpcClientBase(object):
         self._conn = None
         self._counter = None
         self._lock = threading.Lock()
+        self._event_poller = None
 
     def __del__(self):
         self.close()
@@ -164,8 +165,8 @@ class JsonRpcClientBase(object):
             time.sleep(1)
             if self._is_app_running():
                 return
-        raise AppStartError(
-            '%s failed to start on %s.' % (self.app_name, self._adb.serial))
+        raise AppStartError('%s failed to start on %s.' %
+                            (self.app_name, self._adb.serial))
 
     def connect(self, uid=UNKNOWN_UID, cmd=JsonRpcCommand.INIT):
         """Opens a connection to a JSON RPC server.
@@ -205,6 +206,8 @@ class JsonRpcClientBase(object):
         if self._conn:
             self._conn.close()
             self._conn = None
+        if self._event_poller:
+            self._event_poller.stop()
 
     def _adb_grep_wrapper(self, adb_shell_cmd):
         """A wrapper for the specific usage of adb shell grep in this class.
@@ -238,7 +241,10 @@ class JsonRpcClientBase(object):
         if not uid:
             uid = self.uid
         self._client.write(
-            json.dumps({'cmd': command, 'uid': uid}).encode("utf8") + b'\n')
+            json.dumps({
+                'cmd': command,
+                'uid': uid
+            }).encode("utf8") + b'\n')
         self._client.flush()
         return self._client.readline()
 
@@ -270,6 +276,11 @@ class JsonRpcClientBase(object):
             raise ApiError(result['error'])
         if result['id'] != apiid:
             raise ProtocolError(ProtocolError.MISMATCHED_API_ID)
+        if result['callback'] is not None:
+            if self._event_poller is None:
+                self.start_event_polling()
+            return callback_future.CallbackFuture(result['callback'],
+                                                  self._event_poller)
         return result['result']
 
     def _is_app_running(self):
@@ -279,17 +290,19 @@ class JsonRpcClientBase(object):
         """
         running = False
         try:
-          self.connect()
-          running = True
+            self.connect()
+            running = True
         finally:
-          self.close()
-          # This 'return' squashes exceptions from connect()
-          return running
+            self.close()
+            # This 'return' squashes exceptions from connect()
+            return running
 
     def __getattr__(self, name):
         """Wrapper for python magic to turn method calls into RPC calls."""
+
         def rpc_call(*args):
             return self._rpc(name, *args)
+
         return rpc_call
 
     def _id_counter(self):
