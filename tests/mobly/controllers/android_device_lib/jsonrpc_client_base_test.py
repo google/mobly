@@ -26,6 +26,7 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 MOCK_RESP = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, "callback": null}'
 MOCK_RESP_TEMPLATE = '{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, "callback": null}'
 MOCK_RESP_UNKWN_STATUS = b'{"id": 0, "result": 123, "error": null, "status": 0, "callback": null}'
+MOCK_RESP_WITH_CALLBACK = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, "callback": "1-0"}'
 MOCK_RESP_WITH_ERROR = b'{"id": 0, "error": 1, "status": 1, "uid": 1}'
 
 
@@ -177,6 +178,24 @@ class JsonRpcClientBaseTest(unittest.TestCase):
 
         with self.assertRaises(jsonrpc_client_base.ApiError, msg=1):
             client.some_rpc(1, 2, 3)
+
+    @mock.patch('socket.create_connection')
+    def test_rpc_callback_response(self, mock_create_connection):
+        """Test rpc that is given a callback response.
+
+        Test that when an rpc recieves a callback reponse, a callback object is
+        created correctly.
+        """
+        fake_file = self.setup_mock_socket_file(mock_create_connection)
+
+        client = FakeRpcClient()
+        client.connect()
+
+        fake_file.resp = MOCK_RESP_WITH_CALLBACK
+        client._event_poller = mock.Mock()
+
+        callback = client.some_rpc(1, 2, 3)
+        self.assertEqual(callback._id, '1-0')
 
     @mock.patch('socket.create_connection')
     def test_rpc_id_mismatch(self, mock_create_connection):

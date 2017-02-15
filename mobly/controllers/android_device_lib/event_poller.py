@@ -100,13 +100,10 @@ class EventPoller(object):
                 with self._lock:
                     if q_id in self._event_queues:
                         self._event_queues[q_id].put(event_obj)
-                        logging.info("Enqueue %s in %s.", event_obj, q_id)
                     else:
                         q = queue.Queue()
                         q.put(event_obj)
                         self._event_queues[q_id] = q
-                        logging.info("New Q, then enqueue %s in %s.",
-                                     event_obj, q_id)
 
     def get_event_queue(self, q_id):
         """Get a specific event queue.
