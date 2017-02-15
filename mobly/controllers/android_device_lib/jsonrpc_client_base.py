@@ -32,7 +32,8 @@ Response:
                contains 'null'.>,
     "error": <String containing the error thrown by executing the method.
               If no error occurred, contains 'null'.>
-}
+    "callback": <String that represents a callback ID used to identify events
+                 associated with a particular CallbackFuture object.>
 """
 
 from builtins import str
