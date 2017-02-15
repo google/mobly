@@ -48,7 +48,7 @@ def destroy(objs):
     return
 
 
-class MonsoonError(mobly.signals.ControllerError):
+class Error(mobly.signals.ControllerError):
     """Raised for exceptions encountered in monsoon lib."""
 
 
@@ -195,7 +195,7 @@ class MonsoonProxy(object):
                 zip(STATUS_FIELDS, struct.unpack(STATUS_FORMAT, read_bytes)))
             p_type = status['packetType']
             if p_type != 0x10:
-                raise MonsoonError('Package type %s is not 0x10.' % p_type)
+                raise Error('Package type %s is not 0x10.' % p_type)
             for k in status.keys():
                 if k.endswith('VoltageSetting'):
                     status[k] = 2.0 + status[k] * 0.01
@@ -242,8 +242,8 @@ class MonsoonProxy(object):
         """Set the max output current.
         """
         if i < 0 or i > 8:
-            raise MonsoonError(('Target max current %sA, is out of acceptable '
-                                'range [0, 8].') % i)
+            raise Error(('Target max current %sA, is out of acceptable range'
+                         ' [0, 8].') % i)
         val = 1023 - int((i / 8) * 1023)
         self._SendStruct('BBB', 0x01, 0x0a, val & 0xff)
         self._SendStruct('BBB', 0x01, 0x0b, val >> 8)
@@ -252,8 +252,8 @@ class MonsoonProxy(object):
         """Set the max power up current.
         """
         if i < 0 or i > 8:
-            raise MonsoonError(('Target max current %sA, is out of acceptable '
-                                'range [0, 8].') % i)
+            raise Error(('Target max current %sA, is out of acceptable range'
+                         ' [0, 8].') % i)
         val = 1023 - int((i / 8) * 1023)
         self._SendStruct('BBB', 0x01, 0x08, val & 0xff)
         self._SendStruct('BBB', 0x01, 0x09, val >> 8)
@@ -417,7 +417,7 @@ class MonsoonData(object):
         self.offset = offset
         num_of_data_pt = len(self._data_points)
         if self.offset >= num_of_data_pt:
-            raise MonsoonError(
+            raise Error(
                 ('Offset number (%d) must be smaller than the number of data '
                  'points (%d).') % (offset, num_of_data_pt))
         self.data_points = self._data_points[self.offset:]
@@ -472,7 +472,7 @@ class MonsoonData(object):
             lines[5] != 'Time' + ' ' * 7 + 'Amp'
         ]
         if any(conditions):
-            raise MonsoonError(err_msg)
+            raise Error(err_msg)
         hz_str = lines[4].split()[2]
         hz = int(hz_str[:-2])
         voltage_str = lines[2].split()[1]
@@ -486,7 +486,7 @@ class MonsoonData(object):
                 t.append(int(timestamp))
                 v.append(float(value))
             except ValueError:
-                raise MonsoonError(err_msg)
+                raise Error(err_msg)
         return MonsoonData(v, t, hz, voltage)
 
     @staticmethod
@@ -500,7 +500,7 @@ class MonsoonData(object):
                 name.
         """
         if not monsoon_data:
-            raise MonsoonError('Attempting to write empty Monsoon data to '
+            raise Error('Attempting to write empty Monsoon data to '
                                'file, abort')
         utils.create_dir(os.path.dirname(file_path))
         with open(file_path, 'w') as f:
@@ -533,7 +533,7 @@ class MonsoonData(object):
         msg = 'Error! Expected %s timestamps, found %s.' % (
             len(self._data_points), len(self._timestamps))
         if len(self._data_points) != len(self._timestamps):
-            raise MonsoonError(msg)
+            raise Error(msg)
 
     def update_offset(self, new_offset):
         """Updates how many data points to skip in caculations.
@@ -762,9 +762,9 @@ class Monsoon(object):
         USB port in front of the monsoon box which connects to the powered
         device, NOT the USB that is used to talk to the monsoon itself.
 
-        'Off' means USB always off.
-        'On' means USB always on.
-        'Auto' means USB is automatically turned off when sampling is going on,
+        'off' means USB always off.
+        'on' means USB always on.
+        'auto' means USB is automatically turned off when sampling is going on,
         and turned back on when sampling finishes.
 
         Args:
@@ -775,14 +775,13 @@ class Monsoon(object):
         """
         state_lookup = {'off': 0, 'on': 1, 'auto': 2}
         state = state.lower()
-        if state in state_lookup:
+        if state not in state_lookup:
+            raise Error('"%s" is not a valid usb state.' % state)
+        current_state = self.mon.GetUsbPassthrough()
+        while (current_state != state_lookup[state]):
+            self.mon.SetUsbPassthrough(state_lookup[state])
+            time.sleep(1)
             current_state = self.mon.GetUsbPassthrough()
-            while (current_state != state_lookup[state]):
-                self.mon.SetUsbPassthrough(state_lookup[state])
-                time.sleep(1)
-                current_state = self.mon.GetUsbPassthrough()
-            return True
-        return False
 
     def _check_dut(self):
         """Verifies there is a DUT attached to the monsoon.
@@ -790,13 +789,10 @@ class Monsoon(object):
         This should be called in the functions that operate the DUT.
         """
         if not self.dut:
-            raise MonsoonError('Need to attach the device before using it.')
+            raise Error('Need to attach the device before using it.')
 
     @timeout_decorator.timeout(15, use_signals=False)
     def _wait_for_device(self, ad):
-        while ad.serial not in android_device.list_adb_devices():
-            pass
-        ad.adb.wait_for_device()
         ad.wait_for_boot_completion()
 
     def measure_power(self, hz, duration, tag, offset=30):
@@ -819,13 +815,13 @@ class Monsoon(object):
         oset = offset * hz
         data = None
         self.usb('auto')
+        # Give monsoon some time to react.
         time.sleep(1)
         with self.dut.handle_device_disconnect():
-            time.sleep(1)
             try:
                 data = self.take_samples(hz, num, sample_offset=oset)
                 if not data:
-                    raise MonsoonError(
+                    raise Error(
                         'No data was collected in measurement %s.' % tag)
                 data.tag = tag
                 self.dut.log.info('Measurement summary: %s', repr(data))
