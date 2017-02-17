@@ -25,7 +25,7 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 MOCK_RESP = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, "callback": null}'
 MOCK_RESP_TEMPLATE = '{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, "callback": null}'
-MOCK_RESP_UNKWN_STATUS = b'{"id": 0, "result": 123, "error": null, "status": 0, "callback": null}'
+MOCK_RESP_UNKNOWN_STATUS = b'{"id": 0, "result": 123, "error": null, "status": 0, "callback": null}'
 MOCK_RESP_WITH_CALLBACK = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, "callback": "1-0"}'
 MOCK_RESP_WITH_ERROR = b'{"id": 0, "error": 1, "status": 1, "uid": 1}'
 
@@ -134,7 +134,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         """
         fake_conn = mock.MagicMock()
         fake_conn.makefile.return_value = MockSocketFile(
-            MOCK_RESP_UNKWN_STATUS)
+            MOCK_RESP_UNKNOWN_STATUS)
         mock_create_connection.return_value = fake_conn
 
         client = FakeRpcClient()
@@ -192,7 +192,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         client.connect()
 
         fake_file.resp = MOCK_RESP_WITH_CALLBACK
-        client._event_poller = mock.Mock()
+        client._event_client = mock.Mock()
 
         callback = client.some_rpc(1, 2, 3)
         self.assertEqual(callback._id, '1-0')

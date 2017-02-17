@@ -264,6 +264,7 @@ class JsonRpcClientBase(object):
         with self._lock:
             apiid = next(self._counter)
         data = {'id': apiid, 'method': method, 'params': args}
+        print(data)
         request = json.dumps(data)
         self._client.write(request.encode("utf8") + b'\n')
         self._client.flush()
@@ -271,13 +272,15 @@ class JsonRpcClientBase(object):
         if not response:
             raise ProtocolError(ProtocolError.NO_RESPONSE_FROM_SERVER)
         result = json.loads(str(response, encoding="utf8"))
+        print(result)
         if result['error']:
             raise ApiError(result['error'])
         if result['id'] != apiid:
+            print(result['id'], apiid)
             raise ProtocolError(ProtocolError.MISMATCHED_API_ID)
         if result['callback'] is not None:
             if self._event_client is None:
-                self.start_event_client()
+                self._start_event_client()
             return callback_future.CallbackFuture(result['callback'],
                                                   self._event_client)
         return result['result']
@@ -300,7 +303,8 @@ class JsonRpcClientBase(object):
         """Wrapper for python magic to turn method calls into RPC calls."""
 
         def rpc_call(*args):
-            return self._rpc(name, *args)
+            if not name.startswith('_'):
+                return self._rpc(name, *args)
 
         return rpc_call
 
