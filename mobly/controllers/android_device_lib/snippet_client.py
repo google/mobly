@@ -18,7 +18,6 @@ import logging
 import re
 
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import event_poller
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 _INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunner'
@@ -70,8 +69,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def stop_app(self):
         """Overrides superclass."""
-        if self._event_poller:
-            self._event_poller.stop()
         cmd = _STOP_CMD % self.package
         logging.info('Stopping snippet apk with: %s', cmd)
         out = self._adb.shell(_STOP_CMD % self.package).decode('utf-8')
@@ -108,12 +105,11 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                     'Instrumentation target %s is not installed on %s' %
                     (target_name, self._serial))
 
-    def start_event_polling(self):
+    def start_event_client(self):
         event_client = SnippetClient(
             package=self.package,
             host_port=self.host_port,
             adb_proxy=self._adb)
         event_client.connect(self.uid,
                              jsonrpc_client_base.JsonRpcCommand.CONTINUE)
-        self._event_poller = event_poller.EventPoller(event_client)
-        self._event_poller.start()
+        self._event_client = event_client

@@ -120,7 +120,7 @@ class JsonRpcClientBase(object):
         self._conn = None
         self._counter = None
         self._lock = threading.Lock()
-        self._event_poller = None
+        self._event_client = None
 
     def __del__(self):
         self.close()
@@ -207,8 +207,6 @@ class JsonRpcClientBase(object):
         if self._conn:
             self._conn.close()
             self._conn = None
-        if self._event_poller:
-            self._event_poller.stop()
 
     def _adb_grep_wrapper(self, adb_shell_cmd):
         """A wrapper for the specific usage of adb shell grep in this class.
@@ -278,10 +276,10 @@ class JsonRpcClientBase(object):
         if result['id'] != apiid:
             raise ProtocolError(ProtocolError.MISMATCHED_API_ID)
         if result['callback'] is not None:
-            if self._event_poller is None:
-                self.start_event_polling()
+            if self._event_client is None:
+                self.start_event_client()
             return callback_future.CallbackFuture(result['callback'],
-                                                  self._event_poller)
+                                                  self._event_client)
         return result['result']
 
     def _is_app_running(self):

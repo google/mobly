@@ -17,8 +17,6 @@
 import logging
 import time
 
-from mobly.controllers.android_device_lib import event_poller
-
 DEFAULT_TIMEOUT = 10
 
 
@@ -27,9 +25,9 @@ class Error(Exception):
 
 
 class CallbackFuture(object):
-    def __init__(self, callback_id, poller):
+    def __init__(self, callback_id, event_client):
         self._id = callback_id
-        self._event_poller = poller
+        self._event_client = event_client
 
     def wait(self, event_name, timeout=DEFAULT_TIMEOUT):
         """Blocks until an event of the specified name has been received, or
@@ -38,21 +36,12 @@ class CallbackFuture(object):
         Args:
             event_name: string, ame of the event to get.
             timeout: float, the number of seconds to wait before giving up.
-
-        Raises:
-            Error is raised if the function is called before the polling is
-            started.
         """
-        deadline = time.time() + timeout
-        q_id = event_poller.EVENT_QUEUE_ID_TEMPLATE % (self._id, event_name)
-        while True:
-            q = self._event_poller.get_event_queue(q_id)
-            if not q.empty():
-                return
-            time.sleep(0.5)
-            if time.time() > deadline:
-                raise Error('No event of name "%s" received after %ss.' %
-                            (event_name, timeout))
+        success = self._event_client.wait(self._id, event_name, int(timeout * 1000))
+        if not success:
+            raise Error('No event "%s" of callback %s was received after %ss.' %
+                        (event_name, self._id, timeout))
+
 
     def waitAndGet(self, event_name, timeout=DEFAULT_TIMEOUT):
         """Blocks until an event of the specified name has been received and
@@ -64,37 +53,12 @@ class CallbackFuture(object):
 
         Returns:
             The oldest entry of the specified event.
-
-        Raises:
-            Error is raised if the event is not received before timeout.
         """
-        q_id = event_poller.EVENT_QUEUE_ID_TEMPLATE % (self._id, event_name)
-        event_queue = self._event_poller.get_event_queue(q_id)
-        try:
-            # Block for timeout
-            return event_queue.get(True, timeout)
-        except queue.Empty:
-            raise Error(
-                'Timeout after %ss waiting for event "%s" of callack %s' %
-                (timeout, event_name, callback_id))
-
-    def waitForAny(self, timeout=DEFAULT_TIMEOUT):
-        """Blocks until any event of this callback is received.
-
-        Args:
-            timeout: int, the number of seconds to wait before giving up.
-
-        Raises:
-            Error is raised if no event is not received before timeout.
-        """
-        deadline = time.time() + timeout
-        while True:
-            for q in self._event_poller.get_callback_queues(self._id):
-                if not q.empty():
-                    return
-            time.sleep(0.5)
-            if time.time() > deadline:
-                raise Error('No event received after %ss.' % timeout)
+        event = self._event_client.waitAndGet(self._id, event_name, int(timeout * 1000))
+        if event is None:
+            raise Error('Timeout after %ss waiting for event "%s" of callack %s' %
+                        (timeout, event_name, self._id))
+        return event
 
     def waitUntil(self, event_name, predicate, timeout=DEFAULT_TIMEOUT):
         """Blocks until an event of a particular name makes the predicate return
@@ -126,8 +90,8 @@ class CallbackFuture(object):
             if event and predicate(event):
                 return event
             if time.time() > deadline:
-                raise Error('Timeout after %ss waiting for event: %s' %
-                            (timeout, event_name))
+                raise Error('Timeout after %ss waiting for event: %s of callback %s.' %
+                            (timeout, event_name, self._id))
 
     def getAll(self, event_name):
         """Gets all the events of a certain name that have been received so far.
@@ -140,9 +104,4 @@ class CallbackFuture(object):
         Returns:
             A list of dicts, each dict representing an event from the Java side.
         """
-        q_id = event_poller.EVENT_QUEUE_ID_TEMPLATE % (self._id, event_name)
-        event_queue = self._event_poller.get_event_queue(q_id)
-        results = []
-        while not event_queue.empty():
-            results.append(event_queue.get(block=False))
-        return results
+        return self._event_client.getAll(self._id, event_name)
