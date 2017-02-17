@@ -258,11 +258,11 @@ class JsonRpcClientBase(object):
         """
         with self._lock:
             apiid = next(self._counter)
-        data = {'id': apiid, 'method': method, 'params': args}
-        request = json.dumps(data)
-        self._client.write(request.encode("utf8") + b'\n')
-        self._client.flush()
-        response = self._client.readline()
+            data = {'id': apiid, 'method': method, 'params': args}
+            request = json.dumps(data)
+            self._client.write(request.encode("utf8") + b'\n')
+            self._client.flush()
+            response = self._client.readline()
         if not response:
             raise ProtocolError(ProtocolError.NO_RESPONSE_FROM_SERVER)
         result = json.loads(str(response, encoding="utf8"))
