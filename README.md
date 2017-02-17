@@ -273,9 +273,10 @@ writing, like logging and asserts.
 **sample_test.py**
 
 ```python
+from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
-from mobly.controllerse import android_device
+from mobly.controllers import android_device
 
 class HelloWorldTest(base_test.BaseTestClass):
 
