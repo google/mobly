@@ -37,11 +37,11 @@ class CallbackFuture(object):
             event_name: string, ame of the event to get.
             timeout: float, the number of seconds to wait before giving up.
         """
-        success = self._event_client.wait(self._id, event_name, int(timeout * 1000))
+        success = self._event_client.eventWait(self._id, event_name, int(
+            timeout * 1000))
         if not success:
-            raise Error('No event "%s" of callback %s was received after %ss.' %
-                        (event_name, self._id, timeout))
-
+            raise Error('No event "%s" of callback %s was received after %ss.'
+                        % (event_name, self._id, timeout))
 
     def waitAndGet(self, event_name, timeout=DEFAULT_TIMEOUT):
         """Blocks until an event of the specified name has been received and
@@ -54,10 +54,12 @@ class CallbackFuture(object):
         Returns:
             The oldest entry of the specified event.
         """
-        event = self._event_client.waitAndGet(self._id, event_name, int(timeout * 1000))
+        event = self._event_client.eventWaitAndGet(self._id, event_name, int(
+            timeout * 1000))
         if event is None:
-            raise Error('Timeout after %ss waiting for event "%s" of callack %s' %
-                        (timeout, event_name, self._id))
+            raise Error(
+                'Timeout after %ss waiting for event "%s" of callack %s' %
+                (timeout, event_name, self._id))
         return event
 
     def waitUntil(self, event_name, predicate, timeout=DEFAULT_TIMEOUT):
@@ -84,14 +86,15 @@ class CallbackFuture(object):
         while True:
             event = None
             try:
-                event = self.waitAndGet(event_name, 1)
+                event = self.eventWaitAndGet(event_name, 1)
             except Error:
                 pass
             if event and predicate(event):
                 return event
             if time.time() > deadline:
-                raise Error('Timeout after %ss waiting for event: %s of callback %s.' %
-                            (timeout, event_name, self._id))
+                raise Error(
+                    'Timeout after %ss waiting for event: %s of callback %s.' %
+                    (timeout, event_name, self._id))
 
     def getAll(self, event_name):
         """Gets all the events of a certain name that have been received so far.
@@ -104,4 +107,4 @@ class CallbackFuture(object):
         Returns:
             A list of dicts, each dict representing an event from the Java side.
         """
-        return self._event_client.getAll(self._id, event_name)
+        return self._event_client.eventGetAll(self._id, event_name)
