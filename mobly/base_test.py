@@ -66,13 +66,29 @@ class BaseTestClass(object):
 
         Args:
             configs: A config_parser.TestRunConfig object.
+            log_path: string, specifies the root directory for all logs written
+                      by a test run.
+            test_bed_name: string, the name of the test bed used by a test run.
+            controller_configs: dict, configs used for instantiating controller
+                                objects.
+            user_params: dict, custom parameters from user, to be consumed by
+                         the test logic.
+            register_controller: func, used by test classes to register
+                                 controller modules.
+            log: a logger object. (deprecated)
+            cli_args: any cli args passed in. (deprecated)
         """
         self.tests = []
         if not self.TAG:
             self.TAG = self.__class__.__name__
         # Set params.
-        for name, value in configs.__dict__.items():
-            setattr(self, name, value)
+        self.log_path = configs.log_path
+        self.controller_configs = configs.controller_configs
+        self.test_bed_name = configs.test_bed_name
+        self.user_params = configs.user_params
+        self.register_controller = configs.register_controller
+        self.log = configs.log
+        self.cli_args = configs.cli_args
         self.results = records.TestResult()
         self.current_test_name = None
 

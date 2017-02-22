@@ -38,17 +38,3 @@ def get_name_by_value(value):
         if member.value == value:
             return name
     return None
-
-
-def value_to_value(ref_value, pattern):
-    """Translates the value of a key to the value of its corresponding key. The
-    corresponding key is chosen based on the variable name pattern.
-    """
-    ref_key_name = get_name_by_value(ref_value)
-    if not ref_key_name:
-        return None
-    target_key_name = pattern % ref_key_name
-    try:
-        return getattr(Config, target_key_name).value
-    except AttributeError:
-        return None
