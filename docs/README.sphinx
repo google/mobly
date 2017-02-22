@@ -1,0 +1,40 @@
+Overview
+========
+
+We use the Sphinx <http://www.sphinx-doc.org> documentation system to document mobly APIs.
+
+It works by using certain "source" files that define how to build the documentation in the target format (e.g. HTML, PDF, text, etc.).
+
+To use the sphinx system locally, you need to have sphinx installed. See the sphinx project site for installation details.
+
+
+Initial Generation of Sphinx source files
+=========================================
+
+The initial sphinx autogeneration of mobly APIs were performed by running in root dir of the project:
+
+sphinx-apidoc mobly --full -o docs -H 'Mobly'
+
+This created the full sphinx project in the 'docs' directory and generated the source files pointing to the mobly package and its contents.
+
+
+Updating Documentation
+======================
+
+readthedocs.org hosts Sphinx documentation for a number of open source projects. If the appropriate github hook is set, it will autogenerate documentation with each submission.
+
+If there are significant changes to the mobly package (adding a new module), you will need to run sphinx-apidoc again to update the sphinx source files for the new package. Or, you can add the necessary files/directives to the sphinx source files manually.
+
+Subsequent runs of sphinx-apidoc can be run with:
+
+sphinx-apidoc mobly -o docs -H 'Mobly'
+
+
+Building the Target documents
+=============================
+
+To generate the documentation in HTML format, run from within the docs directory:
+
+make html
+
+That will generate the documentation in the _build directory.
