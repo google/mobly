@@ -33,7 +33,7 @@ Response:
     "error": <String containing the error thrown by executing the method.
               If no error occurred, contains 'null'.>
     "callback": <String that represents a callback ID used to identify events
-                 associated with a particular CallbackFuture object.>
+                 associated with a particular CallbackHandler object.>
 """
 
 from builtins import str
@@ -278,7 +278,7 @@ class JsonRpcClientBase(object):
         if result['callback'] is not None:
             if self._event_client is None:
                 self._start_event_client()
-            return callback_future.CallbackFuture(
+            return callback_future.CallbackHandler(
                 result['callback'], self._event_client, result['result'])
         return result['result']
 

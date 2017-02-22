@@ -30,7 +30,22 @@ class TimeoutError(Error):
     pass
 
 
-class CallbackFuture(object):
+class CallbackHandler(object):
+    """The class used to handle a specific group of callback events.
+
+    All the events handled by a CallbackHandler are originally triggered by one
+    async Rpc call. All the events are tagged with a callback_id specific to a call
+    to an AsyncRpc method defined on the server side.
+
+    The callback events are dictionaries that follow this schema:
+    {
+        'callbackId': <string, callbackId>,
+        'name': <string, name of the event>,
+        'time': <long, epoch time of when the event was created on the server side>,
+        'data': <dict, extra data from the callback on the server side>
+    }
+    """
+
     def __init__(self, callback_id, event_client, ret_value):
         self._id = callback_id
         self._event_client = event_client
