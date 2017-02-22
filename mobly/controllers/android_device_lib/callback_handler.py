@@ -19,8 +19,6 @@ import time
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-DEFAULT_TIMEOUT = 10
-
 
 class Error(Exception):
     pass
@@ -51,29 +49,28 @@ class CallbackHandler(object):
         self._event_client = event_client
         self.ret_value = ret_value
 
-    def waitAndGet(self, event_name, timeout=DEFAULT_TIMEOUT):
+    def waitAndGet(self, event_name, timeout=None):
         """Blocks until an event of the specified name has been received and
         return the event, or timeout.
 
         Args:
-            event_name: string, ame of the event to get.
-            timeout: float, the number of seconds to wait before giving up.
+            event_name: string, name of the event to get.
+            timeout: float, the number of milliseconds to wait before giving up.
 
         Returns:
             The oldest entry of the specified event.
 
         Raises:
-            TimeoutError is raised if the expected event does not occur within
-            time limit.
+            TimeoutError: The expected event does not occur within time limit.
         """
         try:
-            event = self._event_client.waitAndGet(self._id, event_name,
-                                                  int(timeout * 1000))
+            event = self._event_client.eventWaitAndGet(self._id, event_name,
+                                                       timeout)
         except jsonrpc_client_base.ApiError as e:
-            if "timeout" in str(e):
+            if "EventSnippetException: timeout." in str(e):
                 raise TimeoutError(
-                    'Timeout after %ss waiting for event "%s" of callback %s' %
-                    (timeout, event_name, self._id))
+                    'Timeout after %sms waiting for event "%s" of callback %s'
+                    % (timeout, event_name, self._id))
             raise
         return event
 
@@ -88,4 +85,4 @@ class CallbackHandler(object):
         Returns:
             A list of dicts, each dict representing an event from the Java side.
         """
-        return self._event_client.getAll(self._id, event_name)
+        return self._event_client.eventGetAll(self._id, event_name)

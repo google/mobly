@@ -44,7 +44,7 @@ import threading
 import time
 
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import callback_future
+from mobly.controllers.android_device_lib import callback_handler
 
 # Maximum time to wait for the app to start on the device.
 APP_START_WAIT_TIME = 15
@@ -133,6 +133,14 @@ class JsonRpcClientBase(object):
         Must be implemented by subclasses.
         """
         raise NotImplementedError()
+
+    def _start_event_client(self):
+        """Starts a separate JsonRpc client to the same session for propagating
+        events.
+
+        This is an optional function that should only implement if the client
+        utilizes the snippet event mechanism.
+        """
 
     def stop_app(self):
         """Kills any running instance of the app.
@@ -275,10 +283,10 @@ class JsonRpcClientBase(object):
             raise ApiError(result['error'])
         if result['id'] != apiid:
             raise ProtocolError(ProtocolError.MISMATCHED_API_ID)
-        if result['callback'] is not None:
+        if result.get('callback', None) is not None:
             if self._event_client is None:
                 self._start_event_client()
-            return callback_future.CallbackHandler(
+            return callback_handler.CallbackHandler(
                 result['callback'], self._event_client, result['result'])
         return result['result']
 
@@ -300,8 +308,7 @@ class JsonRpcClientBase(object):
         """Wrapper for python magic to turn method calls into RPC calls."""
 
         def rpc_call(*args):
-            if not name.startswith('_'):
-                return self._rpc(name, *args)
+            return self._rpc(name, *args)
 
         return rpc_call
 
