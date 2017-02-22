@@ -1,8 +1,0 @@
----
-layout: post
-title:  "First post!"
-date:   2016-12-13 20:35:55 -0800
-categories: mobly update
----
-This is a sample post. We can use this to document major updates/releases.
-
