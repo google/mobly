@@ -255,13 +255,22 @@ class TestRunConfig(object):
         controller_configs: dict, configs used for instantiating controller
                             objects.
         user_params: dict, all the parameters to be consumed by the test logic.
+        register_controller: func, used by test classes to register controller
+                             modules.
+        log: a logger object.
+        cli_args: any cli args passed in.
     """
 
     def __init__(self):
         self.log_path = None
-        self._test_bed_name = None
+        self.test_bed_name = None
         self.controller_configs = None
         self.user_params = None
+        self.register_controller = None
+        # Below attributes are deprecated and kept for compatibility reasons
+        # for now.
+        self.log = None
+        self.cli_args = None
 
     def __str__(self):
         return str(self.__dict__)
