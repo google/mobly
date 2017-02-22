@@ -264,7 +264,6 @@ class JsonRpcClientBase(object):
         with self._lock:
             apiid = next(self._counter)
         data = {'id': apiid, 'method': method, 'params': args}
-        print(data)
         request = json.dumps(data)
         self._client.write(request.encode("utf8") + b'\n')
         self._client.flush()
@@ -272,11 +271,9 @@ class JsonRpcClientBase(object):
         if not response:
             raise ProtocolError(ProtocolError.NO_RESPONSE_FROM_SERVER)
         result = json.loads(str(response, encoding="utf8"))
-        print(result)
         if result['error']:
             raise ApiError(result['error'])
         if result['id'] != apiid:
-            print(result['id'], apiid)
             raise ProtocolError(ProtocolError.MISMATCHED_API_ID)
         if result['callback'] is not None:
             if self._event_client is None:
