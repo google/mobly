@@ -278,8 +278,8 @@ class JsonRpcClientBase(object):
         if result['callback'] is not None:
             if self._event_client is None:
                 self._start_event_client()
-            return callback_future.CallbackFuture(result['callback'],
-                                                  self._event_client)
+            return callback_future.CallbackFuture(
+                result['callback'], self._event_client, result['result'])
         return result['result']
 
     def _is_app_running(self):

@@ -17,6 +17,8 @@
 import logging
 import time
 
+from mobly.controllers.android_device_lib import jsonrpc_client_base
+
 DEFAULT_TIMEOUT = 10
 
 
@@ -24,10 +26,15 @@ class Error(Exception):
     pass
 
 
+class TimeoutError(Error):
+    pass
+
+
 class CallbackFuture(object):
-    def __init__(self, callback_id, event_client):
+    def __init__(self, callback_id, event_client, ret_value):
         self._id = callback_id
         self._event_client = event_client
+        self.ret_value = ret_value
 
     def waitAndGet(self, event_name, timeout=DEFAULT_TIMEOUT):
         """Blocks until an event of the specified name has been received and
@@ -39,11 +46,20 @@ class CallbackFuture(object):
 
         Returns:
             The oldest entry of the specified event.
+
+        Raises:
+            TimeoutError is raised if the expected event does not occur within
+            time limit.
         """
-        event = self._event_client.waitAndGet(self._id, event_name, int(timeout * 1000))
-        if event is None:
-            raise Error('Timeout after %ss waiting for event "%s" of callack %s' %
-                        (timeout, event_name, self._id))
+        try:
+            event = self._event_client.waitAndGet(self._id, event_name,
+                                                  int(timeout * 1000))
+        except jsonrpc_client_base.ApiError as e:
+            if "timeout" in str(e):
+                raise TimeoutError(
+                    'Timeout after %ss waiting for event "%s" of callback %s' %
+                    (timeout, event_name, self._id))
+            raise
         return event
 
     def getAll(self, event_name):
