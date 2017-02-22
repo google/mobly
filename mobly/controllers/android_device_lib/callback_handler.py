@@ -55,7 +55,7 @@ class CallbackHandler(object):
 
         Args:
             event_name: string, name of the event to get.
-            timeout: float, the number of milliseconds to wait before giving up.
+            timeout: float, the number of seconds to wait before giving up.
 
         Returns:
             The oldest entry of the specified event.
@@ -63,6 +63,8 @@ class CallbackHandler(object):
         Raises:
             TimeoutError: The expected event does not occur within time limit.
         """
+        if timeout:
+            timeout *= 1000  # convert to milliseconds for java side
         try:
             event = self._event_client.eventWaitAndGet(self._id, event_name,
                                                        timeout)

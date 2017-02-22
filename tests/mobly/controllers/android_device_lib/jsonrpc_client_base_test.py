@@ -24,6 +24,7 @@ import unittest
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 MOCK_RESP = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, "callback": null}'
+MOCK_RESP_WITHOUT_CALLBACK = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, "callback": null}'
 MOCK_RESP_TEMPLATE = '{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, "callback": null}'
 MOCK_RESP_UNKNOWN_STATUS = b'{"id": 0, "result": 123, "error": null, "status": 0, "callback": null}'
 MOCK_RESP_WITH_CALLBACK = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, "callback": "1-0"}'
@@ -246,6 +247,29 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         is used.
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
+
+        client = FakeRpcClient()
+        client.connect()
+
+        result = client.some_rpc(1, 2, 3)
+        self.assertEquals(result, 123)
+
+        expected = {'id': 0, 'method': 'some_rpc', 'params': [1, 2, 3]}
+        actual = json.loads(fake_file.last_write.decode('utf-8'))
+
+        self.assertEqual(expected, actual)
+
+    @mock.patch('socket.create_connection')
+    def test_rpc_send_to_socket_without_callback(self, mock_create_connection):
+        """Test rpc sending and recieving with Rpc protocol before callback was
+        added to the resp message.
+
+        Logic is the same as test_rpc_send_to_socket.
+        """
+        fake_file = MockSocketFile(MOCK_RESP_WITHOUT_CALLBACK)
+        fake_conn = mock.MagicMock()
+        fake_conn.makefile.return_value = fake_file
+        mock_create_connection.return_value = fake_conn
 
         client = FakeRpcClient()
         client.connect()
