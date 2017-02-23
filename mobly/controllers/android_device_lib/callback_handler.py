@@ -17,8 +17,6 @@
 import logging
 import time
 
-from mobly.controllers.android_device_lib import jsonrpc_client_base
-
 
 class Error(Exception):
     pass
@@ -68,7 +66,7 @@ class CallbackHandler(object):
         try:
             event = self._event_client.eventWaitAndGet(self._id, event_name,
                                                        timeout)
-        except jsonrpc_client_base.ApiError as e:
+        except Exception as e:
             if "EventSnippetException: timeout." in str(e):
                 raise TimeoutError(
                     'Timeout after %sms waiting for event "%s" of callback %s'
