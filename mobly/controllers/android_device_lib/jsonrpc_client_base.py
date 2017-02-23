@@ -140,6 +140,10 @@ class JsonRpcClientBase(object):
 
         This is an optional function that should only implement if the client
         utilizes the snippet event mechanism.
+
+        Returns:
+            A JsonRpc Client object that connects to the same session as the
+            one on which this function is called.
         """
 
     def stop_app(self):
@@ -283,9 +287,9 @@ class JsonRpcClientBase(object):
             raise ApiError(result['error'])
         if result['id'] != apiid:
             raise ProtocolError(ProtocolError.MISMATCHED_API_ID)
-        if result.get('callback', None) is not None:
+        if result.get('callback') is not None:
             if self._event_client is None:
-                self._start_event_client()
+                self._event_client = self._start_event_client()
             return callback_handler.CallbackHandler(
                 result['callback'], self._event_client, result['result'])
         return result['result']

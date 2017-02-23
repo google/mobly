@@ -112,4 +112,4 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             adb_proxy=self._adb)
         event_client.connect(self.uid,
                              jsonrpc_client_base.JsonRpcCommand.CONTINUE)
-        self._event_client = event_client
+        return event_client
