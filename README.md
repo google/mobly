@@ -39,7 +39,7 @@ $ pip install mobly
 or download the source then run `setup.py` to use the bleeding edge:
 
 ```
-$ git clone git@github.com:google/mobly.git
+$ git clone https://github.com/google/mobly.git
 $ cd mobly
 $ python setup.py install
 ```
@@ -48,7 +48,7 @@ You may need `sudo` for the above commands if your system has certain permission
 restrictions.
 
 ## Tutorials
-To get started with some simple tests, see the [Mobly tutorial](https://github.com/google/mobly/wiki/Getting-Started-with-Mobly).
+To get started with some simple tests, see the [Mobly tutorial](https://github.com/google/mobly/blob/master/docs/tutorial.md).
 
 ## Mobly Snippet
 The Mobly Snippet projects let users better control Android devices.
