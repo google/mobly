@@ -145,6 +145,7 @@ class JsonRpcClientBase(object):
             A JsonRpc Client object that connects to the same session as the
             one on which this function is called.
         """
+        raise NotImplementedError()
 
     def stop_app(self):
         """Kills any running instance of the app.
