@@ -39,86 +39,9 @@ $ pip install mobly
 or download the source then run `setup.py` to use the bleeding edge:
 
 ```
-<<<<<<< HEAD
-
-**sample_test.py**
-
-```python
-from mobly import asserts
-from mobly import base_test
-from mobly import test_runner
-from mobly.controllers import android_device
-
-class HelloWorldTest(base_test.BaseTestClass):
-
-  def setup_class(self):
-    # Registering android_device controller module, and declaring that the test
-    # requires at least two Android devices.
-    self.ads = self.register_controller(android_device, min_number=2)
-    self.dut = android_device.get_device(self.ads, label="dut")
-    self.dut.load_sl4a()
-    self.discoverer = android_device.get_device(self.ads, label="discoverer")
-    self.discoverer.load_sl4a()
-    self.dut.ed.clear_all_events()
-    self.discoverer.ed.clear_all_events()
-
-  def setup_test(self):
-    # Make sure bluetooth is on
-    self.dut.sl4a.bluetoothToggleState(True)
-    self.discoverer.sl4a.bluetoothToggleState(True)
-    self.dut.ed.pop_event(event_name='BluetoothStateChangedOn',
-                          timeout=10)
-    self.discoverer.ed.pop_event(event_name='BluetoothStateChangedOn',
-                                 timeout=10)
-    if (not self.dut.sl4a.bluetoothCheckState() or
-           not self.discoverer.sl4a.bluetoothCheckState()):
-      asserts.abort_class('Could not turn on Bluetooth on both devices.')
-
-    # Set the name of device #1 and verify the name properly registered.
-    self.dut.sl4a.bluetoothSetLocalName(self.bluetooth_name)
-    asserts.assert_equal(self.dut.sl4a.bluetoothGetLocalName(),
-                         self.bluetooth_name,
-                         'Failed to set bluetooth name to %s on %s' %
-                         (self.bluetooth_name, self.dut.serial))
-
-  def test_bluetooth_discovery(self):
-    # Make dut discoverable.
-    self.dut.sl4a.bluetoothMakeDiscoverable()
-    scan_mode = self.dut.sl4a.bluetoothGetScanMode()
-    asserts.assert_equal(
-        scan_mode, 3,  # 3 signifies CONNECTABLE and DISCOVERABLE
-        'Android device %s failed to make blueooth discoverable.' %
-            self.dut.serial)
-
-    # Start the discovery process on #discoverer.
-    self.discoverer.ed.clear_all_events()
-    self.discoverer.sl4a.bluetoothStartDiscovery()
-    self.discoverer.ed.pop_event(
-        event_name='BluetoothDiscoveryFinished',
-        timeout=self.bluetooth_timeout)
-
-    # The following log entry demonstrates AndroidDevice log object, which
-    # prefixes log entries with "[AndroidDevice|<serial>] "
-    self.discoverer.log.info('Discovering other bluetooth devices.')
-
-    # Get a list of discovered devices
-    discovered_devices = self.discoverer.sl4a.bluetoothGetDiscoveredDevices()
-    self.discoverer.log.info('Found devices: %s', discovered_devices)
-    matching_devices = [d for d in discovered_devices
-                        if d.get('name') == self.bluetooth_name]
-    if not matching_devices:
-      asserts.fail('Android device %s did not discover %s.' %
-                   (self.discoverer.serial, self.dut.serial))
-    self.discoverer.log.info('Discovered at least 1 device named '
-                             '%s: %s', self.bluetooth_name, matching_devices)
-
-if __name__ == "__main__":
-  test_runner.main()
-=======
 $ git clone git@github.com:google/mobly.git
 $ cd mobly
 $ python setup.py install
->>>>>>> Update docs.
 ```
 
 You may need `sudo` for the above commands if your system has certain permission
