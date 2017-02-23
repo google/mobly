@@ -92,8 +92,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             raise jsonrpc_client_base.AppStartError(
                 '%s is installed on %s, but it is not instrumented.' %
                 (self.package, self._serial))
-        match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
-                          out)
+        match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$', out)
         target_name = match.group(3)
         # Check that the instrumentation target is installed if it's not the
         # same as the snippet package.
@@ -105,3 +104,12 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                 raise jsonrpc_client_base.AppStartError(
                     'Instrumentation target %s is not installed on %s' %
                     (target_name, self._serial))
+
+    def _start_event_client(self):
+        event_client = SnippetClient(
+            package=self.package,
+            host_port=self.host_port,
+            adb_proxy=self._adb)
+        event_client.connect(self.uid,
+                             jsonrpc_client_base.JsonRpcCommand.CONTINUE)
+        return event_client

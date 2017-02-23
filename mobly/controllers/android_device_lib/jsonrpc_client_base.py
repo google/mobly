@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Base class for clients that communicate with apps over a JSON RPC interface.
 
 The JSON protocol expected by this module is:
@@ -33,7 +32,8 @@ Response:
                contains 'null'.>,
     "error": <String containing the error thrown by executing the method.
               If no error occurred, contains 'null'.>
-}
+    "callback": <String that represents a callback ID used to identify events
+                 associated with a particular CallbackHandler object.>
 """
 
 from builtins import str
@@ -44,6 +44,7 @@ import threading
 import time
 
 from mobly.controllers.android_device_lib import adb
+from mobly.controllers.android_device_lib import callback_handler
 
 # Maximum time to wait for the app to start on the device.
 APP_START_WAIT_TIME = 15
@@ -119,6 +120,7 @@ class JsonRpcClientBase(object):
         self._conn = None
         self._counter = None
         self._lock = threading.Lock()
+        self._event_client = None
 
     def __del__(self):
         self.close()
@@ -131,6 +133,18 @@ class JsonRpcClientBase(object):
         Must be implemented by subclasses.
         """
         raise NotImplementedError()
+
+    def _start_event_client(self):
+        """Starts a separate JsonRpc client to the same session for propagating
+        events.
+
+        This is an optional function that should only implement if the client
+        utilizes the snippet event mechanism.
+
+        Returns:
+            A JsonRpc Client object that connects to the same session as the
+            one on which this function is called.
+        """
 
     def stop_app(self):
         """Kills any running instance of the app.
@@ -164,8 +178,8 @@ class JsonRpcClientBase(object):
             time.sleep(1)
             if self._is_app_running():
                 return
-        raise AppStartError(
-            '%s failed to start on %s.' % (self.app_name, self._adb.serial))
+        raise AppStartError('%s failed to start on %s.' %
+                            (self.app_name, self._adb.serial))
 
     def connect(self, uid=UNKNOWN_UID, cmd=JsonRpcCommand.INIT):
         """Opens a connection to a JSON RPC server.
@@ -238,7 +252,10 @@ class JsonRpcClientBase(object):
         if not uid:
             uid = self.uid
         self._client.write(
-            json.dumps({'cmd': command, 'uid': uid}).encode("utf8") + b'\n')
+            json.dumps({
+                'cmd': command,
+                'uid': uid
+            }).encode("utf8") + b'\n')
         self._client.flush()
         return self._client.readline()
 
@@ -270,6 +287,11 @@ class JsonRpcClientBase(object):
             raise ApiError(result['error'])
         if result['id'] != apiid:
             raise ProtocolError(ProtocolError.MISMATCHED_API_ID)
+        if result.get('callback') is not None:
+            if self._event_client is None:
+                self._event_client = self._start_event_client()
+            return callback_handler.CallbackHandler(
+                result['callback'], self._event_client, result['result'])
         return result['result']
 
     def _is_app_running(self):
@@ -279,17 +301,19 @@ class JsonRpcClientBase(object):
         """
         running = False
         try:
-          self.connect()
-          running = True
+            self.connect()
+            running = True
         finally:
-          self.close()
-          # This 'return' squashes exceptions from connect()
-          return running
+            self.close()
+            # This 'return' squashes exceptions from connect()
+            return running
 
     def __getattr__(self, name):
         """Wrapper for python magic to turn method calls into RPC calls."""
+
         def rpc_call(*args):
             return self._rpc(name, *args)
+
         return rpc_call
 
     def _id_counter(self):
