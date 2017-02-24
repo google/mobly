@@ -48,7 +48,7 @@ You may need `sudo` for the above commands if your system has certain permission
 restrictions.
 
 ## Tutorials
-To get started with some simple tests, see the [Mobly tutorial](https://github.com/google/mobly/blob/master/docs/tutorial.md).
+To get started with some simple tests, see the [Mobly tutorial](docs/tutorial.md).
 
 ## Mobly Snippet
 The Mobly Snippet projects let users better control Android devices.
