@@ -16,6 +16,7 @@
 
 from builtins import str
 
+import copy
 import os
 import sys
 import yaml
@@ -271,6 +272,11 @@ class TestRunConfig(object):
         # for now.
         self.log = None
         self.cli_args = None
+
+    def copy(self):
+        """Returns a deep copy of the current config.
+        """
+        return copy.deepcopy(self)
 
     def __str__(self):
         return str(self.__dict__)

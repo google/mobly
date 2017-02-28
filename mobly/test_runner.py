@@ -390,7 +390,7 @@ class TestRunner(object):
         """Parses the test configuration and unpacks objects and parameters
         into a dictionary to be passed to test classes.
         """
-        self.test_run_info = copy.deepcopy(self.test_configs)
+        self.test_run_info = self.test_configs.copy()
         self.test_run_info.log_path = self.log_path
         self.test_run_info.log = self.log
         self.test_run_info.cli_args = getattr(self.test_configs, 'cli_args', None)

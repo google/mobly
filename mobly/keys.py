@@ -15,26 +15,16 @@
 # limitations under the License.
 
 import enum
-"""This module has the global key values that are used across framework
-modules.
-"""
 
 
 class Config(enum.Enum):
-    """Enum values for test config related lookups.
-    """
-    # Reserved keywords for the config.
+    """The reserved keywordss used in configurations."""
+    # Keywords for params consumed by Mobly itself.
     key_mobly_params = "MoblyParams"
     key_log_path = "LogPath"
-    # Top-level keywordss used in a test bed config.
+    # Keyword for the section that defines test bed configs.
     key_testbed = "TestBeds"
+    # Keywords for sections inside a test bed config.
     key_testbed_name = "Name"
     key_testbed_controllers = "Controllers"
     key_testbed_test_params = "TestParams"
-
-
-def get_name_by_value(value):
-    for name, member in Config.__members__.items():
-        if member.value == value:
-            return name
-    return None

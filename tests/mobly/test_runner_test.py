@@ -75,7 +75,7 @@ class TestRunnerTest(unittest.TestCase):
         objects, and the right error happen when a controller module is
         registered twice.
         """
-        mock_test_config = copy.deepcopy(self.base_mock_test_config)
+        mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ["magic1", "magic2"]
@@ -93,7 +93,7 @@ class TestRunnerTest(unittest.TestCase):
             tr.register_controller(mock_controller)
 
     def test_register_controller_no_get_info(self):
-        mock_test_config = copy.deepcopy(self.base_mock_test_config)
+        mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_ref_name = "haha"
         get_info = getattr(mock_controller, "get_info")
@@ -109,7 +109,7 @@ class TestRunnerTest(unittest.TestCase):
             setattr(mock_controller, "get_info", get_info)
 
     def test_register_controller_return_value(self):
-        mock_test_config = copy.deepcopy(self.base_mock_test_config)
+        mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ["magic1", "magic2"]
@@ -120,7 +120,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(magic_devices[1].magic, "magic2")
 
     def test_register_controller_less_than_min_number(self):
-        mock_test_config = copy.deepcopy(self.base_mock_test_config)
+        mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ["magic1", "magic2"]
@@ -136,7 +136,7 @@ class TestRunnerTest(unittest.TestCase):
         2. The original configuration is not altered if a test controller
            module modifies configuration.
         """
-        mock_test_config = copy.deepcopy(self.base_mock_test_config)
+        mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         my_config = [{"serial": "xxxx",
                       "magic": "Magic1"}, {"serial": "xxxx",
@@ -176,7 +176,7 @@ class TestRunnerTest(unittest.TestCase):
         This requires using a built-in controller module. Using AndroidDevice
         module since it has all the mocks needed already.
         """
-        mock_test_config = copy.deepcopy(self.base_mock_test_config)
+        mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         my_config = [{"serial": "xxxx", "magic": "Magic1"},
                      {"serial": "xxxx", "magic": "Magic2"}]
