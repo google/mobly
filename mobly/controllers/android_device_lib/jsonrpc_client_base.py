@@ -292,7 +292,10 @@ class JsonRpcClientBase(object):
             if self._event_client is None:
                 self._event_client = self._start_event_client()
             return callback_handler.CallbackHandler(
-                result['callback'], self._event_client, result['result'])
+                callback_id=result['callback'],
+                event_client=self._event_client,
+                ret_value=result['result'],
+                method_name=method)
         return result['result']
 
     def _is_app_running(self):

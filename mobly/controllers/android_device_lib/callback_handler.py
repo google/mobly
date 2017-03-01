@@ -42,10 +42,11 @@ class CallbackHandler(object):
     }
     """
 
-    def __init__(self, callback_id, event_client, ret_value):
+    def __init__(self, callback_id, event_client, ret_value, method_name):
         self._id = callback_id
         self._event_client = event_client
         self.ret_value = ret_value
+        self._method_name = method_name
 
     def waitAndGet(self, event_name, timeout=None):
         """Blocks until an event of the specified name has been received and
@@ -69,8 +70,8 @@ class CallbackHandler(object):
         except Exception as e:
             if "EventSnippetException: timeout." in str(e):
                 raise TimeoutError(
-                    'Timeout waiting for event "%s" of callback %s'
-                    % (event_name, self._id))
+                    'Timeout waiting for event "%s" triggered by %s (%s).'
+                    % (event_name, self._method_name, self._id))
             raise
         return event
 

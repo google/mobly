@@ -33,7 +33,7 @@ class CallbackHandlerTest(unittest.TestCase):
         mock_event_client.eventWaitAndGet = mock.Mock(
             side_effect=jsonrpc_client_base.ApiError(java_timeout_msg))
         handler = callback_handler.CallbackHandler(MOCK_CALLBACK_ID,
-                                                   mock_event_client, None)
+                                                   mock_event_client, None, None)
         expected_msg = 'Timeout waiting for event "ha" .*'
         with self.assertRaisesRegexp(callback_handler.TimeoutError,
                                      expected_msg):
