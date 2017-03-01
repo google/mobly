@@ -70,8 +70,8 @@ class CallbackHandler(object):
         except Exception as e:
             if "EventSnippetException: timeout." in str(e):
                 raise TimeoutError(
-                    'Timeout waiting for event "%s" triggered by %s'
-                    % (event_name, self._method_name))
+                    'Timeout waiting for event "%s" triggered by %s (%s).'
+                    % (event_name, self._method_name, self._id))
             raise
         return event
 
