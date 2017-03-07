@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import os
 
 from mobly import asserts
@@ -45,23 +46,48 @@ class BaseTestClass(object):
         tests: A list of strings, each representing a test case name.
         TAG: A string used to refer to a test class. Default is the test class
              name.
-        log: A logger object used for logging.
         results: A records.TestResult object for aggregating test results from
                  the execution of test cases.
         current_test_name: A string that's the name of the test case currently
                            being executed. If no test is executing, this should
                            be None.
+        log_path: string, specifies the root directory for all logs written
+                  by a test run.
+        test_bed_name: string, the name of the test bed used by a test run.
+        controller_configs: dict, configs used for instantiating controller
+                            objects.
+        user_params: dict, custom parameters from user, to be consumed by
+                     the test logic.
+        register_controller: func, used by test classes to register
+                             controller modules.
+        log: a logger object. (deprecated)
+        cli_args: any cli args passed in. (deprecated)
     """
 
     TAG = None
 
     def __init__(self, configs):
+        """Constructor of BaseTestClass.
+
+        The constructor takes a config_parser.TestRunConfig object and which has
+        all the information needed to execute this test class, like log_path
+        and controller configurations. For details, see the definition of class
+        config_parser.TestRunConfig.
+
+        Args:
+            configs: A config_parser.TestRunConfig object.
+        """
         self.tests = []
         if not self.TAG:
             self.TAG = self.__class__.__name__
-        # Set all the controller objects and params.
-        for name, value in configs.items():
-            setattr(self, name, value)
+        # Set params.
+        self.log_path = configs.log_path
+        self.controller_configs = configs.controller_configs
+        self.test_bed_name = configs.test_bed_name
+        self.user_params = configs.user_params
+        self.register_controller = configs.register_controller
+        self.log = configs.log
+        self.cli_args = configs.cli_args
         self.results = records.TestResult()
         self.current_test_name = None
 
@@ -432,7 +458,7 @@ class BaseTestClass(object):
             A list of strings, each is a test case name.
         """
         test_names = []
-        for name in dir(self):
+        for name, _ in inspect.getmembers(self, inspect.ismethod):
             if name.startswith('test_'):
                 test_names.append(name)
         return test_names

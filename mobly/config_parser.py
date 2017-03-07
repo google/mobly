@@ -16,14 +16,17 @@
 
 from builtins import str
 
+import copy
 import os
 import sys
+import yaml
 
 from mobly import keys
 from mobly import utils
 
 # An environment variable defining the base location for Mobly logs.
 _ENV_MOBLY_LOGPATH = 'MOBLY_LOGPATH'
+_DEFAULT_LOG_PATH = '/tmp/logs/mobly/'
 
 
 class MoblyConfigError(Exception):
@@ -33,11 +36,12 @@ class MoblyConfigError(Exception):
 def _validate_test_config(test_config):
     """Validates the raw configuration loaded from the config file.
 
-    Making sure all the required fields exist.
+    Making sure the required key 'TestBeds' is present.
     """
-    for k in keys.Config.reserved_keys.value:
-        if k not in test_config:
-            raise MoblyConfigError('Required key %s missing in test config.' % k)
+    required_key = keys.Config.key_testbed.value
+    if required_key not in test_config:
+        raise MoblyConfigError('Required key %s missing in test config.' %
+                               required_key)
 
 
 def _validate_testbed_name(name):
@@ -54,19 +58,18 @@ def _validate_testbed_name(name):
     """
     if not name:
         raise MoblyConfigError("Test bed names can't be empty.")
-    if not isinstance(name, str):
-        raise MoblyConfigError('Test bed names have to be string.')
-    for l in name:
-        if l not in utils.valid_filename_chars:
+    name = str(name)
+    for char in name:
+        if char not in utils.valid_filename_chars:
             raise MoblyConfigError(
-                'Char "%s" is not allowed in test bed names.' % l)
+                'Char "%s" is not allowed in test bed names.' % char)
 
 
 def _validate_testbed_configs(testbed_configs):
     """Validates the testbed configurations.
 
     Args:
-        testbed_configs: A list of testbed configuration json objects.
+        testbed_configs: A list of testbed configuration dicts.
 
     Raises:
         If any part of the configuration is invalid, MoblyConfigError is raised.
@@ -96,6 +99,7 @@ def gen_term_signal_handler(test_runners):
         for t in test_runners:
             t.stop()
         sys.exit(1)
+
     return termination_sig_handler
 
 
@@ -155,8 +159,8 @@ def parse_test_list(test_list):
 def load_test_config_file(test_config_path, tb_filters=None):
     """Processes the test configuration file provied by user.
 
-    Loads the configuration file into a json object, unpacks each testbed
-    config into its own json object, and validate the configuration in the
+    Loads the configuration file into a dict, unpacks each testbed
+    config into its own dict, and validate the configuration in the
     process.
 
     Args:
@@ -165,10 +169,10 @@ def load_test_config_file(test_config_path, tb_filters=None):
                     file. If None, then all test beds will be selected.
 
     Returns:
-        A list of test configuration json objects to be passed to
+        A list of test configuration dicts to be passed to
         test_runner.TestRunner.
     """
-    configs = utils.load_config(test_config_path)
+    configs = _load_config_file(test_config_path)
     if tb_filters:
         tbs = []
         for tb in configs[keys.Config.key_testbed.value]:
@@ -180,35 +184,27 @@ def load_test_config_file(test_config_path, tb_filters=None):
                 ' you have the correct test bed names.' %
                 (len(tb_filters), len(tbs)))
         configs[keys.Config.key_testbed.value] = tbs
-
-    if (not keys.Config.key_log_path.value in configs and
-            _ENV_MOBLY_LOGPATH in os.environ):
-        print('Using environment log path: %s' %
-              (os.environ[_ENV_MOBLY_LOGPATH]))
-        configs[keys.Config.key_log_path.value] = os.environ[_ENV_MOBLY_LOGPATH]
-
+    mobly_params = configs.get(keys.Config.key_mobly_params.value, {})
+    # Decide log path.
+    log_path = mobly_params.get(keys.Config.key_log_path.value, _DEFAULT_LOG_PATH)
+    if _ENV_MOBLY_LOGPATH in os.environ:
+        log_path = os.environ[_ENV_MOBLY_LOGPATH]
+    log_path = utils.abs_path(log_path)
+    # Validate configs
     _validate_test_config(configs)
     _validate_testbed_configs(configs[keys.Config.key_testbed.value])
-    k_log_path = keys.Config.key_log_path.value
-    configs[k_log_path] = utils.abs_path(configs[k_log_path])
-    config_path, _ = os.path.split(utils.abs_path(test_config_path))
-    configs[keys.Config.key_config_path] = config_path
-    # Unpack testbeds into separate json objects.
-    beds = configs.pop(keys.Config.key_testbed.value)
-    config_jsons = []
-    # TODO: See if there is a better way to do this: b/29836695
-    config_path, _ = os.path.split(utils.abs_path(test_config_path))
-    configs[keys.Config.key_config_path] = config_path
-    for original_bed_config in beds:
-        new_test_config = dict(configs)
-        new_test_config[keys.Config.key_testbed.value] = original_bed_config
-        # Keys in each test bed config will be copied to a level up to be
-        # picked up for user_params. If the key already exists in the upper
-        # level, the local one defined in test bed config overwrites the
-        # general one.
-        new_test_config.update(original_bed_config)
-        config_jsons.append(new_test_config)
-    return config_jsons
+    # Transform config dict from user-facing key mapping to internal config object.
+    test_configs = []
+    for original_bed_config in configs[keys.Config.key_testbed.value]:
+        test_run_config = TestRunConfig()
+        test_run_config.test_bed_name = original_bed_config[keys.Config.key_testbed_name.value]
+        test_run_config.log_path = log_path
+        test_run_config.controller_configs = original_bed_config.get(
+            keys.Config.key_testbed_controllers.value, {})
+        test_run_config.user_params = original_bed_config.get(
+            keys.Config.key_testbed_test_params.value, {})
+        test_configs.append(test_run_config)
+    return test_configs
 
 
 def parse_test_file(fpath):
@@ -231,3 +227,56 @@ def parse_test_file(fpath):
             else:
                 tf.append(line)
         return tf
+
+
+def _load_config_file(path):
+    """Loads a test config file.
+
+    The test config file has to be in YAML format.
+
+    Args:
+        path: A string that is the full path to the config file, including the
+              file name.
+
+    Returns:
+        A dict that represents info in the config file.
+    """
+    with open(utils.abs_path(path), 'r') as f:
+        conf = yaml.load(f)
+        return conf
+
+
+class TestRunConfig(object):
+    """The data class that holds all the information needed for a test run.
+
+    Attributes:
+        log_path: string, specifies the root directory for all logs written by
+                  a test run.
+        test_bed_name: string, the name of the test bed used by a test run.
+        controller_configs: dict, configs used for instantiating controller
+                            objects.
+        user_params: dict, all the parameters to be consumed by the test logic.
+        register_controller: func, used by test classes to register controller
+                             modules.
+        log: a logger object.
+        cli_args: any cli args passed in.
+    """
+
+    def __init__(self):
+        self.log_path = None
+        self.test_bed_name = None
+        self.controller_configs = None
+        self.user_params = None
+        self.register_controller = None
+        # Below attributes are deprecated and kept for compatibility reasons
+        # for now.
+        self.log = None
+        self.cli_args = None
+
+    def copy(self):
+        """Returns a deep copy of the current config.
+        """
+        return copy.deepcopy(self)
+
+    def __str__(self):
+        return str(self.__dict__)

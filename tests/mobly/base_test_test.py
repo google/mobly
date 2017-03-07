@@ -14,11 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import mock
 import unittest
 
 from mobly import asserts
 from mobly import base_test
+from mobly import config_parser
 from mobly import signals
 from mobly import test_runner
 
@@ -37,13 +39,12 @@ class SomeError(Exception):
 class BaseTestTest(unittest.TestCase):
 
     def setUp(self):
-        self.mock_test_cls_configs = {
-            'reporter': mock.MagicMock(),
-            'log': mock.MagicMock(),
-            'log_path': '/tmp',
-            'cli_args': None,
-            'user_params': {"some_param": "hahaha"}
-        }
+        self.mock_test_cls_configs = config_parser.TestRunConfig()
+        self.mock_test_cls_configs.log = mock.MagicMock()
+        self.mock_test_cls_configs.log_path = '/tmp'
+        self.mock_test_cls_configs.cli_args = None
+        self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
+        self.mock_test_cls_configs.reporter = mock.MagicMock()
         self.mock_test_name = "test_something"
 
     def test_current_test_case_name(self):
@@ -703,7 +704,7 @@ class BaseTestTest(unittest.TestCase):
         required = ["some_param"]
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
         bc.unpack_userparams(required)
-        expected_value = self.mock_test_cls_configs["user_params"]["some_param"]
+        expected_value = self.mock_test_cls_configs.user_params["some_param"]
         self.assertEqual(bc.some_param, expected_value)
 
     def test_unpack_userparams_required_missing(self):
@@ -722,7 +723,7 @@ class BaseTestTest(unittest.TestCase):
         opt = ["some_param"]
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
         bc.unpack_userparams(opt_param_names=opt)
-        expected_value = self.mock_test_cls_configs["user_params"]["some_param"]
+        expected_value = self.mock_test_cls_configs.user_params["some_param"]
         self.assertEqual(bc.some_param, expected_value)
 
     def test_unpack_userparams_optional_with_default(self):
@@ -739,7 +740,7 @@ class BaseTestTest(unittest.TestCase):
         """
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
         bc.unpack_userparams(some_param="whatever")
-        expected_value = self.mock_test_cls_configs["user_params"]["some_param"]
+        expected_value = self.mock_test_cls_configs.user_params["some_param"]
         self.assertEqual(bc.some_param, expected_value)
 
     def test_unpack_userparams_default_overwrite_by_required_param_list(self):
@@ -762,9 +763,9 @@ class BaseTestTest(unittest.TestCase):
         """Required and optional params are unpacked properly."""
         required = ["something"]
         optional = ["something_else"]
-        configs = dict(self.mock_test_cls_configs)
-        configs["user_params"]["something"] = 42
-        configs["user_params"]["something_else"] = 53
+        configs = self.mock_test_cls_configs.copy()
+        configs.user_params["something"] = 42
+        configs.user_params["something_else"] = 53
         bc = base_test.BaseTestClass(configs)
         bc.unpack_userparams(req_param_names=required,
                              opt_param_names=optional)
@@ -775,8 +776,8 @@ class BaseTestTest(unittest.TestCase):
         default_arg_val = "haha"
         actual_arg_val = "wawa"
         arg_name = "arg1"
-        configs = dict(self.mock_test_cls_configs)
-        configs["user_params"][arg_name] = actual_arg_val
+        configs = self.mock_test_cls_configs.copy()
+        configs.user_params[arg_name] = actual_arg_val
         bc = base_test.BaseTestClass(configs)
         bc.unpack_userparams(opt_param_names=[arg_name],
                              arg1=default_arg_val)

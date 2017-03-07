@@ -103,7 +103,7 @@ def main(argv=None):
             pass
         except:
             logging.exception('Error occurred when executing test bed %s',
-                              config[keys.Config.key_testbed.value])
+                              config.test_bed_name)
             ok = False
     if not ok:
         sys.exit(1)
@@ -157,7 +157,7 @@ def execute_one_test_class(test_class, test_config, test_identifier):
     except signals.TestAbortAll:
         raise
     except:
-        logging.exception('Exception when executing %s.', tr.testbed_name)
+        logging.exception('Exception when executing %s.', tr.test_configs.test_bed_name)
     finally:
         tr.stop()
 
@@ -167,12 +167,14 @@ class TestRunner(object):
     report results.
 
     Attributes:
-        self.test_run_info: A dictionary containing the information needed by
-                            test classes for this test run, including params,
-                            controllers, and other objects. All of these will
-                            be passed to test classes.
-        self.test_configs: A dictionary that is the original test configuration
-                           passed in by user.
+        self.test_run_info: A config_parser.TestRunConfig object containing
+                            the information needed by test classes for this
+                            test run, including params, controllers, and other
+                            objects, all of which will be passed to test
+                            classes.
+        self.test_configs: A TestRunConfig object with the information needed
+                           to execute a test run.
+        self.test_bed_name: The name of the test bed to execute the test on.
         self.id: A string that is the unique identifier of this test run.
         self.log_path: A string representing the path of the dir under which
                        all logs from this test run should be written.
@@ -191,19 +193,26 @@ class TestRunner(object):
     """
 
     def __init__(self, test_configs, run_list):
-        self.test_run_info = {}
+        """Constructor for TestRunner.
+
+        During construction, the input config_parser.TestRunConfig object is
+        processed and populated with information specific to a test run. The
+        config object is later passed to each test class for execution.
+
+        Args:
+            test_configs: A config_parser.TestRunConfig object.
+            run_list:  A list of tuples specifying what tests to run.
+        """
+        self.test_run_info = None
         self.test_configs = test_configs
-        self.testbed_configs = self.test_configs[keys.Config.key_testbed.value]
-        self.testbed_name = self.testbed_configs[
-            keys.Config.key_testbed_name.value]
+        test_bed_name = self.test_configs.test_bed_name
         start_time = logger.get_log_file_timestamp()
-        self.id = '%s@%s' % (self.testbed_name, start_time)
+        self.id = '%s@%s' % (test_bed_name, start_time)
         # log_path should be set before parsing configs.
-        l_path = os.path.join(
-            self.test_configs[keys.Config.key_log_path.value],
-            self.testbed_name, start_time)
+        l_path = os.path.join(self.test_configs.log_path, test_bed_name,
+                              start_time)
         self.log_path = os.path.abspath(l_path)
-        logger.setup_test_logger(self.log_path, self.testbed_name)
+        logger.setup_test_logger(self.log_path, test_bed_name)
         self.log = logging.getLogger()
         self.controller_registry = {}
         self.controller_destructors = {}
@@ -230,8 +239,8 @@ class TestRunner(object):
         for attr in required_attributes:
             if not hasattr(module, attr):
                 raise signals.ControllerError(
-                     'Module %s missing required controller module attribute'
-                     ' %s.' % (module.__name__, attr))
+                    'Module %s missing required controller module attribute'
+                    ' %s.' % (module.__name__, attr))
             if not getattr(module, attr):
                 raise signals.ControllerError(
                     'Controller interface %s in %s cannot be null.' %
@@ -313,7 +322,7 @@ class TestRunner(object):
         # Create controller objects.
         create = module.create
         module_config_name = module.MOBLY_CONTROLLER_CONFIG_NAME
-        if module_config_name not in self.testbed_configs:
+        if module_config_name not in self.test_configs.controller_configs:
             if required:
                 raise signals.ControllerError(
                     'No corresponding config found for %s' %
@@ -325,7 +334,7 @@ class TestRunner(object):
         try:
             # Make a deep copy of the config to pass to the controller module,
             # in case the controller module modifies the config internally.
-            original_config = self.testbed_configs[module_config_name]
+            original_config = self.test_configs.controller_configs[module_config_name]
             controller_config = copy.deepcopy(original_config)
             objects = create(controller_config)
         except:
@@ -357,8 +366,8 @@ class TestRunner(object):
             self.log.warning('No optional debug info found for controller %s. '
                              'To provide it, implement get_info in this '
                              'controller module.', module_config_name)
-        self.log.debug('Found %d objects for controller %s', len(objects),
-                      module_config_name)
+        self.log.debug('Found %d objects for controller %s',
+                       len(objects), module_config_name)
         destroy_func = module.destroy
         self.controller_destructors[module_ref_name] = destroy_func
         return objects
@@ -377,27 +386,15 @@ class TestRunner(object):
         self.controller_registry = {}
         self.controller_destructors = {}
 
-    def _parse_config(self, test_configs):
+    def _parse_config(self):
         """Parses the test configuration and unpacks objects and parameters
         into a dictionary to be passed to test classes.
-
-        Args:
-            test_configs: A json object representing the test configurations.
         """
-        self.test_run_info[
-            keys.Config.ikey_testbed_name.value] = self.testbed_name
-        # Unpack other params.
-        self.test_run_info['register_controller'] = self.register_controller
-        self.test_run_info[keys.Config.ikey_logpath.value] = self.log_path
-        self.test_run_info[keys.Config.ikey_logger.value] = self.log
-        cli_args = test_configs.get(keys.Config.ikey_cli_args.value)
-        self.test_run_info[keys.Config.ikey_cli_args.value] = cli_args
-        user_param_pairs = []
-        for item in test_configs.items():
-            if item[0] not in keys.Config.reserved_keys.value:
-                user_param_pairs.append(item)
-        self.test_run_info[keys.Config.ikey_user_param.value] = copy.deepcopy(
-            dict(user_param_pairs))
+        self.test_run_info = self.test_configs.copy()
+        self.test_run_info.log_path = self.log_path
+        self.test_run_info.log = self.log
+        self.test_run_info.cli_args = self.test_configs.cli_args
+        self.test_run_info.register_controller = self.register_controller
 
     def _run_test_class(self, test_cls_name, test_cases=None):
         """Instantiates and executes a test class.
@@ -447,7 +444,7 @@ class TestRunner(object):
             self.test_classes[tc.__name__] = tc
         # Initialize controller objects and pack appropriate objects/params
         # to be passed to test class.
-        self._parse_config(self.test_configs)
+        self._parse_config()
         self.log.debug('Executing run list %s.', self.run_list)
         for test_cls_name, test_case_names in self.run_list:
             if not self.running:
