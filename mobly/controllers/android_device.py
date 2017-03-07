@@ -374,8 +374,6 @@ class AndroidDevice(object):
         adb: An AdbProxy object used for interacting with the device via adb.
         fastboot: A FastbootProxy object used for interacting with the device
                   via fastboot.
-        Error: A DeviceError class whose message contains specific info of a
-               device object.
         SnippetError: A SnippetError class whose message contains specific info
                       of a device object.
     """
@@ -385,9 +383,12 @@ class AndroidDevice(object):
         # logging.log_path only exists when this is used in an Mobly test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
+        self._debug_tag = self.serial
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                              {'tag': self.serial})
-        self._error = _generate_error_class(self.log.extra['tag'],
+                                              {'tag': self.debug_tag})
+        # A DeviceError class whose message contains specific info of a device
+        # object. Should only be raised from within android_device module.
+        self._error = _generate_error_class(self.debug_tag,
                                            _DEVICE_ERROR_NAME)
         self.SnippetError = _generate_error_class(self.log.extra['tag'],
                                                   _SNIPPET_ERROR_NAME)
@@ -403,12 +404,28 @@ class AndroidDevice(object):
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
 
-    def set_debug_tag(self, tag):
-        """Set a tag to be the prefix of debugging messages emitted by this
-        device object, like log lines and the message of DeviceError.
+    def __repr__(self):
+        return "<AndroidDevice|%s>" % self.serial
+
+    @property
+    def debug_tag(self):
+        """A string that represents a device object in debug info. Default value
+        is the device serial.
+
+        This will be used as part of the prefix of debugging messages emitted by
+        this device object, like log lines and the message of DeviceError.
+        """
+        return self._debug_tag
+
+    @debug_tag.setter
+    def debug_tag(self, tag):
+        """Setter for the debug tag.
 
         By default, the tag is the serial of the device, but sometimes it may
-        be more descriptive to use a different tag of the user's choise.
+        be more descriptive to use a different tag of the user's choise. 
+
+        Changing debug tag changes part of the prefix of debug info emitted by
+        this object, like log lines and the message of DeviceError.
 
         Example:
             By default, the device's serial number is used:
@@ -416,9 +433,6 @@ class AndroidDevice(object):
             By calling `ad.set_debug_tag('Caller')`, the user can customize the
             tag:
                 'INFO [AndroidDevice|Caller] One pending call ringing.'
-
-        Args:
-            tag: A string that is the tag to use.
         """
         self.log.extra['tag'] = tag
         self._error = _generate_error_class(tag, _DEVICE_ERROR_NAME)
