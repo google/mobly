@@ -36,8 +36,6 @@ MOBLY_CONTROLLER_CONFIG_NAME = 'AndroidDevice'
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = '*'
 _LOG_TAG_TEMPLATE = '[AndroidDevice|%s] %s'
-_DEVICE_ERROR_NAME = 'DeviceError'
-_SNIPPET_ERROR_NAME = 'SnippetError'
 
 # Key name for adb logcat extra params in config file.
 ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = 'adb_logcat_param'
@@ -52,32 +50,17 @@ class Error(signals.ControllerError):
     pass
 
 
-def _generate_error_class(tag, error_name):
-    """Generate an exception class whose msg automatically include a debug prefix.
+class DeviceError(Error):
+    """Raised for errors from within an AndroidDevice object."""
+    def __init__(self, *args):
+        if isinstance(args[0], AndroidDevice):
+            new_args = list(args[1:])
+            new_args[0] = _LOG_TAG_TEMPLATE % (args[0].debug_tag, args[1])
+        super(DeviceError, self).__init__(*new_args)
 
-    The class's msg will be prefixed with a tag that's consistent with that used
-    by the device's logger.
 
-    Arg:
-        tag: A string that is used as part of the debug prefix.
-        error_name: A string that is the name of the new error class.
-    """
-    if not error_name.endswith('Error'):
-        raise Error(
-            'Error names have to end with "Error", so it cannot be "%s".' %
-            error_name)
-
-    def init(self, msg):
-        self.tag = tag
-        self.msg = msg
-
-    def str_func(self):
-        return _LOG_TAG_TEMPLATE % (self.tag, self.msg)
-
-    NewError = type(error_name, (Error, ),
-                    {'__init__': init,
-                     '__str__': str_func})
-    return NewError
+class SnippetError(DeviceError):
+    """Raised for errors related to Mobly snippet."""
 
 
 def create(configs):
@@ -386,12 +369,6 @@ class AndroidDevice(object):
         self._debug_tag = self.serial
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
                                               {'tag': self.debug_tag})
-        # A DeviceError class whose message contains specific info of a device
-        # object. Should only be raised from within android_device module.
-        self._error = _generate_error_class(self.debug_tag,
-                                           _DEVICE_ERROR_NAME)
-        self.SnippetError = _generate_error_class(self.log.extra['tag'],
-                                                  _SNIPPET_ERROR_NAME)
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -405,7 +382,7 @@ class AndroidDevice(object):
         self._snippet_clients = {}
 
     def __repr__(self):
-        return "<AndroidDevice|%s>" % self.serial
+        return "<AndroidDevice|%s>" % self.debug_tag
 
     @property
     def debug_tag(self):
@@ -434,10 +411,8 @@ class AndroidDevice(object):
             tag:
                 'INFO [AndroidDevice|Caller] One pending call ringing.'
         """
+        self._debug_tag = tag
         self.log.extra['tag'] = tag
-        self._error = _generate_error_class(tag, _DEVICE_ERROR_NAME)
-        self.SnippetError = _generate_error_class(self.log.extra['tag'],
-                                                  _SNIPPET_ERROR_NAME)
 
     def start_services(self):
         """Starts long running services on the android device, like adb logcat
@@ -591,7 +566,7 @@ class AndroidDevice(object):
         """
         for k, v in config.items():
             if hasattr(self, k):
-                raise self._error(
+                raise DeviceError(self, 
                     ('Attribute %s already exists with value %s, cannot set '
                      'again.') % (k, getattr(self, k)))
             setattr(self, k, v)
@@ -625,19 +600,19 @@ class AndroidDevice(object):
         """
         # Should not load snippet with the same attribute more than once.
         if name in self._snippet_clients:
-            raise self.SnippetError(
+            raise SnippetError(self, 
                 'Attribute "%s" is already registered with package "%s", it '
                 'cannot be used again.' %
                 (name, self._snippet_clients[name].package))
         # Should not load snippet with an existing attribute.
         if hasattr(self, name):
-            raise self.SnippetError(
+            raise SnippetError(self, 
                 'Attribute "%s" already exists, please use a different name.' %
                 name)
         # Should not load the same snippet package more than once.
         for client_name, client in self._snippet_clients.items():
             if package == client.package:
-                raise self.SnippetError(
+                raise SnippetError(self, 
                     'Snippet package "%s" has already been loaded under name'
                     ' "%s".' % (package, client_name))
         host_port = utils.get_available_host_port()
@@ -711,7 +686,7 @@ class AndroidDevice(object):
                 period.
         """
         if not self.adb_logcat_file_path:
-            raise self._error(
+            raise DeviceError(self, 
                 'Attempting to cat adb log when none has been collected.')
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
@@ -754,7 +729,7 @@ class AndroidDevice(object):
         save the logcat in a file.
         """
         if self._adb_logcat_process:
-            raise self._error(
+            raise DeviceError(self, 
                 'Logcat thread is already running, cannot start another one.')
         # Disable adb log spam filter for rootable. Have to stop and clear
         # settings first because 'start' doesn't support --clear option before
@@ -778,7 +753,7 @@ class AndroidDevice(object):
         """Stops the adb logcat collection subprocess.
         """
         if not self._adb_logcat_process:
-            raise self._error('No ongoing adb logcat collection found.')
+            raise DeviceError(self, 'No ongoing adb logcat collection found.')
         utils.stop_standing_subprocess(self._adb_logcat_process)
         self._adb_logcat_process = None
 
@@ -812,7 +787,7 @@ class AndroidDevice(object):
         if new_br:
             out = self.adb.shell('bugreportz').decode('utf-8')
             if not out.startswith('OK'):
-                raise self._error('Failed to take bugreport: %s' % out)
+                raise DeviceError(self, 'Failed to take bugreport: %s' % out)
             br_out_path = out.split(':')[1].strip()
             self.adb.pull('%s %s' % (br_out_path, full_out_path))
         else:
@@ -873,7 +848,7 @@ class AndroidDevice(object):
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise self._error('Booting process timed out.')
+        raise DeviceError(self, 'Booting process timed out.')
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.

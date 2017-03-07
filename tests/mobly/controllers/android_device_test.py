@@ -426,15 +426,20 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         self.assertEqual(ad.debug_tag, 1)
         try:
-            raise ad._error("Something")
-        except android_device.Error as e:
-            self.assertEqual("[AndroidDevice|1] Something", str(e))
+            raise android_device.DeviceError(ad, 'Something')
+        except android_device.DeviceError as e:
+            self.assertEqual('[AndroidDevice|1] Something', str(e))
         # Verify that debug tag's setter updates the debug prefix correctly.
-        ad.debug_tag = "Mememe"
+        ad.debug_tag = 'Mememe'
         try:
-            raise ad._error("Something")
-        except android_device.Error as e:
-            self.assertEqual("[AndroidDevice|Mememe] Something", str(e))
+            raise android_device.DeviceError(ad, 'Something')
+        except android_device.DeviceError as e:
+            self.assertEqual('[AndroidDevice|Mememe] Something', str(e))
+        # Verify that repr is changed correctly.
+        try:
+            raise Exception(ad, 'Something')
+        except Exception as e:
+            self.assertEqual("(<AndroidDevice|Mememe>, 'Something')", str(e))
 
 
 if __name__ == "__main__":
