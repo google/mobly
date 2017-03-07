@@ -17,6 +17,8 @@
 import logging
 import time
 
+from mobly.controllers.android_device_lib import snippet_event
+
 
 class Error(Exception):
     pass
@@ -30,16 +32,23 @@ class CallbackHandler(object):
     """The class used to handle a specific group of callback events.
 
     All the events handled by a CallbackHandler are originally triggered by one
-    async Rpc call. All the events are tagged with a callback_id specific to a call
-    to an AsyncRpc method defined on the server side.
+    async Rpc call. All the events are tagged with a callback_id specific to a
+    call to an AsyncRpc method defined on the server side.
 
-    The callback events are dictionaries that follow this schema:
+    The raw message representing an event looks like:
     {
         'callbackId': <string, callbackId>,
         'name': <string, name of the event>,
-        'time': <long, epoch time of when the event was created on the server side>,
+        'time': <long, epoch time of when the event was created on the server
+                 side>,
         'data': <dict, extra data from the callback on the server side>
     }
+
+    Each message is then used to create a SnippetEvent object on the client
+    side.
+
+    Attributes:
+        ret_value: The direct return value of the async Rpc call.
     """
 
     def __init__(self, callback_id, event_client, ret_value, method_name):
@@ -57,7 +66,7 @@ class CallbackHandler(object):
             timeout: float, the number of seconds to wait before giving up.
 
         Returns:
-            The oldest entry of the specified event.
+            SnippetEvent, the oldest entry of the specified event.
 
         Raises:
             TimeoutError: The expected event does not occur within time limit.
@@ -65,25 +74,27 @@ class CallbackHandler(object):
         if timeout:
             timeout *= 1000  # convert to milliseconds for java side
         try:
-            event = self._event_client.eventWaitAndGet(self._id, event_name,
-                                                       timeout)
+            raw_event = self._event_client.eventWaitAndGet(self._id,
+                                                           event_name, timeout)
         except Exception as e:
             if "EventSnippetException: timeout." in str(e):
                 raise TimeoutError(
                     'Timeout waiting for event "%s" triggered by %s (%s).'
                     % (event_name, self._method_name, self._id))
             raise
-        return event
+        return snippet_event.from_dict(raw_event)
 
     def getAll(self, event_name):
-        """Gets all the events of a certain name that have been received so far.
-        This is a non-blocking call.
+        """Gets all the events of a certain name that have been received so
+        far. This is a non-blocking call.
 
         Args:
             callback_id: The id of the callback.
             event_name: string, the name of the event to get.
 
         Returns:
-            A list of dicts, each dict representing an event from the Java side.
+            A list of SnippetEvent, each representing an event from the Java
+            side.
         """
-        return self._event_client.eventGetAll(self._id, event_name)
+        raw_events = self._event_client.eventGetAll(self._id, event_name)
+        return [snippet_event.from_dict(msg) for msg in raw_events]

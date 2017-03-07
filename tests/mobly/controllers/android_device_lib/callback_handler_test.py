@@ -21,19 +21,47 @@ from mobly.controllers.android_device_lib import callback_handler
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 MOCK_CALLBACK_ID = "1-0"
+MOCK_RAW_EVENT = {
+    'callbackId': '2-1',
+    'name': 'AsyncTaskResult',
+    'time': 20460228696,
+    'data': {
+        'exampleData': "Here's a simple event.",
+        'successful': True,
+        'secretNumber': 12
+    }
+}
 
 
 class CallbackHandlerTest(unittest.TestCase):
     """Unit tests for mobly.controllers.android_device_lib.callback_handler.
     """
 
+    def test_event_dict_to_snippet_event(self):
+        mock_event_client = mock.Mock()
+        mock_event_client.eventWaitAndGet = mock.Mock(
+            return_value=MOCK_RAW_EVENT)
+        handler = callback_handler.CallbackHandler(
+            callback_id=MOCK_CALLBACK_ID,
+            event_client=mock_event_client,
+            ret_value=None,
+            method_name=None)
+        event = handler.waitAndGet('ha')
+        self.assertEqual(event.name, MOCK_RAW_EVENT['name'])
+        self.assertEqual(event.creation_time, MOCK_RAW_EVENT['time'])
+        self.assertEqual(event.data, MOCK_RAW_EVENT['data'])
+        self.assertEqual(event.callback_id, MOCK_RAW_EVENT['callbackId'])
+
     def test_wait_and_get_timeout(self):
         mock_event_client = mock.Mock()
         java_timeout_msg = 'com.google.android.mobly.snippet.event.EventSnippet$EventSnippetException: timeout.'
         mock_event_client.eventWaitAndGet = mock.Mock(
             side_effect=jsonrpc_client_base.ApiError(java_timeout_msg))
-        handler = callback_handler.CallbackHandler(MOCK_CALLBACK_ID,
-                                                   mock_event_client, None, None)
+        handler = callback_handler.CallbackHandler(
+            callback_id=MOCK_CALLBACK_ID,
+            event_client=mock_event_client,
+            ret_value=None,
+            method_name=None)
         expected_msg = 'Timeout waiting for event "ha" .*'
         with self.assertRaisesRegexp(callback_handler.TimeoutError,
                                      expected_msg):
