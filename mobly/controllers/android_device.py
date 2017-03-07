@@ -405,8 +405,7 @@ class AndroidDevice(object):
         Example:
             By default, the device's serial number is used:
                 'INFO [AndroidDevice|abcdefg12345] One pending call ringing.'
-            By calling `ad.set_debug_tag('Caller')`, the user can customize the
-            tag:
+            The tag can be customized with `ad.debug_tag = 'Caller'`:
                 'INFO [AndroidDevice|Caller] One pending call ringing.'
         """
         self._debug_tag = tag
