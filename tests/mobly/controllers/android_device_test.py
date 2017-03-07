@@ -418,6 +418,24 @@ class AndroidDeviceTest(unittest.TestCase):
         ad.stop_services()
         self.assertFalse(hasattr(ad, 'snippet'))
 
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy', return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy(1))
+    def test_AndroidDevice_debug_tag(self, MockFastboot, MockAdbProxy):
+        mock_serial = 1
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        self.assertEqual(ad.debug_tag, 1)
+        try:
+            raise ad._error("Something")
+        except android_device.Error as e:
+            self.assertEqual("[AndroidDevice|1] Something", str(e))
+        # Verify that debug tag's setter updates the debug prefix correctly.
+        ad.debug_tag = "Mememe"
+        try:
+            raise ad._error("Something")
+        except android_device.Error as e:
+            self.assertEqual("[AndroidDevice|Mememe] Something", str(e))
+
 
 if __name__ == "__main__":
     unittest.main()
