@@ -61,7 +61,7 @@ class CallbackHandler(object):
         return snippet_event.SnippetEvent(
             callback_id=raw_event['callbackId'],
             name=raw_event['name'],
-            creation_tie=raw_event['time'],
+            creation_time=raw_event['time'],
             data=raw_event['data'])
 
     def waitAndGet(self, event_name, timeout=None):

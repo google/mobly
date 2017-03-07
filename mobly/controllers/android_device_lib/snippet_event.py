@@ -1,5 +1,3 @@
-#/usr/bin/env python3.4
-#
 # Copyright 2017 Google Inc.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +18,7 @@ import time
 
 class SnippetEvent(object):
     """The class that represents callback events for mobly snippet library.
-    
+
     Attributes:
         callback_id: string, the callback ID associated with the event.
         name: string, the name of the event.
@@ -32,5 +30,5 @@ class SnippetEvent(object):
     def __init__(self, callback_id, name, creation_time, data):
         self.callback_id = callback_id
         self.name = name
-        self.creation_time = time
+        self.creation_time = creation_time
         self.data = data
