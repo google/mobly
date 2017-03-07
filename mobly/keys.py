@@ -20,11 +20,11 @@ import enum
 class Config(enum.Enum):
     """The reserved keywordss used in configurations."""
     # Keywords for params consumed by Mobly itself.
-    key_mobly_params = "MoblyParams"
-    key_log_path = "LogPath"
+    key_mobly_params = 'MoblyParams'
+    key_log_path = 'LogPath'
     # Keyword for the section that defines test bed configs.
-    key_testbed = "TestBeds"
+    key_testbed = 'TestBeds'
     # Keywords for sections inside a test bed config.
-    key_testbed_name = "Name"
-    key_testbed_controllers = "Controllers"
-    key_testbed_test_params = "TestParams"
+    key_testbed_name = 'Name'
+    key_testbed_controllers = 'Controllers'
+    key_testbed_test_params = 'TestParams'

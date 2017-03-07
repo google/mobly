@@ -763,7 +763,7 @@ class BaseTestTest(unittest.TestCase):
         """Required and optional params are unpacked properly."""
         required = ["something"]
         optional = ["something_else"]
-        configs = copy.deepcopy(self.mock_test_cls_configs)
+        configs = self.mock_test_cls_configs.copy()
         configs.user_params["something"] = 42
         configs.user_params["something_else"] = 53
         bc = base_test.BaseTestClass(configs)
@@ -776,7 +776,7 @@ class BaseTestTest(unittest.TestCase):
         default_arg_val = "haha"
         actual_arg_val = "wawa"
         arg_name = "arg1"
-        configs = copy.deepcopy(self.mock_test_cls_configs)
+        configs = self.mock_test_cls_configs.copy()
         configs.user_params[arg_name] = actual_arg_val
         bc = base_test.BaseTestClass(configs)
         bc.unpack_userparams(opt_param_names=[arg_name],

@@ -393,7 +393,7 @@ class TestRunner(object):
         self.test_run_info = self.test_configs.copy()
         self.test_run_info.log_path = self.log_path
         self.test_run_info.log = self.log
-        self.test_run_info.cli_args = getattr(self.test_configs, 'cli_args', None)
+        self.test_run_info.cli_args = self.test_configs.cli_args
         self.test_run_info.register_controller = self.register_controller
 
     def _run_test_class(self, test_cls_name, test_cases=None):
