@@ -357,8 +357,6 @@ class AndroidDevice(object):
         adb: An AdbProxy object used for interacting with the device via adb.
         fastboot: A FastbootProxy object used for interacting with the device
                   via fastboot.
-        SnippetError: A SnippetError class whose message contains specific info
-                      of a device object.
     """
 
     def __init__(self, serial=''):
