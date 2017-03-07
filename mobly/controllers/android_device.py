@@ -106,8 +106,8 @@ def create(configs):
 
     for ad in ads:
         if ad.serial not in connected_ads:
-            raise ad.Error('Android device is specified in config but is not '
-                           'attached.')
+            raise ad._error('Android device is specified in config but is not '
+                            'attached.')
     _start_services_on_ads(ads)
     return ads
 
@@ -387,7 +387,7 @@ class AndroidDevice(object):
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
                                               {'tag': self.serial})
-        self.Error = _generate_error_class(self.log.extra['tag'],
+        self._error = _generate_error_class(self.log.extra['tag'],
                                            _DEVICE_ERROR_NAME)
         self.SnippetError = _generate_error_class(self.log.extra['tag'],
                                                   _SNIPPET_ERROR_NAME)
@@ -421,7 +421,7 @@ class AndroidDevice(object):
             tag: A string that is the tag to use.
         """
         self.log.extra['tag'] = tag
-        self.Error = _generate_error_class(tag, _DEVICE_ERROR_NAME)
+        self._error = _generate_error_class(tag, _DEVICE_ERROR_NAME)
         self.SnippetError = _generate_error_class(self.log.extra['tag'],
                                                   _SNIPPET_ERROR_NAME)
 
@@ -577,7 +577,7 @@ class AndroidDevice(object):
         """
         for k, v in config.items():
             if hasattr(self, k):
-                raise self.Error(
+                raise self._error(
                     ('Attribute %s already exists with value %s, cannot set '
                      'again.') % (k, getattr(self, k)))
             setattr(self, k, v)
@@ -697,7 +697,7 @@ class AndroidDevice(object):
                 period.
         """
         if not self.adb_logcat_file_path:
-            raise self.Error(
+            raise self._error(
                 'Attempting to cat adb log when none has been collected.')
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
@@ -740,7 +740,7 @@ class AndroidDevice(object):
         save the logcat in a file.
         """
         if self._adb_logcat_process:
-            raise self.Error(
+            raise self._error(
                 'Logcat thread is already running, cannot start another one.')
         # Disable adb log spam filter for rootable. Have to stop and clear
         # settings first because 'start' doesn't support --clear option before
@@ -764,7 +764,7 @@ class AndroidDevice(object):
         """Stops the adb logcat collection subprocess.
         """
         if not self._adb_logcat_process:
-            raise self.Error('No ongoing adb logcat collection found.')
+            raise self._error('No ongoing adb logcat collection found.')
         utils.stop_standing_subprocess(self._adb_logcat_process)
         self._adb_logcat_process = None
 
@@ -798,7 +798,7 @@ class AndroidDevice(object):
         if new_br:
             out = self.adb.shell('bugreportz').decode('utf-8')
             if not out.startswith('OK'):
-                raise self.Error('Failed to take bugreport: %s' % out)
+                raise self._error('Failed to take bugreport: %s' % out)
             br_out_path = out.split(':')[1].strip()
             self.adb.pull('%s %s' % (br_out_path, full_out_path))
         else:
@@ -859,7 +859,7 @@ class AndroidDevice(object):
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise self.Error('Booting process timed out.')
+        raise self._error('Booting process timed out.')
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.
