@@ -46,7 +46,6 @@ class BaseTestClass(object):
         tests: A list of strings, each representing a test case name.
         TAG: A string used to refer to a test class. Default is the test class
              name.
-        log: A logger object used for logging.
         results: A records.TestResult object for aggregating test results from
                  the execution of test cases.
         current_test_name: A string that's the name of the test case currently
