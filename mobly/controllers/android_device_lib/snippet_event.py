@@ -16,6 +16,22 @@ import logging
 import time
 
 
+def from_dict(event_dict):
+    """Create a SnippetEvent object from a dictionary.
+
+    Args:
+        event_dict: a dictionary representing an event.
+
+    Returns:
+        A SnippetEvent object.
+    """
+    return SnippetEvent(
+        callback_id=event_dict['callbackId'],
+        name=event_dict['name'],
+        creation_time=event_dict['time'],
+        data=event_dict['data'])
+
+
 class SnippetEvent(object):
     """The class that represents callback events for mobly snippet library.
 

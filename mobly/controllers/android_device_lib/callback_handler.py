@@ -57,13 +57,6 @@ class CallbackHandler(object):
         self.ret_value = ret_value
         self._method_name = method_name
 
-    def _msgToEvent(self, raw_event):
-        return snippet_event.SnippetEvent(
-            callback_id=raw_event['callbackId'],
-            name=raw_event['name'],
-            creation_time=raw_event['time'],
-            data=raw_event['data'])
-
     def waitAndGet(self, event_name, timeout=None):
         """Blocks until an event of the specified name has been received and
         return the event, or timeout.
@@ -89,7 +82,7 @@ class CallbackHandler(object):
                     'Timeout waiting for event "%s" triggered by %s (%s).'
                     % (event_name, self._method_name, self._id))
             raise
-        return self._msgToEvent(raw_event)
+        return snippet_event.from_dict(raw_event)
 
     def getAll(self, event_name):
         """Gets all the events of a certain name that have been received so
@@ -104,4 +97,4 @@ class CallbackHandler(object):
             side.
         """
         raw_events = self._event_client.eventGetAll(self._id, event_name)
-        return [self._msgToEvent(msg) for msg in raw_events]
+        return [snippet_event.from_dict(msg) for msg in raw_events]
