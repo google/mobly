@@ -22,35 +22,29 @@ It can be built like a regular system app with `mm` commands. It needs to be
 signed with the build you use on your Android devices.
 
 # Example 1: Hello World!
-
+ 
 Let's start with the simple example of posting "Hello World" on the Android
 device's screen. Create the following files:
-
-**sample_config.json**
-
-```python
-{
-    "testbed":
-    [
-        {
-            "_description": "A testbed where adb will find Android devices.",
-            "name": "SampleTestBed",
-            "AndroidDevice": "*"
-        }
-    ],
-    "logpath": "/tmp/logs"
-}
+ 
+**sample_config.yml**
+ 
+```yaml
+TestBeds:
+  # A test bed where adb will find Android devices.
+  - Name: SampleTestBed,
+    Controllers:
+        "AndroidDevice": "*"
 ```
-
+ 
 **hello_world_test.py**
-
+ 
 ```python
 from mobly import base_test
 from mobly import test_runner
 from mobly.controllers import android_device
-
+ 
 class HelloWorldTest(base_test.BaseTestClass):
-
+ 
   def setup_class(self):
     # Registering android_device controller module declares the test's
     # dependency on Android device hardware. By default, we expect at least one
@@ -58,106 +52,102 @@ class HelloWorldTest(base_test.BaseTestClass):
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
     self.dut.load_sl4a() # starts sl4a.
-
+ 
   def test_hello(self):
     self.dut.sl4a.makeToast('Hello World!')
-
+ 
 if __name__ == "__main__":
   test_runner.main()
 ```
-
+ 
 *To execute:*
-
-    $ python hello_world_test.py -c sample_config.json
-
+ 
+    $ python hello_world_test.py -c sample_config.yml
+ 
 *Expect*
-
+ 
 A "Hello World!" toast notification appears on your device's screen.
-
-Within SampleTestBed, we used `"AndroidDevice" : "*"` to tell the test runner to
-automatically find all connected Android devices. You can also specify
-particular devices by serial number and attach extra attributes to the object:
-
-```python
-"AndroidDevice": [
-  {"serial": "xyz", "phone_number": "123456"},
-  {"serial": "abc", "label": "golden_device"},
-]
+ 
+Within SampleTestBed's `Controllers` section, we used `"AndroidDevice" : "*"` to tell
+the test runner to automatically find all connected Android devices. You can also
+specify particular devices by serial number and attach extra attributes to the object:
+ 
+```yaml
+AndroidDevice:
+  - serial: xyz,
+    phone_number: 123456,
+  - serial: abc,
+    label: golden_device
 ```
-
+ 
 # Example 2: Invoking specific test case
-
+ 
 We have multiple tests written in a test script, and we only want to execute
 a subset of them.
-
+ 
 **hello_world_test.py**
-
+ 
 ```python
 from mobly import base_test
 from mobly import test_runner
 from mobly.controllers import android_device
-
+ 
 class HelloWorldTest(base_test.BaseTestClass):
-
+ 
   def setup_class(self):
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
     self.dut.load_sl4a()
-
+ 
   def test_hello(self):
     self.dut.sl4a.makeToast('Hello World!')
-
+ 
   def test_bye(self):
     self.dut.sl4a.makeToast('Goodbye!')
-
+ 
 if __name__ == "__main__":
   test_runner.main()
 ```
-
+ 
 *To execute:*
-
-    $ python hello_world_test.py -c sample_config.json --test_case test_bye
-
-
+ 
+    $ python hello_world_test.py -c sample_config.yml --test_case test_bye
+ 
+ 
 *Expect*
-
+ 
 A "Goodbye!" toast notification appears on your device's screen.
-
+ 
 You can dictate what test cases to execute within a test script and their
 execution order, shown below:
-
-    $ python hello_world_test.py -c sample_config.json --test_case test_bye test_hello test_bye
-
+ 
+    $ python hello_world_test.py -c sample_config.yml --test_case test_bye test_hello test_bye
+ 
 *Expect*
-
+ 
 Toast notifications appear on your device's screen in the following order:
 "Goodbye!", "Hello World!", "Goodbye!".
-
+ 
 # Example 3: User parameters
-
+ 
 You could specify user parameters to be passed into your test class in the
 config file.
-
-In the following config, we added a user parameter `favorite_food`.
-
-**sample_config.json**
-
-```python
-{
-    "testbed":
-    [
-        {
-            "name" : "SampleTestBed",
-            "AndroidDevice" : "*"
-        }
-    ],
-    "logpath" : "/tmp/logs",
-    "favorite_food" : "Green eggs and ham."
-}
+ 
+In the following config, we added a parameter `favorite_food` to be used in the test case.
+ 
+**sample_config.yml**
+ 
+```yaml
+TestBeds:
+  - Name: SampleTestBed,
+    Controllers:
+        AndroidDevice" : "*"
+    TestParams:
+        favorite_food: Green eggs and ham.
 ```
-
+ 
 In the test script, you could access the user parameter:
-
+ 
 ```python
   def test_favorite_food(self):
     food = self.user_params.get('favorite_food')
@@ -166,73 +156,82 @@ In the test script, you could access the user parameter:
     else:
       self.dut.sl4a.makeToast("I'm not hungry.")
 ```
-
-# Example 4: Multiple Test Beds
-
+ 
+# Example 4: Multiple Test Beds and Default Test Parameters
+ 
 Multiple test beds can be configured in one configuration file.
-
-**sample_config.json**
-
-```python
-{
-    "testbed":[
-        {
-            "name" : "XyzTestBed",
-            "AndroidDevice" : [{"serial": "xyz", "phone_number": "123456"}]
-        },
-        {
-            "name" : "AbcTestBed",
-            "AndroidDevice" : [{"serial": "abc", "label": "golden_device"}]
-        }
-    ],
-    "logpath" : "/tmp/logs",
-    "favorite_food": "green eggs and ham"
-}
+ 
+**sample_config.yaml**
+ 
+```yaml
+# DefaultParams is optional here. It uses yaml's anchor feature to easily share
+# a set of parameters between multiple test bed configs
+DefaultParams: &DefaultParams
+    favorite_food: green eggs and ham.
+ 
+TestBeds:
+  - Name: XyzTestBed,
+    Controllers:
+        AndroidDevice:
+          - serial: xyz,
+            phone_number: 123456
+    TestParams:
+        <<: *DefaultParams
+  - Name: AbcTestBed,
+    Controllers:
+        AndroidDevice:
+          - serial: abc,
+            label: golden_device
+    TestParams:
+        <<: *DefaultParams
 ```
-
+ 
 You can choose which one to execute on with the command line argument
 `--test_bed`:
-
-    $ python hello_world_test.py -c sample_config.json --test_bed AbcTestBed
-
+ 
+    $ python hello_world_test.py -c sample_config.yml --test_bed AbcTestBed
+ 
 *Expect*
-
+ 
 A "Hello World!" and a "Goodbye!" toast notification appear on your device's
 screen.
-
-
+ 
+ 
 # Example 5: Test with Multiple Android devices
-
+ 
 In this example, we use one Android device to discover another Android device
 via bluetooth. This test demonstrates several essential elements in test
 writing, like logging and asserts.
-
-**sample_config.json**
-
-```python
-{
-    "testbed":[
-        {
-            "name" : "TwoDeviceTestBed",
-            "AndroidDevice" : [{"serial": "xyz", "label": "dut"},
-                               {"serial": "abc", "label": "discoverer"}]
-        }
-    ],
-    "logpath" : "/tmp/logs",
-    "bluetooth_name": "MagicBluetooth",
-    "bluetooth_timeout": 5
-}
+ 
+**sample_config.yml**
+ 
+```yaml
+TestBeds:
+  - Name: TwoDeviceTestBed,
+    Controllers:
+        AndroidDevice:
+          - serial: xyz,
+            label: dut
+          - serial: abc,
+            label: discoverer
+    TestParams:
+        bluetooth_name: MagicBluetooth,
+        bluetooth_timeout: 5
+ 
+ 
 ```
-
+ 
 **sample_test.py**
-
+ 
+ 
 ```python
 from mobly import base_test
 from mobly import test_runner
 from mobly.controllerse import android_device
-
+ 
 class HelloWorldTest(base_test.BaseTestClass):
-
+ 
+ 
   def setup_class(self):
     # Registering android_device controller module, and declaring that the test
     # requires at least two Android devices.
@@ -243,7 +242,7 @@ class HelloWorldTest(base_test.BaseTestClass):
     self.discoverer.load_sl4a()
     self.dut.ed.clear_all_events()
     self.discoverer.ed.clear_all_events()
-
+ 
   def setup_test(self):
     # Make sure bluetooth is on
     self.dut.sl4a.bluetoothToggleState(True)
@@ -255,14 +254,14 @@ class HelloWorldTest(base_test.BaseTestClass):
     if (not self.dut.sl4a.bluetoothCheckState() or
            not self.discoverer.sl4a.bluetoothCheckState()):
       asserts.abort_class('Could not turn on Bluetooth on both devices.')
-
+ 
     # Set the name of device #1 and verify the name properly registered.
     self.dut.sl4a.bluetoothSetLocalName(self.bluetooth_name)
     asserts.assert_equal(self.dut.sl4a.bluetoothGetLocalName(),
                          self.bluetooth_name,
                          'Failed to set bluetooth name to %s on %s' %
                          (self.bluetooth_name, self.dut.serial))
-
+ 
   def test_bluetooth_discovery(self):
     # Make dut discoverable.
     self.dut.sl4a.bluetoothMakeDiscoverable()
@@ -271,18 +270,18 @@ class HelloWorldTest(base_test.BaseTestClass):
         scan_mode, 3,  # 3 signifies CONNECTABLE and DISCOVERABLE
         'Android device %s failed to make blueooth discoverable.' %
             self.dut.serial)
-
+ 
     # Start the discovery process on #discoverer.
     self.discoverer.ed.clear_all_events()
     self.discoverer.sl4a.bluetoothStartDiscovery()
     self.discoverer.ed.pop_event(
         event_name='BluetoothDiscoveryFinished',
         timeout=self.bluetooth_timeout)
-
+ 
     # The following log entry demonstrates AndroidDevice log object, which
     # prefixes log entries with "[AndroidDevice|<serial>] "
     self.discoverer.log.info('Discovering other bluetooth devices.')
-
+ 
     # Get a list of discovered devices
     discovered_devices = self.discoverer.sl4a.bluetoothGetDiscoveredDevices()
     self.discoverer.log.info('Found devices: %s', discovered_devices)
@@ -293,29 +292,29 @@ class HelloWorldTest(base_test.BaseTestClass):
                    (self.discoverer.serial, self.dut.serial))
     self.discoverer.log.info('Discovered at least 1 device named '
                              '%s: %s', self.bluetooth_name, matching_devices)
-
+ 
 if __name__ == "__main__":
   test_runner.main()
 ```
-
+ 
 One will notice that this is not the most robust test (another nearby device
 could be using the same name), but in the interest of simplicity, we've limited
 the number of RPCs sent to each Android device to just two:
-
+ 
 *   For `self.dut`, we asked it to make itself discoverable and checked that it
     did it.
 *   For `self.discoverer`, we asked it to start scanning for nearby bluetooth
     devices, and then we pulled the list of devices seen.
-
+ 
 There's potentially a lot more we could do to write a thorough test (e.g., check
 the hardware address, see whether we can pair devices, transfer files, etc.).
-
+ 
 # Event Dispatcher
-
+ 
 You'll notice above that we've used `self.{device_alias}.ed.pop_event()`. The
 `ed` attribute of an Android device object is an EventDispatcher, which provides
 APIs to interact with async events.
-
+ 
 For example, `pop_event` is a function which will block until either a
 specified event is seen or the call times out, and by using it we avoid the use
 of busy loops that constantly check the device state. For more, see the APIs in
