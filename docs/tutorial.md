@@ -33,7 +33,7 @@ TestBeds:
   # A test bed where adb will find Android devices.
   - Name: SampleTestBed,
     Controllers:
-        "AndroidDevice": "*"
+        AndroidDevice: '*'
 ```
  
 **hello_world_test.py**
@@ -56,7 +56,7 @@ class HelloWorldTest(base_test.BaseTestClass):
   def test_hello(self):
     self.dut.sl4a.makeToast('Hello World!')
  
-if __name__ == "__main__":
+if __name__ == '__main__':
   test_runner.main()
 ```
  
@@ -68,7 +68,7 @@ if __name__ == "__main__":
  
 A "Hello World!" toast notification appears on your device's screen.
  
-Within SampleTestBed's `Controllers` section, we used `"AndroidDevice" : "*"` to tell
+Within SampleTestBed's `Controllers` section, we used `AndroidDevice: '*'` to tell
 the test runner to automatically find all connected Android devices. You can also
 specify particular devices by serial number and attach extra attributes to the object:
  
@@ -105,7 +105,7 @@ class HelloWorldTest(base_test.BaseTestClass):
   def test_bye(self):
     self.dut.sl4a.makeToast('Goodbye!')
  
-if __name__ == "__main__":
+if __name__ == '__main__':
   test_runner.main()
 ```
  
@@ -141,7 +141,7 @@ In the following config, we added a parameter `favorite_food` to be used in the 
 TestBeds:
   - Name: SampleTestBed,
     Controllers:
-        AndroidDevice" : "*"
+        AndroidDevice: '*'
     TestParams:
         favorite_food: Green eggs and ham.
 ```
@@ -236,9 +236,9 @@ class HelloWorldTest(base_test.BaseTestClass):
     # Registering android_device controller module, and declaring that the test
     # requires at least two Android devices.
     self.ads = self.register_controller(android_device, min_number=2)
-    self.dut = android_device.get_device(self.ads, label="dut")
+    self.dut = android_device.get_device(self.ads, label='dut')
     self.dut.load_sl4a()
-    self.discoverer = android_device.get_device(self.ads, label="discoverer")
+    self.discoverer = android_device.get_device(self.ads, label='discoverer')
     self.discoverer.load_sl4a()
     self.dut.ed.clear_all_events()
     self.discoverer.ed.clear_all_events()
@@ -293,7 +293,7 @@ class HelloWorldTest(base_test.BaseTestClass):
     self.discoverer.log.info('Discovered at least 1 device named '
                              '%s: %s', self.bluetooth_name, matching_devices)
  
-if __name__ == "__main__":
+if __name__ == '__main__':
   test_runner.main()
 ```
  
