@@ -56,7 +56,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             app_name=package,
             adb_proxy=adb_proxy)
         self.package = package
-        self._serial = self._adb.getprop('ro.boot.serialno')
+        self._serial = self._adb.serial
 
     def _do_start_app(self):
         """Overrides superclass."""
