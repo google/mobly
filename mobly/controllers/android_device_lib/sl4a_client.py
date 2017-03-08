@@ -57,4 +57,4 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             "pm list package | grep com.googlecode.android_scripting"):
             raise jsonrpc_client_base.AppStartError(
                 '%s is not installed on %s' % (
-                self.app_name, self._adb.getprop('ro.boot.serialno')))
+                self.app_name, self._adb.serial))
