@@ -56,7 +56,7 @@ UNKNOWN_UID = -1
 _SOCKET_CONNECTION_TIMEOUT = 60
 
 # Maximum time to wait for a response message on the socket.
-SOCKET_READ_TIMEOUT = 60 * 6
+_SOCKET_READ_TIMEOUT = 60 * 6
 
 
 class Error(Exception):
@@ -73,9 +73,9 @@ class ApiError(Error):
 
 class ProtocolError(Error):
     """Raised when there is some error in exchanging data with server."""
-    NO_RESPONSE_FROM_HANDSHAKE = "No response from handshake."
-    NO_RESPONSE_FROM_SERVER = "No response from server."
-    MISMATCHED_API_ID = "Mismatched API id."
+    NO_RESPONSE_FROM_HANDSHAKE = 'No response from handshake.'
+    NO_RESPONSE_FROM_SERVER = 'No response from server.'
+    MISMATCHED_API_ID = 'Mismatched API id.'
 
 
 class JsonRpcCommand(object):
@@ -206,7 +206,7 @@ class JsonRpcClientBase(object):
         self._counter = self._id_counter()
         self._conn = socket.create_connection(('127.0.0.1', self.host_port),
                                               _SOCKET_CONNECTION_TIMEOUT)
-        self._conn.settimeout(SOCKET_READ_TIMEOUT)
+        self._conn.settimeout(_SOCKET_READ_TIMEOUT)
         self._client = self._conn.makefile(mode="brw")
 
         resp = self._cmd(cmd, uid)

@@ -16,13 +16,12 @@
 
 import time
 
-from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import snippet_event
 
 # The max timeout cannot be larger than the max time the socket waits for a
 # response message. Otherwise, the socket would timeout before the Rpc call
 # does, leaving both server and client in unknown states.
-MAX_TIMEOUT = jsonrpc_client_base.SOCKET_READ_TIMEOUT
+MAX_TIMEOUT = 60 * 6
 
 
 class Error(Exception):
