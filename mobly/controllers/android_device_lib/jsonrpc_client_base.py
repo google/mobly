@@ -204,12 +204,12 @@ class JsonRpcClientBase(object):
         self._conn = socket.create_connection(('127.0.0.1', self.host_port),
                                               _SOCKET_TIMEOUT)
         self._conn.settimeout(_SOCKET_TIMEOUT)
-        self._client = self._conn.makefile(mode="brw")
+        self._client = self._conn.makefile(mode='brw')
 
         resp = self._cmd(cmd, uid)
         if not resp:
             raise ProtocolError(ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
-        result = json.loads(str(resp, encoding="utf8"))
+        result = json.loads(str(resp, encoding='utf8'))
         if result['status']:
             self.uid = result['uid']
         else:
