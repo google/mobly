@@ -54,7 +54,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             host_port=host_port,
             device_port=host_port,
             app_name=package,
-            adb_proxy=adb_proxy)
+            adb_proxy=adb_proxy,
+            log=log)
         self.package = package
         self._serial = self._adb.getprop('ro.boot.serialno')
         self.log = log
