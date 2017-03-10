@@ -33,7 +33,7 @@ class AdbError(Exception):
         self.ret_code = ret_code
 
     def __str__(self):
-        return ("Error executing adb cmd '%s'. ret: %d, stdout: %s, stderr: %s"
+        return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
                 ) % (self.cmd, self.ret_code, self.stdout, self.stderr)
 
 
@@ -48,11 +48,11 @@ def list_occupied_adb_ports():
     Returns:
         A list of integers representing occupied host ports.
     """
-    out = AdbProxy().forward("--list")
+    out = AdbProxy().forward('--list')
     clean_lines = str(out, 'utf-8').strip().split('\n')
     used_ports = []
     for line in clean_lines:
-        tokens = line.split(" tcp:")
+        tokens = line.split(' tcp:')
         if len(tokens) != 3:
             continue
         used_ports.append(int(tokens[1]))
@@ -69,12 +69,12 @@ class AdbProxy():
     >> adb.devices() # will return the console output of "adb devices".
     """
 
-    def __init__(self, serial=""):
+    def __init__(self, serial=''):
         self.serial = serial
         if serial:
-            self.adb_str = "adb -s {}".format(serial)
+            self.adb_str = 'adb -s %s' % serial
         else:
-            self.adb_str = "adb"
+            self.adb_str = 'adb'
 
     def _exec_cmd(self, cmd):
         """Executes adb commands in a new shell.
@@ -91,13 +91,11 @@ class AdbProxy():
         Raises:
             AdbError is raised if the adb command exit code is not 0.
         """
-        proc = subprocess.Popen(cmd,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                shell=True)
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate()
         ret = proc.returncode
-        logging.debug("cmd: %s, stdout: %s, stderr: %s, ret: %s", cmd, out,
+        logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s', cmd, out,
                       err, ret)
         if ret == 0:
             return out
@@ -114,7 +112,7 @@ class AdbProxy():
             host_port: Port number to use on the computer.
             device_port: Port number to use on the android device.
         """
-        self.forward("tcp:{} tcp:{}".format(host_port, device_port))
+        self.forward('tcp:%d tcp:%d' % (host_port, device_port))
 
     def getprop(self, prop_name):
         """Get a property of the device.
@@ -128,7 +126,7 @@ class AdbProxy():
             A string that is the value of the property, or None if the property
             doesn't exist.
         """
-        return self.shell("getprop %s" % prop_name).decode("utf-8").strip()
+        return self.shell('getprop %s' % prop_name).decode('utf-8').strip()
 
     def __getattr__(self, name):
         def adb_call(*args):

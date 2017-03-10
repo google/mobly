@@ -591,7 +591,10 @@ class AndroidDevice(object):
                     ' "%s".' % (package, client_name))
         host_port = utils.get_available_host_port()
         client = snippet_client.SnippetClient(
-            package=package, host_port=host_port, adb_proxy=self.adb)
+            package=package,
+            host_port=host_port,
+            adb_proxy=self.adb,
+            log=self.log)
         self._start_jsonrpc_client(client)
         self._snippet_clients[name] = client
         setattr(self, name, client)

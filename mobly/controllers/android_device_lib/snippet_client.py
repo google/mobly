@@ -37,7 +37,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     See superclass documentation for a list of public attributes.
     """
 
-    def __init__(self, package, host_port, adb_proxy):
+    def __init__(self, package, host_port, adb_proxy, log=logging.getLogger()):
         """Initializes a SnippetClient.
   
         Args:
@@ -57,6 +57,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             adb_proxy=adb_proxy)
         self.package = package
         self._serial = self._adb.getprop('ro.boot.serialno')
+        self.log = log
 
     def _do_start_app(self):
         """Overrides superclass."""
@@ -64,13 +65,13 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # Use info here so people know exactly what's happening here, which is
         # helpful since they need to create their own instrumentations and
         # manifest.
-        logging.debug('Launching snippet apk %s', self.package)
+        self.log.info('Launching snippet apk %s', self.package)
         self._adb.shell(cmd)
 
     def stop_app(self):
         """Overrides superclass."""
         cmd = _STOP_CMD % self.package
-        logging.debug('Stopping snippet apk %s', self.package)
+        self.log.debug('Stopping snippet apk %s', self.package)
         out = self._adb.shell(_STOP_CMD % self.package).decode('utf-8')
         if 'OK (0 tests)' not in out:
             raise Error('Failed to stop existing apk. Unexpected output: %s' %
@@ -109,7 +110,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         event_client = SnippetClient(
             package=self.package,
             host_port=self.host_port,
-            adb_proxy=self._adb)
+            adb_proxy=self._adb,
+            log=self.log)
         event_client.connect(self.uid,
                              jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         return event_client

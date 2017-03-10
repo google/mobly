@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import time
-
 
 def from_dict(event_dict):
     """Create a SnippetEvent object from a dictionary.

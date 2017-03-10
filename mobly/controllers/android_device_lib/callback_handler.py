@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import time
 
 from mobly.controllers.android_device_lib import snippet_event
@@ -77,7 +76,7 @@ class CallbackHandler(object):
             raw_event = self._event_client.eventWaitAndGet(self._id,
                                                            event_name, timeout)
         except Exception as e:
-            if "EventSnippetException: timeout." in str(e):
+            if 'EventSnippetException: timeout.' in str(e):
                 raise TimeoutError(
                     'Timeout waiting for event "%s" triggered by %s (%s).'
                     % (event_name, self._method_name, self._id))
