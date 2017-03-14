@@ -18,6 +18,11 @@ import time
 
 from mobly.controllers.android_device_lib import snippet_event
 
+# The max timeout cannot be larger than the max time the socket waits for a
+# response message. Otherwise, the socket would timeout before the Rpc call
+# does, leaving both server and client in unknown states.
+MAX_TIMEOUT = 60 * 10
+
 
 class Error(Exception):
     pass
@@ -68,9 +73,15 @@ class CallbackHandler(object):
             SnippetEvent, the oldest entry of the specified event.
 
         Raises:
+            Error: If the specified timeout is longer than the max timeout
+                   supported.
             TimeoutError: The expected event does not occur within time limit.
         """
         if timeout:
+            if timeout > MAX_TIMEOUT:
+                raise Error(
+                    'Specified timeout %s is longer than max timeout %s.' %
+                    (timeout, MAX_TIMEOUT))
             timeout *= 1000  # convert to milliseconds for java side
         try:
             raw_event = self._event_client.eventWaitAndGet(self._id,
@@ -78,8 +89,8 @@ class CallbackHandler(object):
         except Exception as e:
             if 'EventSnippetException: timeout.' in str(e):
                 raise TimeoutError(
-                    'Timeout waiting for event "%s" triggered by %s (%s).'
-                    % (event_name, self._method_name, self._id))
+                    'Timeout waiting for event "%s" triggered by %s (%s).' %
+                    (event_name, self._method_name, self._id))
             raise
         return snippet_event.from_dict(raw_event)
 

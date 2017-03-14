@@ -37,6 +37,10 @@ class CallbackHandlerTest(unittest.TestCase):
     """Unit tests for mobly.controllers.android_device_lib.callback_handler.
     """
 
+    def test_timeout_value(self):
+        self.assertGreaterEqual(jsonrpc_client_base._SOCKET_READ_TIMEOUT,
+                                callback_handler.MAX_TIMEOUT)
+
     def test_event_dict_to_snippet_event(self):
         mock_event_client = mock.Mock()
         mock_event_client.eventWaitAndGet = mock.Mock(
