@@ -39,6 +39,7 @@ Response:
 from builtins import str
 
 import json
+import logging
 import socket
 import threading
 import time
@@ -105,7 +106,12 @@ class JsonRpcClientBase(object):
         uid: (int) The uid of this session.
     """
 
-    def __init__(self, host_port, device_port, app_name, adb_proxy):
+    def __init__(self,
+                 host_port,
+                 device_port,
+                 app_name,
+                 adb_proxy,
+                 log=logging.getLogger()):
         """
         Args:
             host_port: (int) The host port of this RPC client.
@@ -124,6 +130,7 @@ class JsonRpcClientBase(object):
         self._counter = None
         self._lock = threading.Lock()
         self._event_client = None
+        self._log = log
 
     def __del__(self):
         self.close()
@@ -181,6 +188,7 @@ class JsonRpcClientBase(object):
         for _ in range(wait_time):
             time.sleep(1)
             if self._is_app_running():
+                self.log.debug('Successfully started %s', self.app_name)
                 return
         raise AppStartError('%s failed to start on %s.' %
                             (self.app_name, self._adb.serial))
