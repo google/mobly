@@ -35,7 +35,7 @@ from mobly.controllers.android_device_lib import snippet_client
 MOBLY_CONTROLLER_CONFIG_NAME = 'AndroidDevice'
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = '*'
-_LOG_TAG_TEMPLATE = '[AndroidDevice|%s] %s'
+_DEBUG_PREFIX_TEMPLATE = '[AndroidDevice|%s] %s'
 
 # Key name for adb logcat extra params in config file.
 ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = 'adb_logcat_param'
@@ -52,8 +52,9 @@ class Error(signals.ControllerError):
 
 class DeviceError(Error):
     """Raised for errors from within an AndroidDevice object."""
+
     def __init__(self, ad, msg):
-        new_msg = _LOG_TAG_TEMPLATE % (repr(ad), msg)
+        new_msg = '%s %s' % (repr(ad), msg)
         super(DeviceError, self).__init__(new_msg)
 
 
@@ -378,7 +379,7 @@ class AndroidDevice(object):
         self._snippet_clients = {}
 
     def __repr__(self):
-        return "<AndroidDevice|%s>" % self.debug_tag
+        return "AndroidDevice(%s)" % self.serial
 
     @property
     def debug_tag(self):
@@ -561,9 +562,9 @@ class AndroidDevice(object):
         """
         for k, v in config.items():
             if hasattr(self, k):
-                raise DeviceError(self, 
-                    ('Attribute %s already exists with value %s, cannot set '
-                     'again.') % (k, getattr(self, k)))
+                raise DeviceError(self, (
+                    'Attribute %s already exists with value %s, cannot set '
+                    'again.') % (k, getattr(self, k)))
             setattr(self, k, v)
 
     def root_adb(self):
@@ -595,19 +596,22 @@ class AndroidDevice(object):
         """
         # Should not load snippet with the same attribute more than once.
         if name in self._snippet_clients:
-            raise SnippetError(self, 
+            raise SnippetError(
+                self,
                 'Attribute "%s" is already registered with package "%s", it '
                 'cannot be used again.' %
                 (name, self._snippet_clients[name].package))
         # Should not load snippet with an existing attribute.
         if hasattr(self, name):
-            raise SnippetError(self, 
+            raise SnippetError(
+                self,
                 'Attribute "%s" already exists, please use a different name.' %
                 name)
         # Should not load the same snippet package more than once.
         for client_name, client in self._snippet_clients.items():
             if package == client.package:
-                raise SnippetError(self, 
+                raise SnippetError(
+                    self,
                     'Snippet package "%s" has already been loaded under name'
                     ' "%s".' % (package, client_name))
         host_port = utils.get_available_host_port()
@@ -681,7 +685,8 @@ class AndroidDevice(object):
                 period.
         """
         if not self.adb_logcat_file_path:
-            raise DeviceError(self,
+            raise DeviceError(
+                self,
                 'Attempting to cat adb log when none has been collected.')
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
@@ -724,7 +729,8 @@ class AndroidDevice(object):
         save the logcat in a file.
         """
         if self._adb_logcat_process:
-            raise DeviceError(self, 
+            raise DeviceError(
+                self,
                 'Logcat thread is already running, cannot start another one.')
         # Disable adb log spam filter for rootable. Have to stop and clear
         # settings first because 'start' doesn't support --clear option before
@@ -895,5 +901,5 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
     """
 
     def process(self, msg, kwargs):
-        msg = _LOG_TAG_TEMPLATE % (self.extra['tag'], msg)
+        msg = _DEBUG_PREFIX_TEMPLATE % (self.extra['tag'], msg)
         return (msg, kwargs)

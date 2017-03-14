@@ -418,7 +418,8 @@ class AndroidDeviceTest(unittest.TestCase):
         ad.stop_services()
         self.assertFalse(hasattr(ad, 'snippet'))
 
-    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy', return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
     def test_AndroidDevice_debug_tag(self, MockFastboot, MockAdbProxy):
