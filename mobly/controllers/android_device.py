@@ -78,12 +78,12 @@ def create(configs):
         ads = get_all_instances()
     elif not isinstance(configs, list):
         raise Error(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
-    elif isinstance(configs[0], str):
-        # Configs is a list of serials.
-        ads = get_instances(configs)
-    else:
+    elif isinstance(configs[0], dict):
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs)
+    else:
+        # Configs is a list of strings representing serials.
+        ads = get_instances(configs)
     connected_ads = list_adb_devices()
 
     for ad in ads:
