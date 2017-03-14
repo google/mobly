@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import subprocess
 
 from builtins import str
 from builtins import open
@@ -371,6 +372,36 @@ class AndroidDevice(object):
         # A dict for tracking snippet clients. Keys are clients' attribute
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
+
+
+    @contextlib.contextmanager
+    def capture_logcat(self, fd=None):
+        """Captures logcat output produced during this context
+        manager's lifetime to given file object.
+
+        Usage:
+          f = tempfile.TemporaryFile()
+          with self.dut.capture_logcat(f):
+            do_something()
+          f.seek(0)
+          output_lines = f.readlines()
+
+        Args:
+            fd: file (or compatible) object, e.g. returned by open().
+        """
+        logcat_cmd = [
+            'adb',
+            '-s', self.serial,
+            'logcat',
+            '-T', '1',  # Don't print any historical lines.
+            '-v', 'threadtime',  # Match normal logcat logs
+        ]
+        try:
+            p = subprocess.Popen(logcat_cmd, stdout=fd)
+            yield
+        finally:
+            p.kill()
+
 
     def set_logger_prefix_tag(self, tag):
         """Set a tag for the log line prefix of this instance.
