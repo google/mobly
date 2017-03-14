@@ -94,6 +94,50 @@ class CallbackHandler(object):
             raise
         return snippet_event.from_dict(raw_event)
 
+    def waitForEvent(self, event_name, predicate, timeout=120):
+        """Wait for an event of a specific name that satisfies the predict.
+  
+        This call will block until the expected event has been received or time
+        out.
+  
+        The predicate function defines the condition the event is expected to
+        satisfy. It takes an event and returns True if the condition is
+        satisfied, False otherwise.
+  
+        Note all events of the same name that are received but don't satisfy
+        the predicate will be disregarded and not be available for further
+        consumption.
+  
+        Args:
+          event_name: string, the name of the event to wait for.
+          predicate: function, a function that takes an event (dictionary) and
+                     returns a bool.
+          timeout: float, default is 120s.
+  
+        Returns:
+          dictionary, the event that satisfies the predicate if received.
+  
+        Raises:
+          TimeoutError: raised if no event that satisfies the predicate is
+                        received after timeout seconds.
+        """
+        deadline = time.time() + timeout
+        while time.time() <= deadline:
+            # Calculate the max timeout for the next event rpc call.
+            rpc_timeout = deadline - time.time()
+            try:
+                event = self.waitAndGet(event_name, rpc_timeout)
+            except TimeoutError:
+                # Ignoring TimeoutError since we need to throw one with a more
+                # specific message.
+                continue
+            if predicate(event):
+                return event
+        raise TimeoutError(
+            'Timed out after %ss waiting for an "%s" event that satisfies the '
+            'predicate "%s".'
+            % (timeout, event_name, predicate.__name__))
+
     def getAll(self, event_name):
         """Gets all the events of a certain name that have been received so
         far. This is a non-blocking call.

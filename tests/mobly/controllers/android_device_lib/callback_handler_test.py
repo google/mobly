@@ -71,6 +71,40 @@ class CallbackHandlerTest(unittest.TestCase):
                                      expected_msg):
             handler.waitAndGet('ha')
 
+    def test_wait_for_event(self):
+        mock_event_client = mock.Mock()
+        mock_event_client.eventWaitAndGet = mock.Mock(
+            return_value=MOCK_RAW_EVENT)
+        handler = callback_handler.CallbackHandler(
+            callback_id=MOCK_CALLBACK_ID,
+            event_client=mock_event_client,
+            ret_value=None,
+            method_name=None)
+        expected_msg = 'Timed out after 0.01s waiting for an "AsyncTaskResult" event that satisfies the predicate "some_condition".'
+
+        def some_condition(event):
+            return event.data['successful']
+
+        event = handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
+
+    def test_wait_for_event_negative(self):
+        mock_event_client = mock.Mock()
+        mock_event_client.eventWaitAndGet = mock.Mock(
+            return_value=MOCK_RAW_EVENT)
+        handler = callback_handler.CallbackHandler(
+            callback_id=MOCK_CALLBACK_ID,
+            event_client=mock_event_client,
+            ret_value=None,
+            method_name=None)
+        expected_msg = 'Timed out after 0.01s waiting for an "AsyncTaskResult" event that satisfies the predicate "some_condition".'
+
+        def some_condition(event):
+            return False
+
+        with self.assertRaisesRegexp(callback_handler.TimeoutError,
+                                     expected_msg):
+            handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
+
 
 if __name__ == "__main__":
     unittest.main()
