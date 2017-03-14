@@ -395,7 +395,7 @@ class AndroidDevice(object):
         """Setter for the debug tag.
 
         By default, the tag is the serial of the device, but sometimes it may
-        be more descriptive to use a different tag of the user's choise. 
+        be more descriptive to use a different tag of the user's choice.
 
         Changing debug tag changes part of the prefix of debug info emitted by
         this object, like log lines and the message of DeviceError.
