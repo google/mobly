@@ -58,7 +58,8 @@ class CallbackHandlerTest(unittest.TestCase):
 
     def test_wait_and_get_timeout(self):
         mock_event_client = mock.Mock()
-        java_timeout_msg = 'com.google.android.mobly.snippet.event.EventSnippet$EventSnippetException: timeout.'
+        java_timeout_msg = ('com.google.android.mobly.snippet.event.'
+                            'EventSnippet$EventSnippetException: timeout.')
         mock_event_client.eventWaitAndGet = mock.Mock(
             side_effect=jsonrpc_client_base.ApiError(java_timeout_msg))
         handler = callback_handler.CallbackHandler(
@@ -80,7 +81,6 @@ class CallbackHandlerTest(unittest.TestCase):
             event_client=mock_event_client,
             ret_value=None,
             method_name=None)
-        expected_msg = 'Timed out after 0.01s waiting for an "AsyncTaskResult" event that satisfies the predicate "some_condition".'
 
         def some_condition(event):
             return event.data['successful']
@@ -96,7 +96,9 @@ class CallbackHandlerTest(unittest.TestCase):
             event_client=mock_event_client,
             ret_value=None,
             method_name=None)
-        expected_msg = 'Timed out after 0.01s waiting for an "AsyncTaskResult" event that satisfies the predicate "some_condition".'
+        expected_msg = (
+            'Timed out after 0.01s waiting for an "AsyncTaskResult" event that'
+            ' satisfies the predicate "some_condition".')
 
         def some_condition(event):
             return False
