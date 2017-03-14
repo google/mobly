@@ -22,6 +22,7 @@ from mobly.controllers.android_device_lib import snippet_event
 # response message. Otherwise, the socket would timeout before the Rpc call
 # does, leaving both server and client in unknown states.
 MAX_TIMEOUT = 60 * 10
+DEFAULT_TIMEOUT = 120  # two minutes
 
 
 class Error(Exception):
@@ -61,7 +62,7 @@ class CallbackHandler(object):
         self.ret_value = ret_value
         self._method_name = method_name
 
-    def waitAndGet(self, event_name, timeout=None):
+    def waitAndGet(self, event_name, timeout=DEFAULT_TIMEOUT):
         """Blocks until an event of the specified name has been received and
         return the event, or timeout.
 
@@ -93,6 +94,51 @@ class CallbackHandler(object):
                     (event_name, self._method_name, self._id))
             raise
         return snippet_event.from_dict(raw_event)
+
+    def waitForEvent(self, event_name, predicate, timeout=DEFAULT_TIMEOUT):
+        """Wait for an event of a specific name that satisfies the predicate.
+
+        This call will block until the expected event has been received or time
+        out.
+
+        The predicate function defines the condition the event is expected to
+        satisfy. It takes an event and returns True if the condition is
+        satisfied, False otherwise.
+
+        Note all events of the same name that are received but don't satisfy
+        the predicate will be discarded and not be available for further
+        consumption.
+
+        Args:
+          event_name: string, the name of the event to wait for.
+          predicate: function, a function that takes an event (dictionary) and
+                     returns a bool.
+          timeout: float, default is 120s.
+
+        Returns:
+          dictionary, the event that satisfies the predicate if received.
+
+        Raises:
+          TimeoutError: raised if no event that satisfies the predicate is
+                        received after timeout seconds.
+        """
+        deadline = time.time() + timeout
+        while time.time() <= deadline:
+            # Calculate the max timeout for the next event rpc call.
+            rpc_timeout = deadline - time.time()
+            if rpc_timeout < 0:
+                break
+            try:
+                event = self.waitAndGet(event_name, rpc_timeout)
+            except TimeoutError:
+                # Ignoring TimeoutError since we need to throw one with a more
+                # specific message.
+                break
+            if predicate(event):
+                return event
+        raise TimeoutError(
+            'Timed out after %ss waiting for an "%s" event that satisfies the '
+            'predicate "%s".' % (timeout, event_name, predicate.__name__))
 
     def getAll(self, event_name):
         """Gets all the events of a certain name that have been received so

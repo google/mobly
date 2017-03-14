@@ -58,7 +58,8 @@ class CallbackHandlerTest(unittest.TestCase):
 
     def test_wait_and_get_timeout(self):
         mock_event_client = mock.Mock()
-        java_timeout_msg = 'com.google.android.mobly.snippet.event.EventSnippet$EventSnippetException: timeout.'
+        java_timeout_msg = ('com.google.android.mobly.snippet.event.'
+                            'EventSnippet$EventSnippetException: timeout.')
         mock_event_client.eventWaitAndGet = mock.Mock(
             side_effect=jsonrpc_client_base.ApiError(java_timeout_msg))
         handler = callback_handler.CallbackHandler(
@@ -70,6 +71,41 @@ class CallbackHandlerTest(unittest.TestCase):
         with self.assertRaisesRegexp(callback_handler.TimeoutError,
                                      expected_msg):
             handler.waitAndGet('ha')
+
+    def test_wait_for_event(self):
+        mock_event_client = mock.Mock()
+        mock_event_client.eventWaitAndGet = mock.Mock(
+            return_value=MOCK_RAW_EVENT)
+        handler = callback_handler.CallbackHandler(
+            callback_id=MOCK_CALLBACK_ID,
+            event_client=mock_event_client,
+            ret_value=None,
+            method_name=None)
+
+        def some_condition(event):
+            return event.data['successful']
+
+        event = handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
+
+    def test_wait_for_event_negative(self):
+        mock_event_client = mock.Mock()
+        mock_event_client.eventWaitAndGet = mock.Mock(
+            return_value=MOCK_RAW_EVENT)
+        handler = callback_handler.CallbackHandler(
+            callback_id=MOCK_CALLBACK_ID,
+            event_client=mock_event_client,
+            ret_value=None,
+            method_name=None)
+        expected_msg = (
+            'Timed out after 0.01s waiting for an "AsyncTaskResult" event that'
+            ' satisfies the predicate "some_condition".')
+
+        def some_condition(event):
+            return False
+
+        with self.assertRaisesRegexp(callback_handler.TimeoutError,
+                                     expected_msg):
+            handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
 
 
 if __name__ == "__main__":
