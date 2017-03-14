@@ -96,27 +96,27 @@ class CallbackHandler(object):
 
     def waitForEvent(self, event_name, predicate, timeout=120):
         """Wait for an event of a specific name that satisfies the predicate.
-  
+
         This call will block until the expected event has been received or time
         out.
-  
+
         The predicate function defines the condition the event is expected to
         satisfy. It takes an event and returns True if the condition is
         satisfied, False otherwise.
-  
+
         Note all events of the same name that are received but don't satisfy
         the predicate will be discarded and not be available for further
         consumption.
-  
+
         Args:
           event_name: string, the name of the event to wait for.
           predicate: function, a function that takes an event (dictionary) and
                      returns a bool.
           timeout: float, default is 120s.
-  
+
         Returns:
           dictionary, the event that satisfies the predicate if received.
-  
+
         Raises:
           TimeoutError: raised if no event that satisfies the predicate is
                         received after timeout seconds.
