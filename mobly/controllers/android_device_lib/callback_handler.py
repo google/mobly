@@ -22,6 +22,7 @@ from mobly.controllers.android_device_lib import snippet_event
 # response message. Otherwise, the socket would timeout before the Rpc call
 # does, leaving both server and client in unknown states.
 MAX_TIMEOUT = 60 * 10
+DEFAULT_TIMEOUT = 120  # two minutes
 
 
 class Error(Exception):
@@ -61,7 +62,7 @@ class CallbackHandler(object):
         self.ret_value = ret_value
         self._method_name = method_name
 
-    def waitAndGet(self, event_name, timeout=None):
+    def waitAndGet(self, event_name, timeout=DEFAULT_TIMEOUT):
         """Blocks until an event of the specified name has been received and
         return the event, or timeout.
 
@@ -94,7 +95,7 @@ class CallbackHandler(object):
             raise
         return snippet_event.from_dict(raw_event)
 
-    def waitForEvent(self, event_name, predicate, timeout=120):
+    def waitForEvent(self, event_name, predicate, timeout=DEFAULT_TIMEOUT):
         """Wait for an event of a specific name that satisfies the predicate.
 
         This call will block until the expected event has been received or time
