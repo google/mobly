@@ -379,7 +379,7 @@ class AndroidDevice(object):
         self._snippet_clients = {}
 
     def __repr__(self):
-        return "AndroidDevice(%s)" % self.serial
+        return "<AndroidDevice|%s>" % self.debug_tag
 
     @property
     def debug_tag(self):

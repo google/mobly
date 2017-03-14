@@ -429,13 +429,13 @@ class AndroidDeviceTest(unittest.TestCase):
         try:
             raise android_device.DeviceError(ad, 'Something')
         except android_device.DeviceError as e:
-            self.assertEqual('[AndroidDevice|1] Something', str(e))
+            self.assertEqual('<AndroidDevice|1> Something', str(e))
         # Verify that debug tag's setter updates the debug prefix correctly.
         ad.debug_tag = 'Mememe'
         try:
             raise android_device.DeviceError(ad, 'Something')
         except android_device.DeviceError as e:
-            self.assertEqual('[AndroidDevice|Mememe] Something', str(e))
+            self.assertEqual('<AndroidDevice|Mememe> Something', str(e))
         # Verify that repr is changed correctly.
         try:
             raise Exception(ad, 'Something')
