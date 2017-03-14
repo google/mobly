@@ -56,7 +56,7 @@ UNKNOWN_UID = -1
 _SOCKET_CONNECTION_TIMEOUT = 60
 
 # Maximum time to wait for a response message on the socket.
-_SOCKET_READ_TIMEOUT = 60 * 6
+_SOCKET_READ_TIMEOUT = 60 * 10
 
 
 class Error(Exception):

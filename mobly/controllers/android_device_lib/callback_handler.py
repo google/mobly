@@ -21,7 +21,7 @@ from mobly.controllers.android_device_lib import snippet_event
 # The max timeout cannot be larger than the max time the socket waits for a
 # response message. Otherwise, the socket would timeout before the Rpc call
 # does, leaving both server and client in unknown states.
-MAX_TIMEOUT = 60 * 6
+MAX_TIMEOUT = 60 * 10
 
 
 class Error(Exception):
