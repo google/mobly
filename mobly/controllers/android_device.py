@@ -52,11 +52,9 @@ class Error(signals.ControllerError):
 
 class DeviceError(Error):
     """Raised for errors from within an AndroidDevice object."""
-    def __init__(self, *args):
-        if isinstance(args[0], AndroidDevice):
-            new_args = list(args[1:])
-            new_args[0] = _LOG_TAG_TEMPLATE % (args[0].debug_tag, args[1])
-        super(DeviceError, self).__init__(*new_args)
+    def __init__(self, ad, msg):
+        new_msg = _LOG_TAG_TEMPLATE % (repr(ad), msg)
+        super(DeviceError, self).__init__(new_msg)
 
 
 class SnippetError(DeviceError):
@@ -89,8 +87,8 @@ def create(configs):
 
     for ad in ads:
         if ad.serial not in connected_ads:
-            raise ad._error('Android device is specified in config but is not '
-                            'attached.')
+            raise DeviceError(ad, 'Android device is specified in config but '
+                              ' is not attached.')
     _start_services_on_ads(ads)
     return ads
 
@@ -683,7 +681,7 @@ class AndroidDevice(object):
                 period.
         """
         if not self.adb_logcat_file_path:
-            raise DeviceError(self, 
+            raise DeviceError(self,
                 'Attempting to cat adb log when none has been collected.')
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
