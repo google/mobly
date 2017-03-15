@@ -79,6 +79,29 @@ class AndroidDeviceTest(unittest.TestCase):
         for actual, expected in zip(actual_ads, mock_android_device.get_mock_ads(5)):
             self.assertEqual(actual.serial, expected.serial)
 
+    @mock.patch.object(android_device,
+                       "get_instances",
+                       new=mock_android_device.get_instances)
+    @mock.patch.object(android_device,
+                       "list_adb_devices",
+                       new=mock_android_device.list_adb_devices)
+    def test_create_with_string_list(self):
+        string_list = [u'1', '2']
+        actual_ads = android_device.create(string_list)
+        for actual_ad, expected_serial in zip(actual_ads, ['1', '2']):
+            self.assertEqual(actual_ad.serial, expected_serial)
+
+    @mock.patch.object(android_device,
+                       "get_instances_with_configs",
+                       new=mock_android_device.get_instances_with_configs)
+    @mock.patch.object(android_device,
+                       "list_adb_devices",
+                       new=mock_android_device.list_adb_devices)
+    def test_create_with_dict_list(self):
+        string_list = [{'serial': '1'}, {'serial': '2'}]
+        actual_ads = android_device.create(string_list)
+        for actual_ad, expected_serial in zip(actual_ads, ['1', '2']):
+            self.assertEqual(actual_ad.serial, expected_serial)
     def test_create_with_empty_config(self):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
         with self.assertRaisesRegexp(android_device.Error,
@@ -91,15 +114,21 @@ class AndroidDeviceTest(unittest.TestCase):
                                      expected_msg):
             android_device.create("HAHA")
 
+    def test_create_with_no_valid_config(self):
+        expected_msg = "No valid config found in: .*"
+        with self.assertRaisesRegexp(android_device.Error,
+                                     expected_msg):
+            android_device.create([1])
+
     def test_get_device_success_with_serial(self):
         ads = mock_android_device.get_mock_ads(5)
-        expected_serial = 0
+        expected_serial = '0'
         ad = android_device.get_device(ads, serial=expected_serial)
         self.assertEqual(ad.serial, expected_serial)
 
     def test_get_device_success_with_serial_and_extra_field(self):
         ads = mock_android_device.get_mock_ads(5)
-        expected_serial = 1
+        expected_serial = '1'
         expected_h_port = 5555
         ads[1].h_port = expected_h_port
         ad = android_device.get_device(ads,
@@ -119,7 +148,7 @@ class AndroidDeviceTest(unittest.TestCase):
     def test_get_device_too_many_matches(self):
         ads = mock_android_device.get_mock_ads(5)
         target_serial = ads[1].serial = ads[0].serial
-        expected_msg = "More than one device matched: \[0, 0\]"
+        expected_msg = "More than one device matched: \['0', '0'\]"
         with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
             android_device.get_device(ads, serial=target_serial)

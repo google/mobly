@@ -86,12 +86,12 @@ def create(configs):
         # Configs is a list of strings representing serials.
         ads = get_instances(configs)
     else:
-        raise Error("No valid config found in: %s" configs)
+        raise Error("No valid config found in: %s" % configs)
     connected_ads = list_adb_devices()
 
     for ad in ads:
         if ad.serial not in connected_ads:
-            raise DeviceError(ad, 'Android device is specified in config but '
+            raise DeviceError(ad, 'Android device is specified in config but'
                               ' is not attached.')
     _start_services_on_ads(ads)
     return ads
