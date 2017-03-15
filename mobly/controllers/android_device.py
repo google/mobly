@@ -16,6 +16,7 @@
 
 from builtins import str
 from builtins import open
+from past.builtins import basestring
 
 import contextlib
 import logging
@@ -78,17 +79,19 @@ def create(configs):
         ads = get_all_instances()
     elif not isinstance(configs, list):
         raise Error(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
-    elif isinstance(configs[0], str):
-        # Configs is a list of serials.
-        ads = get_instances(configs)
-    else:
+    elif isinstance(configs[0], dict):
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs)
+    elif isinstance(configs[0], basestring):
+        # Configs is a list of strings representing serials.
+        ads = get_instances(configs)
+    else:
+        raise Error("No valid config found in: %s" % configs)
     connected_ads = list_adb_devices()
 
     for ad in ads:
         if ad.serial not in connected_ads:
-            raise DeviceError(ad, 'Android device is specified in config but '
+            raise DeviceError(ad, 'Android device is specified in config but'
                               ' is not attached.')
     _start_services_on_ads(ads)
     return ads
