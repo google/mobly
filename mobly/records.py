@@ -13,13 +13,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """This module is where all the record definitions and record containers live.
 """
 
 import json
 import logging
 import pprint
+import sys
+import traceback
 
 from mobly import signals
 from mobly import utils
@@ -41,6 +42,7 @@ class TestResultEnums(object):
     RECORD_EXTRAS = 'Extras'
     RECORD_EXTRA_ERRORS = 'Extra Errors'
     RECORD_DETAILS = 'Details'
+    RECORD_STACKTRACE = 'Stacktrace'
     TEST_RESULT_PASS = 'PASS'
     TEST_RESULT_FAIL = 'FAIL'
     TEST_RESULT_SKIP = 'SKIP'
@@ -69,6 +71,7 @@ class TestResultRecord(object):
         self.result = None
         self.extras = None
         self.details = None
+        self.stacktrace = None
         self.extra_errors = {}
 
     def test_begin(self):
@@ -93,9 +96,15 @@ class TestResultRecord(object):
             self.result = TestResultEnums.TEST_RESULT_ERROR
         if isinstance(e, signals.TestSignal):
             self.details = e.details
+            _, _, exc_traceback = sys.exc_info()
+            if exc_traceback:
+                self.stacktrace = ''.join(traceback.format_tb(exc_traceback))
             self.extras = e.extras
-        elif e:
+        elif isinstance(e, Exception):
             self.details = str(e)
+            _, _, exc_traceback = sys.exc_info()
+            if exc_traceback:
+                self.stacktrace = ''.join(traceback.format_tb(exc_traceback))
 
     def test_pass(self, e=None):
         """To mark the test as passed in this record.
@@ -174,6 +183,7 @@ class TestResultRecord(object):
         d[TestResultEnums.RECORD_EXTRAS] = self.extras
         d[TestResultEnums.RECORD_DETAILS] = self.details
         d[TestResultEnums.RECORD_EXTRA_ERRORS] = self.extra_errors
+        d[TestResultEnums.RECORD_STACKTRACE] = self.stacktrace
         return d
 
     def json_str(self):
