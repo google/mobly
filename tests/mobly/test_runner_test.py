@@ -46,10 +46,9 @@ class TestRunnerTest(unittest.TestCase):
         self.base_mock_test_config.test_bed_name = 'SampleTestBed'
         self.base_mock_test_config.controller_configs = {}
         self.base_mock_test_config.user_params = {
-                'cli_args': None,
-                'icecream': 42,
-                'extra_param': 'haha'
-            }
+            'icecream': 42,
+            'extra_param': 'haha'
+        }
         self.base_mock_test_config.log_path = self.tmp_dir
         self.mock_run_list = [('SampleTest', None)]
 
@@ -66,8 +65,9 @@ class TestRunnerTest(unittest.TestCase):
     def test_register_controller_no_config_no_register(self):
         tr = test_runner.TestRunner(self.base_mock_test_config,
                                     self.mock_run_list)
-        self.assertIsNone(tr.register_controller(mock_controller,
-                                                 required=False))
+        self.assertIsNone(
+            tr.register_controller(
+                mock_controller, required=False))
 
     def test_register_controller_dup_register(self):
         """Verifies correctness of registration, internal tally of controllers
@@ -137,16 +137,21 @@ class TestRunnerTest(unittest.TestCase):
         """
         mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        my_config = [{'serial': 'xxxx',
-                      'magic': 'Magic1'}, {'serial': 'xxxx',
-                                           'magic': 'Magic2'}]
+        my_config = [{
+            'serial': 'xxxx',
+            'magic': 'Magic1'
+        }, {
+            'serial': 'xxxx',
+            'magic': 'Magic2'
+        }]
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
         tr = test_runner.TestRunner(mock_test_config, [('IntegrationTest',
                                                         None)])
         tr.run([IntegrationTest.IntegrationTest])
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)
-        self.assertTrue(mock_test_config.controller_configs[mock_ctrlr_config_name][0])
+        self.assertTrue(
+            mock_test_config.controller_configs[mock_ctrlr_config_name][0])
         tr.run([IntegrationTest.IntegrationTest])
         tr.stop()
         self.assertFalse(tr.controller_registry)
@@ -155,20 +160,37 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Requested'], 2)
         self.assertEqual(results['Executed'], 2)
         self.assertEqual(results['Passed'], 2)
-        expected_info = {'MagicDevice': [{'MyMagic': {'magic': 'Magic1'}},
-                                         {'MyMagic': {'magic': 'Magic2'}}]}
+        expected_info = {
+            'MagicDevice': [{
+                'MyMagic': {
+                    'magic': 'Magic1'
+                }
+            }, {
+                'MyMagic': {
+                    'magic': 'Magic2'
+                }
+            }]
+        }
         self.assertEqual(tr.results.controller_info, expected_info)
 
-    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
-                return_value=mock_android_device.MockAdbProxy(1))
-    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-                return_value=mock_android_device.MockFastbootProxy(1))
-    @mock.patch('mobly.controllers.android_device.list_adb_devices',
-                return_value=['1'])
-    @mock.patch('mobly.controllers.android_device.get_all_instances',
-                return_value=mock_android_device.get_mock_ads(1))
-    def test_run_two_test_classes(self, mock_get_all, mock_list_adb,
-                                  mock_fastboot, mock_adb,):
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device.list_adb_devices',
+        return_value=['1'])
+    @mock.patch(
+        'mobly.controllers.android_device.get_all_instances',
+        return_value=mock_android_device.get_mock_ads(1))
+    def test_run_two_test_classes(
+            self,
+            mock_get_all,
+            mock_list_adb,
+            mock_fastboot,
+            mock_adb, ):
         """Verifies that runing more than one test class in one test run works
         proerly.
 
@@ -177,17 +199,21 @@ class TestRunnerTest(unittest.TestCase):
         """
         mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        my_config = [{'serial': 'xxxx', 'magic': 'Magic1'},
-                     {'serial': 'xxxx', 'magic': 'Magic2'}]
+        my_config = [{
+            'serial': 'xxxx',
+            'magic': 'Magic1'
+        }, {
+            'serial': 'xxxx',
+            'magic': 'Magic2'
+        }]
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
-        mock_test_config.controller_configs['AndroidDevice'] = [
-            {'serial': '1'}
-        ]
+        mock_test_config.controller_configs['AndroidDevice'] = [{
+            'serial': '1'
+        }]
         tr = test_runner.TestRunner(mock_test_config,
                                     [('Integration2Test', None),
                                      ('IntegrationTest', None)])
-        tr.run([IntegrationTest.IntegrationTest,
-                Integration2Test])
+        tr.run([IntegrationTest.IntegrationTest, Integration2Test])
         tr.stop()
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)

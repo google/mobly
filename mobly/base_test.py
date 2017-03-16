@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import inspect
+import logging
 import os
 
 from mobly import asserts
@@ -42,6 +43,10 @@ class BaseTestClass(object):
     Most attributes of this class are set at runtime based on the configuration
     provided.
 
+    The default logger in logging module is set up for each test run. If you
+    want to log info to the test run output file, use `logging` directly, like
+    `logging.info`.
+
     Attributes:
         tests: A list of strings, each representing a test case name.
         TAG: A string used to refer to a test class. Default is the test class
@@ -60,8 +65,6 @@ class BaseTestClass(object):
                      the test logic.
         register_controller: func, used by test classes to register
                              controller modules.
-        log: a logger object. (deprecated)
-        cli_args: any cli args passed in. (deprecated)
     """
 
     TAG = None
@@ -86,8 +89,6 @@ class BaseTestClass(object):
         self.test_bed_name = configs.test_bed_name
         self.user_params = configs.user_params
         self.register_controller = configs.register_controller
-        self.log = configs.log
-        self.cli_args = configs.cli_args
         self.results = records.TestResult()
         self.current_test_name = None
 
@@ -144,8 +145,8 @@ class BaseTestClass(object):
             if name in self.user_params:
                 setattr(self, name, self.user_params[name])
             else:
-                self.log.warning('Missing optional user param "%s" in '
-                                 'configuration, continue.', name)
+                logging.warning('Missing optional user param "%s" in '
+                                'configuration, continue.', name)
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
@@ -223,9 +224,9 @@ class BaseTestClass(object):
         """
         test_name = record.test_name
         if record.details:
-            self.log.error(record.details)
+            logging.error(record.details)
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
+        logging.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.on_fail(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
@@ -250,8 +251,8 @@ class BaseTestClass(object):
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
         msg = record.details
         if msg:
-            self.log.info(msg)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
+            logging.info(msg)
+        logging.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         self.on_pass(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
@@ -274,8 +275,8 @@ class BaseTestClass(object):
         """
         test_name = record.test_name
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        self.log.info(RESULT_LINE_TEMPLATE, test_name, record.result)
-        self.log.info('Reason to skip: %s', record.details)
+        logging.info(RESULT_LINE_TEMPLATE, test_name, record.result)
+        logging.info('Reason to skip: %s', record.details)
         self.on_skip(test_name, begin_time)
 
     def on_skip(self, test_name, begin_time):
@@ -307,11 +308,11 @@ class BaseTestClass(object):
         except signals.TestAbortAll:
             raise
         except Exception as e:
-            self.log.exception('Exception happened when executing %s for %s.',
-                               func.__name__, self.current_test_name)
+            logging.exception('Exception happened when executing %s for %s.',
+                              func.__name__, self.current_test_name)
             tr_record.add_error(func.__name__, e)
 
-    def exec_one_testcase(self, test_name, test_func, args, **kwargs):
+    def exec_one_testcase(self, test_name, test_func, args=None, **kwargs):
         """Executes one test case and update test results.
 
         Executes one test case, create a records.TestResultRecord object with
@@ -327,7 +328,7 @@ class BaseTestClass(object):
         is_generate_trigger = False
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
-        self.log.info('%s %s', TEST_CASE_TOKEN, test_name)
+        logging.info('%s %s', TEST_CASE_TOKEN, test_name)
         try:
             try:
                 self._setup_test(test_name)
@@ -341,11 +342,11 @@ class BaseTestClass(object):
                 except signals.TestAbortAll:
                     raise
                 except Exception as e:
-                    self.log.exception(e)
+                    logging.exception(e)
                     tr_record.add_error('teardown_test', e)
                     self._exec_procedure_func(self._on_fail, tr_record)
         except (signals.TestFailure, AssertionError) as e:
-            self.log.exception(e)
+            logging.exception(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
@@ -365,7 +366,7 @@ class BaseTestClass(object):
             is_generate_trigger = True
             self.results.requested.remove(test_name)
         except Exception as e:
-            self.log.exception(e)
+            logging.exception(e)
             # Exception happened during test.
             tr_record.test_error(e)
             self._exec_procedure_func(self._on_fail, tr_record)
@@ -417,8 +418,8 @@ class BaseTestClass(object):
                 try:
                     test_name = name_func(s, *args, **kwargs)
                 except:
-                    self.log.exception('Failed to get test name from test_func.'
-                                       ' Fall back to default %s.', test_name)
+                    logging.exception('Failed to get test name from test_func.'
+                                      ' Fall back to default %s.', test_name)
             self.results.requested.append(test_name)
             if len(test_name) > utils.MAX_FILENAME_LEN:
                 test_name = test_name[:utils.MAX_FILENAME_LEN]
@@ -447,8 +448,8 @@ class BaseTestClass(object):
         except signals.TestAbortAll:
             raise
         except:
-            self.log.exception('Exception happened when executing %s in %s.',
-                               func.__name__, self.TAG)
+            logging.exception('Exception happened when executing %s in %s.',
+                              func.__name__, self.TAG)
 
     def _get_all_test_names(self):
         """Finds all the function names that match the test case naming
@@ -510,7 +511,7 @@ class BaseTestClass(object):
         Returns:
             The test results object of this class.
         """
-        self.log.info('==========> %s <==========', self.TAG)
+        logging.info('==========> %s <==========', self.TAG)
         # Devise the actual test cases to run in the test class.
         if not test_names:
             if self.tests:
@@ -528,7 +529,7 @@ class BaseTestClass(object):
         try:
             self._setup_class()
         except Exception as e:
-            self.log.exception('Failed to setup %s.', self.TAG)
+            logging.exception('Failed to setup %s.', self.TAG)
             class_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, class_record)
             self._safe_exec_func(self.teardown_class)
@@ -537,7 +538,7 @@ class BaseTestClass(object):
         # Run tests in order.
         try:
             for test_name, test_func in tests:
-                self.exec_one_testcase(test_name, test_func, self.cli_args)
+                self.exec_one_testcase(test_name, test_func)
             return self.results
         except signals.TestAbortClass:
             return self.results
@@ -548,8 +549,8 @@ class BaseTestClass(object):
             raise e
         finally:
             self._safe_exec_func(self.teardown_class)
-            self.log.info('Summary for test class %s: %s', self.TAG,
-                          self.results.summary_str())
+            logging.info('Summary for test class %s: %s', self.TAG,
+                         self.results.summary_str())
 
     def clean_up(self):
         """A function that is executed upon completion of all tests cases

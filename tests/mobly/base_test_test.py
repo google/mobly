@@ -30,19 +30,19 @@ MSG_UNEXPECTED_EXCEPTION = "Unexpected exception!"
 
 MOCK_EXTRA = {"key": "value", "answer_to_everything": 42}
 
+
 def never_call():
     raise Exception(MSG_UNEXPECTED_EXCEPTION)
+
 
 class SomeError(Exception):
     """A custom exception class used for tests in this module."""
 
-class BaseTestTest(unittest.TestCase):
 
+class BaseTestTest(unittest.TestCase):
     def setUp(self):
         self.mock_test_cls_configs = config_parser.TestRunConfig()
-        self.mock_test_cls_configs.log = mock.MagicMock()
         self.mock_test_cls_configs.log_path = '/tmp'
-        self.mock_test_cls_configs.cli_args = None
         self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
         self.mock_test_cls_configs.reporter = mock.MagicMock()
         self.mock_test_name = "test_something"
@@ -50,9 +50,10 @@ class BaseTestTest(unittest.TestCase):
     def test_current_test_case_name(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.assert_true(self.current_test_name == "test_func", ("Got "
-                                 "unexpected test name %s."
-                                 ) % self.current_test_name)
+                asserts.assert_true(self.current_test_name == "test_func", (
+                    "Got "
+                    "unexpected test name %s.") % self.current_test_name)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.passed[0]
@@ -64,12 +65,15 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):
                 super(MockBaseTest, self).__init__(controllers)
-                self.tests = ("test_something",)
+                self.tests = ("test_something", )
+
             def test_something(self):
                 pass
+
             def test_never(self):
                 # This should not execute it's not on default test list.
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.passed[0]
@@ -79,29 +83,34 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):
                 super(MockBaseTest, self).__init__(controllers)
-                self.tests = ("not_a_test_something",)
+                self.tests = ("not_a_test_something", )
+
             def not_a_test_something(self):
                 pass
+
             def test_never(self):
                 # This should not execute it's not on default test list.
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         expected_msg = ("Test case name not_a_test_something does not follow "
                         "naming convention test_\*, abort.")
-        with self.assertRaisesRegexp(base_test.Error,
-                                     expected_msg):
+        with self.assertRaisesRegexp(base_test.Error, expected_msg):
             bt_cls.run()
 
     def test_cli_test_selection_override_self_tests_list(self):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):
                 super(MockBaseTest, self).__init__(controllers)
-                self.tests = ("test_never",)
+                self.tests = ("test_never", )
+
             def test_something(self):
                 pass
+
             def test_never(self):
                 # This should not execute it's not selected by cmd line input.
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_something"])
         actual_record = bt_cls.results.passed[0]
@@ -111,12 +120,15 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):
                 super(MockBaseTest, self).__init__(controllers)
-                self.tests = ("not_a_test_something",)
+                self.tests = ("not_a_test_something", )
+
             def not_a_test_something(self):
                 pass
+
             def test_never(self):
                 # This should not execute it's not selected by cmd line input.
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         expected_msg = ("Test case name not_a_test_something does not follow "
                         "naming convention test_*, abort.")
@@ -127,10 +139,12 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def test_something(self):
                 pass
+
             def not_a_test(self):
                 # This should not execute its name doesn't follow test case
                 # naming convention.
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_something"])
         actual_record = bt_cls.results.passed[0]
@@ -139,6 +153,7 @@ class BaseTestTest(unittest.TestCase):
     def test_missing_requested_test_func(self):
         class MockBaseTest(base_test.BaseTestClass):
             pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         expected_msg = ".* does not have test case test_something"
         with self.assertRaisesRegexp(base_test.Error, expected_msg):
@@ -147,14 +162,18 @@ class BaseTestTest(unittest.TestCase):
 
     def test_setup_class_fail_by_exception(self):
         call_check = mock.MagicMock()
+
         class MockBaseTest(base_test.BaseTestClass):
             def setup_class(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
                 # This should not execute because setup_class failed.
                 never_call()
+
             def on_fail(self, test_name, begin_time):
                 call_check("haha")
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
@@ -170,9 +189,11 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def setup_test(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
                 # This should not execute because setup_test failed.
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_something"])
         actual_record = bt_cls.results.error[0]
@@ -187,9 +208,11 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def setup_test(self):
                 raise signals.TestFailure(MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
                 # This should not execute because setup_test failed.
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_something"])
         actual_record = bt_cls.results.failed[0]
@@ -204,8 +227,10 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
                 asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
                 pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -220,8 +245,10 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
                 pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -236,11 +263,14 @@ class BaseTestTest(unittest.TestCase):
 
     def test_teardown_test_executed_if_test_pass(self):
         my_mock = mock.MagicMock()
+
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
                 my_mock("teardown_test")
+
             def test_something(self):
                 pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.passed[0]
@@ -254,13 +284,17 @@ class BaseTestTest(unittest.TestCase):
 
     def test_teardown_test_executed_if_setup_test_fails(self):
         my_mock = mock.MagicMock()
+
         class MockBaseTest(base_test.BaseTestClass):
             def setup_test(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
+
             def teardown_test(self):
                 my_mock("teardown_test")
+
             def test_something(self):
                 pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -274,11 +308,14 @@ class BaseTestTest(unittest.TestCase):
 
     def test_teardown_test_executed_if_test_fails(self):
         my_mock = mock.MagicMock()
+
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
                 my_mock("teardown_test")
+
             def test_something(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -292,13 +329,17 @@ class BaseTestTest(unittest.TestCase):
 
     def test_on_fail_executed_if_teardown_test_fails(self):
         my_mock = mock.MagicMock()
+
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self, test_name, begin_time):
                 my_mock("on_fail")
+
             def teardown_test(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
                 pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         my_mock.assert_called_once_with("on_fail")
@@ -312,11 +353,14 @@ class BaseTestTest(unittest.TestCase):
 
     def test_on_fail_executed_if_test_fails(self):
         my_mock = mock.MagicMock()
+
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self, test_name, begin_time):
                 my_mock("on_fail")
+
             def test_something(self):
                 asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         my_mock.assert_called_once_with("on_fail")
@@ -330,13 +374,17 @@ class BaseTestTest(unittest.TestCase):
 
     def test_on_fail_executed_if_test_setup_fails_by_exception(self):
         my_mock = mock.MagicMock()
+
         class MockBaseTest(base_test.BaseTestClass):
             def setup_test(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
+
             def on_fail(self, test_name, begin_time):
                 my_mock("on_fail")
+
             def test_something(self):
                 pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         my_mock.assert_called_once_with("on_fail")
@@ -352,8 +400,10 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self):
                 pass
+
             def test_something(self):
                 asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -367,11 +417,14 @@ class BaseTestTest(unittest.TestCase):
 
     def test_failure_in_procedure_functions_is_recorded(self):
         expected_msg = "Something failed in on_pass."
+
         class MockBaseTest(base_test.BaseTestClass):
             def on_pass(self, test_name, begin_time):
                 raise Exception(expected_msg)
+
             def test_something(self):
                 asserts.explicit_pass(MSG_EXPECTED_EXCEPTION)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -388,8 +441,10 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
                 asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
                 raise Exception("Test Body Exception.")
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -405,11 +460,14 @@ class BaseTestTest(unittest.TestCase):
     def test_explicit_pass_but_teardown_test_raises_an_exception(self):
         """Test record result should be marked as ERROR as opposed to PASS.
         """
+
         class MockBaseTest(base_test.BaseTestClass):
             def teardown_test(self):
                 asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
                 asserts.explicit_pass("Test Passed!")
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -426,8 +484,11 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def on_pass(self, test_name, begin_time):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
-                asserts.explicit_pass(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                asserts.explicit_pass(
+                    MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -444,8 +505,10 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self, test_name, begin_time):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
+
             def test_something(self):
                 asserts.fail(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -463,15 +526,17 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def test_1(self):
                 pass
+
             def test_2(self):
                 asserts.abort_class(MSG_EXPECTED_EXCEPTION)
                 never_call()
+
             def test_3(self):
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_1", "test_2", "test_3"])
-        self.assertEqual(bt_cls.results.passed[0].test_name,
-                         "test_1")
+        self.assertEqual(bt_cls.results.passed[0].test_name, "test_1")
         self.assertEqual(bt_cls.results.failed[0].details,
                          MSG_EXPECTED_EXCEPTION)
         self.assertEqual(bt_cls.results.summary_str(),
@@ -483,6 +548,7 @@ class BaseTestTest(unittest.TestCase):
             def test_func(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.error[0]
@@ -495,6 +561,7 @@ class BaseTestTest(unittest.TestCase):
             def test_func(self):
                 asserts.fail(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.failed[0]
@@ -505,9 +572,10 @@ class BaseTestTest(unittest.TestCase):
     def test_assert_true(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.assert_true(False, MSG_EXPECTED_EXCEPTION,
-                                 extras=MOCK_EXTRA)
+                asserts.assert_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.failed[0]
@@ -519,6 +587,7 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
                 asserts.assert_equal(1, 1, extras=MOCK_EXTRA)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.passed[0]
@@ -530,6 +599,7 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
                 asserts.assert_equal(1, 2, extras=MOCK_EXTRA)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
@@ -540,8 +610,9 @@ class BaseTestTest(unittest.TestCase):
     def test_assert_equal_fail_with_msg(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.assert_equal(1, 2, msg=MSG_EXPECTED_EXCEPTION,
-                                     extras=MOCK_EXTRA)
+                asserts.assert_equal(
+                    1, 2, msg=MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
@@ -555,6 +626,7 @@ class BaseTestTest(unittest.TestCase):
             def test_func(self):
                 with asserts.assert_raises(SomeError, extras=MOCK_EXTRA):
                     raise SomeError(MSG_EXPECTED_EXCEPTION)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.passed[0]
@@ -567,6 +639,7 @@ class BaseTestTest(unittest.TestCase):
             def test_func(self):
                 with asserts.assert_raises(SomeError, extras=MOCK_EXTRA):
                     pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
@@ -579,6 +652,7 @@ class BaseTestTest(unittest.TestCase):
             def test_func(self):
                 with asserts.assert_raises(SomeError, extras=MOCK_EXTRA):
                     raise AttributeError(MSG_UNEXPECTED_EXCEPTION)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -594,6 +668,7 @@ class BaseTestTest(unittest.TestCase):
                         expected_regex=MSG_EXPECTED_EXCEPTION,
                         extras=MOCK_EXTRA):
                     raise SomeError(MSG_EXPECTED_EXCEPTION)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.passed[0]
@@ -609,6 +684,7 @@ class BaseTestTest(unittest.TestCase):
                         expected_regex=MSG_EXPECTED_EXCEPTION,
                         extras=MOCK_EXTRA):
                     pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
@@ -618,6 +694,7 @@ class BaseTestTest(unittest.TestCase):
 
     def test_assert_raises_fail_with_wrong_regex(self):
         wrong_msg = "ha"
+
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
                 with asserts.assert_raises_regex(
@@ -625,6 +702,7 @@ class BaseTestTest(unittest.TestCase):
                         expected_regex=MSG_EXPECTED_EXCEPTION,
                         extras=MOCK_EXTRA):
                     raise SomeError(wrong_msg)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
@@ -642,6 +720,7 @@ class BaseTestTest(unittest.TestCase):
                         expected_regex=MSG_EXPECTED_EXCEPTION,
                         extras=MOCK_EXTRA):
                     raise AttributeError(MSG_UNEXPECTED_EXCEPTION)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
@@ -652,9 +731,10 @@ class BaseTestTest(unittest.TestCase):
     def test_explicit_pass(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.explicit_pass(MSG_EXPECTED_EXCEPTION,
-                                      extras=MOCK_EXTRA)
+                asserts.explicit_pass(
+                    MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.passed[0]
@@ -666,6 +746,7 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
                 pass
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.passed[0]
@@ -678,6 +759,7 @@ class BaseTestTest(unittest.TestCase):
             def test_func(self):
                 asserts.skip(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.skipped[0]
@@ -689,9 +771,10 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
                 asserts.skip_if(False, MSG_UNEXPECTED_EXCEPTION)
-                asserts.skip_if(True, MSG_EXPECTED_EXCEPTION,
-                                extras=MOCK_EXTRA)
+                asserts.skip_if(
+                    True, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
                 never_call()
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.skipped[0]
@@ -750,7 +833,8 @@ class BaseTestTest(unittest.TestCase):
         thrown.
         """
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
-        bc.unpack_userparams(req_param_names=['a_kwarg_param'], a_kwarg_param="whatever")
+        bc.unpack_userparams(
+            req_param_names=['a_kwarg_param'], a_kwarg_param="whatever")
         self.assertEqual(bc.a_kwarg_param, "whatever")
 
     def test_unpack_userparams_optional_missing(self):
@@ -767,8 +851,8 @@ class BaseTestTest(unittest.TestCase):
         configs.user_params["something"] = 42
         configs.user_params["something_else"] = 53
         bc = base_test.BaseTestClass(configs)
-        bc.unpack_userparams(req_param_names=required,
-                             opt_param_names=optional)
+        bc.unpack_userparams(
+            req_param_names=required, opt_param_names=optional)
         self.assertEqual(bc.something, 42)
         self.assertEqual(bc.something_else, 53)
 
@@ -779,8 +863,7 @@ class BaseTestTest(unittest.TestCase):
         configs = self.mock_test_cls_configs.copy()
         configs.user_params[arg_name] = actual_arg_val
         bc = base_test.BaseTestClass(configs)
-        bc.unpack_userparams(opt_param_names=[arg_name],
-                             arg1=default_arg_val)
+        bc.unpack_userparams(opt_param_names=[arg_name], arg1=default_arg_val)
         self.assertEqual(bc.arg1, actual_arg_val)
 
     def test_unpack_userparams_default_None(self):
@@ -800,33 +883,35 @@ class BaseTestTest(unittest.TestCase):
         static_arg = "haha"
         static_kwarg = "meh"
         itrs = ["pass", "fail", "skip"]
+
         class MockBaseTest(base_test.BaseTestClass):
             def name_gen(self, setting, arg, special_arg=None):
                 return "test_%s_%s" % (setting, arg)
+
             def logic(self, setting, arg, special_arg=None):
-                asserts.assert_true(setting in itrs,
-                                 ("%s is not in acceptable settings range %s"
-                                 ) % (setting, itrs))
+                asserts.assert_true(setting in itrs, (
+                    "%s is not in acceptable settings range %s") %
+                                    (setting, itrs))
                 asserts.assert_true(arg == static_arg,
-                                 "Expected %s, got %s" % (static_arg, arg))
-                asserts.assert_true(arg == static_arg,
-                                 "Expected %s, got %s" % (static_kwarg,
-                                                          special_arg))
+                                    "Expected %s, got %s" % (static_arg, arg))
+                asserts.assert_true(arg == static_arg, "Expected %s, got %s" %
+                                    (static_kwarg, special_arg))
                 if setting == "pass":
-                    asserts.explicit_pass(MSG_EXPECTED_EXCEPTION,
-                                          extras=MOCK_EXTRA)
+                    asserts.explicit_pass(
+                        MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
                 elif setting == "fail":
                     asserts.fail(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
                 elif setting == "skip":
                     asserts.skip(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+
             @signals.generated_test
             def test_func(self):
                 self.run_generated_testcases(
                     test_func=self.logic,
                     settings=itrs,
-                    args=(static_arg,),
-                    name_func=self.name_gen
-                )
+                    args=(static_arg, ),
+                    name_func=self.name_gen)
+
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         self.assertEqual(len(bt_cls.results.requested), 3)
@@ -843,5 +928,6 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(fail_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(fail_record.extras, MOCK_EXTRA)
 
+
 if __name__ == "__main__":
-   unittest.main()
+    unittest.main()
