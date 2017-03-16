@@ -171,6 +171,7 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     log.addHandler(fh)
     log.log_path = log_path
     logging.log_path = log_path
+    return log
 
 
 def kill_test_logger(logger):
@@ -210,8 +211,12 @@ def setup_test_logger(log_path, prefix=None, filename=None):
         filename = get_log_file_timestamp()
     create_dir(log_path)
     logger = _setup_test_logger(log_path, prefix, filename)
-    create_latest_log_alias(log_path)
-
+    logger.info('Logs are being written to: "%s"', log_path)
+    if hasattr(os, 'symlink'):
+      create_latest_log_alias(log_path)
+    else:
+      logger.warn(
+          'Not creating "latest" log alias due to lack of OS symlink support')
 
 def normalize_log_line_timestamp(log_line_timestamp):
     """Replace special characters in log line timestamp with normal characters.
