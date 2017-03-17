@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
@@ -22,16 +24,16 @@ from tests.lib import mock_controller
 
 
 class IntegrationTest(base_test.BaseTestClass):
-
     def setup_class(self):
         self.register_controller(mock_controller)
 
     def test_hello_world(self):
         asserts.assert_equal(self.user_params["icecream"], 42)
         asserts.assert_equal(self.user_params["extra_param"], "haha")
-        self.log.info("This is a bare minimal test to make sure the basic MOBLY"
-                      "test flow works.")
+        logging.info("This is a bare minimal test to make sure the basic MOBLY"
+                     "test flow works.")
         asserts.explicit_pass("Hello World")
+
 
 if __name__ == "__main__":
     test_runner.main()

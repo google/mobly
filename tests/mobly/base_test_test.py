@@ -40,9 +40,7 @@ class BaseTestTest(unittest.TestCase):
 
     def setUp(self):
         self.mock_test_cls_configs = config_parser.TestRunConfig()
-        self.mock_test_cls_configs.log = mock.MagicMock()
         self.mock_test_cls_configs.log_path = '/tmp'
-        self.mock_test_cls_configs.cli_args = None
         self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
         self.mock_test_cls_configs.reporter = mock.MagicMock()
         self.mock_test_name = "test_something"

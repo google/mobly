@@ -186,7 +186,8 @@ def load_test_config_file(test_config_path, tb_filters=None):
         configs[keys.Config.key_testbed.value] = tbs
     mobly_params = configs.get(keys.Config.key_mobly_params.value, {})
     # Decide log path.
-    log_path = mobly_params.get(keys.Config.key_log_path.value, _DEFAULT_LOG_PATH)
+    log_path = mobly_params.get(keys.Config.key_log_path.value,
+                                _DEFAULT_LOG_PATH)
     if _ENV_MOBLY_LOGPATH in os.environ:
         log_path = os.environ[_ENV_MOBLY_LOGPATH]
     log_path = utils.abs_path(log_path)
@@ -197,7 +198,8 @@ def load_test_config_file(test_config_path, tb_filters=None):
     test_configs = []
     for original_bed_config in configs[keys.Config.key_testbed.value]:
         test_run_config = TestRunConfig()
-        test_run_config.test_bed_name = original_bed_config[keys.Config.key_testbed_name.value]
+        test_run_config.test_bed_name = original_bed_config[
+            keys.Config.key_testbed_name.value]
         test_run_config.log_path = log_path
         test_run_config.controller_configs = original_bed_config.get(
             keys.Config.key_testbed_controllers.value, {})
@@ -258,8 +260,6 @@ class TestRunConfig(object):
         user_params: dict, all the parameters to be consumed by the test logic.
         register_controller: func, used by test classes to register controller
                              modules.
-        log: a logger object.
-        cli_args: any cli args passed in.
     """
 
     def __init__(self):
@@ -268,10 +268,6 @@ class TestRunConfig(object):
         self.controller_configs = None
         self.user_params = None
         self.register_controller = None
-        # Below attributes are deprecated and kept for compatibility reasons
-        # for now.
-        self.log = None
-        self.cli_args = None
 
     def copy(self):
         """Returns a deep copy of the current config.

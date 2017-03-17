@@ -157,7 +157,8 @@ def execute_one_test_class(test_class, test_config, test_identifier):
     except signals.TestAbortAll:
         raise
     except:
-        logging.exception('Exception when executing %s.', tr.test_configs.test_bed_name)
+        logging.exception('Exception when executing %s.',
+                          tr.test_configs.test_bed_name)
     finally:
         tr.stop()
 
@@ -178,7 +179,6 @@ class TestRunner(object):
         self.id: A string that is the unique identifier of this test run.
         self.log_path: A string representing the path of the dir under which
                        all logs from this test run should be written.
-        self.log: The logger object used throughout this test run.
         self.controller_registry: A dictionary that holds the controller
                                   objects used in a test run.
         self.controller_destructors: A dictionary that holds the controller
@@ -213,7 +213,6 @@ class TestRunner(object):
                               start_time)
         self.log_path = os.path.abspath(l_path)
         logger.setup_test_logger(self.log_path, test_bed_name)
-        self.log = logging.getLogger()
         self.controller_registry = {}
         self.controller_destructors = {}
         self.run_list = run_list
@@ -327,18 +326,19 @@ class TestRunner(object):
                 raise signals.ControllerError(
                     'No corresponding config found for %s' %
                     module_config_name)
-            self.log.warning(
+            logging.warning(
                 'No corresponding config found for optional controller %s',
                 module_config_name)
             return None
         try:
             # Make a deep copy of the config to pass to the controller module,
             # in case the controller module modifies the config internally.
-            original_config = self.test_configs.controller_configs[module_config_name]
+            original_config = self.test_configs.controller_configs[
+                module_config_name]
             controller_config = copy.deepcopy(original_config)
             objects = create(controller_config)
         except:
-            self.log.exception(
+            logging.exception(
                 'Failed to initialize objects for controller %s, abort!',
                 module_config_name)
             raise
@@ -363,11 +363,11 @@ class TestRunner(object):
             self.results.add_controller_info(module_config_name,
                                              controller_info)
         else:
-            self.log.warning('No optional debug info found for controller %s. '
-                             'To provide it, implement get_info in this '
-                             'controller module.', module_config_name)
-        self.log.debug('Found %d objects for controller %s',
-                       len(objects), module_config_name)
+            logging.warning('No optional debug info found for controller %s. '
+                            'To provide it, implement get_info in this '
+                            'controller module.', module_config_name)
+        logging.debug('Found %d objects for controller %s',
+                      len(objects), module_config_name)
         destroy_func = module.destroy
         self.controller_destructors[module_ref_name] = destroy_func
         return objects
@@ -379,10 +379,10 @@ class TestRunner(object):
         """
         for name, destroy in self.controller_destructors.items():
             try:
-                self.log.debug('Destroying %s.', name)
+                logging.debug('Destroying %s.', name)
                 destroy(self.controller_registry[name])
             except:
-                self.log.exception('Exception occurred destroying %s.', name)
+                logging.exception('Exception occurred destroying %s.', name)
         self.controller_registry = {}
         self.controller_destructors = {}
 
@@ -392,8 +392,6 @@ class TestRunner(object):
         """
         self.test_run_info = self.test_configs.copy()
         self.test_run_info.log_path = self.log_path
-        self.test_run_info.log = self.log
-        self.test_run_info.cli_args = self.test_configs.cli_args
         self.test_run_info.register_controller = self.register_controller
 
     def _run_test_class(self, test_cls_name, test_cases=None):
@@ -445,19 +443,19 @@ class TestRunner(object):
         # Initialize controller objects and pack appropriate objects/params
         # to be passed to test class.
         self._parse_config()
-        self.log.debug('Executing run list %s.', self.run_list)
+        logging.debug('Executing run list %s.', self.run_list)
         for test_cls_name, test_case_names in self.run_list:
             if not self.running:
                 break
             if test_case_names:
-                self.log.debug('Executing test cases %s in test class %s.',
-                               test_case_names, test_cls_name)
+                logging.debug('Executing test cases %s in test class %s.',
+                              test_case_names, test_cls_name)
             else:
-                self.log.debug('Executing test class %s', test_cls_name)
+                logging.debug('Executing test class %s', test_cls_name)
             try:
                 self._run_test_class(test_cls_name, test_case_names)
             except signals.TestAbortAll as e:
-                self.log.warning(
+                logging.warning(
                     'Abort all subsequent test classes. Reason: %s', e)
                 raise
             finally:
@@ -473,8 +471,8 @@ class TestRunner(object):
             msg = '\nSummary for test run %s: %s\n' % (
                 self.id, self.results.summary_str())
             self._write_results_json_str()
-            self.log.info(msg.strip())
-            logger.kill_test_logger(self.log)
+            logging.info(msg.strip())
+            logger.kill_test_logger(logging.getLogger())
             self.running = False
 
     def _write_results_json_str(self):
