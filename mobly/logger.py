@@ -22,7 +22,7 @@ import os
 import re
 import sys
 
-from mobly.utils import create_dir
+from mobly import utils
 
 log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
 # The micro seconds are added by the format string above,
@@ -163,7 +163,7 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     # All the logs of this test class go into one directory
     if filename is None:
         filename = get_log_file_timestamp()
-        create_dir(log_path)
+        utils.create_dir(log_path)
     fh = logging.FileHandler(os.path.join(log_path, 'test_run_details.txt'))
     fh.setFormatter(f_formatter)
     fh.setLevel(logging.DEBUG)
@@ -193,9 +193,7 @@ def create_latest_log_alias(actual_path):
         actual_path: The source directory where the latest test run's logs are.
     """
     link_path = os.path.join(os.path.dirname(actual_path), 'latest')
-    if os.path.islink(link_path):
-        os.remove(link_path)
-    os.symlink(actual_path, link_path)
+    utils.create_alias(actual_path, link_path)
 
 
 def setup_test_logger(log_path, prefix=None, filename=None):
@@ -209,14 +207,11 @@ def setup_test_logger(log_path, prefix=None, filename=None):
     """
     if filename is None:
         filename = get_log_file_timestamp()
-    create_dir(log_path)
+    utils.create_dir(log_path)
     logger = _setup_test_logger(log_path, prefix, filename)
     logger.info('Logs are being written to: "%s"', log_path)
-    if hasattr(os, 'symlink'):
-      create_latest_log_alias(log_path)
-    else:
-      logger.warn(
-          'Not creating "latest" log alias due to lack of OS symlink support')
+    create_latest_log_alias(log_path)
+
 
 def normalize_log_line_timestamp(log_line_timestamp):
     """Replace special characters in log line timestamp with normal characters.
