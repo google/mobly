@@ -20,8 +20,8 @@ import datetime
 import functools
 import logging
 import os
+import platform
 import random
-import re
 import signal
 import socket
 import string
@@ -92,6 +92,30 @@ def create_dir(path):
     full_path = abs_path(path)
     if not os.path.exists(full_path):
         os.makedirs(full_path)
+
+
+def create_alias(target_path, alias_path):
+    """Creates an alias at 'alias_path' pointing to the file 'target_path'.
+
+    On Unix, this is implemented via symlink. On Windows, this is done by
+    creating a Windows shortcut file.
+
+    Args:
+        target_path: Destination path that the alias should point to.
+        alias_path: Path at which to create the new alias.
+    """
+    if platform.system() == 'Windows' and not alias_path.endswith('.lnk'):
+        alias_path += '.lnk'
+    if os.path.exists(alias_path):
+        os.remove(alias_path)
+    if platform.system() == 'Windows':
+        from win32com import client
+        shell = client.Dispatch('WScript.Shell')
+        shortcut = shell.CreateShortCut(alias_path)
+        shortcut.Targetpath = target_path
+        shortcut.save()
+    else:
+        os.symlink(target_path, alias_path)
 
 
 def get_current_epoch_time():
