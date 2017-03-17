@@ -100,7 +100,7 @@ def create_alias(target_path, link_path):
     On Unix, this is implemented via symlink. On Windows, this is done by
     creating a Windows shortcut file.
     """
-    if not link_path.endswith('.lnk'):
+    if platform.system() == 'Windows' and not link_path.endswith('.lnk'):
         link_path += '.lnk'
     if os.path.exists(link_path):
         os.remove(link_path)
