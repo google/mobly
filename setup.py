@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import platform
 import setuptools
 from setuptools.command import test
 import sys
@@ -29,9 +29,15 @@ install_requires = [
 ]
 
 if sys.version_info < (3, ):
-    install_requires.append('enum34')
-    # "futures" is needed for py2 compatibility and it only works in 2.7
-    install_requires.append('futures')
+    install_requires.extend([
+        'enum34',
+        # "futures" is needed for py2 compatibility and it only works in 2.7
+        'futures',
+    ])
+
+
+if platform.system() == 'Windows':
+    install_requires.append('pywin32')
 
 
 class PyTest(test.test):

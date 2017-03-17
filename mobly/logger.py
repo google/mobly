@@ -191,8 +191,8 @@ def create_latest_log_alias(actual_path):
     Args:
         actual_path: The source directory where the latest test run's logs are.
     """
-    link_path = os.path.join(os.path.dirname(actual_path), 'latest')
-    utils.create_alias(actual_path, link_path)
+    alias_path = os.path.join(os.path.dirname(actual_path), 'latest')
+    utils.create_alias(actual_path, alias_path)
 
 
 def setup_test_logger(log_path, prefix=None, filename=None):
@@ -208,7 +208,7 @@ def setup_test_logger(log_path, prefix=None, filename=None):
         filename = get_log_file_timestamp()
     utils.create_dir(log_path)
     _setup_test_logger(log_path, prefix, filename)
-    logging.info('Logs are being written to: "%s"', log_path)
+    logging.info('Test output folder: "%s"', log_path)
     create_latest_log_alias(log_path)
 
 
