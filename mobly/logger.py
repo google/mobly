@@ -171,7 +171,6 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     log.addHandler(fh)
     log.log_path = log_path
     logging.log_path = log_path
-    return log
 
 
 def kill_test_logger(logger):
@@ -208,8 +207,8 @@ def setup_test_logger(log_path, prefix=None, filename=None):
     if filename is None:
         filename = get_log_file_timestamp()
     utils.create_dir(log_path)
-    logger = _setup_test_logger(log_path, prefix, filename)
-    logger.info('Logs are being written to: "%s"', log_path)
+    _setup_test_logger(log_path, prefix, filename)
+    logging.info('Logs are being written to: "%s"', log_path)
     create_latest_log_alias(log_path)
 
 
