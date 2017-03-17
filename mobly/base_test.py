@@ -312,7 +312,7 @@ class BaseTestClass(object):
                               func.__name__, self.current_test_name)
             tr_record.add_error(func.__name__, e)
 
-    def exec_one_testcase(self, test_name, test_func, args=None, **kwargs):
+    def exec_one_testcase(self, test_name, test_func, args=(), **kwargs):
         """Executes one test case and update test results.
 
         Executes one test case, create a records.TestResultRecord object with
