@@ -667,10 +667,16 @@ class AndroidDevice(object):
             client.connect()
 
     def _terminate_jsonrpc_client(self, client):
-        client.closeSl4aSession()
-        client.close()
-        client.stop_app()
-        self.adb.forward('--remove tcp:%d' % client.host_port)
+        try:
+            client.closeSl4aSession()
+            client.close()
+            client.stop_app()
+        except:
+            self.log.exception('Failed to stop Rpc client for %s',
+                               client.app_name)
+        finally:
+            # Always clean up the adb port
+            self.adb.forward('--remove tcp:%d' % client.host_port)
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
         low = mobly_logger.logline_timestamp_comparator(begin_time,
@@ -809,7 +815,10 @@ class AndroidDevice(object):
             self._terminate_jsonrpc_client(self.sl4a)
             self.sl4a = None
         if self.ed:
-            self.ed.clean_up()
+            try:
+                self.ed.clean_up()
+            except:
+                self.log.exception('Failed to shutdown sl4a event dispatcher.')
             self.ed = None
 
     def run_iperf_client(self, server_host, extra_args=''):
