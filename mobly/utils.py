@@ -364,9 +364,20 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     logging.debug('Stop standing subprocess %d', pid)
     _assert_subprocess_running(proc)
     process = psutil.Process(pid)
+    success = True
     for child in process.children(recursive=True):
-        child.kill()
-    process.kill()
+        try:
+            child.kill()
+        except:
+            success = False
+            logging.exception('Failed to kill standing subprocess %d', child.pid)
+    try:
+        process.kill()
+    except:
+        success = False
+        logging.exception('Failed to kill standing subprocess %d', pid)
+    if not success:
+        raise Error('Some standing subprocess failed to die')
 
 
 def wait_for_standing_subprocess(proc, timeout=None):
