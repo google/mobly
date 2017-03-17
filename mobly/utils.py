@@ -359,6 +359,9 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
 
     Args:
         proc: Subprocess to terminate.
+
+    Throws:
+        Error: if the subprocess could not be stopped.
     """
     pid = proc.pid
     logging.debug('Stop standing subprocess %d', pid)
