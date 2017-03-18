@@ -21,6 +21,7 @@ import functools
 import logging
 import os
 import platform
+import psutil
 import random
 import signal
 import socket
@@ -340,9 +341,8 @@ def start_standing_subprocess(cmd, check_health_delay=0):
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        shell=True,
-        preexec_fn=os.setpgrp)
-    logging.debug("Start standing subprocess with cmd: %s", cmd)
+        shell=True)
+    logging.debug('Start standing subprocess with cmd: %s', cmd)
     if check_health_delay > 0:
         time.sleep(check_health_delay)
         _assert_subprocess_running(proc)
@@ -359,14 +359,28 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
 
     Args:
         proc: Subprocess to terminate.
+
+    Throws:
+        Error: if the subprocess could not be stopped.
     """
     pid = proc.pid
-    logging.debug("Stop standing subprocess %d", pid)
+    logging.debug('Stop standing subprocess %d', pid)
     _assert_subprocess_running(proc)
+    process = psutil.Process(pid)
+    success = True
+    for child in process.children(recursive=True):
+        try:
+            child.kill()
+        except:
+            success = False
+            logging.exception('Failed to kill standing subprocess %d', child.pid)
     try:
-        os.killpg(pid, kill_signal)
-    except PermissionError:
-        pass
+        process.kill()
+    except:
+        success = False
+        logging.exception('Failed to kill standing subprocess %d', pid)
+    if not success:
+        raise Error('Some standing subprocess failed to die')
 
 
 def wait_for_standing_subprocess(proc, timeout=None):
