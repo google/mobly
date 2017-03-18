@@ -15,12 +15,10 @@
 # limitations under the License.
 
 from builtins import str
+from past.builtins import basestring
 
 import logging
-import random
-import socket
 import subprocess
-import time
 
 
 class AdbError(Exception):
@@ -59,7 +57,7 @@ def list_occupied_adb_ports():
     return used_ports
 
 
-class AdbProxy():
+class AdbProxy(object):
     """Proxy class for ADB.
 
     For syntactic reasons, the '-' in adb commands need to be replaced with
@@ -71,19 +69,16 @@ class AdbProxy():
 
     def __init__(self, serial=''):
         self.serial = serial
-        if serial:
-            self.adb_str = 'adb -s %s' % serial
-        else:
-            self.adb_str = 'adb'
 
-    def _exec_cmd(self, cmd):
+    def _exec_cmd(self, cmd, shell=True):
         """Executes adb commands in a new shell.
 
         This is specific to executing adb binary because stderr is not a good
         indicator of cmd execution status.
 
         Args:
-            cmds: A string that is the adb command to execute.
+            cmd: string or list: command to execute.
+            shell: Whether to pass the command to the shell for interpretation.
 
         Returns:
             The output of the adb command run if exit code is 0.
@@ -92,7 +87,7 @@ class AdbProxy():
             AdbError is raised if the adb command exit code is not 0.
         """
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
         (out, err) = proc.communicate()
         ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s', cmd, out,
@@ -102,8 +97,22 @@ class AdbProxy():
         else:
             raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, arg_str):
-        return self._exec_cmd(' '.join((self.adb_str, name, arg_str)))
+    def _exec_adb_cmd(self, name, args):
+        # If args is a single string, pipe the whole thing to the shell.
+        # Otherwise it is an iterable of arguments which should be directly
+        # executed.
+        shell = isinstance(args, basestring)
+        if shell:
+            if self.serial:
+                adb_cmd = 'adb -s "%s" %s %s' % (self.serial, name, args)
+            else:
+                adb_cmd = 'adb %s %s' % (name, args)
+        else:
+            adb_cmd = ['adb']
+            if self.serial:
+                adb_cmd.extend(['-s', self.serial])
+            adb_cmd.extend([name] + args)
+        return self._exec_cmd(adb_cmd, shell=shell)
 
     def tcp_forward(self, host_port, device_port):
         """Starts tcp forwarding.
@@ -129,9 +138,17 @@ class AdbProxy():
         return self.shell('getprop %s' % prop_name).decode('utf-8').strip()
 
     def __getattr__(self, name):
-        def adb_call(*args):
+        def adb_call(args=None):
+            """Wrapper for an ADB call.
+
+            Args:
+                args: string (for shell) or list (no shell); command to execute.
+
+            Returns:
+                The output of the adb command run if exit code is 0.
+            """
+            args = args or ''
             clean_name = name.replace('_', '-')
-            arg_str = ' '.join(str(elem) for elem in args)
-            return self._exec_adb_cmd(clean_name, arg_str)
+            return self._exec_adb_cmd(clean_name, args)
 
         return adb_call
