@@ -438,7 +438,10 @@ class AndroidDevice(object):
         service_info['snippet_info'] = self._get_active_snippet_info()
         service_info['use_sl4a'] = self.sl4a is not None
         if self._adb_logcat_process:
-            self.stop_adb_logcat()
+            try:
+                self.stop_adb_logcat()
+            except:
+                self.log.exception('Failed to stop adb logcat.')
         self._terminate_sl4a()
         for name, client in self._snippet_clients.items():
             self._terminate_jsonrpc_client(client)
@@ -667,10 +670,16 @@ class AndroidDevice(object):
             client.connect()
 
     def _terminate_jsonrpc_client(self, client):
-        client.closeSl4aSession()
-        client.close()
-        client.stop_app()
-        self.adb.forward('--remove tcp:%d' % client.host_port)
+        try:
+            client.closeSl4aSession()
+            client.close()
+            client.stop_app()
+        except:
+            self.log.exception('Failed to stop Rpc client for %s.',
+                               client.app_name)
+        finally:
+            # Always clean up the adb port
+            self.adb.forward('--remove tcp:%d' % client.host_port)
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
         low = mobly_logger.logline_timestamp_comparator(begin_time,
@@ -755,6 +764,9 @@ class AndroidDevice(object):
 
     def stop_adb_logcat(self):
         """Stops the adb logcat collection subprocess.
+
+        Raises:
+            DeviceError: raised if there's no adb logcat collection going on.
         """
         if not self._adb_logcat_process:
             raise DeviceError(self, 'No ongoing adb logcat collection found.')
@@ -809,7 +821,10 @@ class AndroidDevice(object):
             self._terminate_jsonrpc_client(self.sl4a)
             self.sl4a = None
         if self.ed:
-            self.ed.clean_up()
+            try:
+                self.ed.clean_up()
+            except:
+                self.log.exception('Failed to shutdown sl4a event dispatcher.')
             self.ed = None
 
     def run_iperf_client(self, server_host, extra_args=''):
