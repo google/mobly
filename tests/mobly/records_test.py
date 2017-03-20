@@ -19,6 +19,7 @@ import unittest
 from mobly import records
 from mobly import signals
 
+
 class RecordsTest(unittest.TestCase):
     """This test class tests the implementation of classes in mobly.records.
     """
@@ -50,6 +51,7 @@ class RecordsTest(unittest.TestCase):
         d[records.TestResultEnums.RECORD_UID] = None
         d[records.TestResultEnums.RECORD_CLASS] = None
         d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
+        d[records.TestResultEnums.RECORD_STACKTRACE] = None
         actual_d = record.to_dict()
         self.assertDictEqual(actual_d, d)
         # Verify that these code paths do not cause crashes and yield non-empty
@@ -57,95 +59,126 @@ class RecordsTest(unittest.TestCase):
         self.assertTrue(str(record), "str of the record should not be empty.")
         self.assertTrue(repr(record), "the record's repr shouldn't be empty.")
         self.assertTrue(record.json_str(), ("json str of the record should "
-                         "not be empty."))
+                                            "not be empty."))
 
     """ Begin of Tests """
+
     def test_result_record_pass_none(self):
         record = records.TestResultRecord(self.tn)
         record.test_begin()
         record.test_pass()
-        self.verify_record(record=record,
-                           result=records.TestResultEnums.TEST_RESULT_PASS,
-                           details=None,
-                           extras=None)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_PASS,
+            details=None,
+            extras=None)
 
     def test_result_record_pass_with_float_extra(self):
         record = records.TestResultRecord(self.tn)
         record.test_begin()
         s = signals.TestPass(self.details, self.float_extra)
         record.test_pass(s)
-        self.verify_record(record=record,
-                           result=records.TestResultEnums.TEST_RESULT_PASS,
-                           details=self.details,
-                           extras=self.float_extra)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_PASS,
+            details=self.details,
+            extras=self.float_extra)
 
     def test_result_record_pass_with_json_extra(self):
         record = records.TestResultRecord(self.tn)
         record.test_begin()
         s = signals.TestPass(self.details, self.json_extra)
         record.test_pass(s)
-        self.verify_record(record=record,
-                           result=records.TestResultEnums.TEST_RESULT_PASS,
-                           details=self.details,
-                           extras=self.json_extra)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_PASS,
+            details=self.details,
+            extras=self.json_extra)
 
     def test_result_record_fail_none(self):
         record = records.TestResultRecord(self.tn)
         record.test_begin()
         record.test_fail()
-        self.verify_record(record=record,
-                           result=records.TestResultEnums.TEST_RESULT_FAIL,
-                           details=None,
-                           extras=None)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_FAIL,
+            details=None,
+            extras=None)
+
+    def test_result_record_fail_stacktrace(self):
+        record = records.TestResultRecord(self.tn)
+        record.test_begin()
+        try:
+            raise Exception('Something failed.')
+        except Exception as e:
+            record.test_fail(e)
+        # Verify stacktrace separately if we expect a non-None value.
+        # Because stacktrace includes file names and line numbers, we can't do
+        # a simple equality check.
+        self.assertTrue('Something failed.' in record.stacktrace)
+        self.assertTrue(
+            'in test_result_record_fail_stacktrace\n    raise Exception' in
+            record.stacktrace)
+        record.stacktrace = None
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_FAIL,
+            details='Something failed.',
+            extras=None)
 
     def test_result_record_fail_with_float_extra(self):
         record = records.TestResultRecord(self.tn)
         record.test_begin()
         s = signals.TestFailure(self.details, self.float_extra)
         record.test_fail(s)
-        self.verify_record(record=record,
-                           result=records.TestResultEnums.TEST_RESULT_FAIL,
-                           details=self.details,
-                           extras=self.float_extra)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_FAIL,
+            details=self.details,
+            extras=self.float_extra)
 
     def test_result_record_fail_with_json_extra(self):
         record = records.TestResultRecord(self.tn)
         record.test_begin()
         s = signals.TestFailure(self.details, self.json_extra)
         record.test_fail(s)
-        self.verify_record(record=record,
-                           result=records.TestResultEnums.TEST_RESULT_FAIL,
-                           details=self.details,
-                           extras=self.json_extra)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_FAIL,
+            details=self.details,
+            extras=self.json_extra)
 
     def test_result_record_skip_none(self):
         record = records.TestResultRecord(self.tn)
         record.test_begin()
         record.test_skip()
-        self.verify_record(record=record,
-                           result=records.TestResultEnums.TEST_RESULT_SKIP,
-                           details=None,
-                           extras=None)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_SKIP,
+            details=None,
+            extras=None)
 
     def test_result_record_skip_with_float_extra(self):
         record = records.TestResultRecord(self.tn)
         record.test_begin()
         s = signals.TestSkip(self.details, self.float_extra)
         record.test_skip(s)
-        self.verify_record(record=record,
-                           result=records.TestResultEnums.TEST_RESULT_SKIP,
-                           details=self.details,
-                           extras=self.float_extra)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_SKIP,
+            details=self.details,
+            extras=self.float_extra)
 
     def test_result_record_skip_with_json_extra(self):
         record = records.TestResultRecord(self.tn)
         record.test_begin()
         s = signals.TestSkip(self.details, self.json_extra)
         record.test_skip(s)
-        self.verify_record(record=record,
-                           result=records.TestResultEnums.TEST_RESULT_SKIP,
-                           details=self.details,
-                           extras=self.json_extra)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_SKIP,
+            details=self.details,
+            extras=self.json_extra)
 
     def test_result_add_operator_success(self):
         record1 = records.TestResultRecord(self.tn)
@@ -201,9 +234,11 @@ class RecordsTest(unittest.TestCase):
         record1.test_pass(s)
         tr = records.TestResult()
         tr.add_record(record1)
+
         class SpecialError(Exception):
             def __init__(self, arg1, arg2):
                 self.msg = "%s %s" % (arg1, arg2)
+
         se = SpecialError("haha", 42)
         record2 = records.TestResultRecord("SomeTest", se)
         tr.fail_class(record2)
@@ -251,5 +286,6 @@ class RecordsTest(unittest.TestCase):
         tr.fail_class(record1)
         self.assertFalse(tr.is_all_pass)
 
+
 if __name__ == "__main__":
-   unittest.main()
+    unittest.main()
