@@ -437,16 +437,16 @@ class AndroidDevice(object):
         service_info = {}
         service_info['snippet_info'] = self._get_active_snippet_info()
         service_info['use_sl4a'] = self.sl4a is not None
-        if self._adb_logcat_process:
-            try:
-                self.stop_adb_logcat()
-            except:
-                self.log.exception('Failed to stop adb logcat.')
         self._terminate_sl4a()
         for name, client in self._snippet_clients.items():
             self._terminate_jsonrpc_client(client)
             delattr(self, name)
         self._snippet_clients = {}
+        if self._adb_logcat_process:
+            try:
+                self.stop_adb_logcat()
+            except:
+                self.log.exception('Failed to stop adb logcat.')
         return service_info
 
     @contextlib.contextmanager
