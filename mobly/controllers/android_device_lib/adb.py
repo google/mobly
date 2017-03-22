@@ -77,7 +77,7 @@ class AdbProxy(object):
         indicator of cmd execution status.
 
         Args:
-            cmd: string or list: command to execute.
+            cmd: string or list, command to execute.
             shell: Whether to pass the command to the shell for interpretation.
 
         Returns:
@@ -140,6 +140,15 @@ class AdbProxy(object):
     def __getattr__(self, name):
         def adb_call(args=None):
             """Wrapper for an ADB call.
+
+            ADB calls can be done with or without the host shell.
+
+            Example of usage:
+              ad.adb.shell('logcat | grep foo')  # runs in local shell
+              ad.adb.shell(['logcat | grep foo'])  # runs in device shell
+              ad.adb.shell('ln -s a b')  # runs in local shell
+              ad.adb.shell(['ln -s a b'])  # runs in device shell
+              ad.adb.shell(['ln', '-s', 'a', 'b'])  # runs in device shell
 
             Args:
                 args: string (for shell) or list (no shell); command to execute.
