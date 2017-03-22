@@ -31,7 +31,7 @@ device's screen. Create the following files:
 ```yaml
 TestBeds:
   # A test bed where adb will find Android devices.
-  - Name: SampleTestBed,
+  - Name: SampleTestBed
     Controllers:
         AndroidDevice: '*'
 ```
