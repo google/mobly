@@ -65,6 +65,19 @@ class AdbProxy(object):
     >> adb = AdbProxy(<serial>)
     >> adb.start_server()
     >> adb.devices() # will return the console output of "adb devices".
+
+    By default, command args are expected to be an iterable which is passed
+    directly to subprocess.Popen():
+    >> adb.shell(['echo', 'a', 'b'])
+
+    This way of launching commands is recommended by the subprocess
+    documentation to avoid shell injection vulnerabilities and avoid having to
+    deal with multiple layers of shell quoting and different shell environments
+    between different OSes.
+
+    If you really want to run the command through the system shell, this is
+    possible by supplying shell=True, but try to avoid this if possible:
+    >> adb.shell('cat /foo > /tmp/file', shell=True)
     """
 
     def __init__(self, serial=''):
@@ -76,8 +89,8 @@ class AdbProxy(object):
         Args:
             args: string or list, program arguments.
                 See subprocess.Popen() documentation.
-            shell: bool, whether to run this command through the system shell.
-                See subprocess.Popen() documentation.
+            shell: bool, True to run this command through the system shell,
+                False to invoke it directly. See subprocess.Popen() docs.
 
         Returns:
             The output of the adb command run if exit code is 0.
@@ -144,8 +157,8 @@ class AdbProxy(object):
             Args:
                 args: string or list, arguments to the adb command.
                     See subprocess.Proc() documentation.
-                shell: bool, whether to run cmd through the system shell.
-                    See subprocess.Proc() documentation.
+                shell: bool, True to run this command through the system shell,
+                    False to invoke it directly. See subprocess.Proc() docs.
 
             Returns:
                 The output of the adb command run if exit code is 0.
