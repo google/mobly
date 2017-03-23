@@ -141,7 +141,7 @@ class IPerfServer():
                                                          len(self.log_files))
         full_out_path = os.path.join(self.log_path, out_file_name)
         cmd = "{} {} > {}".format(self.iperf_str, extra_args, full_out_path)
-        self.iperf_process = utils.start_standing_subprocess(cmd)
+        self.iperf_process = utils.start_standing_subprocess(cmd, shell=True)
         self.log_files.append(full_out_path)
         self.started = True
 
