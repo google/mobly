@@ -280,27 +280,6 @@ def concurrent_exec(func, param_list):
         return return_vals
 
 
-def exe_cmd(*cmds):
-    """Executes commands in a new shell.
-
-    Args:
-        cmds: A sequence of commands and arguments.
-
-    Returns:
-        The output of the command run.
-
-    Raises:
-        OSError is raised if an error occurred during the command execution.
-    """
-    cmd = ' '.join(cmds)
-    proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    (out, err) = proc.communicate()
-    if not err:
-        return out
-    raise OSError(err)
-
-
 def _assert_subprocess_running(proc):
     """Checks if a subprocess has terminated on its own.
 
