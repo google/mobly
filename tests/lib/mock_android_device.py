@@ -22,6 +22,10 @@ import mock
 import os
 
 
+class Error(Exception):
+    pass
+
+
 def get_mock_ads(num):
     """Generates a list of mock AndroidDevice objects.
 
@@ -88,12 +92,14 @@ class MockAdbProxy(object):
         elif params == "sys.boot_completed":
             return "1"
 
-    def bugreport(self, params):
-        expected = os.path.join(logging.log_path,
-                                "AndroidDevice%s" % self.serial, "BugReports",
-                                "test_something,sometime,%s" % (self.serial))
-        assert expected in params, "Expected '%s', got '%s'." % (expected,
-                                                                 params)
+    def bugreport(self, args, shell=False):
+        expected = os.path.join(
+            logging.log_path,
+            'AndroidDevice%s' % self.serial,
+            'BugReports',
+            'test_something,sometime,%s' % self.serial)
+        if expected not in args:
+            raise Error('"Expected "%s", got "%s"' % (expected, args))
 
     def __getattr__(self, name):
         """All calls to the none-existent functions in adb proxy would

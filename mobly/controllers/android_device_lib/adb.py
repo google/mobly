@@ -15,12 +15,10 @@
 # limitations under the License.
 
 from builtins import str
+from past.builtins import basestring
 
 import logging
-import random
-import socket
 import subprocess
-import time
 
 
 class AdbError(Exception):
@@ -59,7 +57,7 @@ def list_occupied_adb_ports():
     return used_ports
 
 
-class AdbProxy():
+class AdbProxy(object):
     """Proxy class for ADB.
 
     For syntactic reasons, the '-' in adb commands need to be replaced with
@@ -71,19 +69,15 @@ class AdbProxy():
 
     def __init__(self, serial=''):
         self.serial = serial
-        if serial:
-            self.adb_str = 'adb -s %s' % serial
-        else:
-            self.adb_str = 'adb'
 
-    def _exec_cmd(self, cmd):
-        """Executes adb commands in a new shell.
-
-        This is specific to executing adb binary because stderr is not a good
-        indicator of cmd execution status.
+    def _exec_cmd(self, args, shell):
+        """Executes adb commands.
 
         Args:
-            cmds: A string that is the adb command to execute.
+            args: string or list, program arguments.
+                See subprocess.Popen() documentation.
+            shell: bool, whether to run this command through the system shell.
+                See subprocess.Popen() documentation.
 
         Returns:
             The output of the adb command run if exit code is 0.
@@ -92,18 +86,33 @@ class AdbProxy():
             AdbError is raised if the adb command exit code is not 0.
         """
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
         (out, err) = proc.communicate()
         ret = proc.returncode
-        logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s', cmd, out,
+        logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s', args, out,
                       err, ret)
         if ret == 0:
             return out
         else:
-            raise AdbError(cmd=cmd, stdout=out, stderr=err, ret_code=ret)
+            raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, arg_str):
-        return self._exec_cmd(' '.join((self.adb_str, name, arg_str)))
+    def _exec_adb_cmd(self, name, args, shell):
+        if shell:
+            if self.serial:
+                adb_cmd = 'adb -s "%s" %s %s' % (self.serial, name, args)
+            else:
+                adb_cmd = 'adb %s %s' % (name, args)
+        else:
+            adb_cmd = ['adb']
+            if self.serial:
+                adb_cmd.extend(['-s', self.serial])
+            adb_cmd.append(name)
+            if args:
+                if isinstance(args, basestring):
+                    adb_cmd.append(args)
+                else:
+                    adb_cmd.extend(args)
+        return self._exec_cmd(adb_cmd, shell=shell)
 
     def tcp_forward(self, host_port, device_port):
         """Starts tcp forwarding.
@@ -112,7 +121,7 @@ class AdbProxy():
             host_port: Port number to use on the computer.
             device_port: Port number to use on the android device.
         """
-        self.forward('tcp:%d tcp:%d' % (host_port, device_port))
+        self.forward(['tcp:%d' % host_port, 'tcp:%d' % device_port])
 
     def getprop(self, prop_name):
         """Get a property of the device.
@@ -129,9 +138,20 @@ class AdbProxy():
         return self.shell('getprop %s' % prop_name).decode('utf-8').strip()
 
     def __getattr__(self, name):
-        def adb_call(*args):
+        def adb_call(args=None, shell=False):
+            """Wrapper for an ADB command.
+
+            Args:
+                args: string or list, arguments to the adb command.
+                    See subprocess.Proc() documentation.
+                shell: bool, whether to run cmd through the system shell.
+                    See subprocess.Proc() documentation.
+
+            Returns:
+                The output of the adb command run if exit code is 0.
+            """
+            args = args or ''
             clean_name = name.replace('_', '-')
-            arg_str = ' '.join(str(elem) for elem in args)
-            return self._exec_adb_cmd(clean_name, arg_str)
+            return self._exec_adb_cmd(clean_name, args, shell=shell)
 
         return adb_call
