@@ -368,7 +368,12 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     _assert_subprocess_running(proc)
     process = psutil.Process(pid)
     success = True
-    for child in process.children(recursive=True):
+    try:
+      children = process.children(recursive=True)
+    except AttributeError:
+      # Handle older versions of psutil
+      children = process.get_children(recursive=True)
+    for child in children:
         try:
             child.kill()
         except:
