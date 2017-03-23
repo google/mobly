@@ -376,11 +376,13 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     for child in children:
         try:
             child.kill()
+            child.wait()
         except:
             success = False
             logging.exception('Failed to kill standing subprocess %d', child.pid)
     try:
         process.kill()
+        process.wait()
     except:
         success = False
         logging.exception('Failed to kill standing subprocess %d', pid)

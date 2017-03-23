@@ -32,6 +32,12 @@ class UtilsTest(unittest.TestCase):
             utils.start_standing_subprocess("sleep 0", check_health_delay=0.1)
 
     def test_stop_standing_subproc(self):
+        p = utils.start_standing_subprocess('sleep 5')
+        time.sleep(0.1)
+        utils.stop_standing_subprocess(p)
+        self.assertIsNotNone(p.poll())
+
+    def test_stop_standing_subproc_already_dead(self):
         p = utils.start_standing_subprocess("sleep 0")
         time.sleep(0.1)
         with self.assertRaisesRegexp(utils.Error,
