@@ -29,11 +29,11 @@ class UtilsTest(unittest.TestCase):
     def test_start_standing_subproc(self):
         with self.assertRaisesRegexp(utils.Error,
                                      "Process .* has terminated"):
-            utils.start_standing_subprocess("sleep 0", check_health_delay=0.1)
+            utils.start_standing_subprocess("sleep 0", check_health_delay=0.5)
 
     def test_stop_standing_subproc(self):
         p = utils.start_standing_subprocess("sleep 0")
-        time.sleep(0.1)
+        time.sleep(0.5)
         with self.assertRaisesRegexp(utils.Error,
                                      "Process .* has terminated"):
             utils.stop_standing_subprocess(p)
