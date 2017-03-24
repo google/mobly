@@ -33,7 +33,6 @@ class UtilsTest(unittest.TestCase):
 
     def test_stop_standing_subproc(self):
         p = utils.start_standing_subprocess('sleep 5')
-        time.sleep(0.1)
         utils.stop_standing_subprocess(p)
         self.assertIsNotNone(p.poll())
 
