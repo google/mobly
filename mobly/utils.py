@@ -38,7 +38,6 @@ MAX_FILENAME_LEN = 255
 ascii_letters_and_digits = string.ascii_letters + string.digits
 valid_filename_chars = "-_." + ascii_letters_and_digits
 
-
 GMT_to_olson = {
     "GMT-9": "America/Anchorage",
     "GMT-8": "US/Pacific",
@@ -314,7 +313,7 @@ def _assert_subprocess_running(proc):
     if ret is not None:
         out, err = proc.communicate()
         raise Error("Process %d has terminated. ret: %d, stderr: %s,"
-                             " stdout: %s" % (proc.pid, ret, err, out))
+                    " stdout: %s" % (proc.pid, ret, err, out))
 
 
 def start_standing_subprocess(cmd, check_health_delay=0):
@@ -338,10 +337,7 @@ def start_standing_subprocess(cmd, check_health_delay=0):
         The subprocess that got started.
     """
     proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True)
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     logging.debug('Start standing subprocess with cmd: %s', cmd)
     if check_health_delay > 0:
         time.sleep(check_health_delay)
@@ -369,17 +365,18 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     process = psutil.Process(pid)
     success = True
     try:
-      children = process.children(recursive=True)
+        children = process.children(recursive=True)
     except AttributeError:
-      # Handle versions <3.0.0 of psutil.
-      children = process.get_children(recursive=True)
+        # Handle versions <3.0.0 of psutil.
+        children = process.get_children(recursive=True)
     for child in children:
         try:
             child.kill()
             child.wait(timeout=10)
         except:
             success = False
-            logging.exception('Failed to kill standing subprocess %d', child.pid)
+            logging.exception('Failed to kill standing subprocess %d',
+                              child.pid)
     try:
         process.kill()
         process.wait(timeout=10)
