@@ -54,9 +54,10 @@ class SnifferLocalBase(sniffer.Sniffer):
         self._base_configs = base_configs
 
         try:
-            utils.exe_cmd("ifconfig", self._interface, "down")
-            utils.exe_cmd("iwconfig", self._interface, "mode", "monitor")
-            utils.exe_cmd("ifconfig", self._interface, "up")
+            subprocess.check_call(['ifconfig', self._interface, 'down'])
+            subprocess.check_call(
+                ['iwconfig', self._interface, 'mode', 'monitor'])
+            subprocess.check_call(['ifconfig', self._interface, 'up'])
         except Exception as err:
             raise sniffer.ExecutionError(err)
 
@@ -87,8 +88,11 @@ class SnifferLocalBase(sniffer.Sniffer):
 
         if sniffer.Sniffer.CONFIG_KEY_CHANNEL in final_configs:
             try:
-                utils.exe_cmd("iwconfig", self._interface, "channel",
-                        str(final_configs[sniffer.Sniffer.CONFIG_KEY_CHANNEL]))
+                subprocess.check_call([
+                    'iwconfig',
+                    self._interface,
+                    'channel',
+                    str(final_configs[sniffer.Sniffer.CONFIG_KEY_CHANNEL])])
             except Exception as err:
                 raise sniffer.ExecutionError(err)
 

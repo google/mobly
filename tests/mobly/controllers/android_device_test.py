@@ -209,8 +209,7 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.utils.create_dir')
-    @mock.patch('mobly.utils.exe_cmd')
-    def test_AndroidDevice_take_bug_report(self, exe_mock, create_dir_mock,
+    def test_AndroidDevice_take_bug_report(self, create_dir_mock,
                                            FastbootProxy, MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report calls the correct adb command
         and writes the bugreport file to the correct path.
@@ -227,8 +226,7 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.utils.create_dir')
-    @mock.patch('mobly.utils.exe_cmd')
-    def test_AndroidDevice_take_bug_report_fail(self, exe_mock, create_dir_mock,
+    def test_AndroidDevice_take_bug_report_fail(self, create_dir_mock,
                                                 FastbootProxy, MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report writes out the correct message
         when taking bugreport fails.
@@ -245,8 +243,7 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.utils.create_dir')
-    @mock.patch('mobly.utils.exe_cmd')
-    def test_AndroidDevice_take_bug_report_fallback(self, exe_mock,
+    def test_AndroidDevice_take_bug_report_fallback(self,
         create_dir_mock, FastbootProxy, MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report falls back to traditional
         bugreport on builds that do not have bugreportz.
