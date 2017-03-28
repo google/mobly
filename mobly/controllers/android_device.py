@@ -805,9 +805,11 @@ class AndroidDevice(object):
             if not out.startswith('OK'):
                 raise DeviceError(self, 'Failed to take bugreport: %s' % out)
             br_out_path = out.split(':')[1].strip()
-            self.adb.pull('%s %s' % (br_out_path, full_out_path))
+            self.adb.pull([br_out_path, full_out_path])
         else:
-            self.adb.bugreport(' > %s' % full_out_path)
+            # shell=True as this command redirects the stdout to a local file
+            # using shell redirection.
+            self.adb.bugreport(' > %s' % full_out_path, shell=True)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
 
