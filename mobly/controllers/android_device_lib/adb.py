@@ -87,7 +87,7 @@ class AdbProxy(object):
         """Executes adb commands.
 
         Args:
-            args: string or list, program arguments.
+            args: string or list of strings, program arguments.
                 See subprocess.Popen() documentation.
             shell: bool, True to run this command through the system shell,
                 False to invoke it directly. See subprocess.Popen() docs.
@@ -155,7 +155,7 @@ class AdbProxy(object):
             """Wrapper for an ADB command.
 
             Args:
-                args: string or list, arguments to the adb command.
+                args: string or list of strings, arguments to the adb command.
                     See subprocess.Proc() documentation.
                 shell: bool, True to run this command through the system shell,
                     False to invoke it directly. See subprocess.Proc() docs.
