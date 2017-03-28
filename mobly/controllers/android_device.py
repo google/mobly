@@ -807,6 +807,8 @@ class AndroidDevice(object):
             br_out_path = out.split(':')[1].strip()
             self.adb.pull([br_out_path, full_out_path])
         else:
+            # shell=True as this command redirects the stdout to a local file
+            # using shell redirection.
             self.adb.bugreport(' > %s' % full_out_path, shell=True)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
