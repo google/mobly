@@ -17,18 +17,16 @@
 from builtins import str
 from builtins import bytes
 
-import json
 import mock
-import socket
 import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import snippet_client
-from tests.lib import mock_android_device
 
 MOCK_PACKAGE_NAME = 'some.package.name'
 MOCK_MISSING_PACKAGE_NAME = 'not.installed'
 JSONRPC_BASE_PACKAGE = 'mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase'
+
 
 class MockAdbProxy(object):
     def __init__(self, **kwargs):
@@ -37,13 +35,14 @@ class MockAdbProxy(object):
         self.target_not_installed = kwargs.get('target_not_installed', False)
 
     def shell(self, params):
-        if 'pm list package' in params:
+        if 'pm list package' in params[0]:
             if self.apk_not_installed:
                 return b''
-            if self.target_not_installed and MOCK_MISSING_PACKAGE_NAME in params:
+            if (self.target_not_installed and
+                MOCK_MISSING_PACKAGE_NAME in params[0]):
                 return b''
             return bytes(r'package:%s\r' % MOCK_PACKAGE_NAME, 'utf-8')
-        elif 'pm list instrumentation' in params:
+        elif 'pm list instrumentation' in params[0]:
             if self.apk_not_instrumented:
                 return b''
             if self.target_not_installed:
