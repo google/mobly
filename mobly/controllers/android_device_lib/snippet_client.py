@@ -77,6 +77,11 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def stop_app(self):
         """Overrides superclass."""
+        # Kill the pending 'adb shell am instrument -w' process if there is one.
+        # Although killing the snippet apk would abort this process anyway, we
+        # want to call stop_standing_subprocess() to perform a health check,
+        # print the failure stack trace if there was any, and reap it from the
+        # process table.
         if self._proc:
           utils.stop_standing_subprocess(self._proc)
         self.log.debug('Stopping snippet apk %s', self.package)
