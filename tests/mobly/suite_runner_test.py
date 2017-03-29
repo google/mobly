@@ -17,19 +17,17 @@ import unittest
 
 from mobly import suite_runner
 
-from tests.lib import IntegrationTest
-
-
-class Integration2Test(IntegrationTest.IntegrationTest):
-    """Same as the IntegrationTest class, created this so we have two
-    'different' test classes to use in unit tests.
-    """
+from tests.lib import integration_test
+from tests.lib import integration2_test
 
 
 class SuiteRunnerTest(unittest.TestCase):
     def test_select_no_args(self):
         identifiers = suite_runner._compute_test_identifiers(
-            test_classes=[IntegrationTest.IntegrationTest, Integration2Test],
+            test_classes=[
+                integration_test.IntegrationTest,
+                integration2_test.Integration2Test
+            ],
             selected_test_cases=None)
         self.assertEqual(
             [('IntegrationTest', None), ('Integration2Test', None)],
@@ -37,13 +35,19 @@ class SuiteRunnerTest(unittest.TestCase):
 
     def test_select_by_class(self):
         identifiers = suite_runner._compute_test_identifiers(
-            test_classes=[IntegrationTest.IntegrationTest, Integration2Test],
+            test_classes=[
+                integration_test.IntegrationTest,
+                integration2_test.Integration2Test
+            ],
             selected_test_cases=['IntegrationTest'])
         self.assertEqual([('IntegrationTest', None)], identifiers)
 
     def test_select_by_method(self):
         identifiers = suite_runner._compute_test_identifiers(
-            test_classes=[IntegrationTest.IntegrationTest, Integration2Test],
+            test_classes=[
+                integration_test.IntegrationTest,
+                integration2_test.Integration2Test
+            ],
             selected_test_cases=[
                 'IntegrationTest.test_a', 'IntegrationTest.test_b'
             ])
@@ -52,12 +56,18 @@ class SuiteRunnerTest(unittest.TestCase):
 
     def test_select_all_clobbers_method(self):
         identifiers = suite_runner._compute_test_identifiers(
-            test_classes=[IntegrationTest.IntegrationTest, Integration2Test],
+            test_classes=[
+                integration_test.IntegrationTest,
+                integration2_test.Integration2Test
+            ],
             selected_test_cases=['IntegrationTest.test_a', 'IntegrationTest'])
         self.assertEqual([('IntegrationTest', None)], identifiers)
 
         identifiers = suite_runner._compute_test_identifiers(
-            test_classes=[IntegrationTest.IntegrationTest, Integration2Test],
+            test_classes=[
+                integration_test.IntegrationTest,
+                integration2_test.Integration2Test
+            ],
             selected_test_cases=['IntegrationTest', 'IntegrationTest.test_a'])
         self.assertEqual([('IntegrationTest', None)], identifiers)
 

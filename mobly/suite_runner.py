@@ -33,9 +33,12 @@ def run_suite(test_classes, argv=None):
     To make your test suite executable, add the following to your file:
 
         from mobly import suite_runner
+
+        from my.test.lib import foo_test
+        from my.test.lib import bar_test
         ...
         if __name__ == '__main__':
-            suite_runner.run(my_test_1.MyTest1, my_test_2.MyTest2)
+            suite_runner.run(foo_test.FooTest, bar_test.BarTest)
 
     Args:
         test_classes: List of python classes containing Mobly tests.
@@ -58,19 +61,11 @@ def run_suite(test_classes, argv=None):
         type=str,
         metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
         help='A list of test classes and optional test methods to execute.')
-    parser.add_argument(
-        '-tb',
-        '--test_bed',
-        nargs='+',
-        type=str,
-        metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
-        help='Specify which test beds to run tests on.')
     if not argv:
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
     # Load test config file.
-    test_configs = config_parser.load_test_config_file(args.config[0],
-                                                       args.test_bed)
+    test_configs = config_parser.load_test_config_file(args.config[0])
 
     # Choose which tests to run
     test_identifiers = _compute_test_identifiers(test_classes, args.test_case)
@@ -101,15 +96,17 @@ def _compute_test_identifiers(test_classes, selected_test_cases):
     Args:
         test_classes: (list of class) all classes that are part of this suite.
         selected_test_cases: (list of string) list of testcases to execute, eg:
-             ['Test1', 'Test2', 'Test3.test_method_a', 'Test3.test_method_b'].
+             ['FooTest', 'BarTest',
+              'BazTest.test_method_a', 'BazTest.test_method_b'].
              May be empty, in which case all test classes are selected.
 
     Returns:
-        (list of tuple) identifiers for TestRunner. For the above example:
+        (list of tuple(str(test name), list(str, test methods) or None)):
+        identifiers for TestRunner. For the above example:
         [
-            ('Test1', None),
-            ('Test2', None),
-            ('Test3', ['test_method_a', 'test_method_b']),
+            ('FooTest', None),
+            ('BarTest', None),
+            ('BazTest', ['test_method_a', 'test_method_b']),
         ]
     """
     # Create a map from test class name to list of methods
@@ -118,7 +115,7 @@ def _compute_test_identifiers(test_classes, selected_test_cases):
         for test_case in selected_test_cases:
             if '.' in test_case:  # has a test method
                 (test_class, test_method) = test_case.split('.')
-                if test_class not in tests:
+                if test_class not in tests:  # never seen this class before
                     tests[test_class] = [test_method]
                 elif tests[test_class] is None:
                     # Already running all test methods in this class, so ignore
