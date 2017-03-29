@@ -17,14 +17,18 @@
 import logging
 import re
 
-from mobly.controllers.android_device_lib import adb
+from mobly import utils
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-_INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunner'
+_INSTRUMENTATION_RUNNER_PACKAGE = (
+    'com.google.android.mobly.snippet.SnippetRunner')
 
-_LAUNCH_CMD = 'am instrument -e action start -e port %s %s/' + _INSTRUMENTATION_RUNNER_PACKAGE
+_LAUNCH_CMD = (
+    'am instrument -w -e action start -e port %s %s/' +
+    _INSTRUMENTATION_RUNNER_PACKAGE)
 
-_STOP_CMD = 'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE
+_STOP_CMD = (
+    'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
 
 
 class Error(Exception):
@@ -59,6 +63,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self.package = package
         self.log = log
         self._serial = self._adb.serial
+        self._proc = None
 
     def _do_start_app(self):
         """Overrides superclass."""
@@ -67,11 +72,18 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # helpful since they need to create their own instrumentations and
         # manifest.
         self.log.info('Launching snippet apk %s', self.package)
-        self._adb.shell(cmd)
+        adb_cmd = ['adb', '-s', self._adb.serial, 'shell', cmd]
+        self._proc = utils.start_standing_subprocess(adb_cmd, shell=False)
 
     def stop_app(self):
         """Overrides superclass."""
-        cmd = _STOP_CMD % self.package
+        # Kill the pending 'adb shell am instrument -w' process if there is one.
+        # Although killing the snippet apk would abort this process anyway, we
+        # want to call stop_standing_subprocess() to perform a health check,
+        # print the failure stack trace if there was any, and reap it from the
+        # process table.
+        if self._proc:
+          utils.stop_standing_subprocess(self._proc)
         self.log.debug('Stopping snippet apk %s', self.package)
         out = self._adb.shell(_STOP_CMD % self.package).decode('utf-8')
         if 'OK (0 tests)' not in out:
