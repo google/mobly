@@ -110,22 +110,23 @@ def _compute_test_identifiers(test_classes, selected_test_cases):
         ]
     """
     # Create a map from test class name to list of methods
-    tests = collections.OrderedDict()
+    test_identifier_builder = collections.OrderedDict()
     if selected_test_cases:
         for test_case in selected_test_cases:
-            if '.' in test_case:  # has a test method
+            if '.' in test_case:  # Has a test method
                 (test_class, test_method) = test_case.split('.')
-                if test_class not in tests:  # never seen this class before
-                    tests[test_class] = [test_method]
-                elif tests[test_class] is None:
+                if test_class not in test_identifier_builder:
+                    # Never seen this class before
+                    test_identifier_builder[test_class] = [test_method]
+                elif test_identifier_builder[test_class] is None:
                     # Already running all test methods in this class, so ignore
                     # this extra testcase.
                     pass
                 else:
-                    tests[test_class].append(test_method)
-            else:  # no test method; run all tests in this class.
-                tests[test_case] = None
+                    test_identifier_builder[test_class].append(test_method)
+            else:  # No test method; run all tests in this class.
+                test_identifier_builder[test_case] = None
     else:
         for test_class in test_classes:
-            tests[test_class.__name__] = None
-    return list(tests.items())
+            test_identifier_builder[test_class.__name__] = None
+    return list(test_identifier_builder.items())
