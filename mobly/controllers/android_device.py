@@ -658,7 +658,8 @@ class AndroidDevice(object):
         If the connection cannot be made, tries to restart it.
         """
         client.check_app_installed()
-        self.adb.tcp_forward(client.host_port, client.device_port)
+        self.adb.forward(
+            ['tcp:%d' % client.host_port, 'tcp:%d' % client.device_port])
         try:
             client.connect()
         except:
@@ -679,7 +680,7 @@ class AndroidDevice(object):
                                client.app_name)
         finally:
             # Always clean up the adb port
-            self.adb.forward('--remove tcp:%d' % client.host_port)
+            self.adb.forward(['--remove', 'tcp:%d' % client.host_port])
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
         low = mobly_logger.logline_timestamp_comparator(begin_time,

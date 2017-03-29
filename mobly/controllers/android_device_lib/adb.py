@@ -127,15 +127,6 @@ class AdbProxy(object):
                     adb_cmd.extend(args)
         return self._exec_cmd(adb_cmd, shell=shell)
 
-    def tcp_forward(self, host_port, device_port):
-        """Starts tcp forwarding.
-
-        Args:
-            host_port: Port number to use on the computer.
-            device_port: Port number to use on the android device.
-        """
-        self.forward(['tcp:%d' % host_port, 'tcp:%d' % device_port])
-
     def getprop(self, prop_name):
         """Get a property of the device.
 
