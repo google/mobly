@@ -94,9 +94,8 @@ class JsonRpcClientBase(object):
 
     Connects to a remote device running a jsonrpc-compatible app. Before opening
     a connection a port forward must be setup to go over usb. This be done using
-    adb.tcp_forward(). This calls the shell command adb forward <local> remote>.
-    Once the port has been forwarded it can be used in this object as the port
-    of communication.
+    adb.forward([local, remote]). Once the port has been forwarded it can be
+    used in this object as the port of communication.
 
     Attributes:
         host_port: (int) The host port of this RPC client.
