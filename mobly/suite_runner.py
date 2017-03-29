@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import argparse
+import collections
 import logging
 import sys
 
@@ -111,7 +112,8 @@ def _compute_test_identifiers(test_classes, selected_test_cases):
             ('Test3', ['test_method_a', 'test_method_b']),
         ]
     """
-    tests = {}  # map from test class name to list of methods
+    # Create a map from test class name to list of methods
+    tests = collections.OrderedDict()
     if selected_test_cases:
         for test_case in selected_test_cases:
             if '.' in test_case:  # has a test method
@@ -129,4 +131,4 @@ def _compute_test_identifiers(test_classes, selected_test_cases):
     else:
         for test_class in test_classes:
             tests[test_class.__name__] = None
-    return tests.items()
+    return list(tests.items())

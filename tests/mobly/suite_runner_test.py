@@ -31,14 +31,15 @@ class SuiteRunnerTest(unittest.TestCase):
         identifiers = suite_runner._compute_test_identifiers(
             test_classes=[IntegrationTest.IntegrationTest, Integration2Test],
             selected_test_cases=None)
-        self.assertEqual([('IntegrationTest', None),
-                          ('Integration2Test', None)], list(identifiers))
+        self.assertEqual(
+            [('IntegrationTest', None), ('Integration2Test', None)],
+            identifiers)
 
     def test_select_by_class(self):
         identifiers = suite_runner._compute_test_identifiers(
             test_classes=[IntegrationTest.IntegrationTest, Integration2Test],
             selected_test_cases=['IntegrationTest'])
-        self.assertEqual([('IntegrationTest', None)], list(identifiers))
+        self.assertEqual([('IntegrationTest', None)], identifiers)
 
     def test_select_by_method(self):
         identifiers = suite_runner._compute_test_identifiers(
@@ -47,18 +48,18 @@ class SuiteRunnerTest(unittest.TestCase):
                 'IntegrationTest.test_a', 'IntegrationTest.test_b'
             ])
         self.assertEqual([('IntegrationTest', ['test_a', 'test_b'])],
-                         list(identifiers))
+                         identifiers)
 
     def test_select_all_clobbers_method(self):
         identifiers = suite_runner._compute_test_identifiers(
             test_classes=[IntegrationTest.IntegrationTest, Integration2Test],
             selected_test_cases=['IntegrationTest.test_a', 'IntegrationTest'])
-        self.assertEqual([('IntegrationTest', None)], list(identifiers))
+        self.assertEqual([('IntegrationTest', None)], identifiers)
 
         identifiers = suite_runner._compute_test_identifiers(
             test_classes=[IntegrationTest.IntegrationTest, Integration2Test],
             selected_test_cases=['IntegrationTest', 'IntegrationTest.test_a'])
-        self.assertEqual([('IntegrationTest', None)], list(identifiers))
+        self.assertEqual([('IntegrationTest', None)], identifiers)
 
 
 if __name__ == "__main__":
