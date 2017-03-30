@@ -19,6 +19,11 @@ from past.builtins import basestring
 
 import logging
 import subprocess
+import threading
+
+# adb gets confused if we try to manage bound ports in parallel, so anything to
+# do with port forwarding must happen under this lock.
+ADB_PORT_LOCK = threading.Lock()
 
 
 class AdbError(Exception):
@@ -140,6 +145,10 @@ class AdbProxy(object):
             doesn't exist.
         """
         return self.shell('getprop %s' % prop_name).decode('utf-8').strip()
+
+    def forward(self, args=None, shell=False):
+        with ADB_PORT_LOCK:
+            return self._exec_adb_cmd('forward', args, shell)
 
     def __getattr__(self, name):
         def adb_call(args=None, shell=False):
