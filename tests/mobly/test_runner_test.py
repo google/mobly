@@ -20,19 +20,13 @@ import tempfile
 import unittest
 
 from mobly import config_parser
-from mobly import keys
 from mobly import signals
 from mobly import test_runner
 
 from tests.lib import mock_android_device
 from tests.lib import mock_controller
-from tests.lib import IntegrationTest
-
-
-class Integration2Test(IntegrationTest.IntegrationTest):
-    """Same as the IntegrationTest class, created this so we have two
-    'different' test classes to use in unit tests.
-    """
+from tests.lib import integration_test
+from tests.lib import integration2_test
 
 
 class TestRunnerTest(unittest.TestCase):
@@ -66,8 +60,7 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.base_mock_test_config,
                                     self.mock_run_list)
         self.assertIsNone(
-            tr.register_controller(
-                mock_controller, required=False))
+            tr.register_controller(mock_controller, required=False))
 
     def test_register_controller_dup_register(self):
         """Verifies correctness of registration, internal tally of controllers
@@ -147,12 +140,12 @@ class TestRunnerTest(unittest.TestCase):
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
         tr = test_runner.TestRunner(mock_test_config, [('IntegrationTest',
                                                         None)])
-        tr.run([IntegrationTest.IntegrationTest])
+        tr.run([integration_test.IntegrationTest])
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)
         self.assertTrue(
             mock_test_config.controller_configs[mock_ctrlr_config_name][0])
-        tr.run([IntegrationTest.IntegrationTest])
+        tr.run([integration_test.IntegrationTest])
         tr.stop()
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)
@@ -210,10 +203,12 @@ class TestRunnerTest(unittest.TestCase):
         mock_test_config.controller_configs['AndroidDevice'] = [{
             'serial': '1'
         }]
-        tr = test_runner.TestRunner(mock_test_config,
-                                    [('Integration2Test', None),
-                                     ('IntegrationTest', None)])
-        tr.run([IntegrationTest.IntegrationTest, Integration2Test])
+        tr = test_runner.TestRunner(mock_test_config, [(
+            'Integration2Test', None), ('IntegrationTest', None)])
+        tr.run([
+            integration_test.IntegrationTest,
+            integration2_test.Integration2Test
+        ])
         tr.stop()
         self.assertFalse(tr.controller_registry)
         self.assertFalse(tr.controller_destructors)
