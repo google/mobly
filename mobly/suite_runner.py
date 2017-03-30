@@ -19,9 +19,10 @@ import collections
 import logging
 import sys
 
-from mobly import test_runner
+from mobly import base_test
 from mobly import config_parser
 from mobly import signals
+from mobly import test_runner
 
 
 def run_suite(test_classes, argv=None):
@@ -66,6 +67,14 @@ def run_suite(test_classes, argv=None):
     args = parser.parse_args(argv)
     # Load test config file.
     test_configs = config_parser.load_test_config_file(args.config[0])
+
+    # Check the classes that were passed in
+    for cls in test_classes:
+        if not issubclass(cls, base_test.BaseTestClass):
+            logging.error('Test class %s does not extend '
+                          'mobly.base_test.BaseTestClass',
+                          cls)
+            sys.exit(1)
 
     # Choose which tests to run
     test_identifiers = _compute_test_identifiers(test_classes, args.test_case)
