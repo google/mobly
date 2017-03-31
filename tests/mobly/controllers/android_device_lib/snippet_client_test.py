@@ -36,7 +36,9 @@ class MockAdbProxy(object):
         self.apk_not_instrumented = kwargs.get('apk_not_instrumented', False)
         self.target_not_installed = kwargs.get('target_not_installed', False)
 
-    def shell(self, params):
+    def shell(self, params, shell):
+        if not shell:
+            raise AssertionError('Shell has to be true for grep cmds.')
         if 'pm list package' in params:
             if self.apk_not_installed:
                 return b''
