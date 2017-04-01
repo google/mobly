@@ -79,10 +79,7 @@ def create(configs):
         ads = get_all_instances()
     elif not isinstance(configs, list):
         raise Error(ANDROID_DEVICE_NOT_LIST_CONFIG_MSG)
-    elif isinstance(configs[0], dict):
-        # Configs is a list of dicts.
-        ads = get_instances_with_configs(configs)
-    elif isinstance(configs[0], basestring):
+    elif isinstance(configs[0], dict) or isinstance(configs[0], basestring):
         # Configs is a list of strings representing serials.
         ads = get_instances(configs)
     else:
@@ -194,51 +191,42 @@ def list_fastboot_devices():
     return _parse_device_list(out, 'fastboot')
 
 
-def get_instances(serials):
-    """Create AndroidDevice instances from a list of serials.
+def get_instances(configs):
+    """Create AndroidDevice instances from a list of configs.
+
+    Each config should either be the string serial number of the connected
+    or be a dict with the required key-value pair 'serial'.
 
     Args:
-        serials: A list of android device serials.
-
-    Returns:
-        A list of AndroidDevice objects.
-    """
-    results = []
-    for s in serials:
-        results.append(AndroidDevice(s))
-    return results
-
-
-def get_instances_with_configs(configs):
-    """Create AndroidDevice instances from a list of dict configs.
-
-    Each config should have the required key-value pair 'serial'.
-
-    Args:
-        configs: A list of dicts each representing the configuration of one
-            android device.
+        configs: A list of entries which could be dicts and/or strings each
+            representing the configuration of one android device.
 
     Returns:
         A list of AndroidDevice objects.
     """
     results = []
     for c in configs:
-        try:
-            serial = c.pop('serial')
-        except KeyError:
-            raise Error(
-                'Required value "serial" is missing in AndroidDevice config %s.'
-                % c)
-        is_required = c.get(KEY_DEVICE_REQUIRED, True)
-        try:
-            ad = AndroidDevice(serial)
-            ad.load_config(c)
-        except Exception:
-            if is_required:
-                raise
-            ad.log.exception('Skipping this optional device due to error.')
-            continue
-        results.append(ad)
+        if isinstance(c, dict):
+            try:
+                serial = c.pop('serial')
+            except KeyError:
+                raise Error(
+                    'Required key "serial" is missing in AndroidDevice'
+                    ' config %s.' % c)
+            is_required = c.get(KEY_DEVICE_REQUIRED, True)
+            try:
+                ad = AndroidDevice(serial)
+                ad.load_config(c)
+            except Exception:
+                if is_required:
+                    raise
+                ad.log.exception('Skipping this optional device due to error.')
+                continue
+            results.append(ad)
+        elif isinstance(c, basestring):
+            results.append(AndroidDevice(s))
+        else:
+            raise Error("Invalid config found: %s" % c)
     return results
 
 
