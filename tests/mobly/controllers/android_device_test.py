@@ -128,7 +128,7 @@ class AndroidDeviceTest(unittest.TestCase):
             android_device.create("HAHA")
 
     def test_create_with_no_valid_config(self):
-        expected_msg = "No valid config found in: .*"
+        expected_msg = "Invalid config found: .*"
         with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
             android_device.create([1])

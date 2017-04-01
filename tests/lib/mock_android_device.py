@@ -49,10 +49,10 @@ def get_all_instances():
 def get_instances(configs):
     ads = []
     for c in configs:
-        if isinstance(s, dict):
+        if isinstance(c, dict):
             ad = mock.MagicMock(name="AndroidDevice", serial=c["serial"], h_port=None)
         else:
-            ad = mock.MagicMock(name="AndroidDevice", serial=serial, h_port=None)
+            ad = mock.MagicMock(name="AndroidDevice", serial=c, h_port=None)
         ads.append(ad)
     return ads
 
