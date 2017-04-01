@@ -93,7 +93,7 @@ class AndroidDeviceTest(unittest.TestCase):
 
     @mock.patch.object(android_device,
                        "get_instances",
-                       new=mock_android_device.get_instances_with_configs)
+                       new=mock_android_device.get_instances)
     @mock.patch.object(android_device,
                        "list_adb_devices",
                        new=mock_android_device.list_adb_devices)
@@ -105,7 +105,7 @@ class AndroidDeviceTest(unittest.TestCase):
     
     @mock.patch.object(android_device,
                        "get_instances",
-                       new=mock_android_device.get_instances_with_configs)
+                       new=mock_android_device.get_instances)
     @mock.patch.object(android_device,
                        "list_adb_devices",
                        new=mock_android_device.list_adb_devices)
