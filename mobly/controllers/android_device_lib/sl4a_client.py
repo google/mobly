@@ -15,15 +15,17 @@
 # limitations under the License.
 """JSON RPC interface to android scripting engine."""
 
+import re
+
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 DEVICE_SIDE_PORT = 8080
 
 _LAUNCH_CMD = (
-    "am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER "
-    "--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT {} "
-    "com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher")
+    'am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER '
+    '--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT %s '
+    'com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher')
 
 
 class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
@@ -40,12 +42,14 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             adb_proxy: (adb.AdbProxy) The adb proxy to use to start the app.
         """
         super(Sl4aClient, self).__init__(
-            host_port=host_port, device_port=DEVICE_SIDE_PORT, app_name='SL4A',
+            host_port=host_port,
+            device_port=DEVICE_SIDE_PORT,
+            app_name='SL4A',
             adb_proxy=adb_proxy)
 
     def _do_start_app(self):
         """Overrides superclass."""
-        self._adb.shell(_LAUNCH_CMD.format(self.device_port))
+        self._adb.shell(_LAUNCH_CMD % self.device_port)
 
     def stop_app(self):
         """Overrides superclass."""
@@ -53,8 +57,8 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def check_app_installed(self):
         """Overrides superclass."""
-        if not self._adb_grep_wrapper(
-            "pm list package | grep com.googlecode.android_scripting"):
+        out = self._adb('pm list package')
+        if not self._grep('com.googlecode.android_scripting', out):
             raise jsonrpc_client_base.AppStartError(
-                '%s is not installed on %s' % (
-                self.app_name, self._adb.serial))
+                '%s is not installed on %s' % (self.app_name,
+                                               self._adb.serial))

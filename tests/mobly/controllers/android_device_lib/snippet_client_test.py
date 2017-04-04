@@ -30,32 +30,35 @@ MOCK_PACKAGE_NAME = 'some.package.name'
 MOCK_MISSING_PACKAGE_NAME = 'not.installed'
 JSONRPC_BASE_PACKAGE = 'mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase'
 
+
 class MockAdbProxy(object):
     def __init__(self, **kwargs):
         self.apk_not_installed = kwargs.get('apk_not_installed', False)
         self.apk_not_instrumented = kwargs.get('apk_not_instrumented', False)
         self.target_not_installed = kwargs.get('target_not_installed', False)
 
-    def shell(self, params, shell):
-        if not shell:
-            raise AssertionError('Shell has to be true for grep cmds.')
+    def shell(self, params, shell=False):
         if 'pm list package' in params:
             if self.apk_not_installed:
                 return b''
             if self.target_not_installed and MOCK_MISSING_PACKAGE_NAME in params:
                 return b''
-            return bytes(r'package:%s\r' % MOCK_PACKAGE_NAME, 'utf-8')
+            return bytes(r'package:%s' % MOCK_PACKAGE_NAME, 'utf-8')
         elif 'pm list instrumentation' in params:
             if self.apk_not_instrumented:
                 return b''
             if self.target_not_installed:
-                return bytes(r'instrumentation:{p}\r/{r} (target={mp})'.format(
+                return bytes(
+                    r'instrumentation:{p}/{r} (target={mp})'.format(
+                        p=MOCK_PACKAGE_NAME,
+                        r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
+                        mp=MOCK_MISSING_PACKAGE_NAME),
+                    'utf-8')
+            return bytes(
+                r'instrumentation:{p}/{r} (target={p})'.format(
                     p=MOCK_PACKAGE_NAME,
-                    r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
-                    mp=MOCK_MISSING_PACKAGE_NAME), 'utf-8')
-            return bytes(r'instrumentation:{p}\r/{r} (target={p})'.format(
-                p=MOCK_PACKAGE_NAME,
-                r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE), 'utf-8')
+                    r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE),
+                'utf-8')
 
     def __getattr__(self, name):
         """All calls to the none-existent functions in adb proxy would

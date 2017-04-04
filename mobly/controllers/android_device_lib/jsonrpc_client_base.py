@@ -40,6 +40,7 @@ from builtins import str
 
 import json
 import logging
+import re
 import socket
 import threading
 import time
@@ -231,27 +232,28 @@ class JsonRpcClientBase(object):
             self._conn.close()
             self._conn = None
 
-    def _adb_grep_wrapper(self, adb_shell_cmd):
-        """A wrapper for the specific usage of adb shell grep in this class.
+    def _grep(self, regex, output):
+        """Similar to linux's `grep`, this returns the line in an output stream
+        that matches a given regex pattern.
 
-        This surpresses AdbError if the grep fails to find anything.
+        This function is specifically used to grep strings from AdbProxy's
+        output. We have to do this in Python instead of using cli tools because
+        we need to support windows which does not have `grep` in all vesions.
 
         Args:
-            adb_shell_cmd: string, a grep command to execute on the device.
+            regex: string, a regex that matches the expected pattern.
+            output: byte string, the raw output of the adb cmd.
 
         Returns:
-            The stdout of the grep result if the grep found something, False
-            otherwise.
+            A list of strings, all of which are output lines that matches the
+            regex pattern.
         """
-        try:
-            # Have to use shell=True here because not all phones have the cli
-            # tools used in grep cmd like `tr`.
-            return self._adb.shell(
-                adb_shell_cmd, shell=True).decode('utf-8').rstrip()
-        except adb.AdbError as e:
-            if (e.ret_code == 1) and (not e.stdout) and (not e.stderr):
-                return False
-            raise
+        lines = output.decode('utf-8').strip().splitlines()
+        results = []
+        for line in lines:
+            if re.search(regex, line):
+                results.append(line.strip())
+        return results
 
     def _cmd(self, command, uid=None):
         """Send a command to the server.
