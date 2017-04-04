@@ -22,7 +22,7 @@ See http://www.minicircuits.com/softwaredownload/Prog_Manual-6-Programmable_Atte
 """
 
 from mobly.controllers import attenuator
-from mobly.controllers.attenuator_lib import telnet_client
+from mobly.controllers.attenuator_lib import telnet_scpi_client
 
 
 class AttenuatorDevice(object):
@@ -35,7 +35,7 @@ class AttenuatorDevice(object):
     def __init__(self, path_count=1):
         self.path_count = path_count
         # The telnet client used to communicate with the attenuator device.
-        self._telnet_client = telnet_client.TelnetClient(
+        self._telnet_client = telnet_scpi_client.TelnetScpiClient(
             tx_cmd_separator="\r\n", rx_cmd_separator="\r\n", prompt="")
 
     @property
