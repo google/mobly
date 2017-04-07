@@ -71,7 +71,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # helpful since they need to create their own instrumentations and
         # manifest.
         self.log.info('Launching snippet apk %s', self.package)
-        adb_cmd = ['adb', '-s', self._adb.serial, 'shell', cmd]
+        adb_cmd = ['adb']
+        if self._adb.serial:
+            adb_cmd += ['-s', self._adb.serial]
+        adb_cmd += ['shell', cmd]
         self._proc = utils.start_standing_subprocess(adb_cmd, shell=False)
 
     def stop_app(self):
