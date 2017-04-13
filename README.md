@@ -19,6 +19,11 @@ Mobly comes with a set of libs to control common devices like Android devices.
 
 While developed by Googlers, Mobly is not an official Google product.
 
+## Supported Platform
+  - Ubuntu 14.04+
+  - MacOS 10.6+
+  - Windows 7+
+
 ## System dependencies
   - adb (1.0.36+ recommended)
   - python2.7 or python3.4+
