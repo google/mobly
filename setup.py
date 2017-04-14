@@ -24,7 +24,8 @@ install_requires = [
     'mock<=1.0.1',
     'psutil',
     'pytz',
-    'pyyaml'
+    'pyyaml',
+    'timeout_decorator'
 ]
 
 if sys.version_info < (3, ):
