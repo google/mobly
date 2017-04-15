@@ -400,55 +400,6 @@ def wait_for_standing_subprocess(proc, timeout=None):
     proc.wait(timeout)
 
 
-# Timeout decorator block
-class TimeoutError(Exception):
-    """Exception for timeout decorator related errors.
-    """
-    pass
-
-
-def _timeout_handler(signum, frame):
-    """Handler function used by signal to terminate a timed out function.
-    """
-    raise TimeoutError()
-
-
-def timeout(sec):
-    """A decorator used to add time out check to a function.
-
-    This only works in main thread due to its dependency on signal module.
-    Do NOT use it if the decorated funtion does not run in the Main thread.
-
-    Args:
-        sec: Number of seconds to wait before the function times out.
-            No timeout if set to 0
-
-    Returns:
-        What the decorated function returns.
-
-    Raises:
-        TimeoutError is raised when time out happens.
-    """
-
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            if sec:
-                signal.signal(signal.SIGALRM, _timeout_handler)
-                signal.alarm(sec)
-            try:
-                return func(*args, **kwargs)
-            except TimeoutError:
-                raise TimeoutError(("Function {} timed out after {} "
-                                    "seconds.").format(func.__name__, sec))
-            finally:
-                signal.alarm(0)
-
-        return wrapper
-
-    return decorator
-
-
 def get_available_host_port():
     """Gets a host port number available for adb forward.
 

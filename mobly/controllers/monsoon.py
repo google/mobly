@@ -23,6 +23,7 @@ import select
 import struct
 import sys
 import time
+import timeout_decorator
 import collections
 
 # http://pyserial.sourceforge.net/
@@ -753,7 +754,7 @@ class Monsoon(object):
         except:
             return None
 
-    @utils.timeout(60)
+    @timeout_decorator.timeout(60, use_signals=False)
     def usb(self, state):
         """Sets the monsoon's USB passthrough mode. This is specific to the
         USB port in front of the monsoon box which connects to the powered
@@ -789,7 +790,7 @@ class Monsoon(object):
         if not self.dut:
             raise MonsoonError("Need to attach the device before using it.")
 
-    @utils.timeout(15)
+    @timeout_decorator.timeout(15, use_signals=False)
     def _wait_for_device(self, ad):
         while ad.serial not in android_device.list_adb_devices():
             pass
