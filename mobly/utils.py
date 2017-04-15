@@ -19,6 +19,7 @@ import functools
 import logging
 import os
 import platform
+import portpicker
 import psutil
 import random
 import signal
@@ -457,7 +458,7 @@ def get_available_host_port():
         forward.
     """
     while True:
-        port = random.randint(1024, 9900)
+        port = portpicker.PickUnusedPort()
         if is_port_available(port):
             return port
 
