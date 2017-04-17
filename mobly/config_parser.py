@@ -186,8 +186,8 @@ def load_test_config_file(test_config_path, tb_filters=None):
     # Decide log path.
     log_path = mobly_params.get(keys.Config.key_log_path.value,
                                 _DEFAULT_LOG_PATH)
-    if _ENV_MOBLY_LOGPATH in os.environ:
-        log_path = os.environ[_ENV_MOBLY_LOGPATH]
+    if ENV_MOBLY_LOGPATH in os.environ:
+        log_path = os.environ[ENV_MOBLY_LOGPATH]
     log_path = utils.abs_path(log_path)
     # Validate configs
     _validate_test_config(configs)
