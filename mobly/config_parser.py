@@ -23,7 +23,7 @@ from mobly import keys
 from mobly import utils
 
 # An environment variable defining the base location for Mobly logs.
-_ENV_MOBLY_LOGPATH = 'MOBLY_LOGPATH'
+ENV_MOBLY_LOGPATH = 'MOBLY_LOGPATH'
 _DEFAULT_LOG_PATH = '/tmp/logs/mobly/'
 
 
