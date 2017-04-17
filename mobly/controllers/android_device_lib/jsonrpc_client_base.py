@@ -183,11 +183,12 @@ class JsonRpcClientBase(object):
         """
         self.check_app_installed()
         self._do_start_app()
-        for _ in range(wait_time):
-            time.sleep(1)
+        expiration_time = time.time() + wait_time
+        while time.time() < expiration_time:
             if self._is_app_running():
                 self._log.debug('Successfully started %s', self.app_name)
                 return
+            time.sleep(1)
         raise AppStartError('%s failed to start on %s.' %
                             (self.app_name, self._adb.serial))
 
