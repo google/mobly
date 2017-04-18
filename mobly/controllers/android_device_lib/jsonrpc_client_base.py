@@ -175,8 +175,8 @@ class JsonRpcClientBase(object):
         """Starts the server app on the android device.
 
         Args:
-            wait_time: float, The time to wait for the app to come up before
-                       raising an error.
+            wait_time: int, The *minimum* number of seconds to wait for the app
+                to come up before raising an error.
 
         Raises:
             AppStartError: When the app was not able to be started.
