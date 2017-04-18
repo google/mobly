@@ -458,32 +458,8 @@ def get_available_host_port():
         forward.
     """
     while True:
-        port = portpicker.PickUnusedPort()
-        if is_port_available(port):
+        port = portpicker.PickUnusedPort()        
+        # Make sure adb is not using this port so we don't accidentally
+        # interrupt ongoing runs by trying to bind to the port.
+        if port not in adb.list_occupied_adb_ports():
             return port
-
-
-def is_port_available(port):
-    """Checks if a given port number is available on the system.
-
-    Args:
-        port: An integer which is the port number to check.
-
-    Returns:
-        True if the port is available; False otherwise.
-    """
-    # Make sure adb is not using this port so we don't accidentally interrupt
-    # ongoing runs by trying to bind to the port.
-    if port in adb.list_occupied_adb_ports():
-        return False
-    s = None
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('localhost', port))
-        return True
-    except socket.error:
-        return False
-    finally:
-        if s:
-            s.close()
