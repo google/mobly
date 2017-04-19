@@ -738,7 +738,10 @@ class AndroidDevice(object):
     def start_adb_logcat(self):
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
+
+        This clears the previous cached logcat content on device.
         """
+        self.adb.logcat('-c')
         if self._adb_logcat_process:
             raise DeviceError(
                 self,
