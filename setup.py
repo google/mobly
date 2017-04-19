@@ -35,7 +35,6 @@ if sys.version_info < (3, ):
         'futures',
     ])
 
-
 if platform.system() == 'Windows':
     install_requires.append('pywin32')
 
@@ -60,19 +59,18 @@ def main():
     setuptools.setup(
         name='mobly',
         version='1.2.1',
-        maintainer = 'Ang Li',
-        maintainer_email = 'mobly-github@googlegroups.com',
+        maintainer='Ang Li',
+        maintainer_email='mobly-github@googlegroups.com',
         description='Automation framework for special end-to-end test cases',
         license='Apache2.0',
-        url = 'https://github.com/google/mobly',
-        download_url = 'https://github.com/google/mobly/tarball/1.2.1',
+        url='https://github.com/google/mobly',
+        download_url='https://github.com/google/mobly/tarball/1.2.1',
         packages=setuptools.find_packages(),
         include_package_data=False,
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
         tests_require=['pytest'],
         install_requires=install_requires,
-        cmdclass={'test': PyTest},
-    )
+        cmdclass={'test': PyTest}, )
 
 
 if __name__ == '__main__':

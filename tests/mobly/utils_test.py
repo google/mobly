@@ -20,17 +20,18 @@ import unittest
 import portpicker
 from mobly import utils
 
-AVAILABLE_PORT=5
+AVAILABLE_PORT = 5
+
 
 class UtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.utils.
     """
+
     def test_start_standing_subproc(self):
-        with self.assertRaisesRegexp(utils.Error,
-                                     "Process .* has terminated"):
+        with self.assertRaisesRegexp(utils.Error, 'Process .* has terminated'):
             utils.start_standing_subprocess(
-                  ['sleep', '0'], check_health_delay=0.5)
+                ['sleep', '0'], check_health_delay=0.5)
 
     def test_stop_standing_subproc(self):
         p = utils.start_standing_subprocess(['sleep', '5'])
@@ -43,20 +44,22 @@ class UtilsTest(unittest.TestCase):
         with self.assertRaisesRegexp(utils.Error, 'Process .* has terminated'):
             utils.stop_standing_subprocess(p)
 
-    @mock.patch('mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
-    def test_get_available_port_positive(self, mock_list_occupied_adb_ports):
-        with mock.patch.object(portpicker, 'PickUnusedPort', return_value=AVAILABLE_PORT):
-            self.assertEqual(utils.get_available_host_port(), AVAILABLE_PORT)
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
+    @mock.patch('portpicker.PickUnusedPort', return_value=AVAILABLE_PORT)
+    def test_get_available_port_positive(self, mock_list_occupied_adb_ports,
+                                         mock_pick_unused_port):
+        self.assertEqual(utils.get_available_host_port(), AVAILABLE_PORT)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports',
         return_value=[AVAILABLE_PORT])
-    def test_get_available_port_negative(self, mock_list_occupied_adb_ports):
-        with mock.patch.object(portpicker, 'PickUnusedPort',
-                               return_value=AVAILABLE_PORT):
-            with self.assertRaisesRegexp(utils.Error, 'Failed to find.* retries'):
-                utils.get_available_host_port()
+    @mock.patch('portpicker.PickUnusedPort', return_value=AVAILABLE_PORT)
+    def test_get_available_port_negative(self, mock_list_occupied_adb_ports,
+                                         mock_pick_unused_port):
+        with self.assertRaisesRegexp(utils.Error, 'Failed to find.* retries'):
+            utils.get_available_host_port()
 
 
-if __name__ == "__main__":
-   unittest.main()
+if __name__ == '__main__':
+    unittest.main()
