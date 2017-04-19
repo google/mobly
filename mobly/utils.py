@@ -33,6 +33,8 @@ from mobly.controllers.android_device_lib import adb
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
+# Number of times to retry to get available port
+MAX_RETRY = 50
 
 ascii_letters_and_digits = string.ascii_letters + string.digits
 valid_filename_chars = "-_." + ascii_letters_and_digits
@@ -457,9 +459,12 @@ def get_available_host_port():
         An integer representing a port number on the host available for adb
         forward.
     """
-    while True:
+    i = 0
+    while i < MAX_RETRY:
         port = portpicker.PickUnusedPort()        
         # Make sure adb is not using this port so we don't accidentally
         # interrupt ongoing runs by trying to bind to the port.
         if port not in adb.list_occupied_adb_ports():
             return port
+    raise Error('Failed to find available port after {} retries'.
+                format(MAX_RETRY))
