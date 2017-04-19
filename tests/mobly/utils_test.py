@@ -20,6 +20,7 @@ import unittest
 import portpicker
 from mobly import utils
 
+AVAILABLE_PORT=5
 
 class UtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
