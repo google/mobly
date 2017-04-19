@@ -349,7 +349,7 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     Args:
         proc: Subprocess to terminate.
 
-    Throws:
+    Raises:
         Error: if the subprocess could not be stopped.
     """
     pid = proc.pid
@@ -458,6 +458,7 @@ def get_available_host_port():
     Returns:
         An integer representing a port number on the host available for adb
         forward.
+
     Raises:
       Error is raised when no port is found after
       MAX_PORT_ALLOCATION_RETRY times.
