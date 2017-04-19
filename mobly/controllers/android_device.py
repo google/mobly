@@ -738,14 +738,18 @@ class AndroidDevice(object):
     def start_adb_logcat(self):
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
+
+        This clears the previous cached logcat content on device.
         """
         if self._adb_logcat_process:
             raise DeviceError(
                 self,
                 'Logcat thread is already running, cannot start another one.')
-        # Disable adb log spam filter for rootable. Have to stop and clear
-        # settings first because 'start' doesn't support --clear option before
-        # Android N.
+        # Clears cached adb content.
+        self.adb.logcat('-c')
+        # Disable adb log spam filter for rootable devices. Have to stop and
+        # clear settings first because 'start' doesn't support --clear option
+        # before Android N.
         if self.is_rootable:
             self.adb.shell('logpersist.stop --clear')
             self.adb.shell('logpersist.start')
