@@ -17,6 +17,7 @@ import socket
 import time
 import unittest
 
+import portpicker
 from mobly import utils
 
 
@@ -42,22 +43,19 @@ class UtilsTest(unittest.TestCase):
             utils.stop_standing_subprocess(p)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
-    def test_is_port_available_positive(self, mock_list_occupied_adb_ports):
-        test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        test_s.bind(('localhost', 0))
-        port = test_s.getsockname()[1]
-        test_s.close()
-        self.assertTrue(utils.is_port_available(port))
+    def test_get_available_port_positive(self, mock_list_occupied_adb_ports):
+        with mock.patch.object(portpicker, 'PickUnusedPort', return_value=AVAILABLE_PORT):
+            self.assertEqual(utils.get_available_host_port(), AVAILABLE_PORT)
 
-    @mock.patch('mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
-    def test_is_port_available_negative(self, mock_list_occupied_adb_ports):
-        test_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        test_s.bind(('localhost', 0))
-        port = test_s.getsockname()[1]
-        try:
-            self.assertFalse(utils.is_port_available(port))
-        finally:
-            test_s.close()
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports',
+        return_value=[AVAILABLE_PORT])
+    def test_get_available_port_negative(self, mock_list_occupied_adb_ports):
+        with mock.patch.object(portpicker, 'PickUnusedPort',
+                               return_value=AVAILABLE_PORT):
+            with self.assertRaisesRegexp(utils.Error, 'Failed to find.* retries'):
+                utils.get_available_host_port()
+
 
 if __name__ == "__main__":
    unittest.main()
