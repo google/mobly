@@ -25,7 +25,8 @@ install_requires = [
     'portpicker',
     'psutil',
     'pytz',
-    'pyyaml'
+    'pyyaml',
+    'timeout_decorator'
 ]
 
 if sys.version_info < (3, ):
@@ -58,13 +59,13 @@ class PyTest(test.test):
 def main():
     setuptools.setup(
         name='mobly',
-        version='1.2.1',
-        maintainer='Ang Li',
-        maintainer_email='mobly-github@googlegroups.com',
+        version='1.3',
+        maintainer = 'Ang Li',
+        maintainer_email = 'mobly-github@googlegroups.com',
         description='Automation framework for special end-to-end test cases',
         license='Apache2.0',
-        url='https://github.com/google/mobly',
-        download_url='https://github.com/google/mobly/tarball/1.2.1',
+        url = 'https://github.com/google/mobly',
+        download_url = 'https://github.com/google/mobly/tarball/1.3',
         packages=setuptools.find_packages(),
         include_package_data=False,
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],

@@ -4,13 +4,15 @@
 
 **Mobly** is a Python-based test framework that specializes in supporting test
 cases that require multiple devices, complex environments, or custom hardware
-setups. Examples:
+setups.
 
+Here are some example use cases:
 *   P2P data transfer between two devices
 *   Conference calls across three phones
 *   Wearable device interacting with a phone
 *   Internet-Of-Things devices interacting with each other
 *   Testing RF characteristics of devices with special equipment
+*   Testing LTE network by controlling phones, base stations, and eNBs
 
 Mobly can support many different types of devices and equipment, and it's easy
 to plug your own device or custom equipment/service into Mobly.
@@ -19,17 +21,23 @@ Mobly comes with a set of libs to control common devices like Android devices.
 
 While developed by Googlers, Mobly is not an official Google product.
 
+## Compatibility
+
+Mobly is compatible with both *python 3.4+* and *python 2.7*.
+
+Mobly tests could run on the following platforms:
+  - Ubuntu 14.04+
+  - MacOS 10.6+
+  - Windows 7+
+
 ## System dependencies
   - adb (1.0.36+ recommended)
   - python2.7 or python3.4+
   - python-setuptools
 
-**If you use Python3, use `pip3` and `python3` (or python3.x) accordingly.**
+*If you use Python3, use `pip3` and `python3` (or python3.x) accordingly.*
 
 ## Installation
-
-Mobly is compatible with both python 3.4+ and python 2.7.
-
 You can install the released package from pip
 
 ```
