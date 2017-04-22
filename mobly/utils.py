@@ -105,7 +105,7 @@ def create_alias(target_path, alias_path):
     """
     if platform.system() == 'Windows' and not alias_path.endswith('.lnk'):
         alias_path += '.lnk'
-    if os.path.exists(alias_path):
+    if os.path.lexists(alias_path):
         os.remove(alias_path)
     if platform.system() == 'Windows':
         from win32com import client
