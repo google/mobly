@@ -60,14 +60,18 @@ class UtilsTest(unittest.TestCase):
         with self.assertRaisesRegexp(utils.Error, 'Failed to find.* retries'):
             utils.get_available_host_port()
 
-    def test_get_available_port_returns_free_port(self):
-        port = utils.get_available_host_port()	
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
+    def test_get_available_port_returns_free_port(
+            self, mock_list_occupied_adb_ports):
+        port = utils.get_available_host_port()
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            s.bind(('localhost', port))        
+            s.bind(('localhost', port))
         finally:
             s.close()
+
 
 if __name__ == '__main__':
     unittest.main()
