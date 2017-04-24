@@ -60,6 +60,15 @@ class UtilsTest(unittest.TestCase):
         with self.assertRaisesRegexp(utils.Error, 'Failed to find.* retries'):
             utils.get_available_host_port()
 
+    def test_get_available_port_returns_free_port(self):
+        try:
+            port = utils.get_available_host_port()	
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(('localhost', port))        
+        finally:
+            if s:
+                s.close()
 
 if __name__ == '__main__':
     unittest.main()
