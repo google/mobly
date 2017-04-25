@@ -19,6 +19,7 @@ import functools
 import logging
 import os
 import platform
+import portpicker
 import psutil
 import random
 import signal
@@ -32,10 +33,11 @@ from mobly.controllers.android_device_lib import adb
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
+# Number of times to retry to get available port
+MAX_PORT_ALLOCATION_RETRY = 50
 
 ascii_letters_and_digits = string.ascii_letters + string.digits
 valid_filename_chars = "-_." + ascii_letters_and_digits
-
 
 GMT_to_olson = {
     "GMT-9": "America/Anchorage",
@@ -291,7 +293,7 @@ def _assert_subprocess_running(proc):
     if ret is not None:
         out, err = proc.communicate()
         raise Error("Process %d has terminated. ret: %d, stderr: %s,"
-                             " stdout: %s" % (proc.pid, ret, err, out))
+                    " stdout: %s" % (proc.pid, ret, err, out))
 
 
 def start_standing_subprocess(cmd, check_health_delay=0, shell=False):
@@ -347,7 +349,7 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     Args:
         proc: Subprocess to terminate.
 
-    Throws:
+    Raises:
         Error: if the subprocess could not be stopped.
     """
     pid = proc.pid
@@ -366,7 +368,8 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
             child.wait(timeout=10)
         except:
             success = False
-            logging.exception('Failed to kill standing subprocess %d', child.pid)
+            logging.exception('Failed to kill standing subprocess %d',
+                              child.pid)
     try:
         process.kill()
         process.wait(timeout=10)
@@ -406,34 +409,15 @@ def get_available_host_port():
     Returns:
         An integer representing a port number on the host available for adb
         forward.
+
+    Raises:
+      Error: when no port is found after MAX_PORT_ALLOCATION_RETRY times.
     """
-    while True:
-        port = random.randint(1024, 9900)
-        if is_port_available(port):
+    for _ in range(MAX_PORT_ALLOCATION_RETRY):
+        port = portpicker.PickUnusedPort()
+        # Make sure adb is not using this port so we don't accidentally
+        # interrupt ongoing runs by trying to bind to the port.
+        if port not in adb.list_occupied_adb_ports():
             return port
-
-
-def is_port_available(port):
-    """Checks if a given port number is available on the system.
-
-    Args:
-        port: An integer which is the port number to check.
-
-    Returns:
-        True if the port is available; False otherwise.
-    """
-    # Make sure adb is not using this port so we don't accidentally interrupt
-    # ongoing runs by trying to bind to the port.
-    if port in adb.list_occupied_adb_ports():
-        return False
-    s = None
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('localhost', port))
-        return True
-    except socket.error:
-        return False
-    finally:
-        if s:
-            s.close()
+    raise Error('Failed to find available port after {} retries'.format(
+        MAX_PORT_ALLOCATION_RETRY))

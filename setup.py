@@ -22,6 +22,7 @@ install_requires = [
     # mock-1.0.1 is the last version compatible with setuptools <17.1,
     # which is what comes with Ubuntu 14.04 LTS.
     'mock<=1.0.1',
+    'portpicker',
     'psutil',
     'pytz',
     'pyyaml',
@@ -34,7 +35,6 @@ if sys.version_info < (3, ):
         # "futures" is needed for py2 compatibility and it only works in 2.7
         'futures',
     ])
-
 
 if platform.system() == 'Windows':
     install_requires.append('pywin32')
@@ -71,8 +71,7 @@ def main():
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
         tests_require=['pytest'],
         install_requires=install_requires,
-        cmdclass={'test': PyTest},
-    )
+        cmdclass={'test': PyTest}, )
 
 
 if __name__ == '__main__':
