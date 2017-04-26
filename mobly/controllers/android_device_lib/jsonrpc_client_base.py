@@ -48,7 +48,7 @@ from mobly.controllers.android_device_lib import callback_handler
 
 # Maximum time to wait for the app to start on the device (10 minutes).
 # TODO: This timeout is set high in order to allow for retries in start_app.
-APP_START_WAIT_TIME = 10*60
+APP_START_WAIT_TIME = 10 * 60
 
 # UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
 UNKNOWN_UID = -1
@@ -185,17 +185,17 @@ class JsonRpcClientBase(object):
         """
         self.check_app_installed()
         self._do_start_app()
-        expiration_time = time.time() + wait_time
         start_time = time.time()
+        expiration_time = start_time + wait_time
         while time.time() < expiration_time:
-          self._log.debug('Attempting to start %s.', self.app_name)
+            self._log.debug('Attempting to start %s.', self.app_name)
             if self._is_app_running():
-              self._log.debug('Successfully started %s after %d seconds.',
-                              self.app_name, time.time()-start_time)
+                self._log.debug('Successfully started %s after %d seconds.',
+                                self.app_name, time.time() - start_time)
                 return
             time.sleep(1)
-        raise AppStartError('%s failed to start on %s.' %
-                            (self.app_name, self._adb.serial))
+        raise AppStartError('%s failed to start on %s.' % (self.app_name,
+                                                           self._adb.serial))
 
     def connect(self, uid=UNKNOWN_UID, cmd=JsonRpcCommand.INIT):
         """Opens a connection to a JSON RPC server.
