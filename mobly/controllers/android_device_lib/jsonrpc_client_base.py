@@ -46,8 +46,8 @@ import time
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import callback_handler
 
-# Maximum time to wait for the app to start on the device.
-APP_START_WAIT_TIME = 15
+# Maximum time to wait for the app to start on the device (2 minutes).
+APP_START_WAIT_TIME = 2*60
 
 # UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
 UNKNOWN_UID = -1
