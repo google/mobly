@@ -282,7 +282,8 @@ class AndroidDeviceTest(unittest.TestCase):
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = 'adb -s %s logcat -v threadtime -b all >> %s'
         start_proc_mock.assert_called_with(
-              adb_cmd % (ad.serial, expected_log_path), shell=True)
+              adb_cmd % (ad.serial, expected_log_path), check_health_delay=0.1,
+                         shell=True)
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
         expected_msg = ('Logcat thread is already running, cannot start another'
                         ' one.')
@@ -326,7 +327,8 @@ class AndroidDeviceTest(unittest.TestCase):
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = 'adb -s %s logcat -v threadtime -b radio >> %s'
         start_proc_mock.assert_called_with(
-              adb_cmd % (ad.serial, expected_log_path), shell=True)
+              adb_cmd % (ad.serial, expected_log_path), check_health_delay=0.1,
+                         shell=True)
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy', return_value=mock_android_device.MockAdbProxy(1))

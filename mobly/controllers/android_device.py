@@ -756,14 +756,28 @@ class AndroidDevice(object):
         f_name = 'adblog,%s,%s.txt' % (self.model, self.serial)
         utils.create_dir(self.log_path)
         logcat_file_path = os.path.join(self.log_path, f_name)
+        use_default_param = False
         try:
             extra_params = self.adb_logcat_param
         except AttributeError:
-            extra_params = '-b main -b crash -b system -b radio'
+            use_default_param = True
+            extra_params = '-b all'
         cmd = 'adb -s %s logcat -v threadtime %s >> %s' % (
             self.serial, extra_params, logcat_file_path)
-        self._adb_logcat_process = utils.start_standing_subprocess(
-            cmd, shell=True)
+        try:
+            process = utils.start_standing_subprocess(
+                cmd, check_health_delay=0.1, shell=True)
+        except utils.Error:
+            # adb process did not start succesfully.
+            # If the user specificed the params, raise the error.
+            if not use_default_param:
+                raise
+            # Otherwise retry without params.
+            cmd = 'adb -s %s logcat -v threadtime >> %s' % (self.serial,
+                                                            logcat_file_path)
+            process = utils.start_standing_subprocess(
+                cmd, check_health_delay=0.1, shell=True)
+        self._adb_logcat_process = process
         self.adb_logcat_file_path = logcat_file_path
 
     def stop_adb_logcat(self):
