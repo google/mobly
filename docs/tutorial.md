@@ -221,6 +221,7 @@ TestBeds:
  
 ```python
 import logging
+import pprint
 
 from mobly import asserts
 from mobly import base_test
@@ -264,9 +265,9 @@ class HelloWorldTest(base_test.BaseTestClass):
         self.discoverer.log.info('Looking for Bluetooth devices.')
         discovered_devices = self.discoverer.mbs.btDiscoverAndGetResults()
         self.discoverer.log.debug('Found Bluetooth devices: %s',
-                                  discovered_devices)
+                                  pprint.pformat(discovered_devices, indent=2))
         discovered_names = [device['Name'] for device in discovered_devices]
-        logging.info('Verify that the target is discovered by the discoverer.')
+        logging.info('Verifying the target is discovered by the discoverer.')
         asserts.assert_true(
             target_name in discovered_names,
             'Failed to discover the target device %s over Bluetooth.' %
