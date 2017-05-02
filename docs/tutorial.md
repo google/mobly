@@ -287,12 +287,9 @@ if __name__ == '__main__':
 There's potentially a lot more we could do in this test, e.g. check
 the hardware address, see whether we can pair devices, transfer files, etc.
 
-To learn more about the features included in MBS, you could checkout its help
-menu:
-
-```
->>> print(device.mbs.help())
-```
+To learn more about the features included in MBS, go to [MBS repo]
+(https://github.com/google/mobly-bundled-snippets) to see how to check its help
+menu.
 
 To learn more about Mobly Snippet Lib, including features like Espresso support
 and asynchronous calls, see the [snippet lib examples]
