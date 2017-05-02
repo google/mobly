@@ -9,17 +9,12 @@ various devices and you can also use your own custom hardware/equipment.
 
 *   A computer with at least 2 USB ports.
 *   Mobly package and its system dependencies installed on the computer.
-*   One or two Android devices with the app SL4A* installed.
+*   One or two Android devices with the [Mobly Bundled Snippets]
+    (https://github.com/google/mobly-bundled-snippets) (MBS) installed. We will
+    use MBS to trigger actions on the Android devices.
 *   A working adb setup. To check, connect one Android device to the computer
     and make sure it has "USB debugging" enabled. Make sure the device shows up
     in the list printed by `adb devices`.
-
-\* You can get SL4A from the
-[Android repo](https://source.android.com/source/downloading.html), under
-project `<aosp>/external/sl4a`
-
-It can be built like a regular system app with `mm` commands. It needs to be
-signed with the build you use on your Android devices.
 
 # Example 1: Hello World!
  
@@ -51,10 +46,11 @@ class HelloWorldTest(base_test.BaseTestClass):
     # object is created from this.
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
-    self.dut.load_sl4a() # starts sl4a.
+    # Start Mobly Bundled Snippets (MBS).
+    self.dut.load_snippet('mbs', 'com.google.android.mobly.snippet.bundled')
  
   def test_hello(self):
-    self.dut.sl4a.makeToast('Hello World!')
+    self.dut.mbs.makeToast('Hello World!')
  
 if __name__ == '__main__':
   test_runner.main()
@@ -97,13 +93,13 @@ class HelloWorldTest(base_test.BaseTestClass):
   def setup_class(self):
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
-    self.dut.load_sl4a()
+    self.dut.load_snippet('mbs', 'com.google.android.mobly.snippet.bundled')
  
   def test_hello(self):
-    self.dut.sl4a.makeToast('Hello World!')
+    self.dut.mbs.makeToast('Hello World!')
  
   def test_bye(self):
-    self.dut.sl4a.makeToast('Goodbye!')
+    self.dut.mbs.makeToast('Goodbye!')
  
 if __name__ == '__main__':
   test_runner.main()
@@ -152,9 +148,9 @@ In the test script, you could access the user parameter:
   def test_favorite_food(self):
     food = self.user_params.get('favorite_food')
     if food:
-      self.dut.sl4a.makeToast("I'd like to eat %s." % food)
+      self.dut.mbs.makeToast("I'd like to eat %s." % food)
     else:
-      self.dut.sl4a.makeToast("I'm not hungry.")
+      self.dut.mbs.makeToast("I'm not hungry.")
 ```
  
 # Example 4: Multiple Test Beds and Default Test Parameters
@@ -201,7 +197,7 @@ screen.
  
 In this example, we use one Android device to discover another Android device
 via bluetooth. This test demonstrates several essential elements in test
-writing, like logging and asserts.
+writing, like asserts, device debug tag, and general logging vs logging with device tag.
  
 **sample_config.yml**
  
@@ -211,111 +207,90 @@ TestBeds:
     Controllers:
         AndroidDevice:
           - serial: xyz,
-            label: dut
+            label: target
           - serial: abc,
             label: discoverer
     TestParams:
         bluetooth_name: MagicBluetooth,
         bluetooth_timeout: 5
- 
- 
+
 ```
  
 **sample_test.py**
  
  
 ```python
+import logging
+import pprint
+
+from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
-from mobly.controllerse import android_device
- 
+from mobly.controllers import android_device
+
+# Number of seconds for the target to stay discoverable on Bluetooth.
+DISCOVERABLE_TIME = 60
+
+
 class HelloWorldTest(base_test.BaseTestClass):
- 
- 
-  def setup_class(self):
-    # Registering android_device controller module, and declaring that the test
-    # requires at least two Android devices.
-    self.ads = self.register_controller(android_device, min_number=2)
-    self.dut = android_device.get_device(self.ads, label='dut')
-    self.dut.load_sl4a()
-    self.discoverer = android_device.get_device(self.ads, label='discoverer')
-    self.discoverer.load_sl4a()
-    self.dut.ed.clear_all_events()
-    self.discoverer.ed.clear_all_events()
- 
-  def setup_test(self):
-    # Make sure bluetooth is on
-    self.dut.sl4a.bluetoothToggleState(True)
-    self.discoverer.sl4a.bluetoothToggleState(True)
-    self.dut.ed.pop_event(event_name='BluetoothStateChangedOn',
-                          timeout=10)
-    self.discoverer.ed.pop_event(event_name='BluetoothStateChangedOn',
-                                 timeout=10)
-    if (not self.dut.sl4a.bluetoothCheckState() or
-           not self.discoverer.sl4a.bluetoothCheckState()):
-      asserts.abort_class('Could not turn on Bluetooth on both devices.')
- 
-    # Set the name of device #1 and verify the name properly registered.
-    self.dut.sl4a.bluetoothSetLocalName(self.bluetooth_name)
-    asserts.assert_equal(self.dut.sl4a.bluetoothGetLocalName(),
-                         self.bluetooth_name,
-                         'Failed to set bluetooth name to %s on %s' %
-                         (self.bluetooth_name, self.dut.serial))
- 
-  def test_bluetooth_discovery(self):
-    # Make dut discoverable.
-    self.dut.sl4a.bluetoothMakeDiscoverable()
-    scan_mode = self.dut.sl4a.bluetoothGetScanMode()
-    asserts.assert_equal(
-        scan_mode, 3,  # 3 signifies CONNECTABLE and DISCOVERABLE
-        'Android device %s failed to make blueooth discoverable.' %
-            self.dut.serial)
- 
-    # Start the discovery process on #discoverer.
-    self.discoverer.ed.clear_all_events()
-    self.discoverer.sl4a.bluetoothStartDiscovery()
-    self.discoverer.ed.pop_event(
-        event_name='BluetoothDiscoveryFinished',
-        timeout=self.bluetooth_timeout)
- 
-    # The following log entry demonstrates AndroidDevice log object, which
-    # prefixes log entries with "[AndroidDevice|<serial>] "
-    self.discoverer.log.info('Discovering other bluetooth devices.')
- 
-    # Get a list of discovered devices
-    discovered_devices = self.discoverer.sl4a.bluetoothGetDiscoveredDevices()
-    self.discoverer.log.info('Found devices: %s', discovered_devices)
-    matching_devices = [d for d in discovered_devices
-                        if d.get('name') == self.bluetooth_name]
-    if not matching_devices:
-      asserts.fail('Android device %s did not discover %s.' %
-                   (self.discoverer.serial, self.dut.serial))
-    self.discoverer.log.info('Discovered at least 1 device named '
-                             '%s: %s', self.bluetooth_name, matching_devices)
- 
+    def setup_class(self):
+        # Registering android_device controller module, and declaring that the test
+        # requires at least two Android devices.
+        self.ads = self.register_controller(android_device, min_number=2)
+        # The device used to discover Bluetooth devices.
+        self.discoverer = android_device.get_device(
+            self.ads, label='discoverer')
+        # Sets the tag that represents this device in logs.
+        self.discoverer.debug_tag = 'discoverer'
+        # The device that is expected to be discovered
+        self.target = android_device.get_device(self.ads, label='target')
+        self.target.debug_tag = 'target'
+        self.target.load_snippet('mbs',
+                                 'com.google.android.mobly.snippet.bundled')
+        self.discoverer.load_snippet(
+            'mbs', 'com.google.android.mobly.snippet.bundled')
+
+    def setup_test(self):
+        # Make sure bluetooth is on.
+        self.target.mbs.btEnable()
+        self.discoverer.mbs.btEnable()
+        # Set Bluetooth name on target device.
+        self.target.mbs.btSetName('LookForMe!')
+
+    def test_bluetooth_discovery(self):
+        target_name = self.target.mbs.btGetName()
+        self.target.log.info('Become discoverable with name "%s" for %ds.',
+                             target_name, DISCOVERABLE_TIME)
+        self.target.mbs.btBecomeDiscoverable(DISCOVERABLE_TIME)
+        self.discoverer.log.info('Looking for Bluetooth devices.')
+        discovered_devices = self.discoverer.mbs.btDiscoverAndGetResults()
+        self.discoverer.log.debug('Found Bluetooth devices: %s',
+                                  pprint.pformat(discovered_devices, indent=2))
+        discovered_names = [device['Name'] for device in discovered_devices]
+        logging.info('Verifying the target is discovered by the discoverer.')
+        asserts.assert_true(
+            target_name in discovered_names,
+            'Failed to discover the target device %s over Bluetooth.' %
+            target_name)
+
+    def teardown_test(self):
+        # Turn Bluetooth off on both devices after test finishes.
+        self.target.mbs.btDisable()
+        self.discoverer.mbs.btDisable()
+
+
 if __name__ == '__main__':
-  test_runner.main()
+    test_runner.main()
+
 ```
- 
-One will notice that this is not the most robust test (another nearby device
-could be using the same name), but in the interest of simplicity, we've limited
-the number of RPCs sent to each Android device to just two:
- 
-*   For `self.dut`, we asked it to make itself discoverable and checked that it
-    did it.
-*   For `self.discoverer`, we asked it to start scanning for nearby bluetooth
-    devices, and then we pulled the list of devices seen.
- 
-There's potentially a lot more we could do to write a thorough test (e.g., check
-the hardware address, see whether we can pair devices, transfer files, etc.).
- 
-# Event Dispatcher
- 
-You'll notice above that we've used `self.{device_alias}.ed.pop_event()`. The
-`ed` attribute of an Android device object is an EventDispatcher, which provides
-APIs to interact with async events.
- 
-For example, `pop_event` is a function which will block until either a
-specified event is seen or the call times out, and by using it we avoid the use
-of busy loops that constantly check the device state. For more, see the APIs in
-`mobly.controllers.android_device_lib.event_dispatcher`.
+
+There's potentially a lot more we could do in this test, e.g. check
+the hardware address, see whether we can pair devices, transfer files, etc.
+
+To learn more about the features included in MBS, go to [MBS repo]
+(https://github.com/google/mobly-bundled-snippets) to see how to check its help
+menu.
+
+To learn more about Mobly Snippet Lib, including features like Espresso support
+and asynchronous calls, see the [snippet lib examples]
+(https://github.com/google/mobly-snippet-lib/tree/master/examples).
