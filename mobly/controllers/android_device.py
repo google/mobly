@@ -408,7 +408,7 @@ class AndroidDevice(object):
             The tag can be customized with `ad.debug_tag = 'Caller'`:
                 'INFO [AndroidDevice|Caller] One pending call ringing.'
         """
-        self.log.info('Logging debug tag set to \"%s\"', tag)
+        self.log.info('Logging debug tag set to "%s"', tag)
         self._debug_tag = tag
         self.log.extra['tag'] = tag
 
