@@ -350,7 +350,7 @@ class AndroidDevice(object):
                   android device should be stored.
         log: A logger adapted from root logger with an added prefix specific
              to an AndroidDevice instance. The default prefix is
-             [AndroidDevice|<serial>]. Use self.debug_tag(tag) to use a
+             [AndroidDevice|<serial>]. Use self.debug_tag = 'tag' to use a
              different tag in the prefix.
         adb_logcat_file_path: A string that's the full path to the adb logcat
                               file collected, if any.
