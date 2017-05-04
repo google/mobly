@@ -433,6 +433,12 @@ class BaseTestClass(object):
             test_func = functools.partial(test_logic, *args)
             self._generated_test_table[test_name] = test_func
 
+    def generate_tests(func, run=True):
+        def func_wrapper(name):
+            return "<p>{0}</p>".format(func(name))
+
+        return func_wrapper
+
     def run_generated_testcases(self,
                                 test_func,
                                 settings,
@@ -467,6 +473,9 @@ class BaseTestClass(object):
         Returns:
             A list of settings that did not pass.
         """
+        logging.warning(
+            '"run_generated_testcases" is deprecated and will be '
+            'removed in Mobly 1.5, please use "generate_tests" instead.')
         args = args or ()
         kwargs = kwargs or {}
         failed_settings = []
