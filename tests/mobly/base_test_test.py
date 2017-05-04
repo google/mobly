@@ -784,6 +784,87 @@ class BaseTestTest(unittest.TestCase):
         bc.unpack_userparams(arg1="haha")
         self.assertEqual(bc.arg1, "haha")
 
+    def test_generate_tests_run(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def pre_setup(self):
+                self.generate_tests(
+                    test_logic = self.logic,
+                    name_func = self.name_gen,
+                    arg_sets = [(1, 2), (3, 4)]
+                    )
+            def name_gen(self, a, b):
+                return 'test_%s_%s' % (a, b)
+            def logic(self, a, b):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        self.assertEqual(len(bt_cls.results.requested), 2)
+        self.assertEqual(len(bt_cls.results.passed), 2)
+        self.assertEqual(bt_cls.results.passed[0].test_name, 'test_1_2')
+        self.assertEqual(bt_cls.results.passed[1].test_name, 'test_3_4')
+
+    def test_generate_tests_selected_run(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def pre_setup(self):
+                self.generate_tests(
+                    test_logic = self.logic,
+                    name_func = self.name_gen,
+                    arg_sets = [(1, 2), (3, 4)]
+                    )
+            def name_gen(self, a, b):
+                return 'test_%s_%s' % (a, b)
+            def logic(self, a, b):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_3_4'])
+        self.assertEqual(len(bt_cls.results.requested), 1)
+        self.assertEqual(len(bt_cls.results.passed), 1)
+        self.assertEqual(bt_cls.results.passed[0].test_name, 'test_3_4')
+
+    def test_generate_tests_call_outside_of_pre_setup(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_ha(self):
+                self.generate_tests(
+                    test_logic = self.logic,
+                    name_func = self.name_gen,
+                    arg_sets = [(1, 2), (3, 4)]
+                    )
+            def name_gen(self, a, b):
+                return 'test_%s_%s' % (a, b)
+            def logic(self, a, b):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, "test_ha")
+        self.assertEqual(actual_record.details,
+            '"generate_tests" cannot be called outside of pre_setup')
+        expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
+                            "Requested 1, Skipped 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_generate_tests_invalid_test_name(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def pre_setup(self):
+                self.generate_tests(
+                    test_logic = self.logic,
+                    name_func = self.name_gen,
+                    arg_sets = [(1, 2), (3, 4)]
+                    )
+            def name_gen(self, a, b):
+                return 'ha'
+            def logic(self, a, b):
+                pass
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, "pre_setup")
+        self.assertEqual(actual_record.details,
+            'Test name "ha" is invalid, because it does not start with "test_".')
+        expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "
+                            "Requested 0, Skipped 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
     def test_generated_tests(self):
         """Execute code paths for generated test cases.
 
@@ -798,7 +879,7 @@ class BaseTestTest(unittest.TestCase):
         itrs = ["pass", "fail", "skip"]
         class MockBaseTest(base_test.BaseTestClass):
             def name_gen(self, setting, arg, special_arg=None):
-                return "test_%s_%s" % (setting, arg)
+                return 'test_%s_%s' % (setting, arg)
             def logic(self, setting, arg, special_arg=None):
                 asserts.assert_true(setting in itrs,
                                  ("%s is not in acceptable settings range %s"

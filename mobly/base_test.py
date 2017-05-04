@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
+import functools
 import inspect
 import logging
 import os
@@ -89,6 +91,7 @@ class BaseTestClass(object):
         self.register_controller = configs.register_controller
         self.results = records.TestResult()
         self.current_test_name = None
+        self._generated_test_table = collections.OrderedDict()
 
     def __enter__(self):
         return self
@@ -145,6 +148,17 @@ class BaseTestClass(object):
             else:
                 logging.warning('Missing optional user param "%s" in '
                                 'configuration, continue.', name)
+
+    def pre_setup(self):
+        """Preprocesses that need to be done before setup_class.
+
+        This phase is used to do pre-test processes like generating test cases.
+        This is the only place `self.generate_tests` should be called.
+
+        If this function throws an error, the test class will be marked failure
+        and the "Requested" field will be 0 because the number of tests
+        requested is unknown at this point.
+        """
 
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
@@ -375,6 +389,50 @@ class BaseTestClass(object):
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
 
+    def _assert_caller_function_name(self, expected_caller_func_name):
+        """Asserts that a function only be called within a certain function.
+        """
+        current_frame = inspect.currentframe()
+        caller_frame = inspect.getouterframes(current_frame, 2)
+        if caller_frame[2][3] != expected_caller_func_name:
+            raise Error('"%s" cannot be called outside of %s' %
+                        (caller_frame[1][3], expected_caller_func_name))
+
+    def generate_tests(self, test_logic, name_func, arg_sets):
+        """Generates test cases in the test class.
+
+        This function has to be called inside a test class's `self.pre_setup`
+        function.
+
+        Generated test cases are not written down as functions, but as a list
+        of parameter sets. This way we reduce code repetition and improve
+        test case scalability.
+
+        Args:
+            test_logic: function, the common logic shared by all the generated
+                        test cases.
+            name_func: function, generate a test name according to a set of
+                       test arguments. This function should take the same
+                       arguments as the test logic function. The test name
+                       should be shorter than utils.MAX_FILENAME_LEN. Names
+                       over the limit will be truncated.
+            arg_sets: a list of tuples, each tuple is a set of arguments to be
+                      passed to the test logic function and name function.
+        """
+        self._assert_caller_function_name('pre_setup')
+        for args in arg_sets:
+            test_name = name_func(*args)
+            if not test_name.startswith('test_'):
+                raise Error(
+                    'Test name "%s" is invalid, because it does not start with'
+                    ' "test_".' % test_name)
+            if test_name in self._get_all_test_names():
+                raise Error(
+                    'Test name "%s" already exists, cannot be duplicated.' %
+                    test_name)
+            test_func = functools.partial(test_logic, *args)
+            self._generated_test_table[test_name] = test_func
+
     def run_generated_testcases(self,
                                 test_func,
                                 settings,
@@ -383,6 +441,8 @@ class BaseTestClass(object):
                                 tag='',
                                 name_func=None):
         """Runs generated test cases.
+
+        !DEPRECATED! Use self.generate_tests instead.
 
         Generated test cases are not written down as functions, but as a list
         of parameter sets. This way we reduce code repetition and improve
@@ -460,7 +520,7 @@ class BaseTestClass(object):
         for name, _ in inspect.getmembers(self, inspect.ismethod):
             if name.startswith('test_'):
                 test_names.append(name)
-        return test_names
+        return test_names + list(self._generated_test_table.keys())
 
     def _get_test_funcs(self, test_names):
         """Obtain the actual functions of test cases based on test names.
@@ -482,16 +542,18 @@ class BaseTestClass(object):
             if not test_name.startswith('test_'):
                 raise Error('Test case name %s does not follow naming '
                             'convention test_*, abort.' % test_name)
-            try:
-                test_funcs.append((test_name, getattr(self, test_name)))
-            except AttributeError:
+            if hasattr(self, test_name):
+                test_func = getattr(self, test_name)
+            elif test_name in self._generated_test_table:
+                test_func = self._generated_test_table[test_name]
+            else:
                 raise Error('%s does not have test case %s.' % (self.TAG,
                                                                 test_name))
+            test_funcs.append((test_name, test_func))
         return test_funcs
 
     def run(self, test_names=None):
-        """Runs test cases within a test class by the order they appear in the
-        execution list.
+        """Runs test cases within a test class.
 
         One of these test cases lists will be executed, shown here in priority
         order:
@@ -509,6 +571,16 @@ class BaseTestClass(object):
         Returns:
             The test results object of this class.
         """
+        # Executes pre-setup procedures, like generating test cases.
+        try:
+            self.pre_setup()
+        except Exception as e:
+            logging.exception('Pre-setup processes failed for %s.', self.TAG)
+            class_record = records.TestResultRecord('pre_setup', self.TAG)
+            class_record.test_begin()
+            class_record.test_fail(e)
+            self.results.fail_class(class_record)
+            return self.results
         logging.info('==========> %s <==========', self.TAG)
         # Devise the actual test cases to run in the test class.
         if not test_names:
@@ -520,14 +592,13 @@ class BaseTestClass(object):
                 test_names = self._get_all_test_names()
         self.results.requested = test_names
         tests = self._get_test_funcs(test_names)
-        # A TestResultRecord used for when setup_class fails.
-        class_record = records.TestResultRecord('setup_class', self.TAG)
-        class_record.test_begin()
         # Setup for the class.
         try:
             self._setup_class()
         except Exception as e:
             logging.exception('Failed to setup %s.', self.TAG)
+            class_record = records.TestResultRecord('setup_class', self.TAG)
+            class_record.test_begin()
             class_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, class_record)
             self._safe_exec_func(self.teardown_class)
