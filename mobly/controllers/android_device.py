@@ -760,11 +760,11 @@ class AndroidDevice(object):
         try:
             extra_params = self.adb_logcat_param
         except AttributeError:
-            extra_params = '-b all'
+            extra_params = ''
         cmd = 'adb -s %s logcat -v threadtime %s >> %s' % (
             self.serial, extra_params, logcat_file_path)
-        self._adb_logcat_process = utils.start_standing_subprocess(
-            cmd, shell=True)
+        process = utils.start_standing_subprocess(cmd, shell=True)
+        self._adb_logcat_process = process
         self.adb_logcat_file_path = logcat_file_path
 
     def stop_adb_logcat(self):
