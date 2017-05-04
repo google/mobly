@@ -433,12 +433,6 @@ class BaseTestClass(object):
             test_func = functools.partial(test_logic, *args)
             self._generated_test_table[test_name] = test_func
 
-    def generate_tests(func, run=True):
-        def func_wrapper(name):
-            return "<p>{0}</p>".format(func(name))
-
-        return func_wrapper
-
     def run_generated_testcases(self,
                                 test_func,
                                 settings,
