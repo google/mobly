@@ -18,6 +18,9 @@ import re
 from mobly import utils
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
+# Convenience constant for the package of Mobly Bundled Snippets.
+MBS_PACKAGE = 'com.google.android.mobly.snippet.bundled'
+
 _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')
 
