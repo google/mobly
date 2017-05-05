@@ -31,6 +31,10 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import sl4a_client
 from mobly.controllers.android_device_lib import snippet_client
 
+# Convenience constant for the package of Mobly Bundled Snippets
+# (http://github.com/google/mobly-bundled-snippets).
+MBS_PACKAGE = 'com.google.android.mobly.snippet.bundled'
+
 MOBLY_CONTROLLER_CONFIG_NAME = 'AndroidDevice'
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = '*'
