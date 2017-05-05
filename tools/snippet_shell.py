@@ -30,8 +30,8 @@ import argparse
 import logging
 import sys
 
+from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import jsonrpc_shell_base
-from mobly.controllers.android_device_lib import snippet_client
 
 
 class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         print('Cannot specify both --package and --mbs', file=sys.stderr)
         sys.exit(1)
     if args.mbs:
-        package = snippet_client.MBS_PACKAGE
+        package = android_device.MBS_PACKAGE
     else:
         package = args.package
 
