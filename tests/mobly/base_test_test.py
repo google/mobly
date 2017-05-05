@@ -786,7 +786,7 @@ class BaseTestTest(unittest.TestCase):
 
     def test_generate_tests_run(self):
         class MockBaseTest(base_test.BaseTestClass):
-            def pre_setup(self):
+            def setup_generated_tests(self):
                 self.generate_tests(
                     test_logic = self.logic,
                     name_func = self.name_gen,
@@ -805,7 +805,7 @@ class BaseTestTest(unittest.TestCase):
 
     def test_generate_tests_selected_run(self):
         class MockBaseTest(base_test.BaseTestClass):
-            def pre_setup(self):
+            def setup_generated_tests(self):
                 self.generate_tests(
                     test_logic = self.logic,
                     name_func = self.name_gen,
@@ -821,7 +821,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(len(bt_cls.results.passed), 1)
         self.assertEqual(bt_cls.results.passed[0].test_name, 'test_3_4')
 
-    def test_generate_tests_call_outside_of_pre_setup(self):
+    def test_generate_tests_call_outside_of_setup_generated_tests(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_ha(self):
                 self.generate_tests(
@@ -838,14 +838,14 @@ class BaseTestTest(unittest.TestCase):
         actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, "test_ha")
         self.assertEqual(actual_record.details,
-            '"generate_tests" cannot be called outside of pre_setup')
+            '"generate_tests" cannot be called outside of setup_generated_tests')
         expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_generate_tests_invalid_test_name(self):
         class MockBaseTest(base_test.BaseTestClass):
-            def pre_setup(self):
+            def setup_generated_tests(self):
                 self.generate_tests(
                     test_logic = self.logic,
                     name_func = self.name_gen,
@@ -858,7 +858,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
-        self.assertEqual(actual_record.test_name, "pre_setup")
+        self.assertEqual(actual_record.test_name, "setup_generated_tests")
         self.assertEqual(actual_record.details,
             'Test name "ha" is invalid, because it does not start with "test_".')
         expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "

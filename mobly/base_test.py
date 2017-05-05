@@ -149,7 +149,7 @@ class BaseTestClass(object):
                 logging.warning('Missing optional user param "%s" in '
                                 'configuration, continue.', name)
 
-    def pre_setup(self):
+    def setup_generated_tests(self):
         """Preprocesses that need to be done before setup_class.
 
         This phase is used to do pre-test processes like generating test cases.
@@ -401,7 +401,7 @@ class BaseTestClass(object):
     def generate_tests(self, test_logic, name_func, arg_sets):
         """Generates test cases in the test class.
 
-        This function has to be called inside a test class's `self.pre_setup`
+        This function has to be called inside a test class's `self.setup_generated_tests`
         function.
 
         Generated test cases are not written down as functions, but as a list
@@ -419,7 +419,7 @@ class BaseTestClass(object):
             arg_sets: a list of tuples, each tuple is a set of arguments to be
                       passed to the test logic function and name function.
         """
-        self._assert_caller_function_name('pre_setup')
+        self._assert_caller_function_name('setup_generated_tests')
         for args in arg_sets:
             test_name = name_func(*args)
             if not test_name.startswith('test_'):
@@ -576,10 +576,10 @@ class BaseTestClass(object):
         """
         # Executes pre-setup procedures, like generating test cases.
         try:
-            self.pre_setup()
+            self.setup_generated_tests()
         except Exception as e:
             logging.exception('Pre-setup processes failed for %s.', self.TAG)
-            class_record = records.TestResultRecord('pre_setup', self.TAG)
+            class_record = records.TestResultRecord('setup_generated_tests', self.TAG)
             class_record.test_begin()
             class_record.test_fail(e)
             self.results.fail_class(class_record)
