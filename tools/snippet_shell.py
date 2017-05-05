@@ -28,8 +28,11 @@ from __future__ import print_function
 
 import argparse
 import logging
+import sys
 
 from mobly.controllers.android_device_lib import jsonrpc_shell_base
+
+MBS_PACKAGE = 'com.google.android.mobly.snippet.bundled'
 
 
 class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
@@ -43,11 +46,13 @@ class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
         console_env['s'] = self._ad.snippet
 
     def _get_banner(self, serial):
-        lines = ['Connected to %s.' % serial,
-                 'Call methods against:',
-                 '    ad (android_device.AndroidDevice)',
-                 '    snippet or s (Snippet)']
+        lines = [
+            'Connected to %s.' % serial, 'Call methods against:',
+            '    ad (android_device.AndroidDevice)',
+            '    snippet or s (Snippet)'
+        ]
         return '\n'.join(lines)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -55,10 +60,26 @@ if __name__ == '__main__':
     parser.add_argument(
         '-s',
         '--serial',
-        help='Device serial to connect to (if more than one device is connected)'
-    )
-    parser.add_argument('package', metavar='PACKAGE_NAME', type=str, nargs=1,
-                        help='The package name of the snippet to use.')
+        help=
+        'Device serial to connect to (if more than one device is connected)')
+    parser.add_argument(
+        'package',
+        metavar='PACKAGE_NAME',
+        type=str,
+        nargs='?',
+        help='The package name of the snippet to use.')
+    parser.add_argument(
+        '--mbs',
+        help='Whether to connect to Mobly Bundled Snippets',
+        action='store_true')
     args = parser.parse_args()
+    if args.package and args.mbs:
+        print('Cannot specify both --package and --mbs', file=sys.stderr)
+        sys.exit(1)
+    if args.mbs:
+        package = MBS_PACKAGE
+    else:
+        package = args.package
+
     logging.basicConfig(level=logging.INFO)
-    SnippetShell(args.package[0]).main(args.serial)
+    SnippetShell(package).main(args.serial)
