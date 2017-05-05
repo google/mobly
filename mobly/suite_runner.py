@@ -23,6 +23,10 @@ from mobly import signals
 from mobly import test_runner
 
 
+class Error(Exception):
+    pass
+
+
 def run_suite(test_classes, argv=None):
     """Execute the test suite in a module.
 
@@ -68,73 +72,79 @@ def run_suite(test_classes, argv=None):
     test_configs = config_parser.load_test_config_file(args.config[0])
 
     # Check the classes that were passed in
-    for cls in test_classes:
-        if not issubclass(cls, base_test.BaseTestClass):
+    for test_class in test_classes:
+        if not issubclass(test_class, base_test.BaseTestClass):
             logging.error('Test class %s does not extend '
-                          'mobly.base_test.BaseTestClass',
-                          cls)
+                          'mobly.base_test.BaseTestClass', test_class)
             sys.exit(1)
 
-    # Choose which tests to run
-    test_identifiers = _compute_test_identifiers(test_classes, args.tests)
+    # Find the full list of tests to execute
+    selected_tests = _compute_selected_tests(test_classes, args.tests)
 
     # Execute the suite
     ok = True
     for config in test_configs:
-        runner = test_runner.TestRunner(config, test_identifiers)
+        runner = test_runner.TestRunner(config.log_path, config.test_bed_name)
+        for (test_class, tests) in selected_tests.items():
+            runner.add_test_class(config, test_class, tests)
         try:
-            try:
-                runner.run(test_classes)
-                ok = runner.results.is_all_pass and ok
-            except signals.TestAbortAll:
-                pass
-            except:
-                logging.exception('Exception when executing %s.',
-                                  runner.test_configs.test_bed_name)
-                ok = False
-        finally:
-            runner.stop()
+            runner.run()
+            ok = runner.results.is_all_pass and ok
+        except signals.TestAbortAll:
+            pass
+        except:
+            logging.exception('Exception when executing %s.',
+                              config.test_bed_name)
+            ok = False
     if not ok:
         sys.exit(1)
 
 
-def _compute_test_identifiers(test_classes, selected_tests):
-    """Computes a list of test identifiers for TestRunner from list of strings.
+def _compute_selected_tests(test_classes, selected_tests):
+    """Computes class_to_test_name to run for each class from selector strings.
 
     Args:
         test_classes: (list of class) all classes that are part of this suite.
-        selected_tests: (list of string) list of tests to execute, eg:
+        selected_tests: (list of string) list of class_to_test_name to execute, eg:
              ['FooTest', 'BarTest',
               'BazTest.test_method_a', 'BazTest.test_method_b'].
-             May be empty, in which case all tests are selected.
+             May be empty, in which case all class_to_test_name are selected.
 
     Returns:
-        list(tuple(test_class_name, list(test_name))),
+        dict: test class -> list(test name):
         identifiers for TestRunner. For the above example:
-        [
-            ('FooTest', None),
-            ('BarTest', None),
-            ('BazTest', ['test_method_a', 'test_method_b']),
-        ]
+        {
+            FooTest: None,
+            BarTest: None,
+            BazTest: ['test_method_a', 'test_method_b'],
+        }
     """
-    # Create a map from test class name to list of test names
-    test_identifier_builder = collections.OrderedDict()
+    # Map from test class name to instance.
+    class_name_lookup = {cls.__name__: cls for cls in test_classes}
+
+    # Map from test class to list of class_to_test_name to execute.
+    class_to_test_name = collections.OrderedDict()
     if selected_tests:
         for test in selected_tests:
             if '.' in test:  # Has a test method
                 (test_class_name, test_name) = test.split('.')
-                if test_class_name not in test_identifier_builder:
-                    # Never seen this class before
-                    test_identifier_builder[test_class_name] = [test_name]
-                elif test_identifier_builder[test_class_name] is None:
-                    # Already running all tests in this class, so ignore this
-                    # extra test.
-                    pass
-                else:
-                    test_identifier_builder[test_class_name].append(test_name)
-            else:  # No test method; run all tests in this class.
-                test_identifier_builder[test] = None
+            else:
+                (test_class_name, test_name) = (test, None)
+            test_class = class_name_lookup.get(test_class_name)
+            if not test_class:
+                raise Error('Unknown test class %s' % test_class_name)
+            if test_name and test_class not in class_to_test_name:
+                # Never seen this class before
+                class_to_test_name[test_class] = [test_name]
+            elif test_name and class_to_test_name[test_class] is None:
+                # Already running all tests in this class, so ignore this extra
+                # test.
+                pass
+            elif test_name:
+                class_to_test_name[test_class].append(test_name)
+            else:  # No test method; run all class_to_test_name in this class.
+                class_to_test_name[test_class] = None
     else:
-        for test_class_name in test_classes:
-            test_identifier_builder[test_class_name.__name__] = None
-    return list(test_identifier_builder.items())
+        for test_class in test_classes:
+            class_to_test_name[test_class] = None
+    return class_to_test_name

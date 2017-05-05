@@ -21,27 +21,28 @@ from tests.lib import integration2_test
 
 class SuiteRunnerTest(unittest.TestCase):
     def test_select_no_args(self):
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
             selected_tests=None)
-        self.assertEqual(
-            [('IntegrationTest', None), ('Integration2Test', None)],
-            identifiers)
+        self.assertEqual({
+            integration_test.IntegrationTest: None,
+            integration2_test.Integration2Test: None,
+        }, identifiers)
 
     def test_select_by_class(self):
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
             selected_tests=['IntegrationTest'])
-        self.assertEqual([('IntegrationTest', None)], identifiers)
+        self.assertEqual({integration_test.IntegrationTest: None}, identifiers)
 
     def test_select_by_method(self):
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
@@ -49,25 +50,26 @@ class SuiteRunnerTest(unittest.TestCase):
             selected_tests=[
                 'IntegrationTest.test_a', 'IntegrationTest.test_b'
             ])
-        self.assertEqual([('IntegrationTest', ['test_a', 'test_b'])],
-                         identifiers)
+        self.assertEqual({
+            integration_test.IntegrationTest: ['test_a', 'test_b']
+        }, identifiers)
 
     def test_select_all_clobbers_method(self):
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
             selected_tests=['IntegrationTest.test_a', 'IntegrationTest'])
-        self.assertEqual([('IntegrationTest', None)], identifiers)
+        self.assertEqual({integration_test.IntegrationTest: None}, identifiers)
 
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
             selected_tests=['IntegrationTest', 'IntegrationTest.test_a'])
-        self.assertEqual([('IntegrationTest', None)], identifiers)
+        self.assertEqual({integration_test.IntegrationTest: None}, identifiers)
 
 
 if __name__ == "__main__":
