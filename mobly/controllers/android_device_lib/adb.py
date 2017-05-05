@@ -117,6 +117,8 @@ class AdbProxy(object):
 
     def _exec_adb_cmd(self, name, args, shell):
         if shell:
+            # Add quotes around "adb" in case the ADB path contains spaces. This
+            # is pretty common on Windows (e.g. Program Files).
             if self.serial:
                 adb_cmd = '"%s" -s "%s" %s %s' % (ADB, self.serial, name, args)
             else:
