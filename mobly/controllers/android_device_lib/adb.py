@@ -19,6 +19,9 @@ import logging
 import subprocess
 import threading
 
+# Command to use for running ADB commands.
+ADB = 'adb'
+
 # adb gets confused if we try to manage bound ports in parallel, so anything to
 # do with port forwarding must happen under this lock.
 ADB_PORT_LOCK = threading.Lock()
@@ -115,11 +118,11 @@ class AdbProxy(object):
     def _exec_adb_cmd(self, name, args, shell):
         if shell:
             if self.serial:
-                adb_cmd = 'adb -s "%s" %s %s' % (self.serial, name, args)
+                adb_cmd = '"%s" -s "%s" %s %s' % (ADB, self.serial, name, args)
             else:
-                adb_cmd = 'adb %s %s' % (name, args)
+                adb_cmd = '"adb" %s %s' % (ADB, name, args)
         else:
-            adb_cmd = ['adb']
+            adb_cmd = [ADB]
             if self.serial:
                 adb_cmd.extend(['-s', self.serial])
             adb_cmd.append(name)

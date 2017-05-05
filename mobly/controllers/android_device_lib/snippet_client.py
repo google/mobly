@@ -16,6 +16,7 @@ import logging
 import re
 
 from mobly import utils
+from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 _INSTRUMENTATION_RUNNER_PACKAGE = (
@@ -69,7 +70,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # helpful since they need to create their own instrumentations and
         # manifest.
         self.log.info('Launching snippet apk %s', self.package)
-        adb_cmd = ['adb']
+        adb_cmd = [adb.ADB]
         if self._adb.serial:
             adb_cmd += ['-s', self._adb.serial]
         adb_cmd += ['shell', cmd]
