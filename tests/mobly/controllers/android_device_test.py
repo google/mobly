@@ -71,6 +71,9 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch.object(android_device,
                        "list_adb_devices",
                        new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       "list_adb_devices_by_usb_id",
+                       new=mock_android_device.list_adb_devices)
     def test_create_with_pickup_all(self):
         pick_all_token = android_device.ANDROID_DEVICE_PICK_ALL_TOKEN
         actual_ads = android_device.create(pick_all_token)
@@ -82,6 +85,9 @@ class AndroidDeviceTest(unittest.TestCase):
                        new=mock_android_device.get_instances)
     @mock.patch.object(android_device,
                        "list_adb_devices",
+                       new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       "list_adb_devices_by_usb_id",
                        new=mock_android_device.list_adb_devices)
     def test_create_with_string_list(self):
         string_list = [u'1', '2']
@@ -95,11 +101,30 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch.object(android_device,
                        "list_adb_devices",
                        new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       "list_adb_devices_by_usb_id",
+                       new=mock_android_device.list_adb_devices)
     def test_create_with_dict_list(self):
         string_list = [{'serial': '1'}, {'serial': '2'}]
         actual_ads = android_device.create(string_list)
         for actual_ad, expected_serial in zip(actual_ads, ['1', '2']):
             self.assertEqual(actual_ad.serial, expected_serial)
+
+    @mock.patch.object(android_device,
+                       "get_instances_with_configs",
+                       new=mock_android_device.get_instances_with_configs)
+    @mock.patch.object(android_device,
+                       "list_adb_devices",
+                       new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       "list_adb_devices_by_usb_id",
+                       return_value=['usb:1'])
+    def test_create_with_usb_id(self, mock_list_adb_devices_by_usb_id):
+        string_list = [{'serial': '1'}, {'serial': '2'}, {'serial': 'usb:1'}]
+        actual_ads = android_device.create(string_list)
+        for actual_ad, expected_serial in zip(actual_ads, ['1', '2', 'usb:1']):
+            self.assertEqual(actual_ad.serial, expected_serial)
+
     def test_create_with_empty_config(self):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
         with self.assertRaisesRegexp(android_device.Error,
