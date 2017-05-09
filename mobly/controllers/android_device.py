@@ -382,6 +382,8 @@ class AndroidDevice(object):
         # A dict for tracking snippet clients. Keys are clients' attribute
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
+        # Clears cached adb content.
+        self.adb.logcat('-c')
 
     def __repr__(self):
         return "<AndroidDevice|%s>" % self.debug_tag
@@ -437,20 +439,29 @@ class AndroidDevice(object):
             are torn down. This can be used to restore these services, which
             includes snippets and sl4a.
         """
-        service_info = {}
-        service_info['snippet_info'] = self._get_active_snippet_info()
-        service_info['use_sl4a'] = self.sl4a is not None
         self._terminate_sl4a()
         for name, client in self._snippet_clients.items():
-            self._terminate_jsonrpc_client(client)
-            delattr(self, name)
-        self._snippet_clients = {}
+            self._terminate_snippet(name, client.package)
         if self._adb_logcat_process:
             try:
                 self.stop_adb_logcat()
             except:
                 self.log.exception('Failed to stop adb logcat.')
-        return service_info
+
+    def _terminate_snippet(self, snippet_name, package_name):
+        """Stops a long running service on the Android device.
+
+        Returns:
+            A dict containing information on the running services before they
+            are torn down. This can be used to restore these services, which
+            includes snippets and sl4a.
+        """
+        for attr_name, client in self._snippet_clients.items():
+            if attr_name == snippet_name and client.package == package_name:
+                self._terminate_jsonrpc_client(client)
+                delattr(self, attr_name)
+                self._snippet_clients.pop(attr_name)
+                return
 
     @contextlib.contextmanager
     def handle_device_disconnect(self):
@@ -463,31 +474,64 @@ class AndroidDevice(object):
 
         For sample usage, see self.reboot().
         """
-        service_info = self.stop_services()
+        if self._adb_logcat_process:
+            try:
+                self.stop_adb_logcat()
+            except:
+                self.log.exception('Failed to stop adb logcat.')
+
+        self._stop_sl4a_dispatcher()
+        # Clears cached adb content, so that the next time start_adb_logcat()
+        # won't produce duplicated logs to log file
+        self.adb.logcat('-c')
         try:
             yield
         finally:
-            self._restore_services(service_info)
+            self._restore_services()
 
-    def _restore_services(self, service_info):
+    def _restore_services(self):
         """Restores services after a device has come back from temporary
         being offline.
-
-        Args:
-            service_info: A dict containing information on the services to
-                          restore, which could include snippet and sl4a.
         """
         self.wait_for_boot_completion()
         if self.is_rootable:
             self.root_adb()
         self.start_services()
         # Restore snippets.
-        snippet_info = service_info['snippet_info']
-        for attr_name, package_name in snippet_info:
-            self.load_snippet(attr_name, package_name)
+        for attr_name, package_name in self._get_active_snippet_info():
+            if not self.restore_snippet(attr_name, package_name):
+                self.load_snippet(attr_name, package_name)
         # Restore sl4a if needed.
-        if service_info['use_sl4a']:
-            self.load_sl4a()
+        if self.sl4a:
+            # restore should not fail
+            self.restore_sl4a()
+
+    def restore_snippet(self, name, package):
+        """Try to restore a previously connected snippet client.
+
+        Returns:
+          True, if successfully connected to server; False, otherwise
+        """
+        for attr_name, client in self._snippet_clients.items():
+            if attr_name == name and client.package == package:
+                # try to connect to previous server session:
+                # creating port forwarding on a new local port
+                client.host_port = utils.get_available_host_port()
+                # try to forward the local port to prevoius device port
+                # also restarts snippet app if failed to connect
+                self._start_jsonrpc_client(client)
+                return True
+        # No matching client found
+        return False
+
+    def restore_sl4a(self):
+      """Try to restore a previously connected sl4a client."""
+      self.sl4a.host_port = utils.get_available_host_port()
+      # also restarts sl4a service if not running
+      self._start_jsonrpc_client(self.sl4a)
+
+      # Start an EventDispatcher for the current sl4a session
+      self._start_event_dispatcher(self.sl4a.host_port)
 
     @property
     def build_info(self):
@@ -646,7 +690,9 @@ class AndroidDevice(object):
         self.sl4a = sl4a_client.Sl4aClient(
             host_port=host_port, adb_proxy=self.adb)
         self._start_jsonrpc_client(self.sl4a)
+        self._start_event_dispatcher(host_port)
 
+    def _start_event_dispatcher(self, host_port):
         # Start an EventDispatcher for the current sl4a session
         event_client = sl4a_client.Sl4aClient(
             host_port=host_port, adb_proxy=self.adb)
@@ -750,8 +796,6 @@ class AndroidDevice(object):
             raise DeviceError(
                 self,
                 'Logcat thread is already running, cannot start another one.')
-        # Clears cached adb content.
-        self.adb.logcat('-c')
         # Disable adb log spam filter for rootable devices. Have to stop and
         # clear settings first because 'start' doesn't support --clear option
         # before Android N.
@@ -831,6 +875,10 @@ class AndroidDevice(object):
         if self.sl4a:
             self._terminate_jsonrpc_client(self.sl4a)
             self.sl4a = None
+            self._stop_sl4a_dispatcher()
+
+    def _stop_sl4a_dispatcher(self):
+        """Stop sl4a dispatcher."""
         if self.ed:
             try:
                 self.ed.clean_up()
