@@ -90,8 +90,8 @@ class AndroidDeviceTest(unittest.TestCase):
             self.assertEqual(actual_ad.serial, expected_serial)
 
     @mock.patch.object(android_device,
-                       "get_instances_with_configs",
-                       new=mock_android_device.get_instances_with_configs)
+                       "get_instances",
+                       new=mock_android_device.get_instances)
     @mock.patch.object(android_device,
                        "list_adb_devices",
                        new=mock_android_device.list_adb_devices)
@@ -100,6 +100,19 @@ class AndroidDeviceTest(unittest.TestCase):
         actual_ads = android_device.create(string_list)
         for actual_ad, expected_serial in zip(actual_ads, ['1', '2']):
             self.assertEqual(actual_ad.serial, expected_serial)
+    
+    @mock.patch.object(android_device,
+                       "get_instances",
+                       new=mock_android_device.get_instances)
+    @mock.patch.object(android_device,
+                       "list_adb_devices",
+                       new=mock_android_device.list_adb_devices)
+    def test_create_with_mixed_list(self):
+        string_list = ['1', {'serial': '2'}]
+        actual_ads = android_device.create(string_list)
+        for actual_ad, expected_serial in zip(actual_ads, ['1', '2']):
+            self.assertEqual(actual_ad.serial, expected_serial)
+    
     def test_create_with_empty_config(self):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
         with self.assertRaisesRegexp(android_device.Error,
@@ -113,7 +126,7 @@ class AndroidDeviceTest(unittest.TestCase):
             android_device.create("HAHA")
 
     def test_create_with_no_valid_config(self):
-        expected_msg = "No valid config found in: .*"
+        expected_msg = "Invalid config found: .*"
         with self.assertRaisesRegexp(android_device.Error,
                                      expected_msg):
             android_device.create([1])

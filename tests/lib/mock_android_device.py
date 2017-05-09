@@ -44,16 +44,15 @@ def get_all_instances():
     return get_mock_ads(5)
 
 
-def get_instances(serials):
+def get_instances(configs):
     ads = []
-    for serial in serials:
-        ad = mock.MagicMock(name="AndroidDevice", serial=serial, h_port=None)
+    for c in configs:
+        if isinstance(c, dict):
+            ad = mock.MagicMock(name="AndroidDevice", serial=c["serial"], h_port=None)
+        else:
+            ad = mock.MagicMock(name="AndroidDevice", serial=c, h_port=None)
         ads.append(ad)
     return ads
-
-
-def get_instances_with_configs(dicts):
-    return get_instances([d['serial'] for d in dicts])
 
 
 def list_adb_devices():
