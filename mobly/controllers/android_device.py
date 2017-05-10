@@ -440,7 +440,11 @@ class AndroidDevice(object):
             includes snippets and sl4a.
         """
         self._terminate_sl4a()
+<<<<<<< HEAD
         for name, client in list(self._snippet_clients.items()):
+=======
+        for name, client in self._snippet_clients.items():
+>>>>>>> c814784cb51eca6ed7da4a9067c7bc92b133ea3c
             self._terminate_snippet(name, client.package)
         if self._adb_logcat_process:
             try:
