@@ -126,17 +126,57 @@ def _find_test_class():
     return test_classes[0]
 
 
-def _verify_controller_module(module):
+def verify_controller_module(module):
     """Verifies a module object follows the required interface for
     controllers.
+
+    A Mobly controller module is a Python lib that can be used to control
+    a device, service, or equipment. To be Mobly compatible, a controller
+    module needs to have the following members:
+
+        def create(configs):
+            [Required] Creates controller objects from configurations.
+            Args:
+                configs: A list of serialized data like string/dict. Each
+                         element of the list is a configuration for a
+                         controller object.
+            Returns:
+                A list of objects.
+
+        def destroy(objects):
+            [Required] Destroys controller objects created by the create
+            function. Each controller object shall be properly cleaned up
+            and all the resources held should be released, e.g. memory
+            allocation, sockets, file handlers etc.
+            Args:
+                A list of controller objects created by the create function.
+
+        def get_info(objects):
+            [Optional] Gets info from the controller objects used in a test
+            run. The info will be included in test_result_summary.json under
+            the key 'ControllerInfo'. Such information could include unique
+            ID, version, or anything that could be useful for describing the
+            test bed and debugging.
+            Args:
+                objects: A list of controller objects created by the create
+                         function.
+            Returns:
+                A list of json serializable objects, each represents the
+                info of a controller object. The order of the info object
+                should follow that of the input objects.
+
+    Registering a controller module declares a test class's dependency the
+    controller. If the module config exists and the module matches the
+    controller interface, controller objects will be instantiated with
+    corresponding configs. The module should be imported first.
 
     Args:
         module: An object that is a controller module. This is usually
                 imported with import statements or loaded by importlib.
 
     Raises:
-        ControllerError is raised if the module does not match the Mobly
-        controller interface, or one of the required members is null.
+        ControllerError: if the module does not match the Mobly controller
+            interface, or one of the required members is null.
     """
     required_attributes = ('create', 'destroy', 'MOBLY_CONTROLLER_CONFIG_NAME')
     for attr in required_attributes:
@@ -159,6 +199,16 @@ class TestRunner(object):
                       this test run.
     """
 
+    class TestRunInfo(object):
+        """Identifies one test class to run, which methods to run, and config
+        to run it with.
+        """
+
+        def __init__(self, config, test_class, test_methods=None):
+            self.config = config
+            self.test_class = test_class
+            self.test_methods = test_methods
+
     def __init__(self, log_dir, test_bed_name):
         """Constructor for TestRunner.
 
@@ -170,7 +220,7 @@ class TestRunner(object):
         self._test_bed_name = test_bed_name
 
         self.results = records.TestResult()
-        self._test_infos = []
+        self._test_run_infos = []
 
         # Controller management. These members will be updated for each class.
         self._controller_registry = {}
@@ -186,11 +236,11 @@ class TestRunner(object):
             test_methods: Optional list of test method names to execute within
                 the class.
         """
-        self._test_infos.append({
-            'config': config,
-            'test_class': test_class,
-            'test_methods': test_methods,
-        })
+        self._test_run_infos.append(
+            TestRunner.TestRunInfo(
+                config=config,
+                test_class=test_class,
+                test_methods=test_methods))
 
     def _run_test_class(self, config, test_class, test_methods=None):
         """Instantiates and executes a test class.
@@ -223,16 +273,16 @@ class TestRunner(object):
         log_path = os.path.join(self._log_dir, self._test_bed_name, start_time)
         logger.setup_test_logger(log_path, self._test_bed_name)
         try:
-            for test_info in self._test_infos:
+            for test_run_info in self._test_run_infos:
                 # Set up the test-specific config
-                test_config = test_info['config'].copy()
+                test_config = test_run_info.config.copy()
                 test_config.log_path = log_path
                 test_config.register_controller = functools.partial(
                     self._register_controller, test_config)
 
                 try:
-                    self._run_test_class(test_config, test_info['test_class'],
-                                         test_info['test_methods'])
+                    self._run_test_class(test_config, test_run_info.test_class,
+                                         test_run_info.test_methods)
                 except signals.TestAbortAll as e:
                     logging.warning(
                         'Abort all subsequent test classes. Reason: %s', e)
@@ -249,47 +299,11 @@ class TestRunner(object):
 
     def _register_controller(self, config, module, required=True,
                              min_number=1):
-        """Registers an Mobly controller module for a test run.
+        """Loads a controller module and returns its loaded devices.
 
-        An Mobly controller module is a Python lib that can be used to control
-        a device, service, or equipment. To be Mobly compatible, a controller
-        module needs to have the following members:
-
-            def create(configs):
-                [Required] Creates controller objects from configurations.
-                Args:
-                    configs: A list of serialized data like string/dict. Each
-                             element of the list is a configuration for a
-                             controller object.
-                Returns:
-                    A list of objects.
-
-            def destroy(objects):
-                [Required] Destroys controller objects created by the create
-                function. Each controller object shall be properly cleaned up
-                and all the resources held should be released, e.g. memory
-                allocation, sockets, file handlers etc.
-                Args:
-                    A list of controller objects created by the create function.
-
-            def get_info(objects):
-                [Optional] Gets info from the controller objects used in a test
-                run. The info will be included in test_result_summary.json under
-                the key 'ControllerInfo'. Such information could include unique
-                ID, version, or anything that could be useful for describing the
-                test bed and debugging.
-                Args:
-                    objects: A list of controller objects created by the create
-                             function.
-                Returns:
-                    A list of json serializable objects, each represents the
-                    info of a controller object. The order of the info object
-                    should follow that of the input objects.
-
-        Registering a controller module declares a test class's dependency the
-        controller. If the module config exists and the module matches the
-        controller interface, controller objects will be instantiated with
-        corresponding configs. The module should be imported first.
+        See the docstring of verify_controller_module() for a description of
+        what API a controller module must implement to be compatible with this
+        method.
 
         Args:
             config: A config_parser.TestRunConfig object.
@@ -304,7 +318,8 @@ class TestRunner(object):
 
         Returns:
             A list of controller objects instantiated from controller_module, or
-            None.
+            None if no config existed for this controller and it was not a
+            required controller.
 
         Raises:
             When required is True, ControllerError is raised if no corresponding
@@ -315,7 +330,7 @@ class TestRunner(object):
             If the actual number of objects instantiated is less than the
             min_number, ControllerError is raised.
         """
-        _verify_controller_module(module)
+        verify_controller_module(module)
         # Use the module's name as the ref name
         module_ref_name = module.__name__.split('.')[-1]
         if module_ref_name in self._controller_registry:
