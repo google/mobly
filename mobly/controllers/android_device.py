@@ -476,10 +476,13 @@ class AndroidDevice(object):
                 self.stop_adb_logcat()
             except:
                 self.log.exception('Failed to stop adb logcat.')
-
-        self._stop_sl4a_dispatcher()
+        # Only need to stop dispatcher because it continuously polling device
+        # It's not necessary to stop snippet and sl4a
+        self._stop_event_dispatcher()
         # Clears cached adb content, so that the next time start_adb_logcat()
-        # won't produce duplicated logs to log file
+        # won't produce duplicated logs to log file.
+        # This helps disconnection that caused by, e.g., USB off; at the
+        # cost of losing logs at disconnection caused by reboot
         self.adb.logcat('-c')
         try:
             yield
@@ -873,9 +876,9 @@ class AndroidDevice(object):
         if self.sl4a:
             self._terminate_jsonrpc_client(self.sl4a)
             self.sl4a = None
-            self._stop_sl4a_dispatcher()
+            self._stop_event_dispatcher()
 
-    def _stop_sl4a_dispatcher(self):
+    def _stop_event_dispatcher(self):
         """Stop sl4a dispatcher."""
         if self.ed:
             try:
