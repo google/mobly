@@ -214,7 +214,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Passed'], 2)
 
     def test_verify_controller_module(self):
-        test_runner._verify_controller_module(mock_controller)
+        test_runner.verify_controller_module(mock_controller)
 
     def test_verify_controller_module_null_attr(self):
         try:
@@ -222,7 +222,7 @@ class TestRunnerTest(unittest.TestCase):
             mock_controller.MOBLY_CONTROLLER_CONFIG_NAME = None
             msg = 'Controller interface .* in .* cannot be null.'
             with self.assertRaisesRegexp(signals.ControllerError, msg):
-                test_runner._verify_controller_module(mock_controller)
+                test_runner.verify_controller_module(mock_controller)
         finally:
             mock_controller.MOBLY_CONTROLLER_CONFIG_NAME = tmp
 
@@ -232,7 +232,7 @@ class TestRunnerTest(unittest.TestCase):
             delattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME')
             msg = 'Module .* missing required controller module attribute'
             with self.assertRaisesRegexp(signals.ControllerError, msg):
-                test_runner._verify_controller_module(mock_controller)
+                test_runner.verify_controller_module(mock_controller)
         finally:
             setattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME', tmp)
 
