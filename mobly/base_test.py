@@ -422,10 +422,6 @@ class BaseTestClass(object):
         self._assert_caller_function_name('setup_generated_tests')
         for args in arg_sets:
             test_name = name_func(*args)
-            if not test_name.startswith('test_'):
-                raise Error(
-                    'Test name "%s" is invalid, because it does not start with'
-                    ' "test_".' % test_name)
             if test_name in self._get_all_test_names():
                 raise Error(
                     'Test name "%s" already exists, cannot be duplicated.' %
@@ -579,7 +575,8 @@ class BaseTestClass(object):
             self.setup_generated_tests()
         except Exception as e:
             logging.exception('Pre-setup processes failed for %s.', self.TAG)
-            class_record = records.TestResultRecord('setup_generated_tests', self.TAG)
+            class_record = records.TestResultRecord('setup_generated_tests',
+                                                    self.TAG)
             class_record.test_begin()
             class_record.test_fail(e)
             self.results.fail_class(class_record)
