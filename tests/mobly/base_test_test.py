@@ -843,7 +843,7 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
-    def test_generate_tests_invalid_test_name(self):
+    def test_generate_tests_dup_test_name(self):
         class MockBaseTest(base_test.BaseTestClass):
             def setup_generated_tests(self):
                 self.generate_tests(
@@ -860,7 +860,7 @@ class BaseTestTest(unittest.TestCase):
         actual_record = bt_cls.results.failed[0]
         self.assertEqual(actual_record.test_name, "setup_generated_tests")
         self.assertEqual(actual_record.details,
-            'Test name "ha" is invalid, because it does not start with "test_".')
+            'Test name "ha" already exists, cannot be duplicated!')
         expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "
                             "Requested 0, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)

@@ -424,7 +424,7 @@ class BaseTestClass(object):
             test_name = name_func(*args)
             if test_name in self._get_all_test_names():
                 raise Error(
-                    'Test name "%s" already exists, cannot be duplicated.' %
+                    'Test name "%s" already exists, cannot be duplicated!' %
                     test_name)
             test_func = functools.partial(test_logic, *args)
             self._generated_test_table[test_name] = test_func
