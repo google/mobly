@@ -477,12 +477,12 @@ class AndroidDevice(object):
             except:
                 self.log.exception('Failed to stop adb logcat.')
         # Only need to stop dispatcher because it continuously polling device
-        # It's not necessary to stop snippet and sl4a
+        # It's not necessary to stop snippet and sl4a.
         self._stop_event_dispatcher()
         # Clears cached adb content, so that the next time start_adb_logcat()
         # won't produce duplicated logs to log file.
         # This helps disconnection that caused by, e.g., USB off; at the
-        # cost of losing logs at disconnection caused by reboot
+        # cost of losing logs at disconnection caused by reboot.
         self.adb.logcat('-c')
         try:
             yield
@@ -504,7 +504,7 @@ class AndroidDevice(object):
                 self.load_snippet(attr_name, package_name)
         # Restore sl4a if needed.
         if self.sl4a:
-            # restore should not fail
+            # Restore should not fail.
             self.restore_sl4a()
 
     def restore_snippet(self, name, package):
@@ -515,23 +515,25 @@ class AndroidDevice(object):
         """
         for attr_name, client in self._snippet_clients.items():
             if attr_name == name and client.package == package:
-                # try to connect to previous server session:
-                # creating port forwarding on a new local port
+                # Try to connect to previous server session:
+                # creating port forwarding on a new local port.
                 client.host_port = utils.get_available_host_port()
-                # try to forward the local port to prevoius device port
-                # also restarts snippet app if failed to connect
+                # Try to forward the local port to prevoius device port,
+                # also restarts snippet app if failed to connect.
                 self._start_jsonrpc_client(client)
+                # Also restart event client (if previously connected).
+                client.restore_event_client()
                 return True
-        # No matching client found
+        # No matching client found.
         return False
 
     def restore_sl4a(self):
       """Try to restore a previously connected sl4a client."""
       self.sl4a.host_port = utils.get_available_host_port()
-      # also restarts sl4a service if not running
+      # Also restarts sl4a service if not running.
       self._start_jsonrpc_client(self.sl4a)
 
-      # Start an EventDispatcher for the current sl4a session
+      # Start an EventDispatcher for the current sl4a session.
       self._start_event_dispatcher(self.sl4a.host_port)
 
     @property
@@ -694,7 +696,7 @@ class AndroidDevice(object):
         self._start_event_dispatcher(host_port)
 
     def _start_event_dispatcher(self, host_port):
-        # Start an EventDispatcher for the current sl4a session
+        # Start an EventDispatcher for the current sl4a session.
         event_client = sl4a_client.Sl4aClient(
             host_port=host_port, adb_proxy=self.adb)
         event_client.connect(

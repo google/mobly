@@ -118,6 +118,14 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                     'Instrumentation target %s is not installed on %s' %
                     (target_name, self._serial))
 
+    def restore_event_client(self):
+        if not self._event_client:
+            self._event_client = self._start_event_client()
+        else:
+            self._event_client.host_port = self.host_port
+            self._event_client.device_port = self.device_port
+            self._event_client.connect(self.uid, jsonrpc_client_base.JsonRpcCommand.CONTINUE)
+
     def _start_event_client(self):
         event_client = SnippetClient(
             package=self.package,
