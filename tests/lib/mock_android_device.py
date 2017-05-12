@@ -91,11 +91,9 @@ class MockAdbProxy(object):
             return "1"
 
     def bugreport(self, args, shell=False):
-        expected = os.path.join(
-            logging.log_path,
-            'AndroidDevice%s' % self.serial,
-            'BugReports',
-            'test_something,sometime,%s' % self.serial)
+        expected = os.path.join(logging.log_path,
+                                'AndroidDevice%s' % self.serial, 'BugReports',
+                                'test_something,sometime,%s' % self.serial)
         if expected not in args:
             raise Error('"Expected "%s", got "%s"' % (expected, args))
 
@@ -103,6 +101,7 @@ class MockAdbProxy(object):
         """All calls to the none-existent functions in adb proxy would
         simply return the adb command string.
         """
+
         def adb_call(*args):
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
@@ -123,4 +122,5 @@ class MockFastbootProxy(object):
         def fastboot_call(*args):
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
+
         return fastboot_call

@@ -58,7 +58,8 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.base_mock_test_config,
                                     self.mock_run_list)
         self.assertIsNone(
-            tr.register_controller(mock_controller, required=False))
+            tr.register_controller(
+                mock_controller, required=False))
 
     def test_register_controller_dup_register(self):
         """Verifies correctness of registration, internal tally of controllers
