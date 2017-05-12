@@ -294,3 +294,68 @@ menu.
 To learn more about Mobly Snippet Lib, including features like Espresso support
 and asynchronous calls, see the [snippet lib examples]
 (https://github.com/google/mobly-snippet-lib/tree/master/examples).
+
+
+# Example 6: Generated Tests
+
+A common use case in writing tests is to execute the same test logic multiple
+times, each time with a different set of parameters. Instead of duplicating the
+same test case with minor tweaks, you could use the **Generated tests** in
+Mobly.
+
+Mobly could generate test cases for you based on a list of parameters and a
+function that contains the test logic. Each generated test case is equivalent
+to an actual test case written in the class in terms of execution, procedure
+functions (setup/teardown/on_fail), and result collection. You could also
+select generated test cases via the `--test_case` cli arg as well.
+
+Here's an example of generated tests in action. We will reuse the "Example 1:
+Hello World!". Instead of making one toast of "Hello World", we will generate
+several test cases and toast a different message in each one of them.
+
+You could reuse the config file from Example 1.
+
+The test class would look like:
+
+ 
+**many_greetings_test.py**
+ 
+```python
+from mobly import base_test
+from mobly import test_runner
+from mobly.controllers import android_device
+
+
+class ManyGreetingsTest(base_test.BaseTestClass):
+
+    def setup_generated_tests(self):
+        messages = [('Hello', 'World'), ('Aloha', 'Obama'),
+                    ('konichiwa', 'Satoshi')]
+        self.generate_tests(
+            test_logic=self.make_toast_logic,
+            name_func=self.make_toast_name_function,
+            arg_sets=messages)
+
+    def setup_class(self):
+        # Registering android_device controller module declares the test's
+        # dependency on Android device hardware. By default, we expect at least
+        # one object is created from this.
+        self.ads = self.register_controller(android_device)
+        self.dut = self.ads[0]
+        # Start Mobly Bundled Snippets (MBS).
+        self.dut.load_snippet(
+            'mbs', 'com.google.android.mobly.snippet.bundled')
+
+    def make_toast_name_function(self, greeting, name):
+        return 'test_greeting_say_%s_to_%s' % (greeting, name)
+
+    def make_toast_logic(self, greeting, name):
+        self.dut.mbs.makeToast('%s, %s!' % (greeting, name))
+
+
+if __name__ == '__main__':
+    test_runner.main()
+```
+
+Three test cases will be executed even though we did not "physically" define
+any "test_xx" function in the test class.
