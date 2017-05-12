@@ -103,6 +103,11 @@ def run_suite(test_classes, argv=None):
 def _compute_selected_tests(test_classes, selected_tests):
     """Computes test methods to run for each class from selector strings.
 
+    This method transforms a list of selector strings (such as FooTest or
+    FooTest.test_method_a) to a dict where keys are test classes, and values are
+    lists of selected test methods in those classes. None means all test methods
+    in that class are selected.
+
     Args:
         test_classes: (list of class) all classes that are part of this suite.
         selected_tests: (list of string) list of tests to execute, eg:
@@ -119,32 +124,39 @@ def _compute_selected_tests(test_classes, selected_tests):
             BazTest: ['test_method_a', 'test_method_b'],
         }
     """
-    # Map from test class name to instance.
-    class_name_lookup = {cls.__name__: cls for cls in test_classes}
+    class_to_methods = collections.OrderedDict()
+    if not selected_tests:
+        # No selection is needed; simply run all methods in all classes.
+        for test_class in test_classes:
+            class_to_methods[test_class] = None
+        return class_to_methods
 
-    # Map from test class to list of test methods to execute.
-    test_methods = collections.OrderedDict()
-    if selected_tests:
-        for test in selected_tests:
-            if '.' in test:  # Has a test method
-                (test_class_name, test_method) = test.split('.')
-            else:
-                (test_class_name, test_method) = (test, None)
-            test_class = class_name_lookup.get(test_class_name)
-            if not test_class:
-                raise Error('Unknown test class %s' % test_class_name)
-            if test_method and test_class not in test_methods:
+    # The user is selecting some methods to run. Parse the selectors.
+    # Dict from test class name to list of test methods to execute (or None for
+    # all methods).
+    name_to_methods = collections.OrderedDict()
+    for test in selected_tests:
+        if '.' in test:  # Has a test method
+            (class_name, test_method) = test.split('.')
+            if class_name not in name_to_methods:
                 # Never seen this class before
-                test_methods[test_class] = [test_method]
-            elif test_method and test_methods[test_class] is None:
+                name_to_methods[class_name] = [test_method]
+            elif name_to_methods[class_name] is None:
                 # Already running all test methods in this class, so ignore
                 # this extra test method.
                 pass
-            elif test_method:
-                test_methods[test_class].append(test_method)
-            else:  # No test method; run all tests in this class.
-                test_methods[test_class] = None
-    else:
-        for test_class in test_classes:
-            test_methods[test_class] = None
-    return test_methods
+            else:
+                name_to_methods[class_name].append(test_method)
+        else:  # No test method; run all tests in this class.
+            name_to_methods[test] = None
+
+    # Now transform class names to class objects.
+    # Dict from test class name to instance.
+    class_name_lookup = {cls.__name__: cls for cls in test_classes}
+    for class_name, test_methods in name_to_methods.items():
+        test_class = class_name_lookup.get(class_name)
+        if not test_class:
+            raise Error('Unknown test class %s' % class_name)
+        class_to_methods[test_class] = test_methods
+
+    return class_to_methods
