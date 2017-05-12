@@ -101,17 +101,22 @@ def run_suite(test_classes, argv=None):
 
 
 def _compute_selected_tests(test_classes, selected_tests):
-    """Computes class_to_test_name to run for each class from selector strings.
+    """Computes tests to run for each class from selector strings.
+
+    This method transforms a list of selector strings (such as FooTest or
+    FooTest.test_method_a) to a dict where keys are test_name classes, and values are
+    lists of selected tests in those classes. None means all tests in that class
+    are selected.
 
     Args:
         test_classes: (list of class) all classes that are part of this suite.
-        selected_tests: (list of string) list of class_to_test_name to execute, eg:
+        selected_tests: (list of string) list of tests to execute, eg:
              ['FooTest', 'BarTest',
               'BazTest.test_method_a', 'BazTest.test_method_b'].
-             May be empty, in which case all class_to_test_name are selected.
+             May be empty, in which case all tests in the class are selected.
 
     Returns:
-        dict: test class -> list(test name):
+        dict: test_name class -> list(test_name name):
         identifiers for TestRunner. For the above example:
         {
             FooTest: None,
@@ -119,32 +124,39 @@ def _compute_selected_tests(test_classes, selected_tests):
             BazTest: ['test_method_a', 'test_method_b'],
         }
     """
-    # Map from test class name to instance.
-    class_name_lookup = {cls.__name__: cls for cls in test_classes}
+    class_to_tests = collections.OrderedDict()
+    if not selected_tests:
+        # No selection is needed; simply run all tests in all classes.
+        for test_class in test_classes:
+            class_to_tests[test_class] = None
+        return class_to_tests
 
-    # Map from test class to list of class_to_test_name to execute.
-    class_to_test_name = collections.OrderedDict()
-    if selected_tests:
-        for test in selected_tests:
-            if '.' in test:  # Has a test method
-                (test_class_name, test_name) = test.split('.')
-            else:
-                (test_class_name, test_name) = (test, None)
-            test_class = class_name_lookup.get(test_class_name)
-            if not test_class:
-                raise Error('Unknown test class %s' % test_class_name)
-            if test_name and test_class not in class_to_test_name:
+    # The user is selecting some tests to run. Parse the selectors.
+    # Dict from test_name class name to list of tests to execute (or None for all
+    # tests).
+    test_class_name_to_tests = collections.OrderedDict()
+    for test_name in selected_tests:
+        if '.' in test_name:  # Has a test method
+            (test_class_name, test_name) = test_name.split('.')
+            if test_class_name not in test_class_name_to_tests:
                 # Never seen this class before
-                class_to_test_name[test_class] = [test_name]
-            elif test_name and class_to_test_name[test_class] is None:
+                test_class_name_to_tests[test_class_name] = [test_name]
+            elif test_class_name_to_tests[test_class_name] is None:
                 # Already running all tests in this class, so ignore this extra
                 # test.
                 pass
-            elif test_name:
-                class_to_test_name[test_class].append(test_name)
-            else:  # No test method; run all class_to_test_name in this class.
-                class_to_test_name[test_class] = None
-    else:
-        for test_class in test_classes:
-            class_to_test_name[test_class] = None
-    return class_to_test_name
+            else:
+                test_class_name_to_tests[test_class_name].append(test_name)
+        else:  # No test method; run all tests in this class.
+            test_class_name_to_tests[test_name] = None
+
+    # Now transform class names to class objects.
+    # Dict from test_name class name to instance.
+    class_name_to_class = {cls.__name__: cls for cls in test_classes}
+    for test_class_name, tests in test_class_name_to_tests.items():
+        test_class = class_name_to_class.get(test_class_name)
+        if not test_class:
+            raise Error('Unknown test_name class %s' % test_class_name)
+        class_to_tests[test_class] = tests
+
+    return class_to_tests
