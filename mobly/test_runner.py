@@ -208,7 +208,7 @@ class TestRunner(object):
                       this test run.
     """
 
-    class TestRunInfo(object):
+    class _TestRunInfo(object):
         """Identifies one test class to run, which methods to run, and config
         to run it with.
         """
@@ -261,7 +261,7 @@ class TestRunner(object):
                 'different test bed ("%s") was added.' %
                 (self._test_bed_name, config.test_bed_name))
         self._test_run_infos.append(
-            TestRunner.TestRunInfo(
+            TestRunner._TestRunInfo(
                 config=config,
                 test_class=test_class,
                 test_methods=test_methods))
