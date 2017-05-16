@@ -181,7 +181,7 @@ def verify_controller_module(module):
 
     Raises:
         ControllerError: if the module does not match the Mobly controller
-            interface, or one of the required members is null.
+                         interface, or one of the required members is null.
     """
     required_attributes = ('create', 'destroy', 'MOBLY_CONTROLLER_CONFIG_NAME')
     for attr in required_attributes:
@@ -240,15 +240,15 @@ class TestRunner(object):
 
         Args:
             config: config_parser.TestRunConfig, configuration to execute this
-                test class with.
+                    test class with.
             test_class: class, test class to execute.
             test_methods: Optional list of test method names to execute within
-                the class.
+                          the class.
 
         Raises:
             Error: if the provided config has a log_path or test_bed_name which
-                differs from the arguments provided to this TestRunner's
-                constructor.
+                   differs from the arguments provided to this TestRunner's
+                   constructor.
         """
         if self._log_dir != config.log_path:
             raise Error(
@@ -277,7 +277,7 @@ class TestRunner(object):
             config: A config_parser.TestRunConfig object.
             test_class: class, test class to execute.
             test_methods: Optional list of test method names to execute within
-                the class.
+                          the class.
         """
         with test_class(config) as test_instance:
             try:
@@ -295,7 +295,7 @@ class TestRunner(object):
 
         Raises:
             Error: if no tests have previously been added to this runner using
-                add_test_class(...).
+                   add_test_class(...).
         """
         if not self._test_run_infos:
             raise Error('No tests to execute.')
