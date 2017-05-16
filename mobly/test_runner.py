@@ -30,6 +30,10 @@ from mobly import records
 from mobly import signals
 
 
+class Error(Exception):
+    pass
+
+
 def main(argv=None):
     """Execute the test class in a test module.
 
@@ -89,7 +93,8 @@ def main(argv=None):
     # Execute the test class with configs.
     ok = True
     for config in test_configs:
-        runner = TestRunner(config.log_path, config.test_bed_name)
+        runner = TestRunner(
+            log_dir=config.log_path, test_bed_name=config.test_bed_name)
         runner.add_test_class(config, test_class, tests)
         try:
             runner.run()
@@ -194,6 +199,10 @@ class TestRunner(object):
     """The class that instantiates test classes, executes tests, and
     report results.
 
+    One TestRunner instance is associated with one specific output folder and
+    testbed. TestRunner.run() will generate a single set of output files and
+    results for all tests that have been added to this runner.
+
     Attributes:
         self.results: The test result object used to record the results of
                       this test run.
@@ -235,6 +244,16 @@ class TestRunner(object):
             test_class: class, test class to execute.
             tests: Optional list of test names within the class to execute.
         """
+        if self._log_dir != config.log_path:
+            raise Error(
+                'TestRunner\'s log folder is "%s", but a test config with a '
+                'different log folder ("%s") was added.' % (self._log_dir,
+                                                            config.log_path))
+        if self._test_bed_name != config.test_bed_name:
+            raise Error(
+                'TestRunner\'s test bed is "%s", but a test config with a '
+                'different test bed ("%s") was added.' %
+                (self._test_bed_name, config.test_bed_name))
         self._test_run_infos.append(
             TestRunner.TestRunInfo(
                 config=config, test_class=test_class, tests=tests))
@@ -265,6 +284,8 @@ class TestRunner(object):
         This will instantiate controller and test classes, execute tests, and
         print a summary.
         """
+        if not self._test_run_infos:
+            raise Error('No tests to execute.')
         start_time = logger.get_log_file_timestamp()
         log_path = os.path.join(self._log_dir, self._test_bed_name, start_time)
         logger.setup_test_logger(log_path, self._test_bed_name)
