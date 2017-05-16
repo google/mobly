@@ -11,6 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Runner for Mobly test suites.
+
+To create a test suite, call suite_runner.run_suite() with one or more
+individual testcases. For example:
+
+    from mobly import suite_runner
+
+    from my.test.lib import foo_test
+    from my.test.lib import bar_test
+    ...
+    if __name__ == '__main__':
+        suite_runner.run(foo_test.FooTest, bar_test.BarTest)
+"""
 
 import argparse
 import collections
@@ -28,20 +41,10 @@ class Error(Exception):
 
 
 def run_suite(test_classes, argv=None):
-    """Execute the test suite in a module.
+    """Executes multiple test classes as a suite.
 
     This is the default entry point for running a test suite script file
     directly.
-
-    To make your test suite executable, add the following to your file:
-
-        from mobly import suite_runner
-
-        from my.test.lib import foo_test
-        from my.test.lib import bar_test
-        ...
-        if __name__ == '__main__':
-            suite_runner.run(foo_test.FooTest, bar_test.BarTest)
 
     Args:
         test_classes: List of python classes containing Mobly tests.
