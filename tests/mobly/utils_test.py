@@ -64,9 +64,9 @@ class UtilsTest(unittest.TestCase):
         'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')    
     def test_get_available_port_returns_free_port(
             self, mock_list_occupied_adb_ports):
-    """This test checks we can bind to a socket on the port returned by portpicker 
-    and should pass as long as we can bind to either an ipv4 or ipv6 socket on 
-    such port."""
+        """This test checks we can bind to a socket on the port returned by portpicker 
+        and should pass as long as we can bind to either an ipv4 or ipv6 socket on 
+        such port."""
         port = utils.get_available_host_port()
         got_socket = False
         for family in (socket.AF_INET6, socket.AF_INET):
