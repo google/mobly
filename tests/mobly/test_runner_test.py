@@ -177,14 +177,10 @@ class TestRunnerTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device.get_all_instances',
         return_value=mock_android_device.get_mock_ads(1))
-    def test_run_two_test_classes(
-            self,
-            mock_get_all,
-            mock_list_adb,
-            mock_fastboot,
-            mock_adb, ):
-        """Verifies that runing more than one test class in one test run works
-        proerly.
+    def test_run_two_test_classes(self, mock_get_all, mock_list_adb,
+                                  mock_fastboot, mock_adb):
+        """Verifies that running more than one test class in one test run works
+        properly.
 
         This requires using a built-in controller module. Using AndroidDevice
         module since it has all the mocks needed already.
@@ -212,6 +208,54 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Requested'], 2)
         self.assertEqual(results['Executed'], 2)
         self.assertEqual(results['Passed'], 2)
+
+    def test_run_two_test_classes_different_configs(self):
+        """Verifies that running more than one test class in one test run with
+        different configs works properly.
+        """
+        config1 = self.base_mock_test_config.copy()
+        config1.controller_configs[
+            mock_controller.MOBLY_CONTROLLER_CONFIG_NAME] = [{
+                'serial': 'xxxx'
+            }]
+        config2 = config1.copy()
+        config2.user_params['icecream'] = 10
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(config1, integration_test.IntegrationTest)
+        tr.add_test_class(config2, integration_test.IntegrationTest)
+        tr.run()
+        results = tr.results.summary_dict()
+        self.assertEqual(results['Requested'], 2)
+        self.assertEqual(results['Executed'], 2)
+        self.assertEqual(results['Passed'], 1)
+        self.assertEqual(results['Failed'], 1)
+        self.assertEqual(tr.results.failed[0].details, '10 != 42')
+
+    def test_add_test_class_mismatched_log_path(self):
+        tr = test_runner.TestRunner('/different/log/dir', self.test_bed_name)
+        with self.assertRaisesRegexp(
+                test_runner.Error,
+                'TestRunner\'s log folder is "/different/log/dir", but a test '
+                r'config with a different log folder \("%s"\) was added.' %
+                self.log_dir):
+            tr.add_test_class(self.base_mock_test_config,
+                              integration_test.IntegrationTest)
+
+    def test_add_test_class_mismatched_test_bed_name(self):
+        tr = test_runner.TestRunner(self.log_dir, 'different_test_bed')
+        with self.assertRaisesRegexp(
+                test_runner.Error,
+                'TestRunner\'s test bed is "different_test_bed", but a test '
+                r'config with a different test bed \("%s"\) was added.' %
+                self.test_bed_name):
+            tr.add_test_class(self.base_mock_test_config,
+                              integration_test.IntegrationTest)
+
+    def test_run_no_tests(self):
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        with self.assertRaisesRegexp(test_runner.Error,
+                                     'No tests to execute.'):
+            tr.run()
 
     def test_verify_controller_module(self):
         test_runner.verify_controller_module(mock_controller)
