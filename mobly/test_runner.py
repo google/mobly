@@ -243,6 +243,11 @@ class TestRunner(object):
                 test class with.
             test_class: class, test class to execute.
             tests: Optional list of test names within the class to execute.
+
+        Raises:
+            Error: if the provided config has a log_path or test_bed_name which
+                differs from the arguments provided to this TestRunner's
+                constructor.
         """
         if self._log_dir != config.log_path:
             raise Error(
@@ -283,6 +288,10 @@ class TestRunner(object):
 
         This will instantiate controller and test classes, execute tests, and
         print a summary.
+
+        Raises:
+            Error: if no tests have previously been added to this runner using
+                add_test_class(...).
         """
         if not self._test_run_infos:
             raise Error('No tests to execute.')
