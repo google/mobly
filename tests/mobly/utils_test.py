@@ -65,13 +65,19 @@ class UtilsTest(unittest.TestCase):
     def test_get_available_port_returns_free_port(
             self, mock_list_occupied_adb_ports):
         port = utils.get_available_host_port()
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            s.bind(('localhost', port))
-        finally:
-            s.close()
-
+        got_socket = False
+        for family in (socket.AF_INET6, socket.AF_INET):
+            try:
+                s = socket.socket(family, socket.SOCK_STREAM)
+                got_socket = True
+            except socket.error:
+                continue
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:                
+                s.bind(('localhost', port))
+            finally:
+                s.close()
+        self.assertTrue(got_socket)
 
 if __name__ == '__main__':
     unittest.main()
