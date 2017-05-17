@@ -131,7 +131,7 @@ def assert_false(expr, msg, extras=None):
 
 
 def skip(reason, extras=None):
-    """Skip a test case.
+    """Skip a test method.
 
     Args:
         reason: The reason this test is skipped.
@@ -139,13 +139,13 @@ def skip(reason, extras=None):
                 test result.
 
     Raises:
-        signals.TestSkip is raised to mark a test case as skipped.
+        signals.TestSkip is raised to mark a test method as skipped.
     """
     raise signals.TestSkip(reason, extras)
 
 
 def skip_if(expr, reason, extras=None):
-    """Skip a test case if expression evaluates to True.
+    """Skip a test method if expression evaluates to True.
 
     Args:
         expr: The expression that is evaluated.
@@ -158,7 +158,7 @@ def skip_if(expr, reason, extras=None):
 
 
 def abort_class(reason, extras=None):
-    """Abort all subsequent test cases within the same test class in one
+    """Abort all subsequent test methods within the same test class in one
     iteration.
 
     If one test class is requested multiple times in a test run, this can
@@ -177,7 +177,7 @@ def abort_class(reason, extras=None):
 
 
 def abort_class_if(expr, reason, extras=None):
-    """Abort all subsequent test cases within the same test class in one
+    """Abort all subsequent test methods within the same test class in one
     iteration, if expression evaluates to True.
 
     If one test class is requested multiple times in a test run, this can
@@ -198,7 +198,7 @@ def abort_class_if(expr, reason, extras=None):
 
 
 def abort_all(reason, extras=None):
-    """Abort all subsequent test cases, including the ones not in this test
+    """Abort all subsequent test methods, including the ones not in this test
     class or iteration.
 
     Args:
@@ -213,7 +213,7 @@ def abort_all(reason, extras=None):
 
 
 def abort_all_if(expr, reason, extras=None):
-    """Abort all subsequent test cases, if the expression evaluates to
+    """Abort all subsequent test methods, if the expression evaluates to
     True.
 
     Args:
@@ -230,7 +230,7 @@ def abort_all_if(expr, reason, extras=None):
 
 
 def fail(msg, extras=None):
-    """Explicitly fail a test case.
+    """Explicitly fail a test method.
 
     Args:
         msg: A string explaining the details of the failure.
@@ -238,13 +238,13 @@ def fail(msg, extras=None):
                 test result.
 
     Raises:
-        signals.TestFailure is raised to mark a test case as failed.
+        signals.TestFailure is raised to mark a test method as failed.
     """
     raise signals.TestFailure(msg, extras)
 
 
 def explicit_pass(msg, extras=None):
-    """Explicitly pass a test case.
+    """Explicitly pass a test method.
 
     A test with not uncaught exception will pass implicitly so the usage of
     this is optional. It is intended for reporting extra information when a
@@ -256,7 +256,7 @@ def explicit_pass(msg, extras=None):
                 test result.
 
     Raises:
-        signals.TestPass is raised to mark a test case as passed.
+        signals.TestPass is raised to mark a test method as passed.
     """
     raise signals.TestPass(msg, extras)
 

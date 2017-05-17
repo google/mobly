@@ -20,8 +20,10 @@ import json
 
 
 def generated_test(func):
-    """A decorator used to suppress result reporting for the test case that
-    kicks off a group of generated test cases.
+    """A decorator used to suppress result reporting for the test method that
+    kicks off a group of generated tests.
+
+    !DEPRECATED! self.setup_generated_tests() should be used instead.
 
     Returns:
         What the decorated function returns.
@@ -77,18 +79,20 @@ class TestSkip(TestSignal):
 
 class TestSilent(TestSignal):
     """Raised when a test should not be reported. This should only be used for
-    generated test cases.
+    generated tests.
+
+    !DEPRECATED! self.setup_generated_tests() should be used instead.
     """
 
 
 class TestAbortClass(TestSignal):
-    """Raised when all subsequent test cases within the same test class should
+    """Raised when all subsequent test methods within the same test class should
     be aborted.
     """
 
 
 class TestAbortAll(TestSignal):
-    """Raised when all subsequent test cases should be aborted."""
+    """Raised when all subsequent test methods should be aborted."""
 
 
 class ControllerError(Exception):

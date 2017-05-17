@@ -64,11 +64,12 @@ def main(argv=None):
         metavar='<PATH>',
         help='Path to the test configuration file.')
     parser.add_argument(
+        '--test',
         '--test_case',
         nargs='+',
         type=str,
         metavar='[test_a test_b...]',
-        help='A list of test case names in the test script.')
+        help='A list of test methods in the test script.')
     parser.add_argument(
         '-tb',
         '--test_bed',
@@ -85,11 +86,11 @@ def main(argv=None):
     # Find the test class in the test script.
     test_class = _find_test_class()
     test_class_name = test_class.__name__
-    # Parse test case specifiers if exist.
-    test_case_names = None
-    if args.test_case:
-        test_case_names = args.test_case
-    test_identifier = [(test_class_name, test_case_names)]
+    # Parse test method specifiers if exist.
+    test_method_names = None
+    if args.test:
+        test_method_names = args.test
+    test_identifier = [(test_class_name, test_method_names)]
     # Execute the test class with configs.
     ok = True
     for config in test_configs:
@@ -139,8 +140,8 @@ def execute_one_test_class(test_class, test_config, test_identifier):
         test_class: A subclass of mobly.base_test.BaseTestClass that has the test
                     logic to be executed.
         test_config: A dict representing one set of configs for a test run.
-        test_identifier: A list of tuples specifying which test cases to run in
-                         the test class.
+        test_identifier: A list of tuples specifying which test methods to run
+                         in the test class.
 
     Returns:
         True if all tests passed without any error, False otherwise.
@@ -162,8 +163,8 @@ def execute_one_test_class(test_class, test_config, test_identifier):
 
 
 class TestRunner(object):
-    """The class that instantiates test classes, executes test cases, and
-    report results.
+    """The class that instantiates test classes, executes tests, and reports
+    results.
 
     Attributes:
         self.test_run_info: A config_parser.TestRunConfig object containing
@@ -392,16 +393,16 @@ class TestRunner(object):
         self.test_run_info.log_path = self.log_path
         self.test_run_info.register_controller = self.register_controller
 
-    def _run_test_class(self, test_cls_name, test_cases=None):
+    def _run_test_class(self, test_cls_name, test_methods=None):
         """Instantiates and executes a test class.
 
-        If test_cases is None, the test cases listed by self.tests will be
-        executed instead. If self.tests is empty as well, no test case in this
+        If test_methods is None, the test methods listed by self.tests will be
+        executed instead. If self.tests is empty as well, no test method in this
         test class will be executed.
 
         Args:
             test_cls_name: Name of the test class to execute.
-            test_cases: List of test case names to execute within the class.
+            test_methods: List of test method names to execute within the class.
 
         Raises:
             ValueError is raised if the requested test class could not be found
@@ -414,18 +415,18 @@ class TestRunner(object):
                              'this TestRunner?' % test_cls_name)
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
-                cls_result = test_cls_instance.run(test_cases)
+                cls_result = test_cls_instance.run(test_methods)
                 self.results += cls_result
             except signals.TestAbortAll as e:
                 self.results += e.results
                 raise e
 
     def run(self, test_classes):
-        """Executes test cases.
+        """Executes tests.
 
         This will instantiate controller and test classes, and execute test
-        classes. This can be called multiple times to repeatly execute the
-        requested test cases.
+        classes. This can be called multiple times to repeatedly execute the
+        requested tests.
 
         A call to TestRunner.stop should eventually happen to conclude the life
         cycle of a TestRunner.
@@ -442,16 +443,16 @@ class TestRunner(object):
         # to be passed to test class.
         self._parse_config()
         logging.debug('Executing run list %s.', self.run_list)
-        for test_cls_name, test_case_names in self.run_list:
+        for test_cls_name, test_method_names in self.run_list:
             if not self.running:
                 break
-            if test_case_names:
-                logging.debug('Executing test cases %s in test class %s.',
-                              test_case_names, test_cls_name)
+            if test_method_names:
+                logging.debug('Executing test methods %s in test class %s.',
+                              test_method_names, test_cls_name)
             else:
                 logging.debug('Executing test class %s', test_cls_name)
             try:
-                self._run_test_class(test_cls_name, test_case_names)
+                self._run_test_class(test_cls_name, test_method_names)
             except signals.TestAbortAll as e:
                 logging.warning(
                     'Abort all subsequent test classes. Reason: %s', e)
