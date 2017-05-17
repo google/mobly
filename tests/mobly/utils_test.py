@@ -67,7 +67,8 @@ class UtilsTest(unittest.TestCase):
         """Verifies logic to pick a free port on the host.
 
         Test checks we can bind to either an ipv4 or ipv6 socket on the port
-        returned by portpicker on host machine."""
+        returned by get_available_host_port.
+        """
         port = utils.get_available_host_port()
         got_socket = False
         for family in (socket.AF_INET, socket.AF_INET6):
