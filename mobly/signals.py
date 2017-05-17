@@ -86,13 +86,13 @@ class TestSilent(TestSignal):
 
 
 class TestAbortClass(TestSignal):
-    """Raised when all subsequent test methods within the same test class should
+    """Raised when all subsequent tests within the same test class should
     be aborted.
     """
 
 
 class TestAbortAll(TestSignal):
-    """Raised when all subsequent test methods should be aborted."""
+    """Raised when all subsequent tests should be aborted."""
 
 
 class ControllerError(Exception):

@@ -35,7 +35,7 @@ class BaseTestClass(object):
     """Base class for all test classes to inherit from.
 
     This class gets all the controller objects from test_runner and executes
-    the test methods requested within itself.
+    the tests requested within itself.
 
     Most attributes of this class are set at runtime based on the configuration
     provided.
@@ -49,7 +49,7 @@ class BaseTestClass(object):
         TAG: A string used to refer to a test class. Default is the test class
              name.
         results: A records.TestResult object for aggregating test results from
-                 the execution of test methods.
+                 the execution of tests.
         current_test_name: A string that's the name of the test method currently
                            being executed. If no test is executing, this should
                            be None.
@@ -173,8 +173,8 @@ class BaseTestClass(object):
         """
 
     def teardown_class(self):
-        """Teardown function that will be called after all the selected test
-        methods in the test class have been executed.
+        """Teardown function that will be called after all the selected tests in
+        the test class have been executed.
 
         Implementation is optional.
         """
@@ -228,8 +228,7 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The records.TestResultRecord object for the failed test
-                    method.
+            record: The records.TestResultRecord object for the failed test.
         """
         test_name = record.test_name
         if record.details:
@@ -239,7 +238,7 @@ class BaseTestClass(object):
         self.on_fail(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
-        """A function that is executed upon a test method failure.
+        """A function that is executed upon a test failure.
 
         User implementation is optional.
 
@@ -253,8 +252,7 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The records.TestResultRecord object for the passed test
-                    method.
+            record: The records.TestResultRecord object for the passed test.
         """
         test_name = record.test_name
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
@@ -265,7 +263,7 @@ class BaseTestClass(object):
         self.on_pass(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
-        """A function that is executed upon a test method passing.
+        """A function that is executed upon a test passing.
 
         Implementation is optional.
 
@@ -279,8 +277,7 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The records.TestResultRecord object for the skipped test
-                    method.
+            record: The records.TestResultRecord object for the skipped test.
         """
         test_name = record.test_name
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
@@ -289,7 +286,7 @@ class BaseTestClass(object):
         self.on_skip(test_name, begin_time)
 
     def on_skip(self, test_name, begin_time):
-        """A function that is executed upon a test method being skipped.
+        """A function that is executed upon a test being skipped.
 
         Implementation is optional.
 
@@ -310,7 +307,7 @@ class BaseTestClass(object):
         Args:
             func: The procedure function to be executed.
             tr_record: The TestResultRecord object associated with the test
-                       method executed.
+                       executed.
         """
         try:
             func(tr_record)
@@ -321,12 +318,12 @@ class BaseTestClass(object):
                               func.__name__, self.current_test_name)
             tr_record.add_error(func.__name__, e)
 
-    def exec_one_test_method(self, test_name, test_method, args=(), **kwargs):
-        """Executes one test method and update test results.
+    def exec_one_test(self, test_name, test_method, args=(), **kwargs):
+        """Executes one test and update test results.
 
-        Executes one test method, create a records.TestResultRecord object with
-        the execution information, and add the record to the test class's test
-        results.
+        Executes setup_test, the test method, and teardown_test; then creates a
+        records.TestResultRecord object with the execution information and adds
+        the record to the test class's test results.
 
         Args:
             test_name: Name of the test.
@@ -478,8 +475,7 @@ class BaseTestClass(object):
             if len(test_name) > utils.MAX_FILENAME_LEN:
                 test_name = test_name[:utils.MAX_FILENAME_LEN]
             previous_success_cnt = len(self.results.passed)
-            self.exec_one_test_method(test_name, test_func, (s, ) + args,
-                                      **kwargs)
+            self.exec_one_test(test_name, test_func, (s, ) + args, **kwargs)
             if len(self.results.passed) - previous_success_cnt != 1:
                 failed_settings.append(s)
         return failed_settings
@@ -506,7 +502,7 @@ class BaseTestClass(object):
                               func.__name__, self.TAG)
 
     def _get_all_test_names(self):
-        """Finds all the function names that match the test method naming
+        """Finds all the method names that match the test method naming
         convention in this class.
 
         Returns:
@@ -549,7 +545,7 @@ class BaseTestClass(object):
         return test_methods
 
     def run(self, test_names=None):
-        """Runs test methods within a test class.
+        """Runs tests within a test class.
 
         One of these test method lists will be executed, shown here in priority
         order:
@@ -604,7 +600,7 @@ class BaseTestClass(object):
         # Run tests in order.
         try:
             for test_name, test_method in tests:
-                self.exec_one_test_method(test_name, test_method)
+                self.exec_one_test(test_name, test_method)
             return self.results
         except signals.TestAbortClass:
             return self.results
@@ -619,8 +615,8 @@ class BaseTestClass(object):
                          self.results.summary_str())
 
     def clean_up(self):
-        """A function that is executed upon completion of all test methods
-        selected in the test class.
+        """A function that is executed upon completion of all tests selected in
+        the test class.
 
         This function should clean up objects initialized in the constructor by
         user.
