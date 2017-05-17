@@ -82,7 +82,6 @@ class UtilsTest(unittest.TestCase):
             s.bind(('localhost', port))
         finally:
             s.close()
-        self.assertTrue(got_socket)
 
 
 if __name__ == '__main__':
