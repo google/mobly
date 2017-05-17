@@ -64,8 +64,21 @@ class UtilsTest(unittest.TestCase):
         'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
     def test_get_available_port_returns_free_port(
             self, mock_list_occupied_adb_ports):
+        """Verifies logic to pick a free port on the host.
+
+        Test checks we can bind to either an ipv4 or ipv6 socket on the port
+        returned by get_available_host_port.
+        """
         port = utils.get_available_host_port()
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        got_socket = False
+        for family in (socket.AF_INET, socket.AF_INET6):
+            try:
+                s = socket.socket(family, socket.SOCK_STREAM)
+                got_socket = True
+                break
+            except socket.error:
+                continue
+        self.assertTrue(got_socket)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             s.bind(('localhost', port))
