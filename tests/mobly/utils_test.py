@@ -75,6 +75,7 @@ class UtilsTest(unittest.TestCase):
             try:
                 s = socket.socket(family, socket.SOCK_STREAM)
                 got_socket = True
+                break
             except socket.error:
                 continue
         self.assertTrue(got_socket)
