@@ -164,8 +164,8 @@ class BaseTestClass(object):
         self.setup_class()
 
     def setup_class(self):
-        """Setup function that will be called before executing any test method
-        in the test class.
+        """Setup function that will be called before executing any test in the
+        class.
 
         To signal setup failure, use asserts or raise your own exception.
 
@@ -400,7 +400,7 @@ class BaseTestClass(object):
 
         Generated tests are not written down as methods, but as a list of
         parameter sets. This way we reduce code repetition and improve test
-        method scalability.
+        scalability.
 
         Args:
             test_logic: function, the common logic shared by all the generated

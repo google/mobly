@@ -55,7 +55,7 @@ def run_suite(test_classes, argv=None):
         metavar='<PATH>',
         help='Path to the test configuration file.')
     parser.add_argument(
-        '--test',
+        '--tests',
         '--test_case',
         nargs='+',
         type=str,
@@ -76,7 +76,7 @@ def run_suite(test_classes, argv=None):
             sys.exit(1)
 
     # Choose which tests to run
-    test_identifiers = _compute_test_identifiers(test_classes, args.test)
+    test_identifiers = _compute_test_identifiers(test_classes, args.tests)
 
     # Execute the suite
     ok = True

@@ -64,12 +64,12 @@ def main(argv=None):
         metavar='<PATH>',
         help='Path to the test configuration file.')
     parser.add_argument(
-        '--test',
+        '--tests',
         '--test_case',
         nargs='+',
         type=str,
         metavar='[test_a test_b...]',
-        help='A list of test methods in the test script.')
+        help='A list of tests methods in the test class to execute.')
     parser.add_argument(
         '-tb',
         '--test_bed',
@@ -88,8 +88,8 @@ def main(argv=None):
     test_class_name = test_class.__name__
     # Parse test method specifiers if exist.
     test_method_names = None
-    if args.test:
-        test_method_names = args.test
+    if args.tests:
+        test_method_names = args.tests
     test_identifier = [(test_class_name, test_method_names)]
     # Execute the test class with configs.
     ok = True
@@ -393,16 +393,17 @@ class TestRunner(object):
         self.test_run_info.log_path = self.log_path
         self.test_run_info.register_controller = self.register_controller
 
-    def _run_test_class(self, test_cls_name, test_methods=None):
+    def _run_test_class(self, test_cls_name, test_method_names=None):
         """Instantiates and executes a test class.
 
-        If test_methods is None, the test methods listed by self.tests will be
-        executed instead. If self.tests is empty as well, no test method in this
-        test class will be executed.
+        If test_method_names is None, the test methods listed by self.tests will
+        be executed instead. If self.tests is empty as well, no test method in
+        this test class will be executed.
 
         Args:
             test_cls_name: Name of the test class to execute.
-            test_methods: List of test method names to execute within the class.
+            test_method_names: List of test method names to execute within the
+                               class.
 
         Raises:
             ValueError is raised if the requested test class could not be found
@@ -415,7 +416,7 @@ class TestRunner(object):
                              'this TestRunner?' % test_cls_name)
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
-                cls_result = test_cls_instance.run(test_methods)
+                cls_result = test_cls_instance.run(test_method_names)
                 self.results += cls_result
             except signals.TestAbortAll as e:
                 self.results += e.results
