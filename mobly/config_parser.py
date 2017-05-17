@@ -16,7 +16,6 @@ from builtins import str
 
 import copy
 import os
-import sys
 import yaml
 
 from mobly import keys
@@ -85,75 +84,6 @@ def _validate_testbed_configs(testbed_configs):
         seen_names.add(name)
 
 
-def _verify_test_class_name(test_cls_name):
-    if not test_cls_name.endswith('Test'):
-        raise MoblyConfigError(
-            'Requested test class "%s" does not follow the test class naming '
-            'convention *Test.' % test_cls_name)
-
-
-def gen_term_signal_handler(test_runners):
-    def termination_sig_handler(signal_num, frame):
-        for t in test_runners:
-            t.stop()
-        sys.exit(1)
-
-    return termination_sig_handler
-
-
-def _parse_one_test_specifier(item):
-    """Parse one test specifier from command line input.
-
-    This also verifies that the test class name and test case names follow
-    Mobly's naming conventions. A test class name has to end with "Test"; a test
-    case name has to start with "test".
-
-    Args:
-        item: A string that specifies a test class or test cases in one test
-            class to run.
-
-    Returns:
-        A tuple of a string and a list of strings. The string is the test class
-        name, the list of strings is a list of test case names. The list can be
-        None.
-    """
-    tokens = item.split(':')
-    if len(tokens) > 2:
-        raise MoblyConfigError("Syntax error in test specifier %s" % item)
-    if len(tokens) == 1:
-        # This should be considered a test class name
-        test_cls_name = tokens[0]
-        _verify_test_class_name(test_cls_name)
-        return (test_cls_name, None)
-    elif len(tokens) == 2:
-        # This should be considered a test class name followed by
-        # a list of test case names.
-        test_cls_name, test_case_names = tokens
-        clean_names = []
-        _verify_test_class_name(test_cls_name)
-        for elem in test_case_names.split(','):
-            test_case_name = elem.strip()
-            if not test_case_name.startswith("test_"):
-                raise MoblyConfigError(
-                    'Requested test case "%s" in test class "%s" does not'
-                    ' follow the test case naming convention test_*.' %
-                    (test_case_name, test_cls_name))
-            clean_names.append(test_case_name)
-        return (test_cls_name, clean_names)
-
-
-def parse_test_list(test_list):
-    """Parse user provided test list into internal format for test_runner.
-
-    Args:
-        test_list: A list of test classes/cases.
-    """
-    result = []
-    for elem in test_list:
-        result.append(_parse_one_test_specifier(elem))
-    return result
-
-
 def load_test_config_file(test_config_path, tb_filters=None):
     """Processes the test configuration file provied by user.
 
@@ -205,28 +135,6 @@ def load_test_config_file(test_config_path, tb_filters=None):
             keys.Config.key_testbed_test_params.value, {})
         test_configs.append(test_run_config)
     return test_configs
-
-
-def parse_test_file(fpath):
-    """Parses a test file that contains test specifiers.
-
-    Args:
-        fpath: A string that is the path to the test file to parse.
-
-    Returns:
-        A list of strings, each is a test specifier.
-    """
-    with open(fpath, 'r') as f:
-        tf = []
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            if len(tf) and (tf[-1].endswith(':') or tf[-1].endswith(',')):
-                tf[-1] += line
-            else:
-                tf.append(line)
-        return tf
 
 
 def _load_config_file(path):

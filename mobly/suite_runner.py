@@ -55,6 +55,7 @@ def run_suite(test_classes, argv=None):
         metavar='<PATH>',
         help='Path to the test configuration file.')
     parser.add_argument(
+        '--test',
         '--test_case',
         nargs='+',
         type=str,
@@ -75,7 +76,7 @@ def run_suite(test_classes, argv=None):
             sys.exit(1)
 
     # Choose which tests to run
-    test_identifiers = _compute_test_identifiers(test_classes, args.test_case)
+    test_identifiers = _compute_test_identifiers(test_classes, args.test)
 
     # Execute the suite
     ok = True
@@ -97,15 +98,15 @@ def run_suite(test_classes, argv=None):
         sys.exit(1)
 
 
-def _compute_test_identifiers(test_classes, selected_test_cases):
+def _compute_test_identifiers(test_classes, selected_tests):
     """Computes a list of test identifiers for TestRunner from list of strings.
 
     Args:
         test_classes: (list of class) all classes that are part of this suite.
-        selected_test_cases: (list of string) list of testcases to execute, eg:
+        selected_tests: (list of string) list of tests to execute, eg:
              ['FooTest', 'BarTest',
               'BazTest.test_method_a', 'BazTest.test_method_b'].
-             May be empty, in which case all test classes are selected.
+             May be empty, in which case all tests are selected.
 
     Returns:
         (list of tuple(str(test name), list(str, test methods) or None)):
@@ -118,21 +119,21 @@ def _compute_test_identifiers(test_classes, selected_test_cases):
     """
     # Create a map from test class name to list of methods
     test_identifier_builder = collections.OrderedDict()
-    if selected_test_cases:
-        for test_case in selected_test_cases:
-            if '.' in test_case:  # Has a test method
-                (test_class, test_method) = test_case.split('.')
+    if selected_tests:
+        for test in selected_tests:
+            if '.' in test:  # Has a test method
+                (test_class, test_method) = test.split('.')
                 if test_class not in test_identifier_builder:
                     # Never seen this class before
                     test_identifier_builder[test_class] = [test_method]
                 elif test_identifier_builder[test_class] is None:
                     # Already running all test methods in this class, so ignore
-                    # this extra testcase.
+                    # this extra test method.
                     pass
                 else:
                     test_identifier_builder[test_class].append(test_method)
             else:  # No test method; run all tests in this class.
-                test_identifier_builder[test_case] = None
+                test_identifier_builder[test] = None
     else:
         for test_class in test_classes:
             test_identifier_builder[test_class.__name__] = None

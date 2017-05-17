@@ -26,7 +26,7 @@ class SuiteRunnerTest(unittest.TestCase):
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=None)
+            selected_tests=None)
         self.assertEqual(
             [('IntegrationTest', None), ('Integration2Test', None)],
             identifiers)
@@ -37,7 +37,7 @@ class SuiteRunnerTest(unittest.TestCase):
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=['IntegrationTest'])
+            selected_tests=['IntegrationTest'])
         self.assertEqual([('IntegrationTest', None)], identifiers)
 
     def test_select_by_method(self):
@@ -46,7 +46,7 @@ class SuiteRunnerTest(unittest.TestCase):
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=[
+            selected_tests=[
                 'IntegrationTest.test_a', 'IntegrationTest.test_b'
             ])
         self.assertEqual([('IntegrationTest', ['test_a', 'test_b'])],
@@ -58,7 +58,7 @@ class SuiteRunnerTest(unittest.TestCase):
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=['IntegrationTest.test_a', 'IntegrationTest'])
+            selected_tests=['IntegrationTest.test_a', 'IntegrationTest'])
         self.assertEqual([('IntegrationTest', None)], identifiers)
 
         identifiers = suite_runner._compute_test_identifiers(
@@ -66,7 +66,7 @@ class SuiteRunnerTest(unittest.TestCase):
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=['IntegrationTest', 'IntegrationTest.test_a'])
+            selected_tests=['IntegrationTest', 'IntegrationTest.test_a'])
         self.assertEqual([('IntegrationTest', None)], identifiers)
 
 

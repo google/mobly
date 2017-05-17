@@ -158,7 +158,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'Mobly', u'Mobly Documentation',
-     author, 'Mobly', 'Mobly is a Python-based test framework that specializes in supporting test cases that require multiple devices, complex environments, or custom hardware setups.',
+     author, 'Mobly', 'Mobly is a Python-based test framework that specializes in supporting tests that require multiple devices, complex environments, or custom hardware setups.',
      'Miscellaneous'),
 ]
 
