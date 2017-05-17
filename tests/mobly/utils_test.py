@@ -70,7 +70,7 @@ class UtilsTest(unittest.TestCase):
         returned by portpicker on host machine."""
         port = utils.get_available_host_port()
         got_socket = False
-        for family in (socket.AF_INET6, socket.AF_INET):
+        for family in (socket.AF_INET, socket.AF_INET6):
             try:
                 s = socket.socket(family, socket.SOCK_STREAM)
                 got_socket = True
