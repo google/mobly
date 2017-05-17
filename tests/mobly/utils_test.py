@@ -61,7 +61,7 @@ class UtilsTest(unittest.TestCase):
             utils.get_available_host_port()
 
     @mock.patch(
-        'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')    
+        'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
     def test_get_available_port_returns_free_port(
             self, mock_list_occupied_adb_ports):
         """This test checks we can bind to a socket on the port returned by portpicker 
@@ -81,6 +81,7 @@ class UtilsTest(unittest.TestCase):
             finally:
                 s.close()
         self.assertTrue(got_socket)
+
 
 if __name__ == '__main__':
     unittest.main()
