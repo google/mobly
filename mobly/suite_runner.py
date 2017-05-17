@@ -14,7 +14,7 @@
 """Runner for Mobly test suites.
 
 To create a test suite, call suite_runner.run_suite() with one or more
-individual testcases. For example:
+individual test classes. For example:
 
     from mobly import suite_runner
 
@@ -22,7 +22,7 @@ individual testcases. For example:
     from my.test.lib import bar_test
     ...
     if __name__ == '__main__':
-        suite_runner.run(foo_test.FooTest, bar_test.BarTest)
+        suite_runner.run_suite(foo_test.FooTest, bar_test.BarTest)
 """
 
 import argparse
