@@ -69,7 +69,7 @@ def main(argv=None):
         nargs='+',
         type=str,
         metavar='[test_a test_b...]',
-        help='A list of tests methods in the test class to execute.')
+        help='A list of tests in the test class to execute.')
     parser.add_argument(
         '-tb',
         '--test_bed',
@@ -86,11 +86,11 @@ def main(argv=None):
     # Find the test class in the test script.
     test_class = _find_test_class()
     test_class_name = test_class.__name__
-    # Parse test method specifiers if exist.
-    test_method_names = None
+    # Parse test specifiers if exist.
+    test_names = None
     if args.tests:
-        test_method_names = args.tests
-    test_identifier = [(test_class_name, test_method_names)]
+        test_names = args.tests
+    test_identifier = [(test_class_name, test_names)]
     # Execute the test class with configs.
     ok = True
     for config in test_configs:
@@ -140,8 +140,8 @@ def execute_one_test_class(test_class, test_config, test_identifier):
         test_class: A subclass of mobly.base_test.BaseTestClass that has the test
                     logic to be executed.
         test_config: A dict representing one set of configs for a test run.
-        test_identifier: A list of tuples specifying which test methods to run
-                         in the test class.
+        test_identifier: A list of tuples specifying which tests to run in the
+                         test class.
 
     Returns:
         True if all tests passed without any error, False otherwise.
@@ -393,17 +393,16 @@ class TestRunner(object):
         self.test_run_info.log_path = self.log_path
         self.test_run_info.register_controller = self.register_controller
 
-    def _run_test_class(self, test_cls_name, test_method_names=None):
+    def _run_test_class(self, test_cls_name, test_names=None):
         """Instantiates and executes a test class.
 
-        If test_method_names is None, the test methods listed by self.tests will
-        be executed instead. If self.tests is empty as well, no test method in
-        this test class will be executed.
+        If test_names is None, the tests listed by self.tests will be executed
+        instead. If self.tests is empty as well, no test in this test class will
+        be executed.
 
         Args:
             test_cls_name: Name of the test class to execute.
-            test_method_names: List of test method names to execute within the
-                               class.
+            test_names: List of test names to execute within the class.
 
         Raises:
             ValueError is raised if the requested test class could not be found
@@ -416,7 +415,7 @@ class TestRunner(object):
                              'this TestRunner?' % test_cls_name)
         with test_cls(self.test_run_info) as test_cls_instance:
             try:
-                cls_result = test_cls_instance.run(test_method_names)
+                cls_result = test_cls_instance.run(test_names)
                 self.results += cls_result
             except signals.TestAbortAll as e:
                 self.results += e.results
@@ -444,16 +443,16 @@ class TestRunner(object):
         # to be passed to test class.
         self._parse_config()
         logging.debug('Executing run list %s.', self.run_list)
-        for test_cls_name, test_method_names in self.run_list:
+        for test_cls_name, test_names in self.run_list:
             if not self.running:
                 break
-            if test_method_names:
-                logging.debug('Executing test methods %s in test class %s.',
-                              test_method_names, test_cls_name)
+            if test_names:
+                logging.debug('Executing tests %s in test class %s.',
+                              test_names, test_cls_name)
             else:
                 logging.debug('Executing test class %s', test_cls_name)
             try:
-                self._run_test_class(test_cls_name, test_method_names)
+                self._run_test_class(test_cls_name, test_names)
             except signals.TestAbortAll as e:
                 logging.warning(
                     'Abort all subsequent test classes. Reason: %s', e)
