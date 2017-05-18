@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import mock
 import unittest
 
@@ -20,7 +19,6 @@ from mobly import asserts
 from mobly import base_test
 from mobly import config_parser
 from mobly import signals
-from mobly import test_runner
 
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 MSG_EXPECTED_TEST_FAILURE = "This is an expected test failure."
@@ -45,7 +43,7 @@ class BaseTestTest(unittest.TestCase):
         self.mock_test_cls_configs.reporter = mock.MagicMock()
         self.mock_test_name = "test_something"
 
-    def test_current_test_case_name(self):
+    def test_current_test_name(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
                 asserts.assert_true(self.current_test_name == "test_func", (
@@ -91,8 +89,8 @@ class BaseTestTest(unittest.TestCase):
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        expected_msg = ("Test case name not_a_test_something does not follow "
-                        "naming convention test_\*, abort.")
+        expected_msg = ('Test method name not_a_test_something does not follow '
+                        'naming convention test_\*, abort.')
         with self.assertRaisesRegexp(base_test.Error, expected_msg):
             bt_cls.run()
 
@@ -128,8 +126,8 @@ class BaseTestTest(unittest.TestCase):
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        expected_msg = ("Test case name not_a_test_something does not follow "
-                        "naming convention test_*, abort.")
+        expected_msg = ('Test method name not_a_test_something does not follow '
+                        'naming convention test_*, abort.')
         with self.assertRaises(base_test.Error, msg=expected_msg):
             bt_cls.run(test_names=["not_a_test_something"])
 
@@ -139,7 +137,7 @@ class BaseTestTest(unittest.TestCase):
                 pass
 
             def not_a_test(self):
-                # This should not execute its name doesn't follow test case
+                # This should not execute its name doesn't follow test method
                 # naming convention.
                 never_call()
 
@@ -153,7 +151,7 @@ class BaseTestTest(unittest.TestCase):
             pass
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        expected_msg = ".* does not have test case test_something"
+        expected_msg = ".* does not have test method test_something"
         with self.assertRaisesRegexp(base_test.Error, expected_msg):
             bt_cls.run(test_names=["test_something"])
         self.assertFalse(bt_cls.results.executed)
@@ -674,7 +672,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
 
-    def test_assert_raises_fail_with_noop(self):
+    def test_assert_raises_regex_fail_with_noop(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
                 with asserts.assert_raises_regex(
@@ -710,7 +708,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.details, expected_details)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
 
-    def test_assert_raises_fail_with_wrong_error(self):
+    def test_assert_raises_regex_fail_with_wrong_error(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
                 with asserts.assert_raises_regex(

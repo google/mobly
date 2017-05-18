@@ -55,11 +55,12 @@ def run_suite(test_classes, argv=None):
         metavar='<PATH>',
         help='Path to the test configuration file.')
     parser.add_argument(
+        '--tests',
         '--test_case',
         nargs='+',
         type=str,
         metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
-        help='A list of test classes and optional test methods to execute.')
+        help='A list of test classes and optional tests to execute.')
     if not argv:
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
@@ -75,7 +76,7 @@ def run_suite(test_classes, argv=None):
             sys.exit(1)
 
     # Choose which tests to run
-    test_identifiers = _compute_test_identifiers(test_classes, args.test_case)
+    test_identifiers = _compute_test_identifiers(test_classes, args.tests)
 
     # Execute the suite
     ok = True
@@ -97,18 +98,18 @@ def run_suite(test_classes, argv=None):
         sys.exit(1)
 
 
-def _compute_test_identifiers(test_classes, selected_test_cases):
+def _compute_test_identifiers(test_classes, selected_tests):
     """Computes a list of test identifiers for TestRunner from list of strings.
 
     Args:
         test_classes: (list of class) all classes that are part of this suite.
-        selected_test_cases: (list of string) list of testcases to execute, eg:
+        selected_tests: (list of string) list of tests to execute, eg:
              ['FooTest', 'BarTest',
               'BazTest.test_method_a', 'BazTest.test_method_b'].
-             May be empty, in which case all test classes are selected.
+             May be empty, in which case all tests are selected.
 
     Returns:
-        (list of tuple(str(test name), list(str, test methods) or None)):
+        list(tuple(test_class_name, list(test_name))),
         identifiers for TestRunner. For the above example:
         [
             ('FooTest', None),
@@ -116,24 +117,24 @@ def _compute_test_identifiers(test_classes, selected_test_cases):
             ('BazTest', ['test_method_a', 'test_method_b']),
         ]
     """
-    # Create a map from test class name to list of methods
+    # Create a map from test class name to list of test names
     test_identifier_builder = collections.OrderedDict()
-    if selected_test_cases:
-        for test_case in selected_test_cases:
-            if '.' in test_case:  # Has a test method
-                (test_class, test_method) = test_case.split('.')
-                if test_class not in test_identifier_builder:
+    if selected_tests:
+        for test in selected_tests:
+            if '.' in test:  # Has a test method
+                (test_class_name, test_name) = test.split('.')
+                if test_class_name not in test_identifier_builder:
                     # Never seen this class before
-                    test_identifier_builder[test_class] = [test_method]
-                elif test_identifier_builder[test_class] is None:
-                    # Already running all test methods in this class, so ignore
-                    # this extra testcase.
+                    test_identifier_builder[test_class_name] = [test_name]
+                elif test_identifier_builder[test_class_name] is None:
+                    # Already running all tests in this class, so ignore this
+                    # extra test.
                     pass
                 else:
-                    test_identifier_builder[test_class].append(test_method)
+                    test_identifier_builder[test_class_name].append(test_name)
             else:  # No test method; run all tests in this class.
-                test_identifier_builder[test_case] = None
+                test_identifier_builder[test] = None
     else:
-        for test_class in test_classes:
-            test_identifier_builder[test_class.__name__] = None
+        for test_class_name in test_classes:
+            test_identifier_builder[test_class_name.__name__] = None
     return list(test_identifier_builder.items())

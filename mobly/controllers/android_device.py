@@ -349,7 +349,7 @@ def take_bug_reports(ads, test_name, begin_time):
 
     Args:
         ads: A list of AndroidDevice instances.
-        test_name: Name of the test case that triggered this bug report.
+        test_name: Name of the test method that triggered this bug report.
         begin_time: Logline format timestamp taken when the test started.
     """
     begin_time = mobly_logger.normalize_log_line_timestamp(begin_time)
@@ -806,7 +806,7 @@ class AndroidDevice(object):
         """Takes a bug report on the device and stores it in a file.
 
         Args:
-            test_name: Name of the test case that triggered this bug report.
+            test_name: Name of the test method that triggered this bug report.
             begin_time: Logline format timestamp taken when the test started.
         """
         new_br = True
