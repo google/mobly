@@ -242,7 +242,8 @@ class TestRunner(object):
             config: config_parser.TestRunConfig, configuration to execute this
                     test class with.
             test_class: class, test class to execute.
-            tests: Optional list of test names within the class to execute.
+            tests: list of strings, optional list of test names within the
+                   class to execute.
 
         Raises:
             Error: if the provided config has a log_path or test_bed_name which

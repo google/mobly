@@ -106,7 +106,7 @@ def run_suite(test_classes, argv=None):
 def _compute_selected_tests(test_classes, selected_tests):
     """Computes tests to run for each class from selector strings.
 
-    This method transforms a list of selector strings (such as FooTest or
+    This function transforms a list of selector strings (such as FooTest or
     FooTest.test_method_a) to a dict where keys are test_name classes, and values are
     lists of selected tests in those classes. None means all tests in that class
     are selected.
