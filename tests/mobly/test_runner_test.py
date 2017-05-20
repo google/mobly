@@ -42,24 +42,24 @@ class TestRunnerTest(unittest.TestCase):
             'extra_param': 'haha'
         }
         self.base_mock_test_config.log_path = self.tmp_dir
-        self.mock_run_list = [('SampleTest', None)]
+        self.log_dir = self.base_mock_test_config.log_path
+        self.test_bed_name = self.base_mock_test_config.test_bed_name
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
     def test_register_controller_no_config(self):
-        tr = test_runner.TestRunner(self.base_mock_test_config,
-                                    self.mock_run_list)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         with self.assertRaisesRegexp(signals.ControllerError,
                                      'No corresponding config found for'):
-            tr.register_controller(mock_controller)
+            tr._register_controller(self.base_mock_test_config,
+                                    mock_controller)
 
     def test_register_controller_no_config_no_register(self):
-        tr = test_runner.TestRunner(self.base_mock_test_config,
-                                    self.mock_run_list)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         self.assertIsNone(
-            tr.register_controller(
-                mock_controller, required=False))
+            tr._register_controller(
+                self.base_mock_test_config, mock_controller, required=False))
 
     def test_register_controller_dup_register(self):
         """Verifies correctness of registration, internal tally of controllers
@@ -71,30 +71,29 @@ class TestRunnerTest(unittest.TestCase):
         mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ['magic1', 'magic2']
         }
-        tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
-        tr.register_controller(mock_controller)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr._register_controller(mock_test_config, mock_controller)
         registered_name = 'mock_controller'
-        self.assertTrue(registered_name in tr.controller_registry)
-        mock_ctrlrs = tr.controller_registry[registered_name]
+        self.assertTrue(registered_name in tr._controller_registry)
+        mock_ctrlrs = tr._controller_registry[registered_name]
         self.assertEqual(mock_ctrlrs[0].magic, 'magic1')
         self.assertEqual(mock_ctrlrs[1].magic, 'magic2')
-        self.assertTrue(tr.controller_destructors[registered_name])
+        self.assertTrue(tr._controller_destructors[registered_name])
         expected_msg = 'Controller module .* has already been registered.'
         with self.assertRaisesRegexp(signals.ControllerError, expected_msg):
-            tr.register_controller(mock_controller)
+            tr._register_controller(mock_test_config, mock_controller)
 
     def test_register_controller_no_get_info(self):
         mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        mock_ref_name = 'haha'
         get_info = getattr(mock_controller, 'get_info')
         delattr(mock_controller, 'get_info')
         try:
             mock_test_config.controller_configs = {
                 mock_ctrlr_config_name: ['magic1', 'magic2']
             }
-            tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
-            tr.register_controller(mock_controller)
+            tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+            tr._register_controller(mock_test_config, mock_controller)
             self.assertEqual(tr.results.controller_info, {})
         finally:
             setattr(mock_controller, 'get_info', get_info)
@@ -105,8 +104,9 @@ class TestRunnerTest(unittest.TestCase):
         mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ['magic1', 'magic2']
         }
-        tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
-        magic_devices = tr.register_controller(mock_controller)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        magic_devices = tr._register_controller(mock_test_config,
+                                                mock_controller)
         self.assertEqual(magic_devices[0].magic, 'magic1')
         self.assertEqual(magic_devices[1].magic, 'magic2')
 
@@ -116,10 +116,11 @@ class TestRunnerTest(unittest.TestCase):
         mock_test_config.controller_configs = {
             mock_ctrlr_config_name: ['magic1', 'magic2']
         }
-        tr = test_runner.TestRunner(mock_test_config, self.mock_run_list)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         expected_msg = 'Expected to get at least 3 controller objects, got 2.'
         with self.assertRaisesRegexp(signals.ControllerError, expected_msg):
-            tr.register_controller(mock_controller, min_number=3)
+            tr._register_controller(
+                mock_test_config, mock_controller, min_number=3)
 
     def test_run_twice(self):
         """Verifies that:
@@ -137,17 +138,16 @@ class TestRunnerTest(unittest.TestCase):
             'magic': 'Magic2'
         }]
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
-        tr = test_runner.TestRunner(mock_test_config, [('IntegrationTest',
-                                                        None)])
-        tr.run([integration_test.IntegrationTest])
-        self.assertFalse(tr.controller_registry)
-        self.assertFalse(tr.controller_destructors)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
+        tr.run()
+        self.assertFalse(tr._controller_registry)
+        self.assertFalse(tr._controller_destructors)
         self.assertTrue(
             mock_test_config.controller_configs[mock_ctrlr_config_name][0])
-        tr.run([integration_test.IntegrationTest])
-        tr.stop()
-        self.assertFalse(tr.controller_registry)
-        self.assertFalse(tr.controller_destructors)
+        tr.run()
+        self.assertFalse(tr._controller_registry)
+        self.assertFalse(tr._controller_destructors)
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 2)
         self.assertEqual(results['Executed'], 2)
@@ -177,14 +177,10 @@ class TestRunnerTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device.get_all_instances',
         return_value=mock_android_device.get_mock_ads(1))
-    def test_run_two_test_classes(
-            self,
-            mock_get_all,
-            mock_list_adb,
-            mock_fastboot,
-            mock_adb, ):
-        """Verifies that runing more than one test class in one test run works
-        proerly.
+    def test_run_two_test_classes(self, mock_get_all, mock_list_adb,
+                                  mock_fastboot, mock_adb):
+        """Verifies that running more than one test class in one test run works
+        properly.
 
         This requires using a built-in controller module. Using AndroidDevice
         module since it has all the mocks needed already.
@@ -202,22 +198,67 @@ class TestRunnerTest(unittest.TestCase):
         mock_test_config.controller_configs['AndroidDevice'] = [{
             'serial': '1'
         }]
-        tr = test_runner.TestRunner(mock_test_config, [(
-            'Integration2Test', None), ('IntegrationTest', None)])
-        tr.run([
-            integration_test.IntegrationTest,
-            integration2_test.Integration2Test
-        ])
-        tr.stop()
-        self.assertFalse(tr.controller_registry)
-        self.assertFalse(tr.controller_destructors)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, integration2_test.Integration2Test)
+        tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
+        tr.run()
+        self.assertFalse(tr._controller_registry)
+        self.assertFalse(tr._controller_destructors)
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 2)
         self.assertEqual(results['Executed'], 2)
         self.assertEqual(results['Passed'], 2)
 
+    def test_run_two_test_classes_different_configs(self):
+        """Verifies that running more than one test class in one test run with
+        different configs works properly.
+        """
+        config1 = self.base_mock_test_config.copy()
+        config1.controller_configs[
+            mock_controller.MOBLY_CONTROLLER_CONFIG_NAME] = [{
+                'serial': 'xxxx'
+            }]
+        config2 = config1.copy()
+        config2.user_params['icecream'] = 10
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(config1, integration_test.IntegrationTest)
+        tr.add_test_class(config2, integration_test.IntegrationTest)
+        tr.run()
+        results = tr.results.summary_dict()
+        self.assertEqual(results['Requested'], 2)
+        self.assertEqual(results['Executed'], 2)
+        self.assertEqual(results['Passed'], 1)
+        self.assertEqual(results['Failed'], 1)
+        self.assertEqual(tr.results.failed[0].details, '10 != 42')
+
+    def test_add_test_class_mismatched_log_path(self):
+        tr = test_runner.TestRunner('/different/log/dir', self.test_bed_name)
+        with self.assertRaisesRegexp(
+                test_runner.Error,
+                'TestRunner\'s log folder is "/different/log/dir", but a test '
+                r'config with a different log folder \("%s"\) was added.' %
+                self.log_dir):
+            tr.add_test_class(self.base_mock_test_config,
+                              integration_test.IntegrationTest)
+
+    def test_add_test_class_mismatched_test_bed_name(self):
+        tr = test_runner.TestRunner(self.log_dir, 'different_test_bed')
+        with self.assertRaisesRegexp(
+                test_runner.Error,
+                'TestRunner\'s test bed is "different_test_bed", but a test '
+                r'config with a different test bed \("%s"\) was added.' %
+                self.test_bed_name):
+            tr.add_test_class(self.base_mock_test_config,
+                              integration_test.IntegrationTest)
+
+    def test_run_no_tests(self):
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        with self.assertRaisesRegexp(test_runner.Error,
+                                     'No tests to execute.'):
+            tr.run()
+
     def test_verify_controller_module(self):
-        test_runner.TestRunner.verify_controller_module(mock_controller)
+        test_runner.verify_controller_module(mock_controller)
 
     def test_verify_controller_module_null_attr(self):
         try:
@@ -225,8 +266,7 @@ class TestRunnerTest(unittest.TestCase):
             mock_controller.MOBLY_CONTROLLER_CONFIG_NAME = None
             msg = 'Controller interface .* in .* cannot be null.'
             with self.assertRaisesRegexp(signals.ControllerError, msg):
-                test_runner.TestRunner.verify_controller_module(
-                    mock_controller)
+                test_runner.verify_controller_module(mock_controller)
         finally:
             mock_controller.MOBLY_CONTROLLER_CONFIG_NAME = tmp
 
@@ -236,8 +276,7 @@ class TestRunnerTest(unittest.TestCase):
             delattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME')
             msg = 'Module .* missing required controller module attribute'
             with self.assertRaisesRegexp(signals.ControllerError, msg):
-                test_runner.TestRunner.verify_controller_module(
-                    mock_controller)
+                test_runner.verify_controller_module(mock_controller)
         finally:
             setattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME', tmp)
 
