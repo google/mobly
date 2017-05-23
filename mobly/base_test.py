@@ -383,14 +383,15 @@ class BaseTestClass(object):
             if not is_generate_trigger:
                 self.results.add_record(tr_record)
 
-    def _assert_caller_function_name(self, expected_caller_func_name):
-        """Asserts that a function only be called within a certain function.
-        """
+    def _assert_function_name_in_stack(self, expected_func_name):
+        """Asserts that the current stack contains the given function name."""
         current_frame = inspect.currentframe()
-        caller_frame = inspect.getouterframes(current_frame, 2)
-        if caller_frame[2][3] != expected_caller_func_name:
-            raise Error('"%s" cannot be called outside of %s' %
-                        (caller_frame[1][3], expected_caller_func_name))
+        caller_frames = inspect.getouterframes(current_frame, 2)
+        for caller_frame in caller_frames[2:]:
+            if caller_frame[3] == expected_func_name:
+                return
+        raise Error('"%s" cannot be called outside of %s' %
+                    (caller_frames[1][3], expected_func_name))
 
     def generate_tests(self, test_logic, name_func, arg_sets):
         """Generates tests in the test class.
@@ -413,7 +414,7 @@ class BaseTestClass(object):
             arg_sets: a list of tuples, each tuple is a set of arguments to be
                       passed to the test logic function and name function.
         """
-        self._assert_caller_function_name('setup_generated_tests')
+        self._assert_function_name_in_stack('setup_generated_tests')
         for args in arg_sets:
             test_name = name_func(*args)
             if test_name in self._get_all_test_names():
