@@ -24,10 +24,10 @@ _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')
 
 _LAUNCH_CMD_V0 = ('am instrument -w -e action start -e port %s %s/' +
-               _INSTRUMENTATION_RUNNER_PACKAGE)
+                  _INSTRUMENTATION_RUNNER_PACKAGE)
 
-_LAUNCH_CMD_V1 = ('am instrument -w -e action start %s/' +
-               _INSTRUMENTATION_RUNNER_PACKAGE)
+_LAUNCH_CMD_V1 = (
+    'am instrument -w -e action start %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
 
 _STOP_CMD = (
     'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
@@ -75,7 +75,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # to v0 for compatibility. Use info here so people know exactly what's
         # happening here, which is helpful since they need to create their own
         # instrumentations and manifest.
-        self.log.info('Launching snippet apk %s with protocol v1', self.package)
+        self.log.info('Launching snippet apk %s with protocol v1',
+                      self.package)
         cmd = _LAUNCH_CMD_V1 % self.package
         start_time = time.time()
         self._proc = self._do_start_app(cmd)
@@ -146,8 +147,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                 '%s is not installed on %s' % (self.package, self._adb.serial))
         # Check that the app is instrumented.
         out = self._adb.shell('pm list instrumentation')
-        matched_out = utils.grep('^instrumentation:%s/%s' % (
-            self.package, _INSTRUMENTATION_RUNNER_PACKAGE), out)
+        matched_out = utils.grep('^instrumentation:%s/%s' %
+                                 (self.package,
+                                  _INSTRUMENTATION_RUNNER_PACKAGE), out)
         if not matched_out:
             raise jsonrpc_client_base.AppStartError(
                 '%s is installed on %s, but it is not instrumented.' %
@@ -184,8 +186,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                 self.connect()
                 return
             except:
-                self.log.debug('v0 snippet %s is not yet running, retrying',
-                               self.package, exc_info=True)
+                self.log.debug(
+                    'v0 snippet %s is not yet running, retrying',
+                    self.package,
+                    exc_info=True)
             time.sleep(1)
         raise jsonrpc_client_base.AppStartError(
             '%s failed to start on %s.' % (self.package, self._adb.serial))

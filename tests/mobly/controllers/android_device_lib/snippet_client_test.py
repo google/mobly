@@ -43,17 +43,13 @@ class MockAdbProxy(object):
             if self.apk_not_instrumented:
                 return b''
             if self.target_not_installed:
-                return bytes(
-                    'instrumentation:{p}/{r} (target={mp})'.format(
-                        p=MOCK_PACKAGE_NAME,
-                        r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
-                        mp=MOCK_MISSING_PACKAGE_NAME),
-                    'utf-8')
-            return bytes(
-                'instrumentation:{p}/{r} (target={p})'.format(
+                return bytes('instrumentation:{p}/{r} (target={mp})'.format(
                     p=MOCK_PACKAGE_NAME,
-                    r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE),
-                'utf-8')
+                    r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
+                    mp=MOCK_MISSING_PACKAGE_NAME), 'utf-8')
+            return bytes('instrumentation:{p}/{r} (target={p})'.format(
+                p=MOCK_PACKAGE_NAME,
+                r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE), 'utf-8')
 
     def __getattr__(self, name):
         """All calls to the none-existent functions in adb proxy would

@@ -160,8 +160,8 @@ class JsonRpcClientBaseTest(unittest.TestCase):
 
         with self.assertRaises(
                 jsonrpc_client_base.ProtocolError,
-                msg=jsonrpc_client_base.ProtocolError.
-                NO_RESPONSE_FROM_HANDSHAKE):
+                msg=
+                jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')

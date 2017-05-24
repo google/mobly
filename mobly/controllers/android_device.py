@@ -642,9 +642,7 @@ class AndroidDevice(object):
                     'Snippet package "%s" has already been loaded under name'
                     ' "%s".' % (package, client_name))
         client = snippet_client.SnippetClient(
-            package=package,
-            adb_proxy=self.adb,
-            log=self.log)
+            package=package, adb_proxy=self.adb, log=self.log)
         client.start_app()
         self._snippet_clients[name] = client
         setattr(self, name, client)

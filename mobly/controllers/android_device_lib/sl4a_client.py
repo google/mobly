@@ -19,7 +19,6 @@ from mobly import utils
 from mobly.controllers.android_device_lib import event_dispatcher
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-
 _APP_NAME = 'SL4A'
 _DEVICE_SIDE_PORT = 8080
 _LAUNCH_CMD = (
@@ -64,8 +63,8 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         # Check that sl4a is installed
         out = self._adb.shell('pm list package')
         if not utils.grep('com.googlecode.android_scripting', out):
-            raise AppStartError(
-                '%s is not installed on %s' % (_APP_NAME, self._adb.serial))
+            raise AppStartError('%s is not installed on %s' %
+                                (_APP_NAME, self._adb.serial))
 
         # sl4a has problems connecting after disconnection, so kill the apk and
         # try connecting again.
@@ -90,8 +89,10 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
                 self.connect()
                 return
             except:
-                self.log.debug('%s is not yet running, retrying',
-                               self.app_name, exc_info=True)
+                self.log.debug(
+                    '%s is not yet running, retrying',
+                    self.app_name,
+                    exc_info=True)
             time.sleep(1)
         raise jsonrpc_client_base.AppStartError(
             '%s failed to start on %s.' % (self.app_name, self._adb.serial))
