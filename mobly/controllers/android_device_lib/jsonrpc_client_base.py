@@ -121,7 +121,7 @@ class JsonRpcClientBase(object):
 
     # Methods to be implemented by subclasses.
 
-    def start_app(self):
+    def start_app_and_connect(self):
         """Starts the server app on the android device and connects to it.
 
         After this, the self.host_port and self.device_port attributes must be

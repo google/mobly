@@ -643,7 +643,7 @@ class AndroidDevice(object):
                     ' "%s".' % (package, client_name))
         client = snippet_client.SnippetClient(
             package=package, adb_proxy=self.adb, log=self.log)
-        client.start_app()
+        client.start_app_and_connect()
         self._snippet_clients[name] = client
         setattr(self, name, client)
 
@@ -657,7 +657,7 @@ class AndroidDevice(object):
         EventDispatcher obj (self.ed) with the other connection.
         """
         self.sl4a = sl4a_client.Sl4aClient(adb_proxy=self.adb, log=self.log)
-        self.sl4a.start_app()
+        self.sl4a.start_app_and_connect()
         # Unpack the 'ed' attribute for compatibility.
         self.ed = self.sl4a.ed
 

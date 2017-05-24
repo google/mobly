@@ -188,7 +188,7 @@ def find_files(paths, file_predicate):
     file_list = []
     for path in paths:
         p = abs_path(path)
-        for dirPath, unused_subdirList, fileList in os.walk(p):
+        for dirPath, _, fileList in os.walk(p):
             for fname in fileList:
                 name, ext = os.path.splitext(fname)
                 if file_predicate(name, ext):
@@ -426,9 +426,8 @@ def grep(regex, output):
     """Similar to linux's `grep`, this returns the line in an output stream
     that matches a given regex pattern.
 
-    This function is specifically used to grep strings from AdbProxy's
-    output. We have to do this in Python instead of using cli tools because
-    we need to support windows which does not have `grep` in all vesions.
+    It does not rely on the `grep` binary and is not sensitive to line endings,
+    so it can be used cross-platform.
 
     Args:
         regex: string, a regex that matches the expected pattern.

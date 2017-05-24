@@ -26,9 +26,9 @@ _LAUNCH_CMD = (
     '--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT %s '
     'com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher')
 # Maximum time to wait for the app to start on the device (10 minutes).
-# TODO: This timeout is set high in order to allow for retries in start_app.
-# Decrease it when the call to connect() has the option for a quicker timeout
-# than the default _cmd() timeout.
+# TODO: This timeout is set high in order to allow for retries in
+# start_app_and_connect. Decrease it when the call to connect() has the option
+# for a quicker timeout than the default _cmd() timeout.
 _APP_START_WAIT_TIME = 10 * 60
 
 
@@ -58,7 +58,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         self.ed = None
         self._adb = adb_proxy
 
-    def start_app(self):
+    def start_app_and_connect(self):
         """Overrides superclass."""
         # Check that sl4a is installed
         out = self._adb.shell('pm list package')

@@ -33,9 +33,9 @@ _STOP_CMD = (
     'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
 
 # Maximum time to wait for the app to start on the device (10 minutes).
-# TODO: This timeout is set high in order to allow for retries in start_app.
-# Decrease it when the call to connect() has the option for a quicker timeout
-# than the default _cmd() timeout.
+# TODO: This timeout is set high in order to allow for retries in
+# start_app_and_connect. Decrease it when the call to connect() has the option
+# for a quicker timeout than the default _cmd() timeout.
 _APP_START_WAIT_TIME_V0 = 10 * 60
 
 
@@ -51,6 +51,12 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     """A client for interacting with snippet APKs using Mobly Snippet Lib.
 
     See superclass documentation for a list of public attributes.
+
+    It currently supports both v0 and v1 snippet launch protocols, although
+    support for v0 will be removed in a future version.
+
+    For a description of the launch protocols, see the documentation in
+    mobly-snippet-lib, SnippetRunner.java.
     """
 
     def __init__(self, package, adb_proxy, log=logging.getLogger()):
@@ -67,7 +73,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self._adb = adb_proxy
         self._proc = None
 
-    def start_app(self):
+    def start_app_and_connect(self):
         """Overrides superclass. Launches a snippet app and connects to it."""
         self._check_app_installed()
 
