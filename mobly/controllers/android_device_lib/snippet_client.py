@@ -100,7 +100,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             self._connect_to_v0()
         else:
             # Check protocol version and get the device port
-            match = re.match('^SNIPPET START, PROTOCOL ([0-9]+)$', line)
+            match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$',
+                             line)
             if not match or match.group(1) != '1':
                 raise ProtocolVersionError(line)
             self._connect_to_v1()
