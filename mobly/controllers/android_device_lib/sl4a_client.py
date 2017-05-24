@@ -29,6 +29,9 @@ _LAUNCH_CMD = (
 # TODO: This timeout is set high in order to allow for retries in
 # start_app_and_connect. Decrease it when the call to connect() has the option
 # for a quicker timeout than the default _cmd() timeout.
+# TODO: Evaluate whether the high timeout still makes sense for sl4a. It was
+# designed for user snippets which could be very slow to start depending on the
+# size of the snippet and main apps. sl4a can probably use a much smaller value.
 _APP_START_WAIT_TIME = 10 * 60
 
 

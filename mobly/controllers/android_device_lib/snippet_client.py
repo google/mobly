@@ -23,6 +23,7 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')
 
+# TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is removed.
 _LAUNCH_CMD_V0 = ('am instrument -w -e action start -e port %s %s/' +
                   _INSTRUMENTATION_RUNNER_PACKAGE)
 
@@ -32,10 +33,8 @@ _LAUNCH_CMD_V1 = (
 _STOP_CMD = (
     'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
 
-# Maximum time to wait for the app to start on the device (10 minutes).
-# TODO: This timeout is set high in order to allow for retries in
-# start_app_and_connect. Decrease it when the call to connect() has the option
-# for a quicker timeout than the default _cmd() timeout.
+# Maximum time to wait for a v0 snippet to start on the device (10 minutes).
+# TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is removed.
 _APP_START_WAIT_TIME_V0 = 10 * 60
 
 
@@ -90,8 +89,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # "Instrumentation crashed" could be due to several reasons, eg
         # exception thrown during startup or just a launch protocol 0 snippet
         # dying because it needs the port flag. Sadly we have no way to tell so
-        # just warn and retry as v0. TODO(adorokhine): remove v0 compatibility
-        # path in next release.
+        # just warn and retry as v0.
+        # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is
+        # removed.
         line = self._read_line()
         if line == 'INSTRUMENTATION_RESULT: shortMsg=Process crashed.':
             self.log.warning('Snippet %s crashed on startup. This might be an '
@@ -180,8 +180,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         adb_cmd += ['shell', launch_cmd]
         return utils.start_standing_subprocess(adb_cmd, shell=False)
 
+    # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is
+    # removed.
     def _connect_to_v0(self):
-        """TODO: Remove this after v0 snippet support is dropped."""
         self.device_port = self.host_port
         self._adb.forward(
             ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
@@ -215,6 +216,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self.connect()
 
     def _read_line(self):
-      line = self._proc.stdout.readline().rstrip()
-      self.log.debug('Read line from instrumentation output: "%s"', line)
-      return line
+        line = self._proc.stdout.readline().rstrip()
+        self.log.debug('Read line from instrumentation output: "%s"', line)
+        return line
