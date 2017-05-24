@@ -83,19 +83,22 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         # Connect with retry
         start_time = time.time()
         expiration_time = start_time + _APP_START_WAIT_TIME
+        started = False
         while time.time() < expiration_time:
             self.log.debug('Attempting to start %s.', self.app_name)
             try:
                 self.connect()
-                return
+                started = True
+                break
             except:
                 self.log.debug(
                     '%s is not yet running, retrying',
                     self.app_name,
                     exc_info=True)
             time.sleep(1)
-        raise jsonrpc_client_base.AppStartError(
-            '%s failed to start on %s.' % (self.app_name, self._adb.serial))
+        if not started:
+            raise jsonrpc_client_base.AppStartError(
+                '%s failed to start on %s.' % (self.app_name, self._adb.serial))
 
         # Start an EventDispatcher for the current sl4a session
         event_client = Sl4aClient(self._adb, self.log)
