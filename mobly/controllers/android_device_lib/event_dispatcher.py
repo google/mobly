@@ -147,7 +147,7 @@ class EventDispatcher:
             return
         self.started = False
         self.clear_all_events()
-        self._sl4a.close()
+        self._sl4a.disconnect()
         self.poller.set_result("Done")
         # The polling thread is guaranteed to finish after a max of 60 seconds,
         # so we don't wait here.
