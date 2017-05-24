@@ -111,17 +111,25 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     def stop_app(self):
         """Overrides superclass."""
         try:
-            # Close the socket connection.
-            self.disconnect()
-
-            # Close Event Dispatcher
-            if self.ed:
+            if self._conn:
+                # Be polite; let the dest know we're shutting down.
                 try:
-                    self.ed.clean_up()
+                    self.closeSl4aSession()
                 except:
-                    self.log.exception(
-                        'Failed to shutdown sl4a event dispatcher.')
-                self.ed = None
+                    self.log.exception('Failed to gracefully shut down %s.',
+                                       self.app_name)
+
+                # Close the socket connection.
+                self.disconnect()
+
+                # Close Event Dispatcher
+                if self.ed:
+                    try:
+                        self.ed.clean_up()
+                    except:
+                        self.log.exception(
+                            'Failed to shutdown sl4a event dispatcher.')
+                    self.ed = None
 
             # Terminate the app
             self._adb.shell('am force-stop com.googlecode.android_scripting')

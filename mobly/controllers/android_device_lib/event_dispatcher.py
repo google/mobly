@@ -147,6 +147,9 @@ class EventDispatcher:
             return
         self.started = False
         self.clear_all_events()
+        # At this point, the sl4a apk is destroyed and nothing is listening on
+        # the socket. Avoid sending any sl4a commands; just clean up the socket
+        # and return.
         self._sl4a.disconnect()
         self.poller.set_result("Done")
         # The polling thread is guaranteed to finish after a max of 60 seconds,

@@ -192,12 +192,6 @@ class JsonRpcClientBase(object):
     def disconnect(self):
         """Close the connection to the remote client."""
         if self._conn:
-            # Be polite; let the dest know we're shutting down.
-            try:
-                self.closeSl4aSession()
-            except:
-                self.log.exception('Failed to gracefully shut down %s.',
-                                   self.app_name)
             self._conn.close()
             self._conn = None
 
