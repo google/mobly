@@ -15,14 +15,11 @@
 from builtins import str
 from builtins import bytes
 
-import json
 import mock
-import socket
 import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import snippet_client
-from tests.lib import mock_android_device
 
 MOCK_PACKAGE_NAME = 'some.package.name'
 MOCK_MISSING_PACKAGE_NAME = 'not.installed'
@@ -78,42 +75,42 @@ class JsonRpcClientBaseTest(unittest.TestCase):
     @mock.patch(JSONRPC_BASE_PACKAGE)
     def test_check_app_installed_normal(self, mock_create_connection,
                                         mock_client_base):
-        sc = snippet_client.SnippetClient(MOCK_PACKAGE_NAME, 42,
-                                          MockAdbProxy())
-        sc.check_app_installed()
+        sc = self._make_client()
+        sc._check_app_installed()
 
     @mock.patch('socket.create_connection')
     @mock.patch(JSONRPC_BASE_PACKAGE)
     def test_check_app_installed_fail_app_not_installed(
             self, mock_create_connection, mock_client_base):
-        sc = snippet_client.SnippetClient(
-            MOCK_PACKAGE_NAME, 42, MockAdbProxy(apk_not_installed=True))
+        sc = self._make_client(MockAdbProxy(apk_not_installed=True))
         expected_msg = '%s is not installed on .*' % MOCK_PACKAGE_NAME
         with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
                                      expected_msg):
-            sc.check_app_installed()
+            sc._check_app_installed()
 
     @mock.patch('socket.create_connection')
     @mock.patch(JSONRPC_BASE_PACKAGE)
     def test_check_app_installed_fail_not_instrumented(
             self, mock_create_connection, mock_client_base):
-        sc = snippet_client.SnippetClient(
-            MOCK_PACKAGE_NAME, 42, MockAdbProxy(apk_not_instrumented=True))
+        sc = self._make_client(MockAdbProxy(apk_not_instrumented=True))
         expected_msg = '%s is installed on .*, but it is not instrumented.' % MOCK_PACKAGE_NAME
         with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
                                      expected_msg):
-            sc.check_app_installed()
+            sc._check_app_installed()
 
     @mock.patch('socket.create_connection')
     @mock.patch(JSONRPC_BASE_PACKAGE)
     def test_check_app_installed_fail_target_not_installed(
             self, mock_create_connection, mock_client_base):
-        sc = snippet_client.SnippetClient(
-            MOCK_PACKAGE_NAME, 42, MockAdbProxy(target_not_installed=True))
+        sc = self._make_client(MockAdbProxy(target_not_installed=True))
         expected_msg = 'Instrumentation target %s is not installed on .*' % MOCK_MISSING_PACKAGE_NAME
         with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
                                      expected_msg):
-            sc.check_app_installed()
+            sc._check_app_installed()
+
+    def _make_client(self, adb_proxy=MockAdbProxy()):
+        return snippet_client.SnippetClient(
+            package=MOCK_PACKAGE_NAME, adb_proxy=adb_proxy)
 
 
 if __name__ == "__main__":

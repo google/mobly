@@ -143,7 +143,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         out = self._adb.shell('pm list package')
         if not utils.grep('^package:%s$' % self.package, out):
             raise jsonrpc_client_base.AppStartError(
-                '%s is not installed on %s' % (self.package, self._adb_.serial))
+                '%s is not installed on %s' % (self.package, self._adb.serial))
         # Check that the app is instrumented.
         out = self._adb.shell('pm list instrumentation')
         matched_out = utils.grep('^instrumentation:%s/%s' % (
