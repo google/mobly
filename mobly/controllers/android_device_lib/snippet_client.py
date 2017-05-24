@@ -86,7 +86,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # dying because it needs the port flag. Sadly we have no way to tell so
         # just warn and retry as v0. TODO(adorokhine): remove v0 compatibility
         # path in next release.
-        line = self._proc.stdout.readline().rstrip()
+        line = self._read_line()
         if line == 'INSTRUMENTATION_RESULT: shortMsg=Process crashed.':
             self.log.warning('Snippet %s crashed on startup. This might be an '
                              'actual error or a snippet using deprecated v0 '
@@ -196,7 +196,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             '%s failed to start on %s.' % (self.package, self._adb.serial))
 
     def _connect_to_v1(self):
-        line = self._proc.stdout.readline().rstrip()
+        line = self._read_line()
         match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
         if not match:
             raise ProtocolVersionError(line)
@@ -207,3 +207,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self._adb.forward(
             ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
         self.connect()
+
+    def _read_line(self):
+      line = self._proc.stdout.readline().rstrip()
+      self.log.debug('Read line from instrumentation output: "%s"', line)
+      return line
