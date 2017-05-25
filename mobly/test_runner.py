@@ -417,7 +417,9 @@ class TestRunner(object):
                       len(objects), module_config_name)
         destroy_func = module.destroy
         self._controller_destructors[module_ref_name] = destroy_func
-        return objects
+        # Return a shallow copy of the list so tests can't affect teardown by
+        # manipulating the returned object list.
+        return copy.copy(objects)
 
     def _unregister_controllers(self):
         """Destroy controller objects and clear internal registry.

@@ -110,6 +110,18 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(magic_devices[0].magic, 'magic1')
         self.assertEqual(magic_devices[1].magic, 'magic2')
 
+    def test_register_controller_change_return_value(self):
+        mock_test_config = self.base_mock_test_config.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_test_config.controller_configs = {
+            mock_ctrlr_config_name: ['magic1', 'magic2']
+        }
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        magic_devices = tr._register_controller(mock_test_config,
+                                                mock_controller)
+        magic_devices.pop(0)
+        self.assertEqual(len(tr._controller_registry['mock_controller']), 2)
+
     def test_register_controller_less_than_min_number(self):
         mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
