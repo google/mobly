@@ -119,7 +119,8 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         magic_devices = tr._register_controller(mock_test_config,
                                                 mock_controller)
-        magic_devices.pop(0)
+        magic1 = magic_devices.pop(0)
+        self.assertIs(magic1, tr._controller_registry['mock_controller'][0])
         self.assertEqual(len(tr._controller_registry['mock_controller']), 2)
 
     def test_register_controller_less_than_min_number(self):
