@@ -354,8 +354,8 @@ def take_screenshots(ads, test_name, begin_time):
         base_name = ',%s,%s.png' % (begin_time, ad.serial)
         test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
         out_name = test_name[:test_name_len] + base_name
-        full_out_path = os.path.join(
-            screenshot_path, out_name.replace(' ', r'\ '))
+        full_out_path = os.path.join(screenshot_path,
+                                     out_name.replace(' ', r'\ '))
         ad.take_screenshot(full_out_path)
         ad.log.info('Screenshot for %s taken at %s.', test_name, full_out_path)
 
