@@ -30,8 +30,8 @@ class JsonRpcClientTestBase(unittest.TestCase):
     MOCK_RESP_WITHOUT_CALLBACK = (
         b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1}')
     MOCK_RESP_TEMPLATE = (
-        b'{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, '
-        b'"callback": null}')
+        '{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, '
+        '"callback": null}')
     MOCK_RESP_UNKNOWN_STATUS = (
         b'{"id": 0, "result": 123, "error": null, "status": 0, '
         b'"callback": null}')
