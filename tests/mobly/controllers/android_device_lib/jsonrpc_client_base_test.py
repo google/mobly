@@ -20,33 +20,7 @@ import socket
 import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
-
-MOCK_RESP = (b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1,'
-             b' "callback": null}')
-MOCK_RESP_WITHOUT_CALLBACK = (b'{"id": 0, "result": 123, "error": null, '
-                              b'"status": 1, "uid": 1}')
-MOCK_RESP_TEMPLATE = ('{"id": %d, "result": 123, "error": null, "status": 1, '
-                      '"uid": 1, "callback": null}')
-MOCK_RESP_UNKNOWN_STATUS = (b'{"id": 0, "result": 123, "error": null, '
-                            b'"status": 0, "callback": null}')
-MOCK_RESP_WITH_CALLBACK = (b'{"id": 0, "result": 123, "error": null, '
-                           b'"status": 1, "uid": 1, "callback": "1-0"}')
-MOCK_RESP_WITH_ERROR = b'{"id": 0, "error": 1, "status": 1, "uid": 1}'
-
-
-class MockSocketFile(object):
-    def __init__(self, resp):
-        self.resp = resp
-        self.last_write = None
-
-    def write(self, msg):
-        self.last_write = msg
-
-    def readline(self):
-        return self.resp
-
-    def flush(self):
-        pass
+from tests.lib import jsonrpc_client_test_base
 
 
 class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
@@ -54,24 +28,9 @@ class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
         super(FakeRpcClient, self).__init__(app_name='FakeRpcClient')
 
 
-class JsonRpcClientBaseTest(unittest.TestCase):
+class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.jsonrpc_client_base.
     """
-
-    def setup_mock_socket_file(self, mock_create_connection):
-        """Sets up a fake socket file from the mock connection.
-
-        Args:
-            mock_create_connection: The mock method for creating a method.
-
-        Returns:
-            The mock file that will be injected into the code.
-        """
-        fake_file = MockSocketFile(MOCK_RESP)
-        fake_conn = mock.MagicMock()
-        fake_conn.makefile.return_value = fake_file
-        mock_create_connection.return_value = fake_conn
-        return fake_file
 
     @mock.patch('socket.create_connection')
     def test_open_timeout_io_error(self, mock_create_connection):
@@ -104,11 +63,9 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         Test that if there is an error in the jsonrpc handshake then a protocol
         error will be raised.
         """
-        fake_conn = mock.MagicMock()
-        fake_conn.makefile.return_value = MockSocketFile(None)
-        mock_create_connection.return_value = fake_conn
+        self.setup_mock_socket_file(mock_create_connection, resp=None)
+        client = FakeRpcClient()
         with self.assertRaises(jsonrpc_client_base.ProtocolError):
-            client = FakeRpcClient()
             client.connect()
 
     @mock.patch('socket.create_connection')
@@ -118,13 +75,9 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         Test that at the end of a handshake with no errors the client object
         has the correct parameters.
         """
-        fake_conn = mock.MagicMock()
-        fake_conn.makefile.return_value = MockSocketFile(MOCK_RESP)
-        mock_create_connection.return_value = fake_conn
-
+        self.setup_mock_socket_file(mock_create_connection)
         client = FakeRpcClient()
         client.connect()
-
         self.assertEqual(client.uid, 1)
 
     @mock.patch('socket.create_connection')
@@ -134,14 +87,10 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         Test that when the handshake is given an unknown status then the client
         will not be given a uid.
         """
-        fake_conn = mock.MagicMock()
-        fake_conn.makefile.return_value = MockSocketFile(
-            MOCK_RESP_UNKNOWN_STATUS)
-        mock_create_connection.return_value = fake_conn
-
+        self.setup_mock_socket_file(
+            mock_create_connection, resp=self.MOCK_RESP_UNKNOWN_STATUS)
         client = FakeRpcClient()
         client.connect()
-
         self.assertEqual(client.uid, jsonrpc_client_base.UNKNOWN_UID)
 
     @mock.patch('socket.create_connection')
@@ -176,7 +125,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         client = FakeRpcClient()
         client.connect()
 
-        fake_file.resp = MOCK_RESP_WITH_ERROR
+        fake_file.resp = self.MOCK_RESP_WITH_ERROR
 
         with self.assertRaises(jsonrpc_client_base.ApiError, msg=1):
             client.some_rpc(1, 2, 3)
@@ -193,7 +142,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         client = FakeRpcClient()
         client.connect()
 
-        fake_file.resp = MOCK_RESP_WITH_CALLBACK
+        fake_file.resp = self.MOCK_RESP_WITH_CALLBACK
         client._event_client = mock.Mock()
 
         callback = client.some_rpc(1, 2, 3)
@@ -212,7 +161,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         client = FakeRpcClient()
         client.connect()
 
-        fake_file.resp = (MOCK_RESP_TEMPLATE % 52).encode('utf8')
+        fake_file.resp = (self.MOCK_RESP_TEMPLATE % 52).encode('utf8')
 
         with self.assertRaises(
                 jsonrpc_client_base.ProtocolError,
@@ -265,10 +214,8 @@ class JsonRpcClientBaseTest(unittest.TestCase):
 
         Logic is the same as test_rpc_send_to_socket.
         """
-        fake_file = MockSocketFile(MOCK_RESP_WITHOUT_CALLBACK)
-        fake_conn = mock.MagicMock()
-        fake_conn.makefile.return_value = fake_file
-        mock_create_connection.return_value = fake_conn
+        fake_file = self.setup_mock_socket_file(
+            mock_create_connection, resp=self.MOCK_RESP_WITHOUT_CALLBACK)
 
         client = FakeRpcClient()
         client.connect()
@@ -293,11 +240,23 @@ class JsonRpcClientBaseTest(unittest.TestCase):
         client.connect()
 
         for i in range(0, 10):
-            fake_file.resp = (MOCK_RESP_TEMPLATE % i).encode('utf-8')
+            fake_file.resp = (self.MOCK_RESP_TEMPLATE % i).encode('utf-8')
+            client.some_rpc()
+
+        self.assertEquals(next(client._counter), 10)
+
+    @mock.patch('socket.create_connection')
+    def test_rpc_call_async(self, mock_create_connection):
+        fake_file = self.setup_mock_socket_file(mock_create_connection)
+        client = FakeRpcClient()
+        client.connect()
+
+        for i in range(0, 10):
+            fake_file.resp = (self.MOCK_RESP_TEMPLATE % i).encode('utf-8')
             client.some_rpc()
 
         self.assertEquals(next(client._counter), 10)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
