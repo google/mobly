@@ -400,11 +400,13 @@ class TestRunner(object):
             raise signals.ControllerError(
                 'Expected to get at least %d controller objects, got %d.' %
                 (min_number, actual_number))
-        self._controller_registry[module_ref_name] = objects
+        # Save a shallow copy of the list for internal usage, so tests can't
+        # affect internal registry by manipulating the object list.
+        self._controller_registry[module_ref_name] = copy.copy(objects)
         # Collect controller information and write to test result.
         # Implementation of 'get_info' is optional for a controller module.
         if hasattr(module, 'get_info'):
-            controller_info = module.get_info(objects)
+            controller_info = module.get_info(copy.copy(objects))
             logging.debug('Controller %s: %s', module_config_name,
                           controller_info)
             self.results.add_controller_info(module_config_name,
