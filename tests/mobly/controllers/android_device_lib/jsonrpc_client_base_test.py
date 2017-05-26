@@ -107,9 +107,8 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = None
 
-        with self.assertRaises(
+        with self.assertRaisesRegexp(
                 jsonrpc_client_base.ProtocolError,
-                msg=
                 jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
             client.some_rpc(1, 2, 3)
 
@@ -127,7 +126,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = self.MOCK_RESP_WITH_ERROR
 
-        with self.assertRaises(jsonrpc_client_base.ApiError, msg=1):
+        with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, 1):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
@@ -163,9 +162,9 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = (self.MOCK_RESP_TEMPLATE % 52).encode('utf8')
 
-        with self.assertRaises(
+        with self.assertRaisesRegexp(
                 jsonrpc_client_base.ProtocolError,
-                msg=jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
+                jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
@@ -182,9 +181,9 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = None
 
-        with self.assertRaises(
+        with self.assertRaisesRegexp(
                 jsonrpc_client_base.ProtocolError,
-                msg=jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
+                jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
