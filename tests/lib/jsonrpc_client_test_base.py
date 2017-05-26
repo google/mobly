@@ -24,24 +24,33 @@ class JsonRpcClientTestBase(unittest.TestCase):
     Contains infrastructure for mocking responses.
     """
 
-    MOCK_RESP = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, "callback": null}'
-    MOCK_RESP_WITHOUT_CALLBACK = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1}'
-    MOCK_RESP_TEMPLATE = '{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, "callback": null}'
-    MOCK_RESP_UNKNOWN_STATUS = b'{"id": 0, "result": 123, "error": null, "status": 0, "callback": null}'
-    MOCK_RESP_WITH_CALLBACK = b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, "callback": "1-0"}'
+    MOCK_RESP = (
+        b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
+        b'"callback": null}')
+    MOCK_RESP_WITHOUT_CALLBACK = (
+        b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1}')
+    MOCK_RESP_TEMPLATE = (
+        b'{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, '
+        b'"callback": null}')
+    MOCK_RESP_UNKNOWN_STATUS = (
+        b'{"id": 0, "result": 123, "error": null, "status": 0, '
+        b'"callback": null}')
+    MOCK_RESP_WITH_CALLBACK = (
+        b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
+        b'"callback": "1-0"}')
     MOCK_RESP_WITH_ERROR = b'{"id": 0, "error": 1, "status": 1, "uid": 1}'
 
     class MockSocketFile(object):
         def __init__(self, resp):
             self.resp = resp
             self.last_write = None
-    
+
         def write(self, msg):
             self.last_write = msg
-    
+
         def readline(self):
             return self.resp
-    
+
         def flush(self):
             pass
 
