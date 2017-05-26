@@ -95,8 +95,6 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     @mock.patch('socket.create_connection')
     def test_snippet_start(self, mock_create_connection):
-        import pudb
-        pudb.set_trace()
         self.setup_mock_socket_file(mock_create_connection)
         client = self._make_client()
         client.connect()
@@ -105,14 +103,16 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     @mock.patch('socket.create_connection')
     def test_snippet_start_event_client(self, mock_create_connection):
-        import pudb
-        pudb.set_trace()
         fake_file = self.setup_mock_socket_file(mock_create_connection)
         client = self._make_client()
         client.connect()
         fake_file.resp = self.MOCK_RESP_WITH_CALLBACK
-        result = client.testSnippetCall()
-        self.assertEqual(123, result)
+        callback = client.testSnippetCall()
+        self.assertEqual(123, callback.ret_value)
+        self.assertEqual('1-0', callback._id)
+        fake_file.resp = self.MOCK_RESP_WITH_ERROR
+        with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, '1'):
+            callback.getAll('eventName')
 
     def _make_client(self, adb_proxy=MockAdbProxy()):
         return snippet_client.SnippetClient(

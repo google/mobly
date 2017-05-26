@@ -139,9 +139,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass."""
         event_client = SnippetClient(
             package=self.package,
-            host_port=self.host_port,
             adb_proxy=self._adb,
             log=self.log)
+        event_client.host_port = self.host_port
         event_client.connect(self.uid,
                              jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         return event_client
