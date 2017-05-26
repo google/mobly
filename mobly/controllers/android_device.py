@@ -25,9 +25,7 @@ from mobly import logger as mobly_logger
 from mobly import signals
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import event_dispatcher
 from mobly.controllers.android_device_lib import fastboot
-from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import sl4a_client
 from mobly.controllers.android_device_lib import snippet_client
 
@@ -462,7 +460,7 @@ class AndroidDevice(object):
         service_info['use_sl4a'] = self.sl4a is not None
         self._terminate_sl4a()
         for name, client in self._snippet_clients.items():
-            self._terminate_jsonrpc_client(client)
+            client.stop_app()
             delattr(self, name)
         self._snippet_clients = {}
         if self._adb_logcat_process:
@@ -643,13 +641,9 @@ class AndroidDevice(object):
                     self,
                     'Snippet package "%s" has already been loaded under name'
                     ' "%s".' % (package, client_name))
-        host_port = utils.get_available_host_port()
         client = snippet_client.SnippetClient(
-            package=package,
-            host_port=host_port,
-            adb_proxy=self.adb,
-            log=self.log)
-        self._start_jsonrpc_client(client)
+            package=package, adb_proxy=self.adb, log=self.log)
+        client.start_app_and_connect()
         self._snippet_clients[name] = client
         setattr(self, name, client)
 
@@ -662,48 +656,10 @@ class AndroidDevice(object):
         Creates an sl4a client (self.sl4a) with one connection, and one
         EventDispatcher obj (self.ed) with the other connection.
         """
-        host_port = utils.get_available_host_port()
-        self.sl4a = sl4a_client.Sl4aClient(
-            host_port=host_port, adb_proxy=self.adb)
-        self._start_jsonrpc_client(self.sl4a)
-
-        # Start an EventDispatcher for the current sl4a session
-        event_client = sl4a_client.Sl4aClient(
-            host_port=host_port, adb_proxy=self.adb)
-        event_client.connect(
-            uid=self.sl4a.uid, cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
-        self.ed = event_dispatcher.EventDispatcher(event_client)
-        self.ed.start()
-
-    def _start_jsonrpc_client(self, client):
-        """Create a connection to a jsonrpc server running on the device.
-
-        If the connection cannot be made, tries to restart it.
-        """
-        client.check_app_installed()
-        self.adb.forward(
-            ['tcp:%d' % client.host_port, 'tcp:%d' % client.device_port])
-        try:
-            client.connect()
-        except:
-            try:
-                client.stop_app()
-            except Exception as e:
-                self.log.warning(e)
-            client.start_app()
-            client.connect()
-
-    def _terminate_jsonrpc_client(self, client):
-        try:
-            client.closeSl4aSession()
-            client.close()
-            client.stop_app()
-        except:
-            self.log.exception('Failed to stop Rpc client for %s.',
-                               client.app_name)
-        finally:
-            # Always clean up the adb port
-            self.adb.forward(['--remove', 'tcp:%d' % client.host_port])
+        self.sl4a = sl4a_client.Sl4aClient(adb_proxy=self.adb, log=self.log)
+        self.sl4a.start_app_and_connect()
+        # Unpack the 'ed' attribute for compatibility.
+        self.ed = self.sl4a.ed
 
     def _is_timestamp_in_range(self, target, begin_time, end_time):
         low = mobly_logger.logline_timestamp_comparator(begin_time,
@@ -849,13 +805,8 @@ class AndroidDevice(object):
         the session. Clear corresponding droids and dispatchers from cache.
         """
         if self.sl4a:
-            self._terminate_jsonrpc_client(self.sl4a)
+            self.sl4a.stop_app()
             self.sl4a = None
-        if self.ed:
-            try:
-                self.ed.clean_up()
-            except:
-                self.log.exception('Failed to shutdown sl4a event dispatcher.')
             self.ed = None
 
     def run_iperf_client(self, server_host, extra_args=''):

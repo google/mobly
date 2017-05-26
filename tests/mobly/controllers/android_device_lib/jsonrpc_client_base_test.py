@@ -51,11 +51,7 @@ class MockSocketFile(object):
 
 class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
     def __init__(self):
-        super(FakeRpcClient, self).__init__(
-            host_port=80,
-            device_port=90,
-            app_name='FakeRpcClient',
-            adb_proxy=None)
+        super(FakeRpcClient, self).__init__(app_name='FakeRpcClient')
 
 
 class JsonRpcClientBaseTest(unittest.TestCase):
@@ -164,8 +160,8 @@ class JsonRpcClientBaseTest(unittest.TestCase):
 
         with self.assertRaises(
                 jsonrpc_client_base.ProtocolError,
-                msg=jsonrpc_client_base.ProtocolError.
-                NO_RESPONSE_FROM_HANDSHAKE):
+                msg=
+                jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
