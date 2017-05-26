@@ -65,7 +65,9 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         """
         self.setup_mock_socket_file(mock_create_connection, resp=None)
         client = FakeRpcClient()
-        with self.assertRaises(jsonrpc_client_base.ProtocolError):
+        with self.assertRaisesRegexp(
+                jsonrpc_client_base.ProtocolError,
+                jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
             client.connect()
 
     @mock.patch('socket.create_connection')
@@ -94,25 +96,6 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.assertEqual(client.uid, jsonrpc_client_base.UNKNOWN_UID)
 
     @mock.patch('socket.create_connection')
-    def test_connect_no_response(self, mock_create_connection):
-        """Test handshake no response
-
-        Test that if a handshake recieves no response then it will give a
-        protocol error.
-        """
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
-
-        client = FakeRpcClient()
-        client.connect()
-
-        fake_file.resp = None
-
-        with self.assertRaisesRegexp(
-                jsonrpc_client_base.ProtocolError,
-                jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
-            client.some_rpc(1, 2, 3)
-
-    @mock.patch('socket.create_connection')
     def test_rpc_error_response(self, mock_create_connection):
         """Test rpc that is given an error response
 
@@ -126,7 +109,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = self.MOCK_RESP_WITH_ERROR
 
-        with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, 1):
+        with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, '1'):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
