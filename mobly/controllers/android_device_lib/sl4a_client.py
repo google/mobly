@@ -12,51 +12,166 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """JSON RPC interface to android scripting engine."""
+import logging
+import time
 
-import re
-
-from mobly.controllers.android_device_lib import adb
+from mobly import utils
+from mobly.controllers.android_device_lib import event_dispatcher
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-DEVICE_SIDE_PORT = 8080
-
+_APP_NAME = 'SL4A'
+_DEVICE_SIDE_PORT = 8080
 _LAUNCH_CMD = (
     'am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER '
     '--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT %s '
     'com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher')
+# Maximum time to wait for the app to start on the device (10 minutes).
+# TODO: This timeout is set high in order to allow for retries in
+# start_app_and_connect. Decrease it when the call to connect() has the option
+# for a quicker timeout than the default _cmd() timeout.
+# TODO: Evaluate whether the high timeout still makes sense for sl4a. It was
+# designed for user snippets which could be very slow to start depending on the
+# size of the snippet and main apps. sl4a can probably use a much smaller value.
+_APP_START_WAIT_TIME = 2 * 60
+
+
+class Error(Exception):
+    pass
+
+
+class AppStartError(Error):
+    """Raised when sl4a is not able to be started."""
 
 
 class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     """A client for interacting with SL4A using Mobly Snippet Lib.
 
-    See superclass documentation for a list of public attributes.
+    Extra public attributes:
+    ed: Event dispatcher instance for this sl4a client.
     """
 
-    def __init__(self, host_port, adb_proxy):
+    def __init__(self, adb_proxy, log=logging.getLogger()):
         """Initializes an Sl4aClient.
 
         Args:
-            host_port: (int) The host port of this RPC client.
-            adb_proxy: (adb.AdbProxy) The adb proxy to use to start the app.
+            self._adb: (adb.AdbProxy) The adb proxy to use to start the app.
+            log: (logging.Logger) logger to which to send log messages.
         """
-        super(Sl4aClient, self).__init__(
-            host_port=host_port,
-            device_port=DEVICE_SIDE_PORT,
-            app_name='SL4A',
-            adb_proxy=adb_proxy)
+        super(Sl4aClient, self).__init__(app_name=_APP_NAME, log=log)
+        self.ed = None
+        self._adb = adb_proxy
 
-    def _do_start_app(self):
+    def start_app_and_connect(self):
         """Overrides superclass."""
+        # Check that sl4a is installed
+        out = self._adb.shell('pm list package')
+        if not utils.grep('com.googlecode.android_scripting', out):
+            raise AppStartError('%s is not installed on %s' %
+                                (_APP_NAME, self._adb.serial))
+
+        # sl4a has problems connecting after disconnection, so kill the apk and
+        # try connecting again.
+        try:
+            self.stop_app()
+        except Exception as e:
+            self.log.warning(e)
+
+        # Launch the app
+        self.host_port = utils.get_available_host_port()
+        self.device_port = _DEVICE_SIDE_PORT
         self._adb.shell(_LAUNCH_CMD % self.device_port)
+
+        # Retry connect and also start event client
+        self._retry_connect()
+        self._start_event_client()
+
+    def restore_app(self, port=None):
+        """Restores the sl4a after device got disconnected.
+
+        Instead of creating new instance of the client:
+          - Find a new host_port
+          - Reuse the previously used device_port
+          - Try to connect to remote server
+
+        Args:
+          port: If given, this is the host port from which to connect to remote device port
+
+        Raises:
+            AppStartError: When the app was not able to be started.
+        """
+        self.host_port = port or utils.get_available_host_port()
+        try:
+            self._retry_connect()
+        except:
+            # Failed to connect to app, restart app
+            try:
+                self.stop_app()
+            except Exception as e:
+                self.log.warning(e)
+            self.start_app_and_connect()
+        self.ed = self._start_event_client()
 
     def stop_app(self):
         """Overrides superclass."""
-        self._adb.shell('am force-stop com.googlecode.android_scripting')
+        try:
+            if self._conn:
+                # Be polite; let the dest know we're shutting down.
+                try:
+                    self.closeSl4aSession()
+                except:
+                    self.log.exception('Failed to gracefully shut down %s.',
+                                       self.app_name)
 
-    def check_app_installed(self):
-        """Overrides superclass."""
-        out = self._adb.shell('pm list package')
-        if not self._grep('com.googlecode.android_scripting', out):
+                # Close the socket connection.
+                self.disconnect()
+                self.stop_event_dispatcher()
+
+            # Terminate the app
+            self._adb.shell('am force-stop com.googlecode.android_scripting')
+        finally:
+            # Always clean up the adb port
+            if self.host_port:
+                self._adb.forward(['--remove', 'tcp:%d' % self.host_port])
+
+    def stop_event_dispatcher(self):
+        # Close Event Dispatcher
+        if self.ed:
+            try:
+                self.ed.clean_up()
+            except:
+                self.log.exception(
+                        'Failed to shutdown sl4a event dispatcher.')
+            self.ed = None
+
+    def _retry_connect(self):
+        self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+        start_time = time.time()
+        expiration_time = start_time + _APP_START_WAIT_TIME
+        started = False
+        while time.time() < expiration_time:
+            self.log.debug('Attempting to start %s.', self.app_name)
+            try:
+                self.connect()
+                started = True
+                break
+            except:
+                self.log.debug(
+                        '%s is not yet running, retrying',
+                        self.app_name,
+                        exc_info=True)
+            time.sleep(1)
+        if not started:
             raise jsonrpc_client_base.AppStartError(
-                '%s is not installed on %s' % (self.app_name,
-                                               self._adb.serial))
+                    '%s failed to start on %s.' % (self.app_name, self._adb.serial))
+
+    def _start_event_client(self):
+        # Start an EventDispatcher for the current sl4a session
+        event_client = Sl4aClient(self._adb, self.log)
+        event_client.host_port = self.host_port
+        event_client.device_port = self.device_port
+        event_client.connect(
+                uid=self.uid, cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
+        ed = event_dispatcher.EventDispatcher(event_client)
+        ed.start()
+        return ed
+    

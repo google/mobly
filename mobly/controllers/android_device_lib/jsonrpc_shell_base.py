@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Shared library for frontends to jsonrpc servers."""
 from __future__ import print_function
 
@@ -23,7 +22,7 @@ from mobly.controllers import android_device
 
 
 class Error(Exception):
-  pass
+    pass
 
 
 class JsonRpcShellBase(object):
@@ -55,7 +54,7 @@ class JsonRpcShellBase(object):
             if len(serials) != 1:
                 raise Error(
                     'Expected one phone, but %d found. Use the -s flag.' %
-                        len(serials))
+                    len(serials))
             serial = serials[0]
         if serial not in serials:
             raise Error('Device "%s" is not found by adb.' % serial)
