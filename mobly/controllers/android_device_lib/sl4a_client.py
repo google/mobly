@@ -174,4 +174,3 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         ed = event_dispatcher.EventDispatcher(event_client)
         ed.start()
         return ed
-    
