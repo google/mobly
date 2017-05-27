@@ -15,15 +15,14 @@
 import base64
 import concurrent.futures
 import datetime
-import functools
 import logging
 import os
 import platform
 import portpicker
 import psutil
 import random
+import re
 import signal
-import socket
 import string
 import subprocess
 import time
@@ -189,7 +188,7 @@ def find_files(paths, file_predicate):
     file_list = []
     for path in paths:
         p = abs_path(path)
-        for dirPath, subdirList, fileList in os.walk(p):
+        for dirPath, _, fileList in os.walk(p):
             for fname in fileList:
                 name, ext = os.path.splitext(fname)
                 if file_predicate(name, ext):
@@ -243,7 +242,7 @@ def rand_ascii_str(length):
     Returns:
         The random string generated.
     """
-    letters = [random.choice(ascii_letters_and_digits) for i in range(length)]
+    letters = [random.choice(ascii_letters_and_digits) for _ in range(length)]
     return ''.join(letters)
 
 
@@ -421,3 +420,26 @@ def get_available_host_port():
             return port
     raise Error('Failed to find available port after {} retries'.format(
         MAX_PORT_ALLOCATION_RETRY))
+
+
+def grep(regex, output):
+    """Similar to linux's `grep`, this returns the line in an output stream
+    that matches a given regex pattern.
+
+    It does not rely on the `grep` binary and is not sensitive to line endings,
+    so it can be used cross-platform.
+
+    Args:
+        regex: string, a regex that matches the expected pattern.
+        output: byte string, the raw output of the adb cmd.
+
+    Returns:
+        A list of strings, all of which are output lines that matches the
+        regex pattern.
+    """
+    lines = output.decode('utf-8').strip().splitlines()
+    results = []
+    for line in lines:
+        if re.search(regex, line):
+            results.append(line.strip())
+    return results

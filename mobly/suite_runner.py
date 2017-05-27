@@ -11,6 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Runner for Mobly test suites.
+
+To create a test suite, call suite_runner.run_suite() with one or more
+individual test classes. For example:
+
+    from mobly import suite_runner
+
+    from my.test.lib import foo_test
+    from my.test.lib import bar_test
+    ...
+    if __name__ == '__main__':
+        suite_runner.run_suite(foo_test.FooTest, bar_test.BarTest)
+"""
 
 import argparse
 import collections
@@ -23,21 +36,15 @@ from mobly import signals
 from mobly import test_runner
 
 
+class Error(Exception):
+    pass
+
+
 def run_suite(test_classes, argv=None):
-    """Execute the test suite in a module.
+    """Executes multiple test classes as a suite.
 
     This is the default entry point for running a test suite script file
     directly.
-
-    To make your test suite executable, add the following to your file:
-
-        from mobly import suite_runner
-
-        from my.test.lib import foo_test
-        from my.test.lib import bar_test
-        ...
-        if __name__ == '__main__':
-            suite_runner.run(foo_test.FooTest, bar_test.BarTest)
 
     Args:
         test_classes: List of python classes containing Mobly tests.
@@ -55,11 +62,12 @@ def run_suite(test_classes, argv=None):
         metavar='<PATH>',
         help='Path to the test configuration file.')
     parser.add_argument(
+        '--tests',
         '--test_case',
         nargs='+',
         type=str,
         metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
-        help='A list of test classes and optional test methods to execute.')
+        help='A list of test classes and optional tests to execute.')
     if not argv:
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
@@ -67,73 +75,91 @@ def run_suite(test_classes, argv=None):
     test_configs = config_parser.load_test_config_file(args.config[0])
 
     # Check the classes that were passed in
-    for cls in test_classes:
-        if not issubclass(cls, base_test.BaseTestClass):
+    for test_class in test_classes:
+        if not issubclass(test_class, base_test.BaseTestClass):
             logging.error('Test class %s does not extend '
-                          'mobly.base_test.BaseTestClass',
-                          cls)
+                          'mobly.base_test.BaseTestClass', test_class)
             sys.exit(1)
 
-    # Choose which tests to run
-    test_identifiers = _compute_test_identifiers(test_classes, args.test_case)
+    # Find the full list of tests to execute
+    selected_tests = _compute_selected_tests(test_classes, args.tests)
 
     # Execute the suite
     ok = True
     for config in test_configs:
-        runner = test_runner.TestRunner(config, test_identifiers)
+        runner = test_runner.TestRunner(config.log_path, config.test_bed_name)
+        for (test_class, tests) in selected_tests.items():
+            runner.add_test_class(config, test_class, tests)
         try:
-            try:
-                runner.run(test_classes)
-                ok = runner.results.is_all_pass and ok
-            except signals.TestAbortAll:
-                pass
-            except:
-                logging.exception('Exception when executing %s.',
-                                  runner.test_configs.test_bed_name)
-                ok = False
-        finally:
-            runner.stop()
+            runner.run()
+            ok = runner.results.is_all_pass and ok
+        except signals.TestAbortAll:
+            pass
+        except:
+            logging.exception('Exception when executing %s.',
+                              config.test_bed_name)
+            ok = False
     if not ok:
         sys.exit(1)
 
 
-def _compute_test_identifiers(test_classes, selected_test_cases):
-    """Computes a list of test identifiers for TestRunner from list of strings.
+def _compute_selected_tests(test_classes, selected_tests):
+    """Computes tests to run for each class from selector strings.
+
+    This function transforms a list of selector strings (such as FooTest or
+    FooTest.test_method_a) to a dict where keys are test_name classes, and values are
+    lists of selected tests in those classes. None means all tests in that class
+    are selected.
 
     Args:
         test_classes: (list of class) all classes that are part of this suite.
-        selected_test_cases: (list of string) list of testcases to execute, eg:
+        selected_tests: (list of string) list of tests to execute, eg:
              ['FooTest', 'BarTest',
               'BazTest.test_method_a', 'BazTest.test_method_b'].
-             May be empty, in which case all test classes are selected.
+             May be empty, in which case all tests in the class are selected.
 
     Returns:
-        (list of tuple(str(test name), list(str, test methods) or None)):
+        dict: test_name class -> list(test_name name):
         identifiers for TestRunner. For the above example:
-        [
-            ('FooTest', None),
-            ('BarTest', None),
-            ('BazTest', ['test_method_a', 'test_method_b']),
-        ]
+        {
+            FooTest: None,
+            BarTest: None,
+            BazTest: ['test_method_a', 'test_method_b'],
+        }
     """
-    # Create a map from test class name to list of methods
-    test_identifier_builder = collections.OrderedDict()
-    if selected_test_cases:
-        for test_case in selected_test_cases:
-            if '.' in test_case:  # Has a test method
-                (test_class, test_method) = test_case.split('.')
-                if test_class not in test_identifier_builder:
-                    # Never seen this class before
-                    test_identifier_builder[test_class] = [test_method]
-                elif test_identifier_builder[test_class] is None:
-                    # Already running all test methods in this class, so ignore
-                    # this extra testcase.
-                    pass
-                else:
-                    test_identifier_builder[test_class].append(test_method)
-            else:  # No test method; run all tests in this class.
-                test_identifier_builder[test_case] = None
-    else:
+    class_to_tests = collections.OrderedDict()
+    if not selected_tests:
+        # No selection is needed; simply run all tests in all classes.
         for test_class in test_classes:
-            test_identifier_builder[test_class.__name__] = None
-    return list(test_identifier_builder.items())
+            class_to_tests[test_class] = None
+        return class_to_tests
+
+    # The user is selecting some tests to run. Parse the selectors.
+    # Dict from test_name class name to list of tests to execute (or None for all
+    # tests).
+    test_class_name_to_tests = collections.OrderedDict()
+    for test_name in selected_tests:
+        if '.' in test_name:  # Has a test method
+            (test_class_name, test_name) = test_name.split('.')
+            if test_class_name not in test_class_name_to_tests:
+                # Never seen this class before
+                test_class_name_to_tests[test_class_name] = [test_name]
+            elif test_class_name_to_tests[test_class_name] is None:
+                # Already running all tests in this class, so ignore this extra
+                # test.
+                pass
+            else:
+                test_class_name_to_tests[test_class_name].append(test_name)
+        else:  # No test method; run all tests in this class.
+            test_class_name_to_tests[test_name] = None
+
+    # Now transform class names to class objects.
+    # Dict from test_name class name to instance.
+    class_name_to_class = {cls.__name__: cls for cls in test_classes}
+    for test_class_name, tests in test_class_name_to_tests.items():
+        test_class = class_name_to_class.get(test_class_name)
+        if not test_class:
+            raise Error('Unknown test_name class %s' % test_class_name)
+        class_to_tests[test_class] = tests
+
+    return class_to_tests

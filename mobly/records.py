@@ -48,16 +48,16 @@ class TestResultEnums(object):
 
 
 class TestResultRecord(object):
-    """A record that holds the information of a test case execution.
+    """A record that holds the information of a test execution.
 
     Attributes:
-        test_name: A string representing the name of the test case.
-        begin_time: Epoch timestamp of when the test case started.
-        end_time: Epoch timestamp of when the test case ended.
-        self.uid: Unique identifier of a test case.
+        test_name: A string representing the name of the test method.
+        begin_time: Epoch timestamp of when the test started.
+        end_time: Epoch timestamp of when the test ended.
+        self.uid: Unique identifier of a test.
         self.result: Test result, PASS/FAIL/SKIP.
         self.extras: User defined extra information of the test result.
-        self.details: A string explaining the details of the test case.
+        self.details: A string explaining the details of the test.
     """
 
     def __init__(self, t_name, t_class=None):
@@ -73,14 +73,14 @@ class TestResultRecord(object):
         self.extra_errors = {}
 
     def test_begin(self):
-        """Call this when the test case it records begins execution.
+        """Call this when the test begins execution.
 
         Sets the begin_time of this record.
         """
         self.begin_time = utils.get_current_epoch_time()
 
     def _test_end(self, result, e):
-        """Class internal function to signal the end of a test case execution.
+        """Class internal function to signal the end of a test execution.
 
         Args:
             result: One of the TEST_RESULT enums in TestResultEnums.
@@ -326,7 +326,7 @@ class TestResult(object):
     def summary_str(self):
         """Gets a string that summarizes the stats of this test result.
 
-        The summary rovides the counts of how many test cases fall into each
+        The summary provides the counts of how many tests fall into each
         category, like 'Passed', 'Failed' etc.
 
         Format of the string is:
@@ -343,7 +343,7 @@ class TestResult(object):
     def summary_dict(self):
         """Gets a dictionary that summarizes the stats of this test result.
 
-        The summary rovides the counts of how many test cases fall into each
+        The summary provides the counts of how many tests fall into each
         category, like 'Passed', 'Failed' etc.
 
         Returns:

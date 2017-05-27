@@ -21,10 +21,12 @@ from mobly import logger
 class LoggerTest(unittest.TestCase):
     """Verifies code in mobly.logger module.
     """
+
     def test_epoch_to_log_line_timestamp(self):
-        actual_stamp = logger.epoch_to_log_line_timestamp(1469134262116,
-            time_zone=pytz.utc)
+        actual_stamp = logger.epoch_to_log_line_timestamp(
+            1469134262116, time_zone=pytz.utc)
         self.assertEqual("07-21 20:51:02.116", actual_stamp)
+
 
 if __name__ == "__main__":
     unittest.main()
