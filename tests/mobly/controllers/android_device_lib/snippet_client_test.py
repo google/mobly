@@ -105,11 +105,17 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     def test_snippet_start_event_client(self, mock_create_connection):
         fake_file = self.setup_mock_socket_file(mock_create_connection)
         client = self._make_client()
+        client.host_port = 123  # normally picked by start_app_and_connect
         client.connect()
         fake_file.resp = self.MOCK_RESP_WITH_CALLBACK
         callback = client.testSnippetCall()
         self.assertEqual(123, callback.ret_value)
         self.assertEqual('1-0', callback._id)
+
+        # Check to make sure the event client is using the same port as the
+        # main client.
+        self.assertEqual(123, callback._event_client.host_port)
+
         fake_file.resp = self.MOCK_RESP_WITH_ERROR
         with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, '1'):
             callback.getAll('eventName')
