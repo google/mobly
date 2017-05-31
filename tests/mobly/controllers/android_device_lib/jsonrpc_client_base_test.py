@@ -227,18 +227,6 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         self.assertEquals(next(client._counter), 10)
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_call_async(self, mock_create_connection):
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
-        client = FakeRpcClient()
-        client.connect()
-
-        for i in range(0, 10):
-            fake_file.resp = (self.MOCK_RESP_TEMPLATE % i).encode('utf-8')
-            client.some_rpc()
-
-        self.assertEquals(next(client._counter), 10)
-
 
 if __name__ == '__main__':
     unittest.main()
