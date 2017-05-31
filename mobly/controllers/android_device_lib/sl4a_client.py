@@ -103,12 +103,10 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         try:
             self._retry_connect()
         except:
-            # Failed to connect to app, restart app
-            try:
-                self.stop_app()
-            except Exception as e:
-                self.log.warning(e)
-            self.start_app_and_connect()
+            # Failed to connect to app, something went wrong.
+            raise jsonrpc_client_base.AppResoreConnectionError(
+                    'Failed to restore app connection for %s at host port %s, device port %s',
+                    self.package, self.host_port, self.device_port)
         self.ed = self._start_event_client()
 
     def stop_app(self):

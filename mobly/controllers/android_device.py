@@ -516,7 +516,7 @@ class AndroidDevice(object):
         # Restore sl4a if needed.
         if self.sl4a:
             # Restore should not fail.
-            self.sl4a.restore_app()
+            self.sl4a.restore_app_connection()
             # Unpack the 'ed' attribute for compatibility.
             self.ed = self.sl4a.ed
 
