@@ -20,10 +20,11 @@ import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import snippet_client
+from tests.lib import jsonrpc_client_test_base
 
 MOCK_PACKAGE_NAME = 'some.package.name'
 MOCK_MISSING_PACKAGE_NAME = 'not.installed'
-JSONRPC_BASE_PACKAGE = 'mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase'
+JSONRPC_BASE_CLASS = 'mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase'
 
 
 class MockAdbProxy(object):
@@ -63,46 +64,61 @@ class MockAdbProxy(object):
         return adb_call
 
 
-class JsonRpcClientBaseTest(unittest.TestCase):
+class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.snippet_client.
     """
 
-    @mock.patch('socket.create_connection')
-    @mock.patch(JSONRPC_BASE_PACKAGE)
-    def test_check_app_installed_normal(self, mock_create_connection,
-                                        mock_client_base):
+    def test_check_app_installed_normal(self):
         sc = self._make_client()
         sc._check_app_installed()
 
-    @mock.patch('socket.create_connection')
-    @mock.patch(JSONRPC_BASE_PACKAGE)
-    def test_check_app_installed_fail_app_not_installed(
-            self, mock_create_connection, mock_client_base):
+    def test_check_app_installed_fail_app_not_installed(self):
         sc = self._make_client(MockAdbProxy(apk_not_installed=True))
         expected_msg = '%s is not installed on .*' % MOCK_PACKAGE_NAME
         with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
                                      expected_msg):
             sc._check_app_installed()
 
-    @mock.patch('socket.create_connection')
-    @mock.patch(JSONRPC_BASE_PACKAGE)
-    def test_check_app_installed_fail_not_instrumented(
-            self, mock_create_connection, mock_client_base):
+    def test_check_app_installed_fail_not_instrumented(self):
         sc = self._make_client(MockAdbProxy(apk_not_instrumented=True))
         expected_msg = '%s is installed on .*, but it is not instrumented.' % MOCK_PACKAGE_NAME
         with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
                                      expected_msg):
             sc._check_app_installed()
 
-    @mock.patch('socket.create_connection')
-    @mock.patch(JSONRPC_BASE_PACKAGE)
-    def test_check_app_installed_fail_target_not_installed(
-            self, mock_create_connection, mock_client_base):
+    def test_check_app_installed_fail_target_not_installed(self):
         sc = self._make_client(MockAdbProxy(target_not_installed=True))
         expected_msg = 'Instrumentation target %s is not installed on .*' % MOCK_MISSING_PACKAGE_NAME
         with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
                                      expected_msg):
             sc._check_app_installed()
+
+    @mock.patch('socket.create_connection')
+    def test_snippet_start(self, mock_create_connection):
+        self.setup_mock_socket_file(mock_create_connection)
+        client = self._make_client()
+        client.connect()
+        result = client.testSnippetCall()
+        self.assertEqual(123, result)
+
+    @mock.patch('socket.create_connection')
+    def test_snippet_start_event_client(self, mock_create_connection):
+        fake_file = self.setup_mock_socket_file(mock_create_connection)
+        client = self._make_client()
+        client.host_port = 123  # normally picked by start_app_and_connect
+        client.connect()
+        fake_file.resp = self.MOCK_RESP_WITH_CALLBACK
+        callback = client.testSnippetCall()
+        self.assertEqual(123, callback.ret_value)
+        self.assertEqual('1-0', callback._id)
+
+        # Check to make sure the event client is using the same port as the
+        # main client.
+        self.assertEqual(123, callback._event_client.host_port)
+
+        fake_file.resp = self.MOCK_RESP_WITH_ERROR
+        with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, '1'):
+            callback.getAll('eventName')
 
     def _make_client(self, adb_proxy=MockAdbProxy()):
         return snippet_client.SnippetClient(
