@@ -85,7 +85,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         self._retry_connect()
         self._start_event_client()
 
-    def restore_app(self, port=None):
+    def restore_app_connection(self, port=None):
         """Restores the sl4a after device got disconnected.
 
         Instead of creating new instance of the client:

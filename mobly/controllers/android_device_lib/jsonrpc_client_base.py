@@ -61,6 +61,10 @@ class AppStartError(Error):
     """Raised when the app is not able to be started."""
 
 
+class AppResoreConnectionError(Error):
+    """Raised when failed to restore app from disconnection."""
+
+
 class ApiError(Error):
     """Raised when remote API reports an error."""
 
@@ -141,7 +145,7 @@ class JsonRpcClientBase(object):
         """
         raise NotImplementedError()
 
-    def restore_app(self, port=None):
+    def restore_app_connection(self, port=None):
         """Restores the app after device got disconnected.
 
         Instead of creating new instance of the client:

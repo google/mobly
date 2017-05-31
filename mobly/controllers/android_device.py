@@ -512,7 +512,7 @@ class AndroidDevice(object):
         # Restore snippets.
         for attr_name, client in self._snippet_clients.items():
             # Select a new available host port, and leaving previous device port unchanged.
-            client.restore_app()
+            client.restore_app_connection()
         # Restore sl4a if needed.
         if self.sl4a:
             # Restore should not fail.

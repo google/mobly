@@ -124,8 +124,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self.log.debug('Snippet %s started after %.1fs on host port %s',
                        self.package, time.time() - start_time, self.host_port)
 
-    def restore_app(self, port=None):
-        """Restores the app after device got disconnected.
+    def restore_app_connection(self, port=None):
+        """Restores the app after device got reconnected.
 
         Instead of creating new instance of the client:
           - Find a new host_port
@@ -145,11 +145,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             else:
                 self._connect_to_v1()
         except:
-            # Failed to connect to app, restart app
-            try:
-                self.stop_app()
-            except Exception as e:
-                self.log.warning(e)
+            # Failed to connect to app, something went wrong.
+            raise jsonrpc_client_base.AppResoreConnectionError(
+                    'Failed to restore app connection for %s at host port %s, device port %s',
+                    self.package, self.host_port, self.device_port)
 
         # Because the previous connection was lost, update self._proc
         self._proc = None
