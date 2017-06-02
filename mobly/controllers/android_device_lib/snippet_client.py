@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -185,7 +185,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     def _connect_to_v0(self):
         self.device_port = self.host_port
         self._adb.forward(
-            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port,
+             'tcp:%d' % self.device_port])
         start_time = time.time()
         expiration_time = start_time + _APP_START_WAIT_TIME_V0
         while time.time() < expiration_time:
@@ -212,16 +213,17 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # Forward the device port to a new host port, and connect to that port
         self.host_port = utils.get_available_host_port()
         self._adb.forward(
-            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port,
+             'tcp:%d' % self.device_port])
         self.connect()
 
     def _read_line(self):
         while True:
             line = self._proc.stdout.readline().rstrip()
             if (line.startswith('INSTRUMENTATION_RESULT:') or
-                line.startswith('SNIPPET ')):
+                    line.startswith('SNIPPET ')):
                 self.log.debug(
                     'Accepted line from instrumentation output: "%s"', line)
                 return line
-            self.log.debug(
-                'Discarded line from instrumentation output: "%s"', line)
+            self.log.debug('Discarded line from instrumentation output: "%s"',
+                           line)
