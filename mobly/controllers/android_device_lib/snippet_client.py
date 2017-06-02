@@ -92,7 +92,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # just warn and retry as v0.
         # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is
         # removed.
-        line = self._read_line()
+        line = self._read_protocol_line()
         if line in ('INSTRUMENTATION_RESULT: shortMsg=Process crashed.',
                     'INSTRUMENTATION_RESULT: shortMsg='
                     'java.lang.IllegalArgumentException'):
@@ -204,7 +204,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             '%s failed to start on %s.' % (self.package, self._adb.serial))
 
     def _connect_to_v1(self):
-        line = self._read_line()
+        line = self._read_protocol_line()
         match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
         if not match:
             raise jsonrpc_client_base.AppStartError(line)
@@ -217,12 +217,28 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
              'tcp:%d' % self.device_port])
         self.connect()
 
-    def _read_line(self):
+    def _read_protocol_line(self):
+        """Reads the next line of instrumentation output relevant to snippets.
+
+        This method will skip over lines that don't start with 'SNIPPET' or
+        'INSTRUMENTATION_RESULT'.
+
+        Returns:
+            (str) Next line of snippet-related instrumentation output, stripped.
+
+        Raises:
+            jsonrpc_client_base.AppStartError: If EOF is reached without any
+                                               protocol lines being read.
+        """
         while True:
             line = self._proc.stdout.readline().decode('utf-8')
             if not line:
                 raise jsonrpc_client_base.AppStartError(
                     'Unexpected EOF waiting for app to start')
+            # readline() uses an empty string to mark EOF, and a single newline
+            # to mark regular empty lines in the output. Don't move the strip()
+            # call above the truthiness check, or this method will start
+            # considering any blank output line to be EOF.
             line = line.strip()
             if (line.startswith('INSTRUMENTATION_RESULT:') or
                     line.startswith('SNIPPET ')):
