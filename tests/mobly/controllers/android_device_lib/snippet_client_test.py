@@ -1,11 +1,11 @@
 # Copyright 2017 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -120,9 +120,128 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, '1'):
             callback.getAll('eventName')
 
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_v1(self, mock_get_port,
+                                              mock_start_standing_subprocess,
+                                              mock_create_connection):
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[
+                b'SNIPPET START, PROTOCOL 1 0\n',
+                b'SNIPPET SERVING, PORT 123\n',
+            ])
+        client = self._make_client()
+        client.start_app_and_connect()
+        self.assertEqual(123, client.device_port)
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_v0(self, mock_get_port,
+                                              mock_start_standing_subprocess,
+                                              mock_create_connection):
+        mock_get_port.return_value = 456
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.\n'])
+        client = self._make_client()
+        client.start_app_and_connect()
+        self.assertEqual(456, client.device_port)
+
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    def test_snippet_start_app_and_connect_unknown_protocol(
+            self, mock_start_standing_subprocess):
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[b'SNIPPET START, PROTOCOL 99 0\n'])
+        client = self._make_client()
+        with self.assertRaises(snippet_client.ProtocolVersionError):
+            client.start_app_and_connect()
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_v1_header_junk(
+            self, mock_get_port, mock_start_standing_subprocess,
+            mock_create_connection):
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[
+                b'This is some header junk\n',
+                b'Some phones print arbitrary output\n',
+                b'SNIPPET START, PROTOCOL 1 0\n',
+                b'Maybe in the middle too\n',
+                b'SNIPPET SERVING, PORT 123\n',
+            ])
+        client = self._make_client()
+        client.start_app_and_connect()
+        self.assertEqual(123, client.device_port)
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_v0_header_junk(
+            self, mock_get_port, mock_start_standing_subprocess,
+            mock_create_connection):
+        mock_get_port.return_value = 456
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[
+                b'This is some header junk\n',
+                b'Some phones print arbitrary output\n',
+                b'\n',
+                b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.\n',
+            ])
+        client = self._make_client()
+        client.start_app_and_connect()
+        self.assertEqual(456, client.device_port)
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_no_valid_line(
+            self, mock_get_port, mock_start_standing_subprocess,
+            mock_create_connection):
+        mock_get_port.return_value = 456
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[
+                b'This is some header junk\n',
+                b'Some phones print arbitrary output\n',
+                b'',  # readline uses '' to mark EOF
+            ])
+        client = self._make_client()
+        with self.assertRaisesRegexp(
+                jsonrpc_client_base.AppStartError,
+                'Unexpected EOF waiting for app to start'):
+            client.start_app_and_connect()
+
     def _make_client(self, adb_proxy=MockAdbProxy()):
         return snippet_client.SnippetClient(
             package=MOCK_PACKAGE_NAME, adb_proxy=adb_proxy)
+
+    def _setup_mock_instrumentation_cmd(self, mock_start_standing_subprocess,
+                                        resp_lines):
+        mock_proc = mock_start_standing_subprocess()
+        mock_proc.stdout.readline.side_effect = resp_lines
 
 
 if __name__ == "__main__":
