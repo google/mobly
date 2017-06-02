@@ -219,7 +219,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _read_line(self):
         while True:
-            line = self._proc.stdout.readline().rstrip()
+            line = self._proc.stdout.readline().decode('utf-8').strip()
             if (line.startswith('INSTRUMENTATION_RESULT:') or
                     line.startswith('SNIPPET ')):
                 self.log.debug(

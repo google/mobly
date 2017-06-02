@@ -132,7 +132,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess,
             resp_lines=[
-                'SNIPPET START, PROTOCOL 1 0', 'SNIPPET SERVING, PORT 123'
+                b'SNIPPET START, PROTOCOL 1 0',
+                b'SNIPPET SERVING, PORT 123',
             ])
         client = self._make_client()
         client.start_app_and_connect()
@@ -150,7 +151,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.setup_mock_socket_file(mock_create_connection)
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess,
-            resp_lines=['INSTRUMENTATION_RESULT: shortMsg=Process crashed.'])
+            resp_lines=[b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.'])
         client = self._make_client()
         client.start_app_and_connect()
         self.assertEqual(456, client.device_port)
@@ -161,7 +162,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             self, mock_start_standing_subprocess):
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess,
-            resp_lines=['SNIPPET START, PROTOCOL 99 0'])
+            resp_lines=[b'SNIPPET START, PROTOCOL 99 0'])
         client = self._make_client()
         with self.assertRaises(snippet_client.ProtocolVersionError):
             client.start_app_and_connect()
@@ -178,10 +179,11 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess,
             resp_lines=[
-                'This is some header junk',
-                'Some phones print arbitrary output',
-                'SNIPPET START, PROTOCOL 1 0', 'Maybe in the middle too',
-                'SNIPPET SERVING, PORT 123'
+                b'This is some header junk',
+                b'Some phones print arbitrary output',
+                b'SNIPPET START, PROTOCOL 1 0',
+                b'Maybe in the middle too',
+                b'SNIPPET SERVING, PORT 123',
             ])
         client = self._make_client()
         client.start_app_and_connect()
@@ -200,9 +202,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess,
             resp_lines=[
-                'This is some header junk',
-                'Some phones print arbitrary output',
-                'INSTRUMENTATION_RESULT: shortMsg=Process crashed.'
+                b'This is some header junk',
+                b'Some phones print arbitrary output',
+                b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.'
             ])
         client = self._make_client()
         client.start_app_and_connect()
@@ -214,9 +216,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     def _setup_mock_instrumentation_cmd(self, mock_start_standing_subprocess,
                                         resp_lines):
-        resp_bytes = [bytes(line) for line in resp_lines]
         mock_proc = mock_start_standing_subprocess()
-        mock_proc.stdout.readline.side_effect = resp_bytes
+        mock_proc.stdout.readline.side_effect = resp_lines
 
 
 if __name__ == "__main__":
