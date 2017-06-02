@@ -92,7 +92,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # just warn and retry as v0.
         # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is
         # removed.
-        line = self._read_line()
+        line = self._read_line().decode('utf-8')
         if line in ('INSTRUMENTATION_RESULT: shortMsg=Process crashed.',
                     'INSTRUMENTATION_RESULT: shortMsg='
                     'java.lang.IllegalArgumentException'):
