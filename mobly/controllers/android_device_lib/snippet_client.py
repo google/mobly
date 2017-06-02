@@ -216,6 +216,12 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self.connect()
 
     def _read_line(self):
-        line = self._proc.stdout.readline().rstrip()
-        self.log.debug('Read line from instrumentation output: "%s"', line)
-        return line
+        while True:
+            line = self._proc.stdout.readline().rstrip()
+            if (line.startswith('INSTRUMENTATION_RESULT:') or
+                line.startswith('SNIPPET ')):
+                self.log.debug(
+                    'Accepted line from instrumentation output: "%s"', line)
+                return line
+            self.log.debug(
+                'Discarded line from instrumentation output: "%s"', line)

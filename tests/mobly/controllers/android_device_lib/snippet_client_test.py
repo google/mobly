@@ -120,9 +120,98 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, '1'):
             callback.getAll('eventName')
 
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_v1(
+            self, mock_get_port, mock_start_standing_subprocess,
+            mock_create_connection):
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess, resp_lines=[
+                'SNIPPET START, PROTOCOL 1 0', 'SNIPPET SERVING, PORT 123'])
+        client = self._make_client()
+        client.start_app_and_connect()
+        self.assertEqual(123, client.device_port)
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_v0(
+            self, mock_get_port, mock_start_standing_subprocess,
+            mock_create_connection):
+        mock_get_port.return_value = 456
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess, resp_lines=[
+                'INSTRUMENTATION_RESULT: shortMsg=Process crashed.'])
+        client = self._make_client()
+        client.start_app_and_connect()
+        self.assertEqual(456, client.device_port)
+
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    def test_snippet_start_app_and_connect_unknown_protocol(
+            self, mock_start_standing_subprocess):
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess, resp_lines=[
+                'SNIPPET START, PROTOCOL 99 0'])
+        client = self._make_client()
+        with self.assertRaises(snippet_client.ProtocolVersionError):
+            client.start_app_and_connect()
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_v1_header_junk(
+            self, mock_get_port, mock_start_standing_subprocess,
+            mock_create_connection):
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess, resp_lines=[
+                'This is some header junk',
+                'Some phones print arbitrary output',
+                'SNIPPET START, PROTOCOL 1 0',
+                'Maybe in the middle too',
+                'SNIPPET SERVING, PORT 123'])
+        client = self._make_client()
+        client.start_app_and_connect()
+        self.assertEqual(123, client.device_port)
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_v0_header_junk(
+            self, mock_get_port, mock_start_standing_subprocess,
+            mock_create_connection):
+        mock_get_port.return_value = 456
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess, resp_lines=[
+                'This is some header junk',
+                'Some phones print arbitrary output',
+                'INSTRUMENTATION_RESULT: shortMsg=Process crashed.'])
+        client = self._make_client()
+        client.start_app_and_connect()
+        self.assertEqual(456, client.device_port)
+
     def _make_client(self, adb_proxy=MockAdbProxy()):
         return snippet_client.SnippetClient(
             package=MOCK_PACKAGE_NAME, adb_proxy=adb_proxy)
+
+    def _setup_mock_instrumentation_cmd(
+            self, mock_start_standing_subprocess, resp_lines):
+        resp_bytes = [bytes(line) for line in resp_lines]
+        mock_proc = mock_start_standing_subprocess()
+        mock_proc.stdout.readline.side_effect = resp_bytes
 
 
 if __name__ == "__main__":
