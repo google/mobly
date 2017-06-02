@@ -210,6 +210,29 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client.start_app_and_connect()
         self.assertEqual(456, client.device_port)
 
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_start_app_and_connect_no_valid_line(
+            self, mock_get_port, mock_start_standing_subprocess,
+            mock_create_connection):
+        mock_get_port.return_value = 456
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[
+                b'This is some header junk',
+                b'Some phones print arbitrary output',
+                b'',  # readline uses '' to mark EOF
+            ])
+        client = self._make_client()
+        with self.assertRaisesRegexp(
+                jsonrpc_client_base.AppStartError,
+                'Unexpected EOF waiting for app to start'):
+            client.start_app_and_connect()
+
     def _make_client(self, adb_proxy=MockAdbProxy()):
         return snippet_client.SnippetClient(
             package=MOCK_PACKAGE_NAME, adb_proxy=adb_proxy)

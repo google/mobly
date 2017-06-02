@@ -42,7 +42,7 @@ class Error(Exception):
     pass
 
 
-class ProtocolVersionError(Error):
+class ProtocolVersionError(jsonrpc_client_base.AppStartError):
     """Raised when the protocol reported by the snippet is unknown."""
 
 
@@ -207,7 +207,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         line = self._read_line()
         match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
         if not match:
-            raise ProtocolVersionError(line)
+            raise jsonrpc_client_base.AppStartError(line)
         self.device_port = int(match.group(1))
 
         # Forward the device port to a new host port, and connect to that port
@@ -219,7 +219,11 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _read_line(self):
         while True:
-            line = self._proc.stdout.readline().decode('utf-8').strip()
+            line = self._proc.stdout.readline().decode('utf-8')
+            if not line:
+                raise jsonrpc_client_base.AppStartError(
+                    'Unexpected EOF waiting for app to start')
+            line = line.strip()
             if (line.startswith('INSTRUMENTATION_RESULT:') or
                     line.startswith('SNIPPET ')):
                 self.log.debug(
