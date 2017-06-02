@@ -457,23 +457,42 @@ class AndroidDevice(object):
             are torn down. This can be used to restore these services, which
             includes snippets and sl4a.
         """
+        service_info = {}
+        service_info['snippet_info'] = self._get_active_snippet_info()
+        service_info['use_sl4a'] = self.sl4a is not None
         self._terminate_sl4a()
-        for attr_name, client in list(self._snippet_clients.items()):
-            self._terminate_snippet(attr_name, client)
+        for attr_name, client in self._snippet_clients.items():
+            client.stop_app()
+            delattr(self, attr_name)
+        self._snippet_clients = {}
+        self._on_usb_disconnect()
+        return service_info
+
+    def _on_usb_disconnect(self):
+        """Prepare for USB disconnect."""
         if self._adb_logcat_process:
             try:
                 self.stop_adb_logcat()
             except:
                 self.log.exception('Failed to stop adb logcat.')
 
-    def _terminate_snippet(self, attr_name, client):
-        """Stops a long running service on the Android device."""
-        client.stop_app()
-        delattr(self, attr_name)
-        self._snippet_clients.pop(attr_name)
+    @contextlib.contextmanager
+    def handle_reboot(self):
+        """Properly manage the service life cycle when the device needs to
+        temporarily disconnect.
+        The device can temporarily lose adb connection due to user-triggered
+        reboot or power measurement. Use this function to make sure the services
+        started by Mobly are properly stopped and restored afterwards.
+        For sample usage, see self.reboot().
+        """
+        service_info = self.stop_services()
+        try:
+            yield
+        finally:
+            self._restore_services(service_info)
 
     @contextlib.contextmanager
-    def handle_device_disconnect(self):
+    def handle_usb_disconnect(self):
         """Properly manage the service life cycle when the device needs to
         temporarily disconnect.
 
@@ -483,11 +502,7 @@ class AndroidDevice(object):
 
         For sample usage, see self.reboot().
         """
-        if self._adb_logcat_process:
-            try:
-                self.stop_adb_logcat()
-            except:
-                self.log.exception('Failed to stop adb logcat.')
+        self._on_usb_disconnect()
         # Only need to stop dispatcher because it continuously polling device
         # It's not necessary to stop snippet and sl4a.
         self.sl4a.stop_event_dispatcher()
@@ -499,23 +514,35 @@ class AndroidDevice(object):
         try:
             yield
         finally:
-            self._restore_services()
+            self._connect_to_services()
 
-    def _restore_services(self):
+    def _restore_services(self, service_info):
         """Restores services after a device has come back from temporary
         being offline.
+        Args:
+            service_info: A dict containing information on the services to
+                          restore, which could include snippet and sl4a.
         """
         self.wait_for_boot_completion()
         if self.is_rootable:
             self.root_adb()
         self.start_services()
         # Restore snippets.
+        snippet_info = service_info['snippet_info']
+        for attr_name, package_name in snippet_info:
+            self.load_snippet(attr_name, package_name)
+        # Restore sl4a if needed.
+        if service_info['use_sl4a']:
+            self.load_sl4a()
+
+    def _connect_to_services(self):
+        """Prepare to reconnect to services after USB reconnected."""
+        self.start_services()
+        # Restore snippets.
         for attr_name, client in self._snippet_clients.items():
-            # Select a new available host port, and leaving previous device port unchanged.
             client.restore_app_connection()
         # Restore sl4a if needed.
         if self.sl4a:
-            # Restore should not fail.
             self.sl4a.restore_app_connection()
             # Unpack the 'ed' attribute for compatibility.
             self.ed = self.sl4a.ed
@@ -862,6 +889,20 @@ class AndroidDevice(object):
             time.sleep(5)
         raise DeviceError(self, 'Booting process timed out.')
 
+    def _get_active_snippet_info(self):
+        """Collects information on currently active snippet clients.
+        The info is used for restoring the snippet clients after rebooting the
+        device.
+        Returns:
+            A list of tuples, each tuple's first element is the name of the
+            snippet client's attribute, the second element is the package name
+            of the snippet.
+        """
+        snippet_info = []
+        for attr_name, client in self._snippet_clients.items():
+            snippet_info.append((attr_name, client.package))
+        return snippet_info
+
     def reboot(self):
         """Reboots the device.
 
@@ -879,7 +920,7 @@ class AndroidDevice(object):
         if self.is_bootloader:
             self.fastboot.reboot()
             return
-        with self.handle_device_disconnect():
+        with self.handle_reboot():
             self.adb.reboot()
 
 

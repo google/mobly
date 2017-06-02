@@ -61,7 +61,7 @@ class AppStartError(Error):
     """Raised when the app is not able to be started."""
 
 
-class AppResoreConnectionError(Error):
+class AppRestoreConnectionError(Error):
     """Raised when failed to restore app from disconnection."""
 
 
