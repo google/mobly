@@ -467,7 +467,7 @@ class AndroidDevice(object):
         return service_info
 
     def _stop_logcat_process(self):
-        """Prepare for USB disconnect."""
+        """Stops logcat process."""
         if self._adb_logcat_process:
             try:
                 self.stop_adb_logcat()
@@ -478,9 +478,11 @@ class AndroidDevice(object):
     def handle_reboot(self):
         """Properly manage the service life cycle when the device needs to
         temporarily disconnect.
+
         The device can temporarily lose adb connection due to user-triggered
-        reboot or power measurement. Use this function to make sure the services
+        reboot. Use this function to make sure the services
         started by Mobly are properly stopped and restored afterwards.
+
         For sample usage, see self.reboot().
         """
         service_info = self.stop_services()
@@ -491,14 +493,16 @@ class AndroidDevice(object):
 
     @contextlib.contextmanager
     def handle_usb_disconnect(self):
-        """Properly manage the service life cycle when the device needs to
-        temporarily disconnect.
+        """Properly manage the service life cycle when USB is disconnected.
 
         The device can temporarily lose adb connection due to user-triggered
-        reboot or power measurement. Use this function to make sure the services
-        started by Mobly are properly stopped and restored afterwards.
+        power measurement. Use this function to make sure the services
+        started by Mobly are properly reconnected afterwards.
 
-        For sample usage, see self.reboot().
+        As the usage of self.handle_reboot(), this method does not automatically
+        determine if the disconnection is because of a reboot or USB disconnect.
+        User of this function should make sure they use the right handle_*
+        function to handle the correct type of disconnection.
         """
         self._stop_logcat_process()
         # Only need to stop dispatcher because it continuously polling device
@@ -517,6 +521,7 @@ class AndroidDevice(object):
     def _restore_services(self, service_info):
         """Restores services after a device has come back from temporary
         being offline.
+
         Args:
             service_info: A dict containing information on the services to
                           restore, which could include snippet and sl4a.

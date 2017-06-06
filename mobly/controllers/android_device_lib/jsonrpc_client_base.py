@@ -146,7 +146,7 @@ class JsonRpcClientBase(object):
         raise NotImplementedError()
 
     def restore_app_connection(self, port=None):
-        """Restores the app after device got disconnected.
+        """Reconnects to the app after device USB was disconnected.
 
         Instead of creating new instance of the client:
           - Find a new host_port
@@ -159,7 +159,7 @@ class JsonRpcClientBase(object):
           port: If given, this is the host port from which to connect to remote device port
 
         Raises:
-            AppStartError: When the app was not able to be started.
+            AppRestoreConnectionError: When the app was not able to be reconnected.
         """
         raise NotImplementedError()
 
