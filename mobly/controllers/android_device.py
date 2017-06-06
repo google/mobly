@@ -400,8 +400,6 @@ class AndroidDevice(object):
         # A dict for tracking snippet clients. Keys are clients' attribute
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
-        # Clears cached adb content.
-        self.adb.logcat('-c')
 
     def __repr__(self):
         return "<AndroidDevice|%s>" % self.debug_tag
@@ -436,12 +434,12 @@ class AndroidDevice(object):
         self._debug_tag = tag
         self.log.extra['tag'] = tag
 
-    def start_services(self):
+    def start_services(self, clear_log=True):
         """Starts long running services on the android device, like adb logcat
         capture.
         """
         try:
-            self.start_adb_logcat()
+            self.start_adb_logcat(clear_log)
         except:
             self.log.exception('Failed to start adb logcat!')
             raise
@@ -465,10 +463,10 @@ class AndroidDevice(object):
             client.stop_app()
             delattr(self, attr_name)
         self._snippet_clients = {}
-        self._on_usb_disconnect()
+        self._stop_logcat_process()
         return service_info
 
-    def _on_usb_disconnect(self):
+    def _stop_logcat_process(self):
         """Prepare for USB disconnect."""
         if self._adb_logcat_process:
             try:
@@ -502,7 +500,7 @@ class AndroidDevice(object):
 
         For sample usage, see self.reboot().
         """
-        self._on_usb_disconnect()
+        self._stop_logcat_process()
         # Only need to stop dispatcher because it continuously polling device
         # It's not necessary to stop snippet and sl4a.
         self.sl4a.stop_event_dispatcher()
@@ -510,11 +508,11 @@ class AndroidDevice(object):
         # won't produce duplicated logs to log file.
         # This helps disconnection that caused by, e.g., USB off; at the
         # cost of losing logs at disconnection caused by reboot.
-        self.adb.logcat('-c')
+        self._clear_adb_log()
         try:
             yield
         finally:
-            self._connect_to_services()
+            self._reconnect_to_services()
 
     def _restore_services(self, service_info):
         """Restores services after a device has come back from temporary
@@ -535,9 +533,11 @@ class AndroidDevice(object):
         if service_info['use_sl4a']:
             self.load_sl4a()
 
-    def _connect_to_services(self):
-        """Prepare to reconnect to services after USB reconnected."""
-        self.start_services()
+    def _reconnect_to_services(self):
+        """Reconnects to services after USB reconnected."""
+        # Do not clear device log at this time. Otherwise the log during USB disconnection will
+        # be lost.
+        self.start_services(clear_log=False)
         # Restore snippets.
         for attr_name, client in self._snippet_clients.items():
             client.restore_app_connection()
@@ -756,16 +756,21 @@ class AndroidDevice(object):
                         if in_range:
                             break
 
-    def start_adb_logcat(self):
+    def start_adb_logcat(self, clear_log=True):
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
 
         This clears the previous cached logcat content on device.
+
+        Args:
+            clear: If True, clear device log before starting logcat.
         """
         if self._adb_logcat_process:
             raise DeviceError(
                 self,
                 'Logcat thread is already running, cannot start another one.')
+        if clear_log:
+            self._clear_adb_log()
         # Disable adb log spam filter for rootable devices. Have to stop and
         # clear settings first because 'start' doesn't support --clear option
         # before Android N.
@@ -835,6 +840,10 @@ class AndroidDevice(object):
             self.adb.bugreport(' > %s' % full_out_path, shell=True)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
+
+    def _clear_adb_log(self):
+        # Clears cached adb content.
+        self.adb.logcat('-c')
 
     def _terminate_sl4a(self):
         """Terminate the current sl4a session.

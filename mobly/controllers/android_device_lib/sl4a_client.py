@@ -35,14 +35,6 @@ _LAUNCH_CMD = (
 _APP_START_WAIT_TIME = 2 * 60
 
 
-class Error(Exception):
-    pass
-
-
-class AppStartError(Error):
-    """Raised when sl4a is not able to be started."""
-
-
 class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     """A client for interacting with SL4A using Mobly Snippet Lib.
 
@@ -66,8 +58,8 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         # Check that sl4a is installed
         out = self._adb.shell('pm list package')
         if not utils.grep('com.googlecode.android_scripting', out):
-            raise AppStartError('%s is not installed on %s' %
-                                (_APP_NAME, self._adb.serial))
+            raise jsonrpc_client_base.AppStartError(
+                    '%s is not installed on %s' % (_APP_NAME, self._adb.serial))
 
         # sl4a has problems connecting after disconnection, so kill the apk and
         # try connecting again.
@@ -97,7 +89,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
           port: If given, this is the host port from which to connect to remote device port
 
         Raises:
-            AppStartError: When the app was not able to be started.
+            AppRestoreConnectionError: When the app was not able to be started.
         """
         self.host_port = port or utils.get_available_host_port()
         try:
@@ -163,7 +155,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
                         exc_info=True)
             time.sleep(1)
         if not started:
-            raise jsonrpc_client_base.AppStartError(
+            raise jsonrpc_client_base.AppRestoreConnectionError(
                     '%s failed to start on %s.' % (self.app_name, self._adb.serial))
 
     def _start_event_client(self):

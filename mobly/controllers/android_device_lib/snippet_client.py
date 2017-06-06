@@ -136,7 +136,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
           port: If given, this is the host port from which to connect to remote device port
 
         Raises:
-            AppStartError: When the app was not able to be started.
+            AppRestoreConnectionError: When the app was not able to be started.
         """
         self.host_port = port or utils.get_available_host_port()
         try:
