@@ -128,9 +128,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Restores the app after device got reconnected.
 
         Instead of creating new instance of the client:
-          - Find a new host_port
-          - Reuse the previously used device_port
-          - Try to connect to remote server
+          - Use the given port (or find a new available host_port if not given)
+          - Reuses the previously used device_port
+          - Tries to connect to remote server
 
         Args:
           port: If given, this is the host port from which to connect to remote device port
