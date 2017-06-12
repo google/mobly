@@ -496,8 +496,20 @@ class AndroidDevice(object):
         """Properly manage the service life cycle when USB is disconnected.
 
         The device can temporarily lose adb connection due to user-triggered
-        power measurement. Use this function to make sure the services
-        started by Mobly are properly reconnected afterwards.
+        USB disconnection, e.g., the following cases can be handled by this
+        method:
+
+        - Power measurement: Using Monsoon device to measure battery consumption
+        would potentially disconnect USB.
+        - Unplug USB so device loses connection.
+        - ADB connection over WiFi and WiFi got disconnected.
+        - Any other type of USB disconnection, as long as snippet session can be
+        kept alive while USB disconnected (reboot caused USB disconnection is
+        not one of these cases because snippet session cannot survive reboot.
+        Use handle_reboot() instead).
+
+        Use this function to make sure the services started by Mobly are properly
+        reconnected afterwards.
 
         Just like the usage of self.handle_reboot(), this method does not automatically
         determine if the disconnection is because of a reboot or USB disconnect.
