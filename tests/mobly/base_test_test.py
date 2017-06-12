@@ -127,8 +127,8 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         expected_msg = ('Test method name not_a_test_something does not follow '
-                        'naming convention test_*, abort.')
-        with self.assertRaises(base_test.Error, msg=expected_msg):
+                        'naming convention test_\*, abort.')
+        with self.assertRaisesRegexp(base_test.Error, expected_msg):
             bt_cls.run(test_names=["not_a_test_something"])
 
     def test_default_execution_of_all_tests(self):
@@ -790,9 +790,9 @@ class BaseTestTest(unittest.TestCase):
         """Missing a required param should raise an error."""
         required = ["something"]
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
-        expected_msg = ("Missing required user param '%s' in test "
-                        "configuration.") % required[0]
-        with self.assertRaises(base_test.Error, msg=expected_msg):
+        expected_msg = ('Missing required user param "%s" in test '
+                        'configuration.') % required[0]
+        with self.assertRaisesRegexp(base_test.Error, expected_msg):
             bc.unpack_userparams(required)
 
     def test_unpack_userparams_optional(self):

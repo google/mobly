@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,7 +42,7 @@ class Error(Exception):
     pass
 
 
-class ProtocolVersionError(Error):
+class ProtocolVersionError(jsonrpc_client_base.AppStartError):
     """Raised when the protocol reported by the snippet is unknown."""
 
 
@@ -93,7 +93,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # just warn and retry as v0.
         # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is
         # removed.
-        line = self._read_line()
+        line = self._read_protocol_line()
         # Forward the device port to a new host port, and connect to that port
         self.host_port = utils.get_available_host_port()
         if line == 'INSTRUMENTATION_RESULT: shortMsg=Process crashed.':
@@ -115,7 +115,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             if not match or match.group(1) != '1':
                 raise ProtocolVersionError(line)
 
-            line = self._read_line()
+            line = self._read_protocol_line()
             match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
             if not match:
                 raise ProtocolVersionError(line)
@@ -234,7 +234,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     # removed.
     def _connect_to_v0(self):
         self._adb.forward(
-            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port,
+             'tcp:%d' % self.device_port])
         start_time = time.time()
         expiration_time = start_time + _APP_START_WAIT_TIME_V0
         while time.time() < expiration_time:
@@ -253,10 +254,37 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _connect_to_v1(self):
         self._adb.forward(
-            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port,
+             'tcp:%d' % self.device_port])
         self.connect()
 
-    def _read_line(self):
-        line = self._proc.stdout.readline().rstrip()
-        self.log.debug('Read line from instrumentation output: "%s"', line)
-        return line
+    def _read_protocol_line(self):
+        """Reads the next line of instrumentation output relevant to snippets.
+
+        This method will skip over lines that don't start with 'SNIPPET' or
+        'INSTRUMENTATION_RESULT'.
+
+        Returns:
+            (str) Next line of snippet-related instrumentation output, stripped.
+
+        Raises:
+            jsonrpc_client_base.AppStartError: If EOF is reached without any
+                                               protocol lines being read.
+        """
+        while True:
+            line = self._proc.stdout.readline().decode('utf-8')
+            if not line:
+                raise jsonrpc_client_base.AppStartError(
+                    'Unexpected EOF waiting for app to start')
+            # readline() uses an empty string to mark EOF, and a single newline
+            # to mark regular empty lines in the output. Don't move the strip()
+            # call above the truthiness check, or this method will start
+            # considering any blank output line to be EOF.
+            line = line.strip()
+            if (line.startswith('INSTRUMENTATION_RESULT:') or
+                    line.startswith('SNIPPET ')):
+                self.log.debug(
+                    'Accepted line from instrumentation output: "%s"', line)
+                return line
+            self.log.debug('Discarded line from instrumentation output: "%s"',
+                           line)
