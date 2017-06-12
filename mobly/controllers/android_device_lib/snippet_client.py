@@ -128,12 +128,12 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Restores the app after device got reconnected.
 
         Instead of creating new instance of the client:
-          - Use the given port (or find a new available host_port if not given)
-          - Reuses the previously used device_port
-          - Tries to connect to remote server
+          - Uses the given port (or find a new available host_port if not given).
+          - Tries to connect to remote server with selected port.
 
         Args:
-          port: If given, this is the host port from which to connect to remote device port
+          port: If given, this is the host port from which to connect to remote device port.
+              If not provided, find a new available port as host port.
 
         Raises:
             AppRestoreConnectionError: When the app was not able to be started.

@@ -81,12 +81,12 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         """Restores the sl4a after device got disconnected.
 
         Instead of creating new instance of the client:
-          - Find a new host_port
-          - Reuse the previously used device_port
-          - Try to connect to remote server
+          - Uses the given port (or find a new available host_port if not given).
+          - Tries to connect to remote server with selected port.
 
         Args:
-          port: If given, this is the host port from which to connect to remote device port
+          port: If given, this is the host port from which to connect to remote device port.
+              If not provided, find a new available port as host port.
 
         Raises:
             AppRestoreConnectionError: When the app was not able to be started.
