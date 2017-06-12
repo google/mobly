@@ -499,10 +499,15 @@ class AndroidDevice(object):
         power measurement. Use this function to make sure the services
         started by Mobly are properly reconnected afterwards.
 
-        As the usage of self.handle_reboot(), this method does not automatically
+        Just like the usage of self.handle_reboot(), this method does not automatically
         determine if the disconnection is because of a reboot or USB disconnect.
-        User of this function should make sure they use the right handle_*
-        function to handle the correct type of disconnection.
+        User of this function should make sure the right handle_* function is used
+        to handle the correct type of disconnection.
+
+        This method also reconnects snippet event client. Therefore, the callback objects
+        created (by calling Async RPC methods) before disconnection would still be
+        valid and can be used to retrieve RPC execution result after device got
+        reconnected.
         """
         self._stop_logcat_process()
         # Only need to stop dispatcher because it continuously polling device
