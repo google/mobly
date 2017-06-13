@@ -473,6 +473,8 @@ class AndroidDevice(object):
                 self.stop_adb_logcat()
             except:
                 self.log.exception('Failed to stop adb logcat.')
+            self._adb_logcat_process = None
+
 
     @contextlib.contextmanager
     def handle_reboot(self):
