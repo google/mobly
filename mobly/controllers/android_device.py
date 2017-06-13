@@ -524,7 +524,8 @@ class AndroidDevice(object):
         self._stop_logcat_process()
         # Only need to stop dispatcher because it continuously polling device
         # It's not necessary to stop snippet and sl4a.
-        self.sl4a.stop_event_dispatcher()
+        if self.sl4a:
+          self.sl4a.stop_event_dispatcher()
         # Clears cached adb content, so that the next time start_adb_logcat()
         # won't produce duplicated logs to log file.
         # This helps disconnection that caused by, e.g., USB off; at the
