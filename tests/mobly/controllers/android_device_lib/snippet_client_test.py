@@ -121,7 +121,11 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             callback.getAll('eventName')
 
     @mock.patch('socket.create_connection')
-    def test_snippet_restore_event_client(self, mock_create_connection):
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_restore_event_client(
+            self, mock_get_port, mock_create_connection):
+        mock_get_port.return_value = 789
         fake_file = self.setup_mock_socket_file(mock_create_connection)
         client = self._make_client()
         client.host_port = 123  # normally picked by start_app_and_connect
@@ -145,9 +149,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         # after reconnect, if host port not specified, clients use selected available port
         client.restore_app_connection()
-        selected_host_port = client.host_port
+        self.assertEqual(789, client.host_port)
         self.assertEqual(456, client.device_port)
-        self.assertEqual(selected_host_port, callback._event_client.host_port)
+        self.assertEqual(789, callback._event_client.host_port)
         self.assertEqual(456, callback._event_client.device_port)
 
     @mock.patch('socket.create_connection')
@@ -188,8 +192,11 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
     def test_snippet_start_app_and_connect_unknown_protocol(
-            self, mock_start_standing_subprocess):
+            self, mock_get_port, mock_start_standing_subprocess):
+        mock_get_port.return_value = 789
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess,
             resp_lines=[b'SNIPPET START, PROTOCOL 99 0\n'])
