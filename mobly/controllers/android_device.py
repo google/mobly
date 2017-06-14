@@ -46,6 +46,9 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 # Keys for attributes in configs that alternate the controller module behavior.
 KEY_DEVICE_REQUIRED = 'required'
 
+# Default Timeout to wait for USB ON
+DEFAULT_TIMEOUT_USB_ON = 20*60
+
 
 class Error(signals.ControllerError):
     pass
@@ -922,6 +925,31 @@ class AndroidDevice(object):
                 pass
             time.sleep(5)
         raise DeviceError(self, 'Booting process timed out.')
+
+    def wait_for_usb_on(self, timeout=DEFAULT_TIMEOUT_USB_ON):
+        """Waits until the USB is back on and device is detected with adb command.
+
+        User should use this function in the context of handle_usb_disconnect() to make sure
+        the disconnected device is back online before returning from the context.
+
+        The reason to not put this function in handle_usb_disconnect() before it returns is
+        to let user control the timeout of this wait. Though a default timeout value is
+        provided here, but the actual value could be different a lot from case to case. User
+        should have more knowledge of this value.
+        """
+        timeout_start = time.time()
+
+        while time.time() < timeout_start + timeout:
+            try:
+                serials = list_adb_devices()
+                if self.serial in serials:
+                    return
+            except adb.AdbError:
+                # adb shell calls may fail during the period of USB off,
+                # which is normal. Ignoring these errors.
+                pass
+            time.sleep(5)
+        raise DeviceError(self, 'Wait for USB on timed out.')
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.
