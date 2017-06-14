@@ -47,7 +47,7 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 KEY_DEVICE_REQUIRED = 'required'
 
 # Default Timeout to wait for USB ON
-DEFAULT_TIMEOUT_USB_ON = 20*60
+DEFAULT_TIMEOUT_USB_ON = 5*60
 
 
 class Error(signals.ControllerError):
