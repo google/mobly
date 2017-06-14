@@ -47,7 +47,7 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 KEY_DEVICE_REQUIRED = 'required'
 
 # Default Timeout to wait for USB ON
-DEFAULT_TIMEOUT_USB_ON = 5*60
+DEFAULT_TIMEOUT_USB_ON = 5 * 60
 
 
 class Error(signals.ControllerError):
@@ -501,7 +501,7 @@ class AndroidDevice(object):
         """Properly manage the service life cycle when USB is disconnected.
 
         The device can temporarily lose adb connection due to user-triggered
-        USB disconnection, e.g., the following cases can be handled by this
+        USB disconnection, e.g. the following cases can be handled by this
         method:
 
         - Power measurement: Using Monsoon device to measure battery consumption
@@ -910,21 +910,9 @@ class AndroidDevice(object):
 
         This function times out after 15 minutes.
         """
-        timeout_start = time.time()
         timeout = 15 * 60
 
-        self.adb.wait_for_device()
-        while time.time() < timeout_start + timeout:
-            try:
-                completed = self.adb.getprop('sys.boot_completed')
-                if completed == '1':
-                    return
-            except adb.AdbError:
-                # adb shell calls may fail during certain period of booting
-                # process, which is normal. Ignoring these errors.
-                pass
-            time.sleep(5)
-        raise DeviceError(self, 'Booting process timed out.')
+        self._wait_for_device(self._boot_completed, timeout)
 
     def wait_for_usb_on(self, timeout=DEFAULT_TIMEOUT_USB_ON):
         """Waits until the USB is back on and device is detected with adb command.
@@ -938,18 +926,49 @@ class AndroidDevice(object):
         should have more knowledge of this value.
         """
         timeout_start = time.time()
+        self._wait_for_device(self._usb_is_on, timeout)
 
+    def _boot_completed(self):
+        """Checks if device boot is completed by verifying system property."""
+        completed = self.adb.getprop('sys.boot_completed')
+        if completed == '1':
+            self.log.info('Device %s boot completed.', self.serial)
+            return True
+        return False
+
+    def _usb_is_on(self):
+        """Checks if USB is on and device is ready by verifying adb devices list."""
+        serials = list_adb_devices()
+        if self.serial in serials:
+            self.log.info('Device %s USB is on.', self.serial)
+            return True
+        return False
+
+    def _wait_for_device(self, func, timeout):
+        """Retry wait for device to be ready over adb until func returns True.
+
+        Retry wait for device if provided func returns False or raises exception.
+
+        Args:
+            func: A function that returns True when device condition is expected. It returns
+                False otherwise. This function could also raise adb.AdbError if device is not
+                ready over adb.
+
+        Raises:
+            DeviceError: If wait for device timed out.
+        """
+        timeout_start = time.time()
+        self.adb.wait_for_device()
         while time.time() < timeout_start + timeout:
             try:
-                serials = list_adb_devices()
-                if self.serial in serials:
+                if func():
                     return
             except adb.AdbError:
-                # adb shell calls may fail during the period of USB off,
-                # which is normal. Ignoring these errors.
+                # adb shell calls may fail during certain period of booting
+                # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise DeviceError(self, 'Wait for USB on timed out.')
+        raise DeviceError(self, 'Time out while waiting for device.')
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.
