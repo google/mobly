@@ -914,7 +914,7 @@ class AndroidDevice(object):
 
         self._wait_for_device(self._boot_completed, timeout)
 
-    def wait_for_usb_on(self, timeout=DEFAULT_TIMEOUT_USB_ON):
+    def wait_for_adb_detection(self, timeout=DEFAULT_TIMEOUT_USB_ON):
         """Waits until the USB is back on and device is detected with adb command.
 
         User should use this function in the context of handle_usb_disconnect() to make sure
