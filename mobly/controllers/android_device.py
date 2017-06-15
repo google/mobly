@@ -923,7 +923,7 @@ class AndroidDevice(object):
         """
         timeout = 15 * 60
 
-        self._wait_for_device(self._boot_completed, timeout)
+        self._wait_for_device(self._is_boot_completed, timeout)
 
     def wait_for_adb_detection(self, timeout=DEFAULT_TIMEOUT_USB_ON):
         """Waits until the USB is back on and device is detected with adb command.
@@ -937,9 +937,9 @@ class AndroidDevice(object):
         should have more knowledge of this value.
         """
         timeout_start = time.time()
-        self._wait_for_device(self._usb_is_on, timeout)
+        self._wait_for_device(self._is_adb_detectable, timeout)
 
-    def _boot_completed(self):
+    def _is_boot_completed(self):
         """Checks if device boot is completed by verifying system property."""
         completed = self.adb.getprop('sys.boot_completed')
         if completed == '1':
@@ -947,7 +947,7 @@ class AndroidDevice(object):
             return True
         return False
 
-    def _usb_is_on(self):
+    def _is_adb_detectable(self):
         """Checks if USB is on and device is ready by verifying adb devices list."""
         serials = list_adb_devices()
         if self.serial in serials:
@@ -956,17 +956,24 @@ class AndroidDevice(object):
         return False
 
     def _wait_for_device(self, func, timeout):
-        """Retry wait for device to be ready over adb until func returns True.
+        """Retry the provided function until it returns True or timed out.
 
-        Retry wait for device if provided func returns False or raises exception.
+        The provided function is used to verify different adb connectivity cases and it returns
+        bool value to indicate if the verification is successful or not.
 
+        For example:
+            To wait for device reboot to complete:
+                self._wait_for_device(self._is_boot_completed, timeout)
+            To wait for USB reconnect:
+                self._wait_for_device(self._is_adb_detectable, timeout)
         Args:
             func: A function that returns True when device condition is expected. It returns
                 False otherwise. This function could also raise adb.AdbError if device is not
                 ready over adb.
+            timeout: Timeout duration to wait for device adb connectivity.
 
         Raises:
-            DeviceError: If wait for device timed out.
+            DeviceError: If timed out.
         """
         timeout_start = time.time()
         self.adb.wait_for_device()
@@ -979,7 +986,9 @@ class AndroidDevice(object):
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise DeviceError(self, 'Time out while waiting for device.')
+        raise DeviceError(
+                self, 'Time out while waiting for device adb connectivity with function: %s'
+                % func.__name__)
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.
