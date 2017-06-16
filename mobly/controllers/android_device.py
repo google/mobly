@@ -46,6 +46,9 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 # Keys for attributes in configs that alternate the controller module behavior.
 KEY_DEVICE_REQUIRED = 'required'
 
+# Default Timeout to wait for USB ON
+DEFAULT_TIMEOUT_USB_ON = 5 * 60
+
 
 class Error(signals.ControllerError):
     pass
@@ -434,12 +437,12 @@ class AndroidDevice(object):
         self._debug_tag = tag
         self.log.extra['tag'] = tag
 
-    def start_services(self):
+    def start_services(self, clear_log=True):
         """Starts long running services on the android device, like adb logcat
         capture.
         """
         try:
-            self.start_adb_logcat()
+            self.start_adb_logcat(clear_log)
         except:
             self.log.exception('Failed to start adb logcat!')
             raise
@@ -459,24 +462,30 @@ class AndroidDevice(object):
         service_info['snippet_info'] = self._get_active_snippet_info()
         service_info['use_sl4a'] = self.sl4a is not None
         self._terminate_sl4a()
-        for name, client in self._snippet_clients.items():
+        for attr_name, client in self._snippet_clients.items():
             client.stop_app()
-            delattr(self, name)
+            delattr(self, attr_name)
         self._snippet_clients = {}
+        self._stop_logcat_process()
+        return service_info
+
+    def _stop_logcat_process(self):
+        """Stops logcat process."""
         if self._adb_logcat_process:
             try:
                 self.stop_adb_logcat()
             except:
                 self.log.exception('Failed to stop adb logcat.')
-        return service_info
+            self._adb_logcat_process = None
+
 
     @contextlib.contextmanager
-    def handle_device_disconnect(self):
+    def handle_reboot(self):
         """Properly manage the service life cycle when the device needs to
         temporarily disconnect.
 
         The device can temporarily lose adb connection due to user-triggered
-        reboot or power measurement. Use this function to make sure the services
+        reboot. Use this function to make sure the services
         started by Mobly are properly stopped and restored afterwards.
 
         For sample usage, see self.reboot().
@@ -486,6 +495,62 @@ class AndroidDevice(object):
             yield
         finally:
             self._restore_services(service_info)
+
+    @contextlib.contextmanager
+    def handle_usb_disconnect(self):
+        """Properly manage the service life cycle when USB is disconnected.
+
+        The device can temporarily lose adb connection due to user-triggered
+        USB disconnection, e.g. the following cases can be handled by this
+        method:
+
+        - Power measurement: Using Monsoon device to measure battery consumption
+        would potentially disconnect USB.
+        - Unplug USB so device loses connection.
+        - ADB connection over WiFi and WiFi got disconnected.
+        - Any other type of USB disconnection, as long as snippet session can be
+        kept alive while USB disconnected (reboot caused USB disconnection is
+        not one of these cases because snippet session cannot survive reboot.
+        Use handle_reboot() instead).
+
+        Use this function to make sure the services started by Mobly are properly
+        reconnected afterwards.
+
+        Just like the usage of self.handle_reboot(), this method does not automatically
+        detect if the disconnection is because of a reboot or USB disconnect.
+        User of this function should make sure the right handle_* function is used
+        to handle the correct type of disconnection.
+
+        This method also reconnects snippet event client. Therefore, the callback objects
+        created (by calling Async RPC methods) before disconnection would still be
+        valid and can be used to retrieve RPC execution result after device got
+        reconnected.
+
+        Example Usage:
+            with ad.handle_usb_disconnect():
+                try:
+                  # User action that triggers USB disconnect, could throw exceptions.
+                  do_something()
+                finally:
+                  # User action that triggers USB reconnect
+                  action_that_reconnects_usb()
+                  # Make sure device is reconnected before returning from this context
+                  ad.wait_for_adb_detection(SOME_TIMEOUT)
+        """
+        self._stop_logcat_process()
+        # Only need to stop dispatcher because it continuously polling device
+        # It's not necessary to stop snippet and sl4a.
+        if self.sl4a:
+          self.sl4a.stop_event_dispatcher()
+        # Clears cached adb content, so that the next time start_adb_logcat()
+        # won't produce duplicated logs to log file.
+        # This helps disconnection that caused by, e.g., USB off; at the
+        # cost of losing logs at disconnection caused by reboot.
+        self._clear_adb_log()
+        try:
+            yield
+        finally:
+            self._reconnect_to_services()
 
     def _restore_services(self, service_info):
         """Restores services after a device has come back from temporary
@@ -506,6 +571,20 @@ class AndroidDevice(object):
         # Restore sl4a if needed.
         if service_info['use_sl4a']:
             self.load_sl4a()
+
+    def _reconnect_to_services(self):
+        """Reconnects to services after USB reconnected."""
+        # Do not clear device log at this time. Otherwise the log during USB disconnection will
+        # be lost.
+        self.start_services(clear_log=False)
+        # Restore snippets.
+        for attr_name, client in self._snippet_clients.items():
+            client.restore_app_connection()
+        # Restore sl4a if needed.
+        if self.sl4a:
+            self.sl4a.restore_app_connection()
+            # Unpack the 'ed' attribute for compatibility.
+            self.ed = self.sl4a.ed
 
     @property
     def build_info(self):
@@ -716,18 +795,21 @@ class AndroidDevice(object):
                         if in_range:
                             break
 
-    def start_adb_logcat(self):
+    def start_adb_logcat(self, clear_log=True):
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
 
         This clears the previous cached logcat content on device.
+
+        Args:
+            clear: If True, clear device log before starting logcat.
         """
         if self._adb_logcat_process:
             raise DeviceError(
                 self,
                 'Logcat thread is already running, cannot start another one.')
-        # Clears cached adb content.
-        self.adb.logcat('-c')
+        if clear_log:
+            self._clear_adb_log()
         # Disable adb log spam filter for rootable devices. Have to stop and
         # clear settings first because 'start' doesn't support --clear option
         # before Android N.
@@ -798,6 +880,10 @@ class AndroidDevice(object):
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
 
+    def _clear_adb_log(self):
+        # Clears cached adb content.
+        self.adb.logcat('-c')
+
     def _terminate_sl4a(self):
         """Terminate the current sl4a session.
 
@@ -835,28 +921,79 @@ class AndroidDevice(object):
 
         This function times out after 15 minutes.
         """
-        timeout_start = time.time()
         timeout = 15 * 60
 
+        self._wait_for_device(self._is_boot_completed, timeout)
+
+    def wait_for_adb_detection(self, timeout=DEFAULT_TIMEOUT_USB_ON):
+        """Waits until the USB is back on and device is detected with adb command.
+
+        User should use this function in the context of handle_usb_disconnect() to make sure
+        the disconnected device is back online before returning from the context.
+
+        The reason to not put this function in handle_usb_disconnect() before it returns is
+        to let user control the timeout of this wait. Though a default timeout value is
+        provided here, but the actual value could be different a lot from case to case. User
+        should have more knowledge of this value.
+        """
+        timeout_start = time.time()
+        self._wait_for_device(self._is_adb_detectable, timeout)
+
+    def _is_boot_completed(self):
+        """Checks if device boot is completed by verifying system property."""
+        completed = self.adb.getprop('sys.boot_completed')
+        if completed == '1':
+            self.log.info('Device %s boot completed.', self.serial)
+            return True
+        return False
+
+    def _is_adb_detectable(self):
+        """Checks if USB is on and device is ready by verifying adb devices list."""
+        serials = list_adb_devices()
+        if self.serial in serials:
+            self.log.info('Device %s USB is on.', self.serial)
+            return True
+        return False
+
+    def _wait_for_device(self, func, timeout):
+        """Retry the provided function until it returns True or timed out.
+
+        The provided function is used to verify different adb connectivity cases and it returns
+        bool value to indicate if the verification is successful or not.
+
+        For example:
+            To wait for device reboot to complete:
+                self._wait_for_device(self._is_boot_completed, timeout)
+            To wait for USB reconnect:
+                self._wait_for_device(self._is_adb_detectable, timeout)
+        Args:
+            func: A function that returns True when device condition is expected. It returns
+                False otherwise. This function could also raise adb.AdbError if device is not
+                ready over adb.
+            timeout: Timeout duration to wait for device adb connectivity.
+
+        Raises:
+            DeviceError: If timed out.
+        """
+        timeout_start = time.time()
         self.adb.wait_for_device()
         while time.time() < timeout_start + timeout:
             try:
-                completed = self.adb.getprop('sys.boot_completed')
-                if completed == '1':
+                if func():
                     return
             except adb.AdbError:
                 # adb shell calls may fail during certain period of booting
                 # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
-        raise DeviceError(self, 'Booting process timed out.')
+        raise DeviceError(
+                self, 'Time out while waiting for device adb connectivity with function: %s'
+                % func.__name__)
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.
-
         The info is used for restoring the snippet clients after rebooting the
         device.
-
         Returns:
             A list of tuples, each tuple's first element is the name of the
             snippet client's attribute, the second element is the package name
@@ -884,7 +1021,7 @@ class AndroidDevice(object):
         if self.is_bootloader:
             self.fastboot.reboot()
             return
-        with self.handle_device_disconnect():
+        with self.handle_reboot():
             self.adb.reboot()
 
 

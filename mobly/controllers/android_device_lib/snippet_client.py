@@ -71,6 +71,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self.package = package
         self._adb = adb_proxy
         self._proc = None
+        self._launch_version = 'v1'
 
     def start_app_and_connect(self):
         """Overrides superclass. Launches a snippet app and connects to it."""
@@ -93,28 +94,65 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is
         # removed.
         line = self._read_protocol_line()
-        if line in ('INSTRUMENTATION_RESULT: shortMsg=Process crashed.',
-                    'INSTRUMENTATION_RESULT: shortMsg='
-                    'java.lang.IllegalArgumentException'):
+        # Forward the device port to a new host port, and connect to that port
+        self.host_port = utils.get_available_host_port()
+        if line == 'INSTRUMENTATION_RESULT: shortMsg=Process crashed.':
             self.log.warning('Snippet %s crashed on startup. This might be an '
                              'actual error or a snippet using deprecated v0 '
                              'start protocol. Retrying as a v0 snippet.',
                              self.package)
-            self.host_port = utils.get_available_host_port()
             # Reuse the host port as the device port in v0 snippet. This isn't
             # safe in general, but the protocol is deprecated.
-            cmd = _LAUNCH_CMD_V0 % (self.host_port, self.package)
+            self.device_port = self.host_port
+            cmd = _LAUNCH_CMD_V0 % (self.device_port, self.package)
             self._proc = self._do_start_app(cmd)
             self._connect_to_v0()
+            self._launch_version = 'v0'
         else:
             # Check protocol version and get the device port
             match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$',
                              line)
             if not match or match.group(1) != '1':
                 raise ProtocolVersionError(line)
+
+            line = self._read_protocol_line()
+            match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
+            if not match:
+                raise ProtocolVersionError(line)
+            self.device_port = int(match.group(1))
             self._connect_to_v1()
         self.log.debug('Snippet %s started after %.1fs on host port %s',
                        self.package, time.time() - start_time, self.host_port)
+
+    def restore_app_connection(self, port=None):
+        """Restores the app after device got reconnected.
+
+        Instead of creating new instance of the client:
+          - Uses the given port (or find a new available host_port if not given).
+          - Tries to connect to remote server with selected port.
+
+        Args:
+          port: If given, this is the host port from which to connect to remote device port.
+              If not provided, find a new available port as host port.
+
+        Raises:
+            AppRestoreConnectionError: When the app was not able to be started.
+        """
+        self.host_port = port or utils.get_available_host_port()
+        try:
+            if self._launch_version == 'v0':
+                self._connect_to_v0()
+            else:
+                self._connect_to_v1()
+        except:
+            # Failed to connect to app, something went wrong.
+            raise jsonrpc_client_base.AppRestoreConnectionError(
+                    'Failed to restore app connection for %s at host port %s, device port %s',
+                    self.package, self.host_port, self.device_port)
+
+        # Because the previous connection was lost, update self._proc
+        self._proc = None
+        self._restore_event_client()
 
     def stop_app(self):
         # Kill the pending 'adb shell am instrument -w' process if there is one.
@@ -140,11 +178,23 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     def _start_event_client(self):
         """Overrides superclass."""
         event_client = SnippetClient(
-            package=self.package, adb_proxy=self._adb, log=self.log)
+            package=self.package,
+            adb_proxy=self._adb,
+            log=self.log)
         event_client.host_port = self.host_port
+        event_client.device_port = self.device_port
         event_client.connect(self.uid,
                              jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         return event_client
+
+    def _restore_event_client(self):
+        """Restores previously created event client."""
+        if not self._event_client:
+            self._event_client = self._start_event_client()
+            return
+        self._event_client.host_port = self.host_port
+        self._event_client.device_port = self.device_port
+        self._event_client.connect()
 
     def _check_app_installed(self):
         # Check that the Mobly Snippet app is installed.
@@ -183,7 +233,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is
     # removed.
     def _connect_to_v0(self):
-        self.device_port = self.host_port
         self._adb.forward(
             ['tcp:%d' % self.host_port,
              'tcp:%d' % self.device_port])
@@ -204,14 +253,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             '%s failed to start on %s.' % (self.package, self._adb.serial))
 
     def _connect_to_v1(self):
-        line = self._read_protocol_line()
-        match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
-        if not match:
-            raise jsonrpc_client_base.AppStartError(line)
-        self.device_port = int(match.group(1))
-
-        # Forward the device port to a new host port, and connect to that port
-        self.host_port = utils.get_available_host_port()
         self._adb.forward(
             ['tcp:%d' % self.host_port,
              'tcp:%d' % self.device_port])

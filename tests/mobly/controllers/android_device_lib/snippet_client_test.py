@@ -122,6 +122,40 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     @mock.patch('socket.create_connection')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    def test_snippet_restore_event_client(
+            self, mock_get_port, mock_create_connection):
+        mock_get_port.return_value = 789
+        fake_file = self.setup_mock_socket_file(mock_create_connection)
+        client = self._make_client()
+        client.host_port = 123  # normally picked by start_app_and_connect
+        client.device_port = 456
+        client.connect()
+        fake_file.resp = self.MOCK_RESP_WITH_CALLBACK
+        callback = client.testSnippetCall()
+
+        # before reconnect, clients use previously selected ports
+        self.assertEqual(123, client.host_port)
+        self.assertEqual(456, client.device_port)
+        self.assertEqual(123, callback._event_client.host_port)
+        self.assertEqual(456, callback._event_client.device_port)
+
+        # after reconnect, if host port specified, clients use specified port
+        client.restore_app_connection(port=321)
+        self.assertEqual(321, client.host_port)
+        self.assertEqual(456, client.device_port)
+        self.assertEqual(321, callback._event_client.host_port)
+        self.assertEqual(456, callback._event_client.device_port)
+
+        # after reconnect, if host port not specified, clients use selected available port
+        client.restore_app_connection()
+        self.assertEqual(789, client.host_port)
+        self.assertEqual(456, client.device_port)
+        self.assertEqual(789, callback._event_client.host_port)
+        self.assertEqual(456, callback._event_client.device_port)
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.start_standing_subprocess')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.get_available_host_port')
@@ -158,8 +192,11 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
     def test_snippet_start_app_and_connect_unknown_protocol(
-            self, mock_start_standing_subprocess):
+            self, mock_get_port, mock_start_standing_subprocess):
+        mock_get_port.return_value = 789
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess,
             resp_lines=[b'SNIPPET START, PROTOCOL 99 0\n'])

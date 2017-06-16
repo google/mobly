@@ -61,6 +61,10 @@ class AppStartError(Error):
     """Raised when the app is not able to be started."""
 
 
+class AppRestoreConnectionError(Error):
+    """Raised when failed to restore app from disconnection."""
+
+
 class ApiError(Error):
     """Raised when remote API reports an error."""
 
@@ -138,6 +142,24 @@ class JsonRpcClientBase(object):
         """Kills any running instance of the app.
 
         Must be implemented by subclasses.
+        """
+        raise NotImplementedError()
+
+    def restore_app_connection(self, port=None):
+        """Reconnects to the app after device USB was disconnected.
+
+        Instead of creating new instance of the client:
+          - Uses the given port (or find a new available host_port if not given).
+          - Tries to connect to remote server with selected port.
+
+        Must be implemented by subclasses.
+
+        Args:
+          port: If given, this is the host port from which to connect to remote device port.
+              If not provided, find a new available port as host port.
+
+        Raises:
+            AppRestoreConnectionError: When the app was not able to be reconnected.
         """
         raise NotImplementedError()
 
