@@ -96,7 +96,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         line = self._read_protocol_line()
         # Forward the device port to a new host port, and connect to that port
         self.host_port = utils.get_available_host_port()
-        if line == 'INSTRUMENTATION_RESULT: shortMsg=Process crashed.':
+        if line in ('INSTRUMENTATION_RESULT: shortMsg=Process crashed.',
+                    'INSTRUMENTATION_RESULT: shortMsg='
+                    'java.lang.IllegalArgumentException'):
             self.log.warning('Snippet %s crashed on startup. This might be an '
                              'actual error or a snippet using deprecated v0 '
                              'start protocol. Retrying as a v0 snippet.',
