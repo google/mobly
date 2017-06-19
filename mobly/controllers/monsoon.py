@@ -817,7 +817,7 @@ class Monsoon(object):
         data = None
         self.usb("auto")
         time.sleep(1)
-        with self.dut.handle_device_disconnect():
+        with self.dut.handle_reboot():
             time.sleep(1)
             try:
                 data = self.take_samples(hz, num, sample_offset=oset)
