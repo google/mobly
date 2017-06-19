@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Interface for a USB-connected Monsoon power meter
 (http://msoon.com/LabEquipment/PowerMonitor/).
 """
@@ -35,7 +34,7 @@ import mobly.signals
 from mobly import utils
 from mobly.controllers import android_device
 
-MOBLY_CONTROLLER_CONFIG_NAME = "Monsoon"
+MOBLY_CONTROLLER_CONFIG_NAME = 'Monsoon'
 
 
 def create(configs):
@@ -49,7 +48,7 @@ def destroy(objs):
     return
 
 
-class MonsoonError(mobly.signals.ControllerError):
+class Error(mobly.signals.ControllerError):
     """Raised for exceptions encountered in monsoon lib."""
 
 
@@ -70,8 +69,8 @@ class MonsoonProxy(object):
         """Establish a connection to a Monsoon.
 
         By default, opens the first available port, waiting if none are ready.
-        A particular port can be specified with "device", or a particular
-        Monsoon can be specified with "serialno" (using the number printed on
+        A particular port can be specified with 'device', or a particular
+        Monsoon can be specified with 'serialno' (using the number printed on
         its back). With wait=0, IOError is thrown if a device is not
         immediately available.
         """
@@ -87,15 +86,15 @@ class MonsoonProxy(object):
         # Try all devices connected through USB virtual serial ports until we
         # find one we can use.
         while True:
-            for dev in os.listdir("/dev"):
-                prefix = "ttyACM"
+            for dev in os.listdir('/dev'):
+                prefix = 'ttyACM'
                 # Prefix is different on Mac OS X.
-                if sys.platform == "darwin":
-                    prefix = "tty.usbmodem"
+                if sys.platform == 'darwin':
+                    prefix = 'tty.usbmodem'
                 if not dev.startswith(prefix):
                     continue
-                tmpname = "/tmp/monsoon.%s.%s" % (os.uname()[0], dev)
-                self._tempfile = open(tmpname, "w")
+                tmpname = '/tmp/monsoon.%s.%s' % (os.uname()[0], dev)
+                self._tempfile = open(tmpname, 'w')
                 try:
                     os.chmod(tmpname, 0o666)
                 except OSError as e:
@@ -104,30 +103,30 @@ class MonsoonProxy(object):
                 try:  # use a lockfile to ensure exclusive access
                     fcntl.lockf(self._tempfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 except IOError as e:
-                    logging.error("device %s is in use", dev)
+                    logging.error('device %s is in use', dev)
                     continue
 
                 try:  # try to open the device
-                    self.ser = serial.Serial("/dev/%s" % dev, timeout=1)
+                    self.ser = serial.Serial('/dev/%s' % dev, timeout=1)
                     self.StopDataCollection()  # just in case
                     self._FlushInput()  # discard stale input
                     status = self.GetStatus()
                 except Exception as e:
-                    logging.exception("Error opening device %s: %s", dev, e)
+                    logging.exception('Error opening device %s: %s', dev, e)
                     continue
 
                 if not status:
-                    logging.error("no response from device %s", dev)
-                elif serialno and status["serialNumber"] != serialno:
-                    logging.error("Another device serial #%d seen on %s",
-                                  status["serialNumber"], dev)
+                    logging.error('no response from device %s', dev)
+                elif serialno and status['serialNumber'] != serialno:
+                    logging.error('Another device serial #%d seen on %s',
+                                  status['serialNumber'], dev)
                 else:
-                    self.start_voltage = status["voltage1"]
+                    self.start_voltage = status['voltage1']
                     return
 
             self._tempfile = None
-            if not wait: raise IOError("No device found")
-            logging.info("Waiting for device...")
+            if not wait: raise IOError('No device found')
+            logging.info('Waiting for device...')
             time.sleep(1)
 
     def GetStatus(self):
@@ -137,80 +136,80 @@ class MonsoonProxy(object):
             status dictionary.
         """
         # status packet format
-        STATUS_FORMAT = ">BBBhhhHhhhHBBBxBbHBHHHHBbbHHBBBbbbbbbbbbBH"
+        STATUS_FORMAT = '>BBBhhhHhhhHBBBxBbHBHHHHBbbHHBBBbbbbbbbbbBH'
         STATUS_FIELDS = [
-            "packetType",
-            "firmwareVersion",
-            "protocolVersion",
-            "mainFineCurrent",
-            "usbFineCurrent",
-            "auxFineCurrent",
-            "voltage1",
-            "mainCoarseCurrent",
-            "usbCoarseCurrent",
-            "auxCoarseCurrent",
-            "voltage2",
-            "outputVoltageSetting",
-            "temperature",
-            "status",
-            "leds",
-            "mainFineResistor",
-            "serialNumber",
-            "sampleRate",
-            "dacCalLow",
-            "dacCalHigh",
-            "powerUpCurrentLimit",
-            "runTimeCurrentLimit",
-            "powerUpTime",
-            "usbFineResistor",
-            "auxFineResistor",
-            "initialUsbVoltage",
-            "initialAuxVoltage",
-            "hardwareRevision",
-            "temperatureLimit",
-            "usbPassthroughMode",
-            "mainCoarseResistor",
-            "usbCoarseResistor",
-            "auxCoarseResistor",
-            "defMainFineResistor",
-            "defUsbFineResistor",
-            "defAuxFineResistor",
-            "defMainCoarseResistor",
-            "defUsbCoarseResistor",
-            "defAuxCoarseResistor",
-            "eventCode",
-            "eventData",
+            'packetType',
+            'firmwareVersion',
+            'protocolVersion',
+            'mainFineCurrent',
+            'usbFineCurrent',
+            'auxFineCurrent',
+            'voltage1',
+            'mainCoarseCurrent',
+            'usbCoarseCurrent',
+            'auxCoarseCurrent',
+            'voltage2',
+            'outputVoltageSetting',
+            'temperature',
+            'status',
+            'leds',
+            'mainFineResistor',
+            'serialNumber',
+            'sampleRate',
+            'dacCalLow',
+            'dacCalHigh',
+            'powerUpCurrentLimit',
+            'runTimeCurrentLimit',
+            'powerUpTime',
+            'usbFineResistor',
+            'auxFineResistor',
+            'initialUsbVoltage',
+            'initialAuxVoltage',
+            'hardwareRevision',
+            'temperatureLimit',
+            'usbPassthroughMode',
+            'mainCoarseResistor',
+            'usbCoarseResistor',
+            'auxCoarseResistor',
+            'defMainFineResistor',
+            'defUsbFineResistor',
+            'defAuxFineResistor',
+            'defMainCoarseResistor',
+            'defUsbCoarseResistor',
+            'defAuxCoarseResistor',
+            'eventCode',
+            'eventData',
         ]
 
-        self._SendStruct("BBB", 0x01, 0x00, 0x00)
+        self._SendStruct('BBB', 0x01, 0x00, 0x00)
         while 1:  # Keep reading, discarding non-status packets
             read_bytes = self._ReadPacket()
             if not read_bytes:
                 return None
             calsize = struct.calcsize(STATUS_FORMAT)
             if len(read_bytes) != calsize or read_bytes[0] != 0x10:
-                logging.warning("Wanted status, dropped type=0x%02x, len=%d",
+                logging.warning('Wanted status, dropped type=0x%02x, len=%d',
                                 read_bytes[0], len(read_bytes))
                 continue
-            status = dict(zip(STATUS_FIELDS, struct.unpack(STATUS_FORMAT,
-                                                           read_bytes)))
-            p_type = status["packetType"]
+            status = dict(
+                zip(STATUS_FIELDS, struct.unpack(STATUS_FORMAT, read_bytes)))
+            p_type = status['packetType']
             if p_type != 0x10:
-                raise MonsoonError("Package type %s is not 0x10." % p_type)
+                raise Error('Package type %s is not 0x10.' % p_type)
             for k in status.keys():
-                if k.endswith("VoltageSetting"):
+                if k.endswith('VoltageSetting'):
                     status[k] = 2.0 + status[k] * 0.01
-                elif k.endswith("FineCurrent"):
+                elif k.endswith('FineCurrent'):
                     pass  # needs calibration data
-                elif k.endswith("CoarseCurrent"):
+                elif k.endswith('CoarseCurrent'):
                     pass  # needs calibration data
-                elif k.startswith("voltage") or k.endswith("Voltage"):
+                elif k.startswith('voltage') or k.endswith('Voltage'):
                     status[k] = status[k] * 0.000125
-                elif k.endswith("Resistor"):
+                elif k.endswith('Resistor'):
                     status[k] = 0.05 + status[k] * 0.0001
-                    if k.startswith("aux") or k.startswith("defAux"):
+                    if k.startswith('aux') or k.startswith('defAux'):
                         status[k] += 0.05
-                elif k.endswith("CurrentLimit"):
+                elif k.endswith('CurrentLimit'):
                     status[k] = 8 * (1023 - status[k]) / 1023.0
             return status
 
@@ -227,9 +226,9 @@ class MonsoonProxy(object):
         """Set the output voltage, 0 to disable.
         """
         if v == 0:
-            self._SendStruct("BBB", 0x01, 0x01, 0x00)
+            self._SendStruct('BBB', 0x01, 0x01, 0x00)
         else:
-            self._SendStruct("BBB", 0x01, 0x01, int((v - 2.0) * 100))
+            self._SendStruct('BBB', 0x01, 0x01, int((v - 2.0) * 100))
 
     def GetVoltage(self):
         """Get the output voltage.
@@ -237,32 +236,32 @@ class MonsoonProxy(object):
         Returns:
             Current Output Voltage (in unit of v).
         """
-        return self.GetStatus()["outputVoltageSetting"]
+        return self.GetStatus()['outputVoltageSetting']
 
     def SetMaxCurrent(self, i):
         """Set the max output current.
         """
         if i < 0 or i > 8:
-            raise MonsoonError(("Target max current %sA, is out of acceptable "
-                                "range [0, 8].") % i)
+            raise Error(('Target max current %sA, is out of acceptable range'
+                         ' [0, 8].') % i)
         val = 1023 - int((i / 8) * 1023)
-        self._SendStruct("BBB", 0x01, 0x0a, val & 0xff)
-        self._SendStruct("BBB", 0x01, 0x0b, val >> 8)
+        self._SendStruct('BBB', 0x01, 0x0a, val & 0xff)
+        self._SendStruct('BBB', 0x01, 0x0b, val >> 8)
 
     def SetMaxPowerUpCurrent(self, i):
         """Set the max power up current.
         """
         if i < 0 or i > 8:
-            raise MonsoonError(("Target max current %sA, is out of acceptable "
-                                "range [0, 8].") % i)
+            raise Error(('Target max current %sA, is out of acceptable range'
+                         ' [0, 8].') % i)
         val = 1023 - int((i / 8) * 1023)
-        self._SendStruct("BBB", 0x01, 0x08, val & 0xff)
-        self._SendStruct("BBB", 0x01, 0x09, val >> 8)
+        self._SendStruct('BBB', 0x01, 0x08, val & 0xff)
+        self._SendStruct('BBB', 0x01, 0x09, val >> 8)
 
     def SetUsbPassthrough(self, val):
         """Set the USB passthrough mode: 0 = off, 1 = on,  2 = auto.
         """
-        self._SendStruct("BBB", 0x01, 0x10, val)
+        self._SendStruct('BBB', 0x01, 0x10, val)
 
     def GetUsbPassthrough(self):
         """Get the USB passthrough mode: 0 = off, 1 = on,  2 = auto.
@@ -270,18 +269,18 @@ class MonsoonProxy(object):
         Returns:
             Current USB passthrough mode.
         """
-        return self.GetStatus()["usbPassthroughMode"]
+        return self.GetStatus()['usbPassthroughMode']
 
     def StartDataCollection(self):
         """Tell the device to start collecting and sending measurement data.
         """
-        self._SendStruct("BBB", 0x01, 0x1b, 0x01)  # Mystery command
-        self._SendStruct("BBBBBBB", 0x02, 0xff, 0xff, 0xff, 0xff, 0x03, 0xe8)
+        self._SendStruct('BBB', 0x01, 0x1b, 0x01)  # Mystery command
+        self._SendStruct('BBBBBBB', 0x02, 0xff, 0xff, 0xff, 0xff, 0x03, 0xe8)
 
     def StopDataCollection(self):
         """Tell the device to stop collecting measurement data.
         """
-        self._SendStruct("BB", 0x03, 0x00)  # stop
+        self._SendStruct('BB', 0x03, 0x00)  # stop
 
     def CollectData(self):
         """Return some current samples. Call StartDataCollection() first.
@@ -291,22 +290,24 @@ class MonsoonProxy(object):
             if not _bytes:
                 return None
             if len(_bytes) < 4 + 8 + 1 or _bytes[0] < 0x20 or _bytes[0] > 0x2F:
-                logging.warning("Wanted data, dropped type=0x%02x, len=%d",
+                logging.warning('Wanted data, dropped type=0x%02x, len=%d',
                                 _bytes[0], len(_bytes))
                 continue
 
-            seq, _type, x, y = struct.unpack("BBBB", _bytes[:4])
-            data = [struct.unpack(">hhhh", _bytes[x:x + 8])
-                    for x in range(4, len(_bytes) - 8, 8)]
+            seq, _type, x, y = struct.unpack('BBBB', _bytes[:4])
+            data = [
+                struct.unpack('>hhhh', _bytes[x:x + 8])
+                for x in range(4, len(_bytes) - 8, 8)
+            ]
 
             if self._last_seq and seq & 0xF != (self._last_seq + 1) & 0xF:
-                logging.warning("Data sequence skipped, lost packet?")
+                logging.warning('Data sequence skipped, lost packet?')
             self._last_seq = seq
 
             if _type == 0:
                 if not self._coarse_scale or not self._fine_scale:
                     logging.warning(
-                        "Waiting for calibration, dropped data packet.")
+                        'Waiting for calibration, dropped data packet.')
                     continue
                 out = []
                 for main, usb, aux, voltage in data:
@@ -323,7 +324,7 @@ class MonsoonProxy(object):
                 self._fine_ref = data[0][0]
                 self._coarse_ref = data[1][0]
             else:
-                logging.warning("Discarding data packet type=0x%02x", _type)
+                logging.warning('Discarding data packet type=0x%02x', _type)
                 continue
 
             # See http://wiki/Main/MonsoonProtocol for details on these values.
@@ -339,7 +340,7 @@ class MonsoonProxy(object):
         data = struct.pack(fmt, *args)
         data_len = len(data) + 1
         checksum = (data_len + sum(bytearray(data))) % 256
-        out = struct.pack("B", data_len) + data + struct.pack("B", checksum)
+        out = struct.pack('B', data_len) + data + struct.pack('B', checksum)
         self.ser.write(out)
 
     def _ReadPacket(self):
@@ -347,23 +348,23 @@ class MonsoonProxy(object):
         """
         len_char = self.ser.read(1)
         if not len_char:
-            logging.error("Reading from serial port timed out.")
+            logging.error('Reading from serial port timed out.')
             return None
 
         data_len = ord(len_char)
         if not data_len:
-            return ""
+            return ''
         result = self.ser.read(int(data_len))
         result = bytearray(result)
         if len(result) != data_len:
-            logging.error("Length mismatch, expected %d bytes, got %d bytes.",
+            logging.error('Length mismatch, expected %d bytes, got %d bytes.',
                           data_len, len(result))
             return None
         body = result[:-1]
-        checksum = (sum(struct.unpack("B" * len(body), body)) + data_len) % 256
+        checksum = (sum(struct.unpack('B' * len(body), body)) + data_len) % 256
         if result[-1] != checksum:
             logging.error(
-                "Invalid checksum from serial port! Expected %s, got %s",
+                'Invalid checksum from serial port! Expected %s, got %s',
                 hex(checksum), hex(result[-1]))
             return None
         return result[:-1]
@@ -373,10 +374,10 @@ class MonsoonProxy(object):
         self.ser.flush()
         flushed = 0
         while True:
-            ready_r, ready_w, ready_x = select.select(
-                [self.ser], [], [self.ser], 0)
+            ready_r, ready_w, ready_x = select.select([self.ser], [],
+                                                      [self.ser], 0)
             if len(ready_x) > 0:
-                logging.error("Exception from serial port.")
+                logging.error('Exception from serial port.')
                 return None
             elif len(ready_r) > 0:
                 flushed += 1
@@ -385,7 +386,7 @@ class MonsoonProxy(object):
             else:
                 break
         # if flushed > 0:
-        #     logging.info("dropped >%d bytes" % flushed)
+        #     logging.info('dropped >%d bytes' % flushed)
 
 
 class MonsoonData(object):
@@ -398,7 +399,7 @@ class MonsoonData(object):
     # Number of digits for short rounding
     sr = 6
     # Delimiter for writing multiple MonsoonData objects to text file.
-    delimiter = "\n\n==========\n\n"
+    delimiter = '\n\n==========\n\n'
 
     def __init__(self, data_points, timestamps, hz, voltage, offset=0):
         """Instantiates a MonsoonData object.
@@ -416,9 +417,9 @@ class MonsoonData(object):
         self.offset = offset
         num_of_data_pt = len(self._data_points)
         if self.offset >= num_of_data_pt:
-            raise MonsoonError(("Offset number (%d) must be smaller than the "
-                                "number of data points (%d).") %
-                               (offset, num_of_data_pt))
+            raise Error(
+                ('Offset number (%d) must be smaller than the number of data '
+                 'points (%d).') % (offset, num_of_data_pt))
         self.data_points = self._data_points[self.offset:]
         self.timestamps = self._timestamps[self.offset:]
         self.hz = hz
@@ -462,15 +463,16 @@ class MonsoonData(object):
             A MonsoonData object.
         """
         lines = data_str.strip().split('\n')
-        err_msg = ("Invalid input string format. Is this string generated by "
-                   "MonsoonData class?")
-        conditions = [len(lines) <= 4, "Average Current:" not in lines[1],
-                      "Voltage: " not in lines[2],
-                      "Total Power: " not in lines[3],
-                      "samples taken at " not in lines[4],
-                      lines[5] != "Time" + ' ' * 7 + "Amp"]
+        err_msg = ('Invalid input string format. Is this string generated by '
+                   'MonsoonData class?')
+        conditions = [
+            len(lines) <= 4, 'Average Current:' not in lines[1],
+            'Voltage: ' not in lines[2], 'Total Power: ' not in lines[3],
+            'samples taken at ' not in lines[4],
+            lines[5] != 'Time' + ' ' * 7 + 'Amp'
+        ]
         if any(conditions):
-            raise MonsoonError(err_msg)
+            raise Error(err_msg)
         hz_str = lines[4].split()[2]
         hz = int(hz_str[:-2])
         voltage_str = lines[2].split()[1]
@@ -484,7 +486,7 @@ class MonsoonData(object):
                 t.append(int(timestamp))
                 v.append(float(value))
             except ValueError:
-                raise MonsoonError(err_msg)
+                raise Error(err_msg)
         return MonsoonData(v, t, hz, voltage)
 
     @staticmethod
@@ -498,8 +500,8 @@ class MonsoonData(object):
                 name.
         """
         if not monsoon_data:
-            raise MonsoonError("Attempting to write empty Monsoon data to "
-                               "file, abort")
+            raise Error('Attempting to write empty Monsoon data to '
+                               'file, abort')
         utils.create_dir(os.path.dirname(file_path))
         with open(file_path, 'w') as f:
             for md in monsoon_data:
@@ -528,10 +530,10 @@ class MonsoonData(object):
     def _validate_data(self):
         """Verifies that the data points contained in the class are valid.
         """
-        msg = "Error! Expected {} timestamps, found {}.".format(
+        msg = 'Error! Expected %s timestamps, found %s.' % (
             len(self._data_points), len(self._timestamps))
         if len(self._data_points) != len(self._timestamps):
-            raise MonsoonError(msg)
+            raise Error(msg)
 
     def update_offset(self, new_offset):
         """Updates how many data points to skip in caculations.
@@ -578,18 +580,17 @@ class MonsoonData(object):
         return averages
 
     def _header(self):
-        strs = [""]
+        strs = ['']
         if self.tag:
             strs.append(self.tag)
         else:
-            strs.append("Monsoon Measurement Data")
-        strs.append("Average Current: {}mA.".format(self.average_current))
-        strs.append("Voltage: {}V.".format(self.voltage))
-        strs.append("Total Power: {}mW.".format(self.total_power))
-        strs.append(("{} samples taken at {}Hz, with an offset of {} samples."
-                     ).format(
-                         len(self._data_points), self.hz, self.offset))
-        return "\n".join(strs)
+            strs.append('Monsoon Measurement Data')
+        strs.append('Average Current: %smA.' % self.average_current)
+        strs.append('Voltage: %sV.' % self.voltage)
+        strs.append('Total Power: %smW.' % self.total_power)
+        strs.append('%s samples taken at %sHz, with an offset of %s samples.' %
+                    (len(self._data_points), self.hz, self.offset))
+        return '\n'.join(strs)
 
     def __len__(self):
         return len(self.data_points)
@@ -597,10 +598,10 @@ class MonsoonData(object):
     def __str__(self):
         strs = []
         strs.append(self._header())
-        strs.append("Time" + ' ' * 7 + "Amp")
+        strs.append('Time' + ' ' * 7 + 'Amp')
         for t, d in zip(self.timestamps, self.data_points):
-            strs.append("{} {}".format(t, round(d, self.sr)))
-        return "\n".join(strs)
+            strs.append('%s %s' % (t, round(d, self.sr)))
+        return '\n'.join(strs)
 
     def __repr__(self):
         return self._header()
@@ -611,11 +612,11 @@ class Monsoon(object):
     """
 
     def __init__(self, *args, **kwargs):
-        serial = kwargs["serial"]
+        serial = kwargs['serial']
         device = None
-        self.log = logging.getLogger()
-        if "device" in kwargs:
-            device = kwargs["device"]
+        logging = logging.getLogger()
+        if 'device' in kwargs:
+            device = kwargs['device']
         self.mon = MonsoonProxy(serialno=serial, device=device)
         self.dut = None
 
@@ -687,13 +688,13 @@ class Monsoon(object):
         """
         sys.stdout.flush()
         voltage = self.mon.GetVoltage()
-        self.log.info("Taking samples at %dhz for %ds, voltage %.2fv.",
-                      sample_hz, (sample_num / sample_hz), voltage)
+        logging.info('Taking samples at %dhz for %ds, voltage %.2fv.',
+                     sample_hz, (sample_num / sample_hz), voltage)
         sample_num += sample_offset
         # Make sure state is normal
         self.mon.StopDataCollection()
         status = self.mon.GetStatus()
-        native_hz = status["sampleRate"] * 1000
+        native_hz = status['sampleRate'] * 1000
 
         # Collect and average samples as specified
         self.mon.StartDataCollection()
@@ -727,12 +728,12 @@ class Monsoon(object):
                     offset += need * sample_hz
                     # maybe multiple, if sample_hz > native_hz
                     while offset >= native_hz:
-                        # TODO(angli): Optimize "collected" operations.
+                        # TODO(angli): Optimize 'collected' operations.
                         this_sample = sum(collected[:need]) / need
                         this_time = int(time.time())
                         timestamps.append(this_time)
                         if live:
-                            self.log.info("%s %s", this_time, this_sample)
+                            logging.info('%s %s', this_time, this_sample)
                         current_values.append(this_sample)
                         sys.stdout.flush()
                         offset -= native_hz
@@ -746,11 +747,12 @@ class Monsoon(object):
             pass
         self.mon.StopDataCollection()
         try:
-            return MonsoonData(current_values,
-                               timestamps,
-                               sample_hz,
-                               voltage,
-                               offset=sample_offset)
+            return MonsoonData(
+                current_values,
+                timestamps,
+                sample_hz,
+                voltage,
+                offset=sample_offset)
         except:
             return None
 
@@ -760,9 +762,9 @@ class Monsoon(object):
         USB port in front of the monsoon box which connects to the powered
         device, NOT the USB that is used to talk to the monsoon itself.
 
-        "Off" means USB always off.
-        "On" means USB always on.
-        "Auto" means USB is automatically turned off when sampling is going on,
+        'off' means USB always off.
+        'on' means USB always on.
+        'auto' means USB is automatically turned off when sampling is going on,
         and turned back on when sampling finishes.
 
         Args:
@@ -771,16 +773,15 @@ class Monsoon(object):
         Returns:
             True if the state is legal and set. False otherwise.
         """
-        state_lookup = {"off": 0, "on": 1, "auto": 2}
+        state_lookup = {'off': 0, 'on': 1, 'auto': 2}
         state = state.lower()
-        if state in state_lookup:
+        if state not in state_lookup:
+            raise Error('"%s" is not a valid usb state.' % state)
+        current_state = self.mon.GetUsbPassthrough()
+        while (current_state != state_lookup[state]):
+            self.mon.SetUsbPassthrough(state_lookup[state])
+            time.sleep(1)
             current_state = self.mon.GetUsbPassthrough()
-            while (current_state != state_lookup[state]):
-                self.mon.SetUsbPassthrough(state_lookup[state])
-                time.sleep(1)
-                current_state = self.mon.GetUsbPassthrough()
-            return True
-        return False
 
     def _check_dut(self):
         """Verifies there is a DUT attached to the monsoon.
@@ -788,13 +789,11 @@ class Monsoon(object):
         This should be called in the functions that operate the DUT.
         """
         if not self.dut:
-            raise MonsoonError("Need to attach the device before using it.")
+            raise Error('Need to attach the device before using it.')
 
     @timeout_decorator.timeout(15, use_signals=False)
     def _wait_for_device(self, ad):
-        while ad.serial not in android_device.list_adb_devices():
-            pass
-        ad.adb.wait_for_device()
+        ad.wait_for_boot_completion()
 
     def measure_power(self, hz, duration, tag, offset=30):
         """Measure power consumption of the attached device.
@@ -815,23 +814,21 @@ class Monsoon(object):
         num = duration * hz
         oset = offset * hz
         data = None
-        self.usb("auto")
+        self.usb('auto')
+        # Give monsoon some time to react.
         time.sleep(1)
         with self.dut.handle_device_disconnect():
-            time.sleep(1)
             try:
                 data = self.take_samples(hz, num, sample_offset=oset)
                 if not data:
-                    raise MonsoonError("No data was collected in measurement %s." %
-                                       tag)
+                    raise Error(
+                        'No data was collected in measurement %s.' % tag)
                 data.tag = tag
-                self.dut.log.info("Measurement summary: %s", repr(data))
+                self.dut.log.info('Measurement summary: %s', repr(data))
                 return data
             finally:
                 self.mon.StopDataCollection()
-                self.log.info("Finished taking samples, reconnecting to dut.")
-                self.usb("on")
+                logging.info('Finished taking samples, reconnecting to dut.')
+                self.usb('on')
                 self._wait_for_device(self.dut)
-                # Wait for device to come back online.
-                time.sleep(10)
-                self.dut.log.info("Dut reconnected.")
+                self.dut.log.info('Dut reconnected.')
