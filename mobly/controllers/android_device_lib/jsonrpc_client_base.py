@@ -149,17 +149,20 @@ class JsonRpcClientBase(object):
         """Reconnects to the app after device USB was disconnected.
 
         Instead of creating new instance of the client:
-          - Uses the given port (or find a new available host_port if not given).
+          - Uses the given port (or finds a new available host_port if none is
+            given).
           - Tries to connect to remote server with selected port.
 
         Must be implemented by subclasses.
 
         Args:
-          port: If given, this is the host port from which to connect to remote device port.
-              If not provided, find a new available port as host port.
+          port: If given, this is the host port from which to connect to remote
+              device port. If not provided, find a new available port as host
+              port.
 
         Raises:
-            AppRestoreConnectionError: When the app was not able to be reconnected.
+            AppRestoreConnectionError: When the app was not able to be
+            reconnected.
         """
         raise NotImplementedError()
 

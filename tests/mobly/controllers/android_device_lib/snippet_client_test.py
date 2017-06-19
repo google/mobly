@@ -81,14 +81,16 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     def test_check_app_installed_fail_not_instrumented(self):
         sc = self._make_client(MockAdbProxy(apk_not_instrumented=True))
-        expected_msg = '%s is installed on .*, but it is not instrumented.' % MOCK_PACKAGE_NAME
+        expected_msg = ('%s is installed on .*, but it is not instrumented.'
+                        % MOCK_PACKAGE_NAME)
         with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
                                      expected_msg):
             sc._check_app_installed()
 
     def test_check_app_installed_fail_target_not_installed(self):
         sc = self._make_client(MockAdbProxy(target_not_installed=True))
-        expected_msg = 'Instrumentation target %s is not installed on .*' % MOCK_MISSING_PACKAGE_NAME
+        expected_msg = ('Instrumentation target %s is not installed on .*'
+                        % MOCK_MISSING_PACKAGE_NAME)
         with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
                                      expected_msg):
             sc._check_app_installed()
@@ -123,8 +125,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     @mock.patch('socket.create_connection')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.get_available_host_port')
-    def test_snippet_restore_event_client(
-            self, mock_get_port, mock_create_connection):
+    def test_snippet_restore_event_client(self, mock_get_port,
+                                          mock_create_connection):
         mock_get_port.return_value = 789
         fake_file = self.setup_mock_socket_file(mock_create_connection)
         client = self._make_client()
@@ -147,7 +149,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.assertEqual(321, callback._event_client.host_port)
         self.assertEqual(456, callback._event_client.device_port)
 
-        # after reconnect, if host port not specified, clients use selected available port
+        # after reconnect, if host port not specified, clients use selected
+        # available port
         client.restore_app_connection()
         self.assertEqual(789, client.host_port)
         self.assertEqual(456, client.device_port)
@@ -185,7 +188,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.setup_mock_socket_file(mock_create_connection)
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess,
-            resp_lines=[b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.\n'])
+            resp_lines=[
+                b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.\n'
+            ])
         client = self._make_client()
         client.start_app_and_connect()
         self.assertEqual(456, client.device_port)

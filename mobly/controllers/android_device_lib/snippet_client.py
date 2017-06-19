@@ -130,12 +130,14 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Restores the app after device got reconnected.
 
         Instead of creating new instance of the client:
-          - Uses the given port (or find a new available host_port if not given).
+          - Uses the given port (or find a new available host_port if none is
+            given).
           - Tries to connect to remote server with selected port.
 
         Args:
-          port: If given, this is the host port from which to connect to remote device port.
-              If not provided, find a new available port as host port.
+          port: If given, this is the host port from which to connect to remote 
+              device port. If not provided, find a new available port as host
+              port.
 
         Raises:
             AppRestoreConnectionError: When the app was not able to be started.
@@ -149,8 +151,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         except:
             # Failed to connect to app, something went wrong.
             raise jsonrpc_client_base.AppRestoreConnectionError(
-                    'Failed to restore app connection for %s at host port %s, device port %s',
-                    self.package, self.host_port, self.device_port)
+                ('Failed to restore app connection for %s at host port %s, '
+                 'device port %s'),
+                self.package, self.host_port, self.device_port)
 
         # Because the previous connection was lost, update self._proc
         self._proc = None
@@ -180,9 +183,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     def _start_event_client(self):
         """Overrides superclass."""
         event_client = SnippetClient(
-            package=self.package,
-            adb_proxy=self._adb,
-            log=self.log)
+            package=self.package, adb_proxy=self._adb, log=self.log)
         event_client.host_port = self.host_port
         event_client.device_port = self.device_port
         event_client.connect(self.uid,
