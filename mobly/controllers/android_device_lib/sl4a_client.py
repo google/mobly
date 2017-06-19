@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,7 +59,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         out = self._adb.shell('pm list package')
         if not utils.grep('com.googlecode.android_scripting', out):
             raise jsonrpc_client_base.AppStartError(
-                    '%s is not installed on %s' % (_APP_NAME, self._adb.serial))
+                '%s is not installed on %s' % (_APP_NAME, self._adb.serial))
 
         # sl4a has problems connecting after disconnection, so kill the apk and
         # try connecting again.
@@ -81,12 +81,14 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         """Restores the sl4a after device got disconnected.
 
         Instead of creating new instance of the client:
-          - Uses the given port (or find a new available host_port if not given).
+          - Uses the given port (or find a new available host_port if none is
+            given).
           - Tries to connect to remote server with selected port.
 
         Args:
-          port: If given, this is the host port from which to connect to remote device port.
-              If not provided, find a new available port as host port.
+          port: If given, this is the host port from which to connect to remote 
+              device port. If not provided, find a new available port as host
+              port.
 
         Raises:
             AppRestoreConnectionError: When the app was not able to be started.
@@ -101,8 +103,9 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             except Exception as e:
                 # Failed to connect to app, something went wrong.
                 raise jsonrpc_client_base.AppRestoreConnectionError(
-                        'Failed to restore app connection for %s at host port %s, device port %s',
-                        self.package, self.host_port, self.device_port)
+                    ('Failed to restore app connection for %s at host port %s, '
+                     'device port %s'),
+                    self.package, self.host_port, self.device_port)
         self.ed = self._start_event_client()
 
     def stop_app(self):
@@ -133,12 +136,13 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             try:
                 self.ed.clean_up()
             except:
-                self.log.exception(
-                        'Failed to shutdown sl4a event dispatcher.')
+                self.log.exception('Failed to shutdown sl4a event dispatcher.')
             self.ed = None
 
     def _retry_connect(self):
-        self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+        self._adb.forward(
+            ['tcp:%d' % self.host_port,
+             'tcp:%d' % self.device_port])
         start_time = time.time()
         expiration_time = start_time + _APP_START_WAIT_TIME
         started = False
@@ -150,13 +154,14 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
                 break
             except:
                 self.log.debug(
-                        '%s is not yet running, retrying',
-                        self.app_name,
-                        exc_info=True)
+                    '%s is not yet running, retrying',
+                    self.app_name,
+                    exc_info=True)
             time.sleep(1)
         if not started:
             raise jsonrpc_client_base.AppRestoreConnectionError(
-                    '%s failed to start on %s.' % (self.app_name, self._adb.serial))
+                '%s failed to start on %s.' % (self.app_name,
+                                               self._adb.serial))
 
     def _start_event_client(self):
         # Start an EventDispatcher for the current sl4a session
@@ -164,7 +169,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         event_client.host_port = self.host_port
         event_client.device_port = self.device_port
         event_client.connect(
-                uid=self.uid, cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
+            uid=self.uid, cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         ed = event_dispatcher.EventDispatcher(event_client)
         ed.start()
         return ed
