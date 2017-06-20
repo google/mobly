@@ -167,6 +167,10 @@ class BaseTestTest(unittest.TestCase):
                 # This should not execute because setup_class failed.
                 never_call()
 
+            def teardown_class(self):
+                if not self.results.is_all_pass:
+                    call_check("heehee")
+
             def on_fail(self, test_name, begin_time):
                 call_check("haha")
 
@@ -179,6 +183,7 @@ class BaseTestTest(unittest.TestCase):
         expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+        call_check.assert_called_once_with("heehee")
         call_check.assert_called_once_with("haha")
 
     def test_setup_test_fail_by_exception(self):
