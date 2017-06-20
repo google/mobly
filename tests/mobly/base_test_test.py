@@ -168,6 +168,8 @@ class BaseTestTest(unittest.TestCase):
                 never_call()
 
             def teardown_class(self):
+                # This should execute because the setup_class failure should
+                # have already been recorded.
                 if not self.results.is_all_pass:
                     call_check("heehee")
 
