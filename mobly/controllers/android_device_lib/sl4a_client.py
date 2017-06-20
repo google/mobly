@@ -69,26 +69,23 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             self.log.warning(e)
 
         # Launch the app
-        self.host_port = utils.get_available_host_port()
         self.device_port = _DEVICE_SIDE_PORT
         self._adb.shell(_LAUNCH_CMD % self.device_port)
 
-        # Retry connect and also start event client
-        self._retry_connect()
-        self.ed = self._start_event_client()
+        # Try to start the connection (not restore the connectivity).
+        # The function name restore_app_connection is used here is for the
+        # purpose of reusing the same code as it does when restoring the
+        # connection. And we do not want to come up with another function
+        # name to complicate the API. Change the name if necessary.
+        self.restore_app_connection()
 
-    def restore_app_connection(self, port=None):
+    def restore_app_connection(self):
         """Restores the sl4a after device got disconnected.
 
         Instead of creating new instance of the client:
           - Uses the given port (or find a new available host_port if none is
             given).
           - Tries to connect to remote server with selected port.
-
-        Args:
-          port: If given, this is the host port from which to connect to remote 
-              device port. If not provided, find a new available port as host
-              port.
 
         Raises:
             AppRestoreConnectionError: When the app was not able to be started.
