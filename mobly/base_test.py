@@ -597,8 +597,8 @@ class BaseTestClass(object):
             class_record.test_begin()
             class_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, class_record)
-            self._safe_exec_func(self.teardown_class)
             self.results.fail_class(class_record)
+            self._safe_exec_func(self.teardown_class)
             return self.results
         # Run tests in order.
         try:
