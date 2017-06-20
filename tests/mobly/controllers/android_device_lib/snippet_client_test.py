@@ -142,6 +142,13 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.assertEqual(123, callback._event_client.host_port)
         self.assertEqual(456, callback._event_client.device_port)
 
+        # after reconnect, if host port specified, clients use specified port
+        client.restore_app_connection(port=321)
+        self.assertEqual(321, client.host_port)
+        self.assertEqual(456, client.device_port)
+        self.assertEqual(321, callback._event_client.host_port)
+        self.assertEqual(456, callback._event_client.device_port)
+
         # after reconnect, if host port not specified, clients use selected
         # available port
         client.restore_app_connection()

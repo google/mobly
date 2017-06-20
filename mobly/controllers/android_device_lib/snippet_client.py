@@ -126,7 +126,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self.log.debug('Snippet %s started after %.1fs on host port %s',
                        self.package, time.time() - start_time, self.host_port)
 
-    def restore_app_connection(self):
+    def restore_app_connection(self, port=None):
         """Restores the app after device got reconnected.
 
         Instead of creating new instance of the client:
@@ -134,10 +134,15 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             given).
           - Tries to connect to remote server with selected port.
 
+        Args:
+          port: If given, this is the host port from which to connect to remote
+              device port. If not provided, find a new available port as host
+              port.
+
         Raises:
             AppRestoreConnectionError: When the app was not able to be started.
         """
-        self.host_port = utils.get_available_host_port()
+        self.host_port = port or utils.get_available_host_port()
         try:
             if self._launch_version == 'v0':
                 self._connect_to_v0()
