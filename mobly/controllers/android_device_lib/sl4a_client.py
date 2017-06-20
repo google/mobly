@@ -97,7 +97,9 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         try:
             self._retry_connect()
         except:
-            # Failed to connect to app (could because of reboot), restart app.
+            # Failed to connect to app (could because of reboot). Do not restart
+            # app, instead, raise exception. Because this is not expected for
+            # re-connect.
             try:
                 self.stop_app()
             except Exception as e:
