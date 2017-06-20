@@ -135,7 +135,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
           - Tries to connect to remote server with selected port.
 
         Args:
-          port: If given, this is the host port from which to connect to remote 
+          port: If given, this is the host port from which to connect to remote
               device port. If not provided, find a new available port as host
               port.
 
