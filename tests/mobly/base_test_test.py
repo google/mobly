@@ -157,7 +157,8 @@ class BaseTestTest(unittest.TestCase):
         self.assertFalse(bt_cls.results.executed)
 
     def test_setup_class_fail_by_exception(self):
-        call_check = mock.MagicMock()
+        teardown_class_call_check = mock.MagicMock()
+        on_fail_call_check = mock.MagicMock()
 
         class MockBaseTest(base_test.BaseTestClass):
             def setup_class(self):
@@ -167,8 +168,14 @@ class BaseTestTest(unittest.TestCase):
                 # This should not execute because setup_class failed.
                 never_call()
 
+            def teardown_class(self):
+                # This should execute because the setup_class failure should
+                # have already been recorded.
+                if not self.results.is_all_pass:
+                    teardown_class_call_check("heehee")
+
             def on_fail(self, test_name, begin_time):
-                call_check("haha")
+                on_fail_call_check("haha")
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
@@ -179,7 +186,8 @@ class BaseTestTest(unittest.TestCase):
         expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
-        call_check.assert_called_once_with("haha")
+        teardown_class_call_check.assert_called_once_with("heehee")
+        on_fail_call_check.assert_called_once_with("haha")
 
     def test_setup_test_fail_by_exception(self):
         class MockBaseTest(base_test.BaseTestClass):
