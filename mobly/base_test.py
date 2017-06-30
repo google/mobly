@@ -547,6 +547,22 @@ class BaseTestClass(object):
             test_methods.append((test_name, test_method))
         return test_methods
 
+    def _skip_remaining_tests(self, exception):
+        """Marks any requested test that has not been executed in a class as
+        skipped.
+
+        This is useful for handling abort class signal.
+
+        Args:
+            exception: The exception object that was thrown to trigger the
+                       skip.
+        """
+        for test_name in self.results.requested:
+            if not self.results.is_test_executed(test_name):
+                test_record = records.TestResultRecord(test_name, self.TAG)
+                test_record.test_skip(exception)
+                self.results.add_record(test_record)
+
     def run(self, test_names=None):
         """Runs tests within a test class.
 
@@ -595,10 +611,7 @@ class BaseTestClass(object):
             # The test class is intentionally aborted.
             # Skip all tests peacefully.
             e.details = 'Test class aborted due to: %s' % e.details
-            for test_name in self._get_all_test_names():
-                test_record = records.TestResultRecord(test_name, self.TAG)
-                test_record.test_skip(e)
-                self.results.add_record(test_record)
+            self._skip_remaining_tests(e)
             return self.results
         except Exception as e:
             # Setup class failed for unknown reasons.
@@ -609,10 +622,7 @@ class BaseTestClass(object):
             class_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, class_record)
             self.results.fail_class(class_record)
-            for test_name in self._get_all_test_names():
-                test_record = records.TestResultRecord(test_name, self.TAG)
-                test_record.test_skip(e)
-                self.results.add_record(test_record)
+            self._skip_remaining_tests(e)
             return self.results
         finally:
             self._safe_exec_func(self.teardown_class)
@@ -623,11 +633,7 @@ class BaseTestClass(object):
             return self.results
         except signals.TestAbortClass as e:
             e.details = 'Test class aborted due to: %s' % e.details
-            for test_name in self._get_all_test_names():
-                if not self.results.is_test_executed(test_name):
-                    test_record = records.TestResultRecord(test_name, self.TAG)
-                    test_record.test_skip(e)
-                    self.results.add_record(test_record)
+            self._skip_remaining_tests(e)
             return self.results
         except signals.TestAbortAll as e:
             # Piggy-back test results on this exception object so we don't lose
