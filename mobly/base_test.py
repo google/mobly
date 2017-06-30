@@ -591,21 +591,43 @@ class BaseTestClass(object):
         # Setup for the class.
         try:
             self._setup_class()
+        except signals.TestAbortClass as e:
+            # The test class is intentionally aborted.
+            # Skip all tests peacefully.
+            e.details = 'Test class aborted due to: %s' % e.details
+            for test_name in self._get_all_test_names():
+                test_record = records.TestResultRecord(test_name, self.TAG)
+                test_record.test_skip(e)
+                self.results.add_record(test_record)
+            return self.results
         except Exception as e:
+            # Setup class failed for unknown reasons.
+            # Fail the class and skip all tests.
             logging.exception('Failed to setup %s.', self.TAG)
             class_record = records.TestResultRecord('setup_class', self.TAG)
             class_record.test_begin()
             class_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, class_record)
             self.results.fail_class(class_record)
-            self._safe_exec_func(self.teardown_class)
+            for test_name in self._get_all_test_names():
+                test_record = records.TestResultRecord(test_name, self.TAG)
+                test_record.test_skip(e)
+                self.results.add_record(test_record)
             return self.results
+        finally:
+            self._safe_exec_func(self.teardown_class)
         # Run tests in order.
         try:
             for test_name, test_method in tests:
                 self.exec_one_test(test_name, test_method)
             return self.results
-        except signals.TestAbortClass:
+        except signals.TestAbortClass as e:
+            e.details = 'Test class aborted due to: %s' % e.details
+            for test_name in self._get_all_test_names():
+                if not self.results.is_test_executed(test_name):
+                    test_record = records.TestResultRecord(test_name, self.TAG)
+                    test_record.test_skip(e)
+                    self.results.add_record(test_record)
             return self.results
         except signals.TestAbortAll as e:
             # Piggy-back test results on this exception object so we don't lose
