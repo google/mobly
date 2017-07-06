@@ -967,63 +967,6 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 0, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
-    def test_generated_tests(self):
-        """Execute code paths for generated test cases.
-
-        Three test cases are generated, each of them produces a different
-        result: one pass, one fail, and one skip.
-
-        This test verifies that the exact three tests are executed and their
-        results are reported correctly.
-        """
-        static_arg = "haha"
-        static_kwarg = "meh"
-        itrs = ["pass", "fail", "skip"]
-
-        class MockBaseTest(base_test.BaseTestClass):
-            def name_gen(self, setting, arg, special_arg=None):
-                return 'test_%s_%s' % (setting, arg)
-
-            def logic(self, setting, arg, special_arg=None):
-                asserts.assert_true(setting in itrs, (
-                    "%s is not in acceptable settings range %s") %
-                                    (setting, itrs))
-                asserts.assert_true(arg == static_arg,
-                                    "Expected %s, got %s" % (static_arg, arg))
-                asserts.assert_true(arg == static_arg, "Expected %s, got %s" %
-                                    (static_kwarg, special_arg))
-                if setting == "pass":
-                    asserts.explicit_pass(
-                        MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
-                elif setting == "fail":
-                    asserts.fail(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
-                elif setting == "skip":
-                    asserts.skip(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
-
-            @signals.generated_test
-            def test_func(self):
-                self.run_generated_testcases(
-                    test_func=self.logic,
-                    settings=itrs,
-                    args=(static_arg, ),
-                    name_func=self.name_gen)
-
-        bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run(test_names=["test_func"])
-        self.assertEqual(len(bt_cls.results.requested), 3)
-        pass_record = bt_cls.results.passed[0]
-        self.assertEqual(pass_record.test_name, "test_pass_%s" % static_arg)
-        self.assertEqual(pass_record.details, MSG_EXPECTED_EXCEPTION)
-        self.assertEqual(pass_record.extras, MOCK_EXTRA)
-        skip_record = bt_cls.results.skipped[0]
-        self.assertEqual(skip_record.test_name, "test_skip_%s" % static_arg)
-        self.assertEqual(skip_record.details, MSG_EXPECTED_EXCEPTION)
-        self.assertEqual(skip_record.extras, MOCK_EXTRA)
-        fail_record = bt_cls.results.failed[0]
-        self.assertEqual(fail_record.test_name, "test_fail_%s" % static_arg)
-        self.assertEqual(fail_record.details, MSG_EXPECTED_EXCEPTION)
-        self.assertEqual(fail_record.extras, MOCK_EXTRA)
-
 
 if __name__ == "__main__":
     unittest.main()
