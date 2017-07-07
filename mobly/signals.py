@@ -19,25 +19,6 @@ import functools
 import json
 
 
-def generated_test(func):
-    """A decorator used to suppress result reporting for the test method that
-    kicks off a group of generated tests.
-
-    !DEPRECATED! self.setup_generated_tests() should be used instead.
-
-    Returns:
-        What the decorated function returns.
-    """
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        func(*args, **kwargs)
-        raise TestSilent('Result reporting for %s is suppressed' %
-                         func.__name__)
-
-    return wrapper
-
-
 class TestSignalError(Exception):
     """Raised when an error occurs inside a test signal."""
 
@@ -75,14 +56,6 @@ class TestPass(TestSignal):
 
 class TestSkip(TestSignal):
     """Raised when a test has been skipped."""
-
-
-class TestSilent(TestSignal):
-    """Raised when a test should not be reported. This should only be used for
-    generated tests.
-
-    !DEPRECATED! self.setup_generated_tests() should be used instead.
-    """
 
 
 class TestAbortClass(TestSignal):
