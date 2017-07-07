@@ -333,7 +333,6 @@ class BaseTestClass(object):
             args: A tuple of params.
             kwargs: Extra kwargs.
         """
-        is_generate_trigger = False
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
         logging.info('%s %s', TEST_CASE_TOKEN, test_name)
@@ -369,10 +368,6 @@ class BaseTestClass(object):
             # Explicit test pass.
             tr_record.test_pass(e)
             self._exec_procedure_func(self._on_pass, tr_record)
-        except signals.TestSilent as e:
-            # This is a trigger test for generated tests, suppress reporting.
-            is_generate_trigger = True
-            self.results.requested.remove(test_name)
         except Exception as e:
             logging.exception(e)
             # Exception happened during test.
@@ -382,8 +377,7 @@ class BaseTestClass(object):
             tr_record.test_pass()
             self._exec_procedure_func(self._on_pass, tr_record)
         finally:
-            if not is_generate_trigger:
-                self.results.add_record(tr_record)
+            self.results.add_record(tr_record)
 
     def _assert_function_name_in_stack(self, expected_func_name):
         """Asserts that the current stack contains the given function name."""
