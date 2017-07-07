@@ -219,8 +219,8 @@ class RecordsTest(unittest.TestCase):
         record2 = records.TestResultRecord("SomeTest", s)
         tr.fail_class(record2)
         self.assertEqual(len(tr.passed), 1)
-        self.assertEqual(len(tr.failed), 1)
-        self.assertEqual(len(tr.executed), 2)
+        self.assertEqual(len(tr.error), 1)
+        self.assertEqual(len(tr.executed), 1)
 
     def test_result_fail_class_with_special_error(self):
         """Call TestResult.fail_class with an error class that requires more
@@ -241,8 +241,8 @@ class RecordsTest(unittest.TestCase):
         record2 = records.TestResultRecord("SomeTest", se)
         tr.fail_class(record2)
         self.assertEqual(len(tr.passed), 1)
-        self.assertEqual(len(tr.failed), 1)
-        self.assertEqual(len(tr.executed), 2)
+        self.assertEqual(len(tr.error), 1)
+        self.assertEqual(len(tr.executed), 1)
 
     def test_is_all_pass(self):
         s = signals.TestPass(self.details, self.float_extra)
@@ -283,6 +283,15 @@ class RecordsTest(unittest.TestCase):
         tr = records.TestResult()
         tr.fail_class(record1)
         self.assertFalse(tr.is_all_pass)
+
+    def test_is_test_executed(self):
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        record1.test_fail(Exception("haha"))
+        tr = records.TestResult()
+        tr.add_record(record1)
+        self.assertTrue(tr.is_test_executed(record1.test_name))
+        self.assertFalse(tr.is_test_executed(self.tn + 'ha'))
 
 
 if __name__ == "__main__":

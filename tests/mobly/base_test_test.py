@@ -168,6 +168,10 @@ class BaseTestTest(unittest.TestCase):
                 # This should not execute because setup_class failed.
                 never_call()
 
+            def test_something2(self):
+                # This should not execute because setup_class failed.
+                never_call()
+
             def teardown_class(self):
                 # This should execute because the setup_class failure should
                 # have already been recorded.
@@ -179,12 +183,12 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
-        actual_record = bt_cls.results.failed[0]
+        actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, "setup_class")
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
-        expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "
-                            "Requested 1, Skipped 0")
+        expected_summary = ("Error 1, Executed 0, Failed 0, Passed 0, "
+                            "Requested 2, Skipped 2")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
         teardown_class_call_check.assert_called_once_with("heehee")
         on_fail_call_check.assert_called_once_with("haha")
@@ -526,7 +530,33 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
-    def test_abort_class(self):
+    def test_abort_setup_class(self):
+        """A class was intentionally aborted by the test.
+
+        This is not considered an error as the abort class is used as a skip
+        signal for the entire class, which is different from raising other
+        exceptions in `setup_class`.
+        """
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                asserts.abort_class(MSG_EXPECTED_EXCEPTION)
+
+            def test_1(self):
+                never_call()
+
+            def test_2(self):
+                never_call()
+
+            def test_3(self):
+                never_call()
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_1", "test_2", "test_3"])
+        self.assertEqual(bt_cls.results.summary_str(),
+                         ("Error 0, Executed 0, Failed 0, Passed 0, "
+                          "Requested 3, Skipped 3"))
+
+    def test_abort_class_in_test(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_1(self):
                 pass
@@ -545,7 +575,7 @@ class BaseTestTest(unittest.TestCase):
                          MSG_EXPECTED_EXCEPTION)
         self.assertEqual(bt_cls.results.summary_str(),
                          ("Error 0, Executed 2, Failed 1, Passed 1, "
-                          "Requested 3, Skipped 0"))
+                          "Requested 3, Skipped 1"))
 
     def test_uncaught_exception(self):
         class MockBaseTest(base_test.BaseTestClass):
@@ -958,12 +988,12 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
-        actual_record = bt_cls.results.failed[0]
+        actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, "setup_generated_tests")
         self.assertEqual(
             actual_record.details,
             'Test name "ha" already exists, cannot be duplicated!')
-        expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "
+        expected_summary = ("Error 1, Executed 0, Failed 0, Passed 0, "
                             "Requested 0, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 

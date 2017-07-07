@@ -262,11 +262,12 @@ class TestResult(object):
         Args:
             record: A test record object to add.
         """
+        if record.result == TestResultEnums.TEST_RESULT_SKIP:
+            self.skipped.append(record)
+            return
         self.executed.append(record)
         if record.result == TestResultEnums.TEST_RESULT_FAIL:
             self.failed.append(record)
-        elif record.result == TestResultEnums.TEST_RESULT_SKIP:
-            self.skipped.append(record)
         elif record.result == TestResultEnums.TEST_RESULT_PASS:
             self.passed.append(record)
         else:
@@ -283,14 +284,32 @@ class TestResult(object):
         self.controller_info[name] = info
 
     def fail_class(self, test_record):
-        """Add a record to indicate a test class setup has failed and no test
-        in the class was executed.
+        """Add a record to indicate a test class has failed before any test
+        could execute.
+
+        This is only called before any test is actually executed. So it only
+        adds an error entry that describes why the class failed to the tally
+        and does not affect the total number of tests requrested or exedcuted.
 
         Args:
             test_record: A TestResultRecord object for the test class.
         """
-        self.executed.append(test_record)
-        self.failed.append(test_record)
+        self.error.append(test_record)
+
+    def is_test_executed(self, test_name):
+        """Checks if a specific test has been executed.
+
+        Args:
+            test_name: string, the name of the test to check.
+
+        Returns:
+            True if the test has been executed according to the test result,
+            False otherwise.
+        """
+        for record in self.executed:
+            if record.test_name == test_name:
+                return True
+        return False
 
     @property
     def is_all_pass(self):
