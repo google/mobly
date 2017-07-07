@@ -344,6 +344,12 @@ class BaseTestClass(object):
                     test_method(*args, **kwargs)
                 else:
                     test_method()
+            except signals.TestPass as e:
+                raise e
+            except Exception as e:
+                logging.exception('Exception occurred in %s.',
+                                  self.current_test_name)
+                raise e
             finally:
                 try:
                     self._teardown_test(test_name)
@@ -354,7 +360,6 @@ class BaseTestClass(object):
                     tr_record.add_error('teardown_test', e)
                     self._exec_procedure_func(self._on_fail, tr_record)
         except (signals.TestFailure, AssertionError) as e:
-            logging.exception(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
@@ -374,7 +379,6 @@ class BaseTestClass(object):
             is_generate_trigger = True
             self.results.requested.remove(test_name)
         except Exception as e:
-            logging.exception(e)
             # Exception happened during test.
             tr_record.test_error(e)
             self._exec_procedure_func(self._on_fail, tr_record)
