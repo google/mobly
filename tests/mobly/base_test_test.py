@@ -46,9 +46,10 @@ class BaseTestTest(unittest.TestCase):
     def test_current_test_name(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.assert_true(self.current_test_name == "test_func", (
-                    "Got "
-                    "unexpected test name %s.") % self.current_test_name)
+                asserts.assert_true(
+                    self.current_test_name == "test_func",
+                    ("Got "
+                     "unexpected test name %s.") % self.current_test_name)
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
@@ -89,8 +90,9 @@ class BaseTestTest(unittest.TestCase):
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        expected_msg = ('Test method name not_a_test_something does not follow '
-                        'naming convention test_\*, abort.')
+        expected_msg = (
+            'Test method name not_a_test_something does not follow '
+            'naming convention test_\*, abort.')
         with self.assertRaisesRegexp(base_test.Error, expected_msg):
             bt_cls.run()
 
@@ -126,8 +128,9 @@ class BaseTestTest(unittest.TestCase):
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        expected_msg = ('Test method name not_a_test_something does not follow '
-                        'naming convention test_\*, abort.')
+        expected_msg = (
+            'Test method name not_a_test_something does not follow '
+            'naming convention test_\*, abort.')
         with self.assertRaisesRegexp(base_test.Error, expected_msg):
             bt_cls.run(test_names=["not_a_test_something"])
 

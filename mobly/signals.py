@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """This module is where all the test signal classes and related utilities live.
 """
 
@@ -32,6 +31,7 @@ class TestSignal(Exception):
         extras: A json-serializable data type to convey extra information about
                 a test result.
     """
+
     def __init__(self, details, extras=None):
         super(TestSignal, self).__init__(details)
         self.details = str(details)
