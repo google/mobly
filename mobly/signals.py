@@ -11,31 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """This module is where all the test signal classes and related utilities live.
 """
 
 import functools
 import json
-
-
-def generated_test(func):
-    """A decorator used to suppress result reporting for the test method that
-    kicks off a group of generated tests.
-
-    !DEPRECATED! self.setup_generated_tests() should be used instead.
-
-    Returns:
-        What the decorated function returns.
-    """
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        func(*args, **kwargs)
-        raise TestSilent('Result reporting for %s is suppressed' %
-                         func.__name__)
-
-    return wrapper
 
 
 class TestSignalError(Exception):
@@ -51,6 +31,7 @@ class TestSignal(Exception):
         extras: A json-serializable data type to convey extra information about
                 a test result.
     """
+
     def __init__(self, details, extras=None):
         super(TestSignal, self).__init__(details)
         self.details = str(details)
@@ -75,14 +56,6 @@ class TestPass(TestSignal):
 
 class TestSkip(TestSignal):
     """Raised when a test has been skipped."""
-
-
-class TestSilent(TestSignal):
-    """Raised when a test should not be reported. This should only be used for
-    generated tests.
-
-    !DEPRECATED! self.setup_generated_tests() should be used instead.
-    """
 
 
 class TestAbortClass(TestSignal):

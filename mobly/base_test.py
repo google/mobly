@@ -333,7 +333,6 @@ class BaseTestClass(object):
             args: A tuple of params.
             kwargs: Extra kwargs.
         """
-        is_generate_trigger = False
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
         logging.info('%s %s', TEST_CASE_TOKEN, test_name)
@@ -374,10 +373,6 @@ class BaseTestClass(object):
             # Explicit test pass.
             tr_record.test_pass(e)
             self._exec_procedure_func(self._on_pass, tr_record)
-        except signals.TestSilent as e:
-            # This is a trigger test for generated tests, suppress reporting.
-            is_generate_trigger = True
-            self.results.requested.remove(test_name)
         except Exception as e:
             # Exception happened during test.
             tr_record.test_error(e)
@@ -386,8 +381,7 @@ class BaseTestClass(object):
             tr_record.test_pass()
             self._exec_procedure_func(self._on_pass, tr_record)
         finally:
-            if not is_generate_trigger:
-                self.results.add_record(tr_record)
+            self.results.add_record(tr_record)
 
     def _assert_function_name_in_stack(self, expected_func_name):
         """Asserts that the current stack contains the given function name."""
@@ -429,63 +423,6 @@ class BaseTestClass(object):
                     test_name)
             test_func = functools.partial(test_logic, *args)
             self._generated_test_table[test_name] = test_func
-
-    def run_generated_testcases(self,
-                                test_func,
-                                settings,
-                                args=None,
-                                kwargs=None,
-                                tag='',
-                                name_func=None):
-        """Runs generated test cases.
-
-        !DEPRECATED! Use self.generate_tests instead.
-
-        Generated test cases are not written down as functions, but as a list
-        of parameter sets. This way we reduce code repetition and improve
-        test case scalability.
-
-        Args:
-            test_func: The common logic shared by all these generated test
-                       cases. This function should take at least one argument,
-                       which is a parameter set.
-            settings: A list of strings representing parameter sets. These are
-                      usually json strings that get loaded in the test_func.
-            args: Iterable of additional position args to be passed to
-                  test_func.
-            kwargs: Dict of additional keyword args to be passed to test_func
-            tag: Name of this group of generated test cases. Ignored if
-                 name_func is provided and operates properly.
-            name_func: A function that takes a test setting and generates a
-                       proper test name. The test name should be shorter than
-                       utils.MAX_FILENAME_LEN. Names over the limit will be
-                       truncated.
-
-        Returns:
-            A list of settings that did not pass.
-        """
-        logging.warning(
-            '"run_generated_testcases" is deprecated and will be '
-            'removed in Mobly 1.5, please use "generate_tests" instead.')
-        args = args or ()
-        kwargs = kwargs or {}
-        failed_settings = []
-        for s in settings:
-            test_name = '%s %s' % (tag, s)
-            if name_func:
-                try:
-                    test_name = name_func(s, *args, **kwargs)
-                except:
-                    logging.exception('Failed to get test name from test_func.'
-                                      ' Fall back to default %s.', test_name)
-            self.results.requested.append(test_name)
-            if len(test_name) > utils.MAX_FILENAME_LEN:
-                test_name = test_name[:utils.MAX_FILENAME_LEN]
-            previous_success_cnt = len(self.results.passed)
-            self.exec_one_test(test_name, test_func, (s, ) + args, **kwargs)
-            if len(self.results.passed) - previous_success_cnt != 1:
-                failed_settings.append(s)
-        return failed_settings
 
     def _safe_exec_func(self, func, *args):
         """Executes a function with exception safeguard.
