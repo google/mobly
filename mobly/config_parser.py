@@ -37,8 +37,8 @@ def _validate_test_config(test_config):
     """
     required_key = keys.Config.key_testbed.value
     if required_key not in test_config:
-        raise MoblyConfigError('Required key %s missing in test config.' %
-                               required_key)
+        raise MoblyConfigError(
+            'Required key %s missing in test config.' % required_key)
 
 
 def _validate_testbed_name(name):
@@ -109,8 +109,8 @@ def load_test_config_file(test_config_path, tb_filters=None):
         if len(tbs) != len(tb_filters):
             raise MoblyConfigError(
                 'Expect to find %d test bed configs, found %d. Check if'
-                ' you have the correct test bed names.' %
-                (len(tb_filters), len(tbs)))
+                ' you have the correct test bed names.' % (len(tb_filters),
+                                                           len(tbs)))
         configs[keys.Config.key_testbed.value] = tbs
     mobly_params = configs.get(keys.Config.key_mobly_params.value, {})
     # Decide log path.
@@ -166,6 +166,8 @@ class TestRunConfig(object):
         user_params: dict, all the parameters to be consumed by the test logic.
         register_controller: func, used by test classes to register controller
                              modules.
+        summary_writer: records.TestSummaryWriter, used to write elements to
+                        the test result summary file.
     """
 
     def __init__(self):
@@ -174,6 +176,7 @@ class TestRunConfig(object):
         self.controller_configs = None
         self.user_params = None
         self.register_controller = None
+        self.summary_writer = None
 
     def copy(self):
         """Returns a deep copy of the current config.
