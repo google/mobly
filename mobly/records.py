@@ -20,9 +20,43 @@ import logging
 import pprint
 import sys
 import traceback
+import yaml
 
 from mobly import signals
 from mobly import utils
+
+
+class TestSummaryEntryType(object):
+    """Enums used to identify the type of entries in test summary file.
+
+    Test summary file contains multiple yaml documents. In order to parse this
+    file efficiently, the write adds the type of each entry when it writes the
+    entry to the file.
+
+    This is equivalent to what TestResult.json_str does in the old output
+    format.
+    """
+    RECORD = 'Record'
+    SUMMARY = 'Summary'
+    CONTROLLER_INFO = 'ControllerInfo'
+
+
+class TestSummaryWriter(object):
+    """Writer for the test result summary file of a test run.
+    """
+
+    def __init__(self, path):
+        self._path = path
+
+    def serialize_and_write(self, content, entry_type):
+        """Serializes an object to yaml and writes it as a separate document.
+
+        Args:
+            content: dictionary, the content to serialize and write.
+        """
+        content_str = yaml.dump(content, explicit_start=True, indent=4)
+        with open(self._path, 'a') as f:
+            f.write(content_str)
 
 
 class TestResultEnums(object):
@@ -188,6 +222,8 @@ class TestResultRecord(object):
     def json_str(self):
         """Converts this test record to a string in json format.
 
+        TODO(angli): Deprecate with old output format.
+
         Format of the json string is:
             {
                 'Test Name': <test name>,
@@ -276,9 +312,9 @@ class TestResult(object):
 
     def add_controller_info(self, name, info):
         try:
-            json.dumps(info)
+            yaml.dump(info)
         except TypeError:
-            logging.warning('Controller info for %s is not JSON serializable!'
+            logging.warning('Controller info for %s is not YAML serializable!'
                             ' Coercing it to string.' % name)
             self.controller_info[name] = str(info)
             return
@@ -322,6 +358,8 @@ class TestResult(object):
 
     def json_str(self):
         """Converts this test result to a string in json format.
+
+        TODO(angli): Deprecate with old output format.
 
         Format of the json string is:
             {
