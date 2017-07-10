@@ -38,6 +38,7 @@ class SomeError(Exception):
 class BaseTestTest(unittest.TestCase):
     def setUp(self):
         self.mock_test_cls_configs = config_parser.TestRunConfig()
+        self.mock_test_cls_configs.summary_writer = mock.Mock()
         self.mock_test_cls_configs.log_path = '/tmp'
         self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
         self.mock_test_cls_configs.reporter = mock.MagicMock()
@@ -540,6 +541,7 @@ class BaseTestTest(unittest.TestCase):
         signal for the entire class, which is different from raising other
         exceptions in `setup_class`.
         """
+
         class MockBaseTest(base_test.BaseTestClass):
             def setup_class(self):
                 asserts.abort_class(MSG_EXPECTED_EXCEPTION)
