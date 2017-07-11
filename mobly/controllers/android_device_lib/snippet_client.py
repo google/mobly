@@ -33,6 +33,18 @@ _LAUNCH_CMD_V1 = (
 _STOP_CMD = (
     'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
 
+# Test that uses UiAutomation requires the shell session to be maintained while
+# test is in progress. However, this requirement does not hold for the test that
+# deals with device USB disconnection (Once device disconnects, the shell
+# session that started the instrument ends, and UiAutomation fails with error:
+# "UiAutomation not connected"). To keep the shell session and redirects
+# stdin/stdout/stderr, use "setsid" or "nohup" while launching the
+# instrumentation test. Because these commands may not be available in every
+# android system, try to use them only if exists.
+_SETSID_PATH = '/system/bin/setsid'
+
+_NOHUP_PATH = '/system/bin/nohup'
+
 # Maximum time to wait for a v0 snippet to start on the device (10 minutes).
 # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is removed.
 _APP_START_WAIT_TIME_V0 = 10 * 60
@@ -60,7 +72,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def __init__(self, package, adb_proxy, log=logging.getLogger()):
         """Initializes a SnippetClient.
-  
+
         Args:
             package: (str) The package name of the apk where the snippets are
                      defined.
@@ -77,13 +89,18 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass. Launches a snippet app and connects to it."""
         self._check_app_installed()
 
+        persists_shell_cmd = ''
+        if self._file_exists(_SETSID_PATH):
+            persists_shell_cmd = _SETSID_PATH
+        elif self._file_exists(_NOHUP_PATH):
+            persists_shell_cmd = _NOHUP_PATH
         # Try launching the app with the v1 protocol. If that fails, fall back
         # to v0 for compatibility. Use info here so people know exactly what's
         # happening here, which is helpful since they need to create their own
         # instrumentations and manifest.
         self.log.info('Launching snippet apk %s with protocol v1',
                       self.package)
-        cmd = _LAUNCH_CMD_V1 % self.package
+        cmd = persists_shell_cmd + ' ' + _LAUNCH_CMD_V1 % self.package
         start_time = time.time()
         self._proc = self._do_start_app(cmd)
 
@@ -106,7 +123,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             # Reuse the host port as the device port in v0 snippet. This isn't
             # safe in general, but the protocol is deprecated.
             self.device_port = self.host_port
-            cmd = _LAUNCH_CMD_V0 % (self.device_port, self.package)
+            cmd = persists_shell_cmd + ' ' + _LAUNCH_CMD_V0 % (
+                self.device_port, self.package)
             self._proc = self._do_start_app(cmd)
             self._connect_to_v0()
             self._launch_version = 'v0'
@@ -291,3 +309,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                 return line
             self.log.debug('Discarded line from instrumentation output: "%s"',
                            line)
+
+    def _file_exists(self, path):
+        """Check whether or not a file exists on device."""
+        # adb shell always return 0
+        # https://code.google.com/p/android/issues/detail?id=3254
+        rc = self._adb.shell('[ -e "%s" ]; echo $?' % path)
+        return rc.strip() == '0'
