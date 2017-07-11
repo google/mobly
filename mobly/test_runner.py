@@ -299,8 +299,7 @@ class TestRunner(object):
         start_time = logger.get_log_file_timestamp()
         log_path = os.path.join(self._log_dir, self._test_bed_name, start_time)
         summary_writer = records.TestSummaryWriter(
-            os.path.join(log_path, 'test_summary.yml'))
-        print(log_path)
+            os.path.join(log_path, records.OUTPUT_FILE_SUMMARY))
         logger.setup_test_logger(log_path, self._test_bed_name)
         try:
             for test_run_info in self._test_run_infos:

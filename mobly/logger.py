@@ -20,6 +20,7 @@ import os
 import re
 import sys
 
+from mobly import records
 from mobly import utils
 
 log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
@@ -169,10 +170,12 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     fh.setLevel(logging.DEBUG)
     log.addHandler(fh)
     # Write logger output to files
-    fh_info = logging.FileHandler(os.path.join(log_path, 'test_log.INFO'))
+    fh_info = logging.FileHandler(
+        os.path.join(log_path, records.OUTPUT_FILE_INFO_LOG))
     fh_info.setFormatter(f_formatter)
     fh_info.setLevel(logging.INFO)
-    fh_debug = logging.FileHandler(os.path.join(log_path, 'test_log.DEBUG'))
+    fh_debug = logging.FileHandler(
+        os.path.join(log_path, records.OUTPUT_FILE_DEBUG_LOG))
     fh_debug.setFormatter(f_formatter)
     fh_debug.setLevel(logging.DEBUG)
     log.addHandler(ch)
