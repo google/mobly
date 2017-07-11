@@ -343,12 +343,12 @@ class BaseTestClass(object):
                     test_method(*args, **kwargs)
                 else:
                     test_method()
-            except signals.TestPass as e:
-                raise e
-            except Exception as e:
+            except signals.TestPass:
+                raise
+            except Exception:
                 logging.exception('Exception occurred in %s.',
                                   self.current_test_name)
-                raise e
+                raise
             finally:
                 try:
                     self._teardown_test(test_name)
