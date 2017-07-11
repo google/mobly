@@ -321,12 +321,10 @@ class TestRunner(object):
                     self._unregister_controllers()
         finally:
             # Write controller info and summary to summary file.
-            summary_writer.serialize_and_write(
-                self.results.controller_info,
-                records.TestSummaryEntryType.CONTROLLER_INFO)
-            summary_writer.serialize_and_write(
-                self.results.summary_dict(),
-                records.TestSummaryEntryType.SUMMARY)
+            summary_writer.dump(self.results.controller_info,
+                                records.TestSummaryEntryType.CONTROLLER_INFO)
+            summary_writer.dump(self.results.summary_dict(),
+                                records.TestSummaryEntryType.SUMMARY)
             # Stop and show summary.
             msg = '\nSummary for test run %s@%s: %s\n' % (
                 self._test_bed_name, start_time, self.results.summary_str())

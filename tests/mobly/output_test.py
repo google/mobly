@@ -68,12 +68,14 @@ class OutputTest(unittest.TestCase):
         output_dir = os.path.join(self.log_dir, self.test_bed_name, 'latest')
         summary_file_path = os.path.join(output_dir, 'test_summary.yml')
         self.assertTrue(os.path.isfile(summary_file_path))
-        self.assertTrue(os.path.isfile(os.path.join(output_dir, 'test_log.DEBUG')))
-        self.assertTrue(os.path.isfile(os.path.join(output_dir, 'test_log.INFO')))
+        self.assertTrue(
+            os.path.isfile(os.path.join(output_dir, 'test_log.DEBUG')))
+        self.assertTrue(
+            os.path.isfile(os.path.join(output_dir, 'test_log.INFO')))
         summary_entries = []
         with open(summary_file_path) as f:
-             for entry in yaml.load_all(f):
-                print(entry)
+            for entry in yaml.load_all(f):
+                self.assertTrue(entry['Type'])
                 summary_entries.append(entry)
 
 

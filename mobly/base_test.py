@@ -384,8 +384,8 @@ class BaseTestClass(object):
             elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
                 self._exec_procedure_func(self._on_skip, tr_record)
             self.results.add_record(tr_record)
-            self.summary_writer.serialize_and_write(
-                tr_record.to_dict(), records.TestSummaryEntryType.RECORD)
+            self.summary_writer.dump(tr_record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
 
     def _assert_function_name_in_stack(self, expected_func_name):
         """Asserts that the current stack contains the given function name."""
@@ -507,8 +507,8 @@ class BaseTestClass(object):
                 test_record = records.TestResultRecord(test_name, self.TAG)
                 test_record.test_skip(exception)
                 self.results.add_record(test_record)
-                self.summary_writer.serialize_and_write(
-                    test_record.to_dict(), records.TestSummaryEntryType.RECORD)
+                self.summary_writer.dump(test_record.to_dict(),
+                                         records.TestSummaryEntryType.RECORD)
 
     def run(self, test_names=None):
         """Runs tests within a test class.
@@ -539,8 +539,8 @@ class BaseTestClass(object):
             class_record.test_begin()
             class_record.test_error(e)
             self.results.add_class_error(class_record)
-            self.summary_writer.serialize_and_write(
-                class_record.to_dict(), records.TestSummaryEntryType.RECORD)
+            self.summary_writer.dump(class_record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
             return self.results
         logging.info('==========> %s <==========', self.TAG)
         # Devise the actual test methods to run in the test class.
@@ -572,8 +572,8 @@ class BaseTestClass(object):
             class_record.test_error(e)
             self._exec_procedure_func(self._on_fail, class_record)
             self.results.add_class_error(class_record)
-            self.summary_writer.serialize_and_write(
-                class_record.to_dict(), records.TestSummaryEntryType.RECORD)
+            self.summary_writer.dump(class_record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
             self._skip_remaining_tests(e)
             self._safe_exec_func(self.teardown_class)
             return self.results

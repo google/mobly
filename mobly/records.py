@@ -14,7 +14,11 @@
 """This module is where all the record definitions and record containers live.
 """
 
+<<<<<<< HEAD
 import itertools
+=======
+import copy
+>>>>>>> Changes based on design doc.
 import json
 import logging
 import pprint
@@ -33,28 +37,45 @@ class TestSummaryEntryType(object):
     file efficiently, the write adds the type of each entry when it writes the
     entry to the file.
 
-    This is equivalent to what TestResult.json_str does in the old output
-    format.
+    The idea is similar to how `TestResult.json_str` categorizes different
+    sections of a `TestResult` object in the serialized format.
     """
     RECORD = 'Record'
     SUMMARY = 'Summary'
     CONTROLLER_INFO = 'ControllerInfo'
 
+    @classmethod
+    def isMember(cls, string):
+        return string in [cls.RECORD, cls.SUMMARY, cls.CONTROLLER_INFO]
+
 
 class TestSummaryWriter(object):
     """Writer for the test result summary file of a test run.
+
+    For each test run, a writer is created to stream test results to
     """
 
     def __init__(self, path):
         self._path = path
 
-    def serialize_and_write(self, content, entry_type):
-        """Serializes an object to yaml and writes it as a separate document.
+    def dump(self, content, entry_type):
+        """Dumps a dictionary as a yaml document to the summary file.
+
+        Each call to this method dumps a separate yaml document to the same
+        summary file associated with a test run.
+
+        The content of the dumped dictionary has an extra field `TYPE` that
+        specifies the type of each yaml document, which is the flag for parsers
+        to identify each document.
 
         Args:
             content: dictionary, the content to serialize and write.
+            entry_type: string, a string that is a member of
+                        `TestSummaryEntryType`.
         """
-        content_str = yaml.dump(content, explicit_start=True, indent=4)
+        new_content = copy.deepcopy(content)
+        new_content['Type'] = entry_type
+        content_str = yaml.dump(new_content, explicit_start=True, indent=4)
         with open(self._path, 'a') as f:
             f.write(content_str)
 
