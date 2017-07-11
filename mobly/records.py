@@ -14,6 +14,7 @@
 """This module is where all the record definitions and record containers live.
 """
 
+import itertools
 import json
 import logging
 import pprint
@@ -337,7 +338,9 @@ class TestResult(object):
         """
         d = {}
         d['ControllerInfo'] = self.controller_info
-        d['Results'] = [record.to_dict() for record in self.executed]
+        records_to_write = itertools.chain(self.passed, self.failed,
+                                           self.skipped, self.error)
+        d['Results'] = [record.to_dict() for record in records_to_write]
         d['Summary'] = self.summary_dict()
         json_str = json.dumps(d, indent=4, sort_keys=True)
         return json_str

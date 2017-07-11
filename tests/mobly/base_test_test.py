@@ -562,6 +562,7 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_1", "test_2", "test_3"])
+        self.assertEqual(len(bt_cls.results.skipped), 3)
         self.assertEqual(bt_cls.results.summary_str(),
                          ("Error 0, Executed 0, Failed 0, Passed 0, "
                           "Requested 3, Skipped 3"))
