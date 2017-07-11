@@ -283,7 +283,7 @@ class TestResult(object):
             return
         self.controller_info[name] = info
 
-    def fail_class(self, test_record):
+    def add_class_error(self, test_record):
         """Add a record to indicate a test class has failed before any test
         could execute.
 

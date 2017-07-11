@@ -228,7 +228,7 @@ class RecordsTest(unittest.TestCase):
         with self.assertRaisesRegexp(TypeError, expected_msg):
             tr1 += "haha"
 
-    def test_result_fail_class_with_test_signal(self):
+    def test_result_add_class_error_with_test_signal(self):
         record1 = records.TestResultRecord(self.tn)
         record1.test_begin()
         s = signals.TestPass(self.details, self.float_extra)
@@ -237,13 +237,13 @@ class RecordsTest(unittest.TestCase):
         tr.add_record(record1)
         s = signals.TestFailure(self.details, self.float_extra)
         record2 = records.TestResultRecord("SomeTest", s)
-        tr.fail_class(record2)
+        tr.add_class_error(record2)
         self.assertEqual(len(tr.passed), 1)
         self.assertEqual(len(tr.error), 1)
         self.assertEqual(len(tr.executed), 1)
 
-    def test_result_fail_class_with_special_error(self):
-        """Call TestResult.fail_class with an error class that requires more
+    def test_result_add_class_error_with_special_error(self):
+        """Call TestResult.add_class_error with an error class that requires more
         than one arg to instantiate.
         """
         record1 = records.TestResultRecord(self.tn)
@@ -259,7 +259,7 @@ class RecordsTest(unittest.TestCase):
 
         se = SpecialError("haha", 42)
         record2 = records.TestResultRecord("SomeTest", se)
-        tr.fail_class(record2)
+        tr.add_class_error(record2)
         self.assertEqual(len(tr.passed), 1)
         self.assertEqual(len(tr.error), 1)
         self.assertEqual(len(tr.executed), 1)
@@ -294,15 +294,15 @@ class RecordsTest(unittest.TestCase):
         validate_test_result(tr)
         self.assertFalse(tr.is_all_pass)
 
-    def test_is_all_pass_with_fail_class(self):
-        """Verifies that is_all_pass yields correct value when fail_class is
+    def test_is_all_pass_with_add_class_error(self):
+        """Verifies that is_all_pass yields correct value when add_class_error is
         used.
         """
         record1 = records.TestResultRecord(self.tn)
         record1.test_begin()
         record1.test_fail(Exception("haha"))
         tr = records.TestResult()
-        tr.fail_class(record1)
+        tr.add_class_error(record1)
         self.assertFalse(tr.is_all_pass)
 
     def test_is_test_executed(self):
