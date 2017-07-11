@@ -82,7 +82,7 @@
 
 
 ## 1.1: Snippet support
-  * Add a client for making Rpc calls to apps built with [Mobly Snippet Library
+  * Add a client for making Rpc calls to apps built with [Mobly Snippet Library]
     (https://github.com/google/mobly-snippet-lib).
   * Add a controller lib for attenuators.
   * Add customizable log prefix tag in AndroidDevice for better device-level
