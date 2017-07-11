@@ -52,9 +52,17 @@ class TestSummaryEntryType(object):
 class TestSummaryWriter(object):
     """Writer for the test result summary file of a test run.
 
-    For each test run, a writer is created to stream test results to
-    """
+    For each test run, a writer is created to stream test results to the
+    summary file on disk.
 
+    The serialization and writing of the `TestResult` object is intentionally
+    kept out of `TestResult` class and put in this class. Because `TestResult`
+    can be operated on by suites, like `+` operation, and it is difficult to
+    guarantee the consistency between `TestResult` in memory and the files on
+    disk. Also, this separation makes it easier to provide a more generic way
+    for users to consume the test summary, like via a database instead of a
+    file.
+    """
     def __init__(self, path):
         self._path = path
 
