@@ -531,8 +531,8 @@ class BaseTestClass(object):
             class_record = records.TestResultRecord('setup_generated_tests',
                                                     self.TAG)
             class_record.test_begin()
-            class_record.test_fail(e)
-            self.results.fail_class(class_record)
+            class_record.test_error(e)
+            self.results.add_class_error(class_record)
             return self.results
         logging.info('==========> %s <==========', self.TAG)
         # Devise the actual test methods to run in the test class.
@@ -551,18 +551,18 @@ class BaseTestClass(object):
         except signals.TestAbortClass as e:
             # The test class is intentionally aborted.
             # Skip all tests peacefully.
-            e.details = 'Test class aborted due to: %s' % e.details
+            e.details = 'setup_class aborted due to: %s' % e.details
             self._skip_remaining_tests(e)
             return self.results
         except Exception as e:
             # Setup class failed for unknown reasons.
             # Fail the class and skip all tests.
-            logging.exception('Failed to setup %s.', self.TAG)
+            logging.exception('Error in setup_class %s.', self.TAG)
             class_record = records.TestResultRecord('setup_class', self.TAG)
             class_record.test_begin()
-            class_record.test_fail(e)
+            class_record.test_error(e)
             self._exec_procedure_func(self._on_fail, class_record)
-            self.results.fail_class(class_record)
+            self.results.add_class_error(class_record)
             self._skip_remaining_tests(e)
             return self.results
         finally:
