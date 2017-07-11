@@ -158,7 +158,7 @@ def verify_controller_module(module):
 
         def get_info(objects):
             [Optional] Gets info from the controller objects used in a test
-            run. The info will be included in test_result_summary.json under
+            run. The info will be included in test_summary.yml under
             the key 'ControllerInfo'. Such information could include unique
             ID, version, or anything that could be useful for describing the
             test bed and debugging.
