@@ -47,10 +47,10 @@ class OutputTest(unittest.TestCase):
         shutil.rmtree(self.tmp_dir)
 
     def test_output(self):
-        """Verifies that:
-        1. Repeated run works properly.
-        2. The original configuration is not altered if a test controller
-           module modifies configuration.
+        """Verifies the expected output files from a test run.
+
+        * Files are correctly created.
+        * Basic sanity checks of each output file.
         """
         mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
@@ -67,16 +67,24 @@ class OutputTest(unittest.TestCase):
         tr.run()
         output_dir = os.path.join(self.log_dir, self.test_bed_name, 'latest')
         summary_file_path = os.path.join(output_dir, 'test_summary.yml')
+        debug_log_path = os.path.join(output_dir, 'test_log.DEBUG')
+        info_log_path = os.path.join(output_dir, 'test_log.INFO')
         self.assertTrue(os.path.isfile(summary_file_path))
-        self.assertTrue(
-            os.path.isfile(os.path.join(output_dir, 'test_log.DEBUG')))
-        self.assertTrue(
-            os.path.isfile(os.path.join(output_dir, 'test_log.INFO')))
+        self.assertTrue(os.path.isfile(debug_log_path))
+        self.assertTrue(os.path.isfile(info_log_path))
         summary_entries = []
         with open(summary_file_path) as f:
             for entry in yaml.load_all(f):
                 self.assertTrue(entry['Type'])
                 summary_entries.append(entry)
+        with open(debug_log_path, 'r') as f:
+            content = f.read()
+            self.assertIn('DEBUG', content)
+            self.assertIn('INFO', content)
+        with open(info_log_path, 'r') as f:
+            content = f.read()
+            self.assertIn('INFO', content)
+            self.assertNotIn('DEBUG', content)
 
 
 if __name__ == "__main__":
