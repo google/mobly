@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module is where all the record definitions and record containers live.
+"""This module has classes for test result collection, and test result output.
 """
 
 import itertools
@@ -25,6 +25,11 @@ import yaml
 
 from mobly import signals
 from mobly import utils
+
+# File names for the default files output by 
+OUTPUT_FILE_INFO_LOG = 'test_log.INFO'
+OUTPUT_FILE_DEBUG_LOG = 'test_log.DEBUG'
+OUTPUT_FILE_SUMMARY = 'test_summary.yaml'
 
 
 class TestSummaryEntryType(object):
@@ -60,6 +65,7 @@ class TestSummaryWriter(object):
     for users to consume the test summary, like via a database instead of a
     file.
     """
+
     def __init__(self, path):
         self._path = path
 

@@ -19,6 +19,7 @@ import unittest
 import yaml
 
 from mobly import config_parser
+from mobly import records
 from mobly import test_runner
 
 from tests.lib import mock_controller
@@ -66,9 +67,11 @@ class OutputTest(unittest.TestCase):
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run()
         output_dir = os.path.join(self.log_dir, self.test_bed_name, 'latest')
-        summary_file_path = os.path.join(output_dir, 'test_summary.yml')
-        debug_log_path = os.path.join(output_dir, 'test_log.DEBUG')
-        info_log_path = os.path.join(output_dir, 'test_log.INFO')
+        summary_file_path = os.path.join(output_dir,
+                                         records.OUTPUT_FILE_SUMMARY)
+        debug_log_path = os.path.join(output_dir,
+                                      records.OUTPUT_FILE_DEBUG_LOG)
+        info_log_path = os.path.join(output_dir, records.OUTPUT_FILE_INFO_LOG)
         self.assertTrue(os.path.isfile(summary_file_path))
         self.assertTrue(os.path.isfile(debug_log_path))
         self.assertTrue(os.path.isfile(info_log_path))
