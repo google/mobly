@@ -20,6 +20,10 @@ from mobly import base_test
 from mobly import config_parser
 from mobly import signals
 
+from tests.mobly import records_test
+
+validate_test_result = records_test.validate_test_result
+
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 MSG_EXPECTED_TEST_FAILURE = "This is an expected test failure."
 MSG_UNEXPECTED_EXCEPTION = "Unexpected exception!"
@@ -187,7 +191,9 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
+        validate_test_result(bt_cls.results)
         self.assertEqual(actual_record.test_name, "setup_class")
+
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = ("Error 1, Executed 0, Failed 0, Passed 0, "
@@ -540,6 +546,7 @@ class BaseTestTest(unittest.TestCase):
         signal for the entire class, which is different from raising other
         exceptions in `setup_class`.
         """
+
         class MockBaseTest(base_test.BaseTestClass):
             def setup_class(self):
                 asserts.abort_class(MSG_EXPECTED_EXCEPTION)
@@ -966,6 +973,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
+        validate_test_result(bt_cls.results)
         self.assertEqual(actual_record.test_name, "test_ha")
         self.assertEqual(
             actual_record.details,

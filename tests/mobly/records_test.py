@@ -18,6 +18,26 @@ from mobly import records
 from mobly import signals
 
 
+def validate_test_result(result):
+    """Validate basic properties of a test result.
+
+    The records in each bucket of the test result should have the corresponding
+    result enum.
+
+    Args:
+        result: The TestResult object to validate.
+    """
+    buckets = [
+        (result.passed, records.TestResultEnums.TEST_RESULT_PASS),
+        (result.failed, records.TestResultEnums.TEST_RESULT_FAIL),
+        (result.error, records.TestResultEnums.TEST_RESULT_ERROR),
+        (result.skipped, records.TestResultEnums.TEST_RESULT_SKIP),
+    ]
+    for bucket_list, expected_enum in buckets:
+        for record in bucket_list:
+            assert record.result == expected_enum
+
+
 class RecordsTest(unittest.TestCase):
     """This test class tests the implementation of classes in mobly.records.
     """
@@ -271,6 +291,7 @@ class RecordsTest(unittest.TestCase):
         tr = records.TestResult()
         tr.add_record(record1)
         tr.add_record(record2)
+        validate_test_result(tr)
         self.assertFalse(tr.is_all_pass)
 
     def test_is_all_pass_with_fail_class(self):

@@ -531,7 +531,7 @@ class BaseTestClass(object):
             class_record = records.TestResultRecord('setup_generated_tests',
                                                     self.TAG)
             class_record.test_begin()
-            class_record.test_fail(e)
+            class_record.test_error(e)
             self.results.fail_class(class_record)
             return self.results
         logging.info('==========> %s <==========', self.TAG)
@@ -560,7 +560,7 @@ class BaseTestClass(object):
             logging.exception('Failed to setup %s.', self.TAG)
             class_record = records.TestResultRecord('setup_class', self.TAG)
             class_record.test_begin()
-            class_record.test_fail(e)
+            class_record.test_error(e)
             self._exec_procedure_func(self._on_fail, class_record)
             self.results.fail_class(class_record)
             self._skip_remaining_tests(e)
