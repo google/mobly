@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,25 +17,7 @@ import unittest
 from mobly import records
 from mobly import signals
 
-
-def validate_test_result(result):
-    """Validate basic properties of a test result.
-
-    The records in each bucket of the test result should have the corresponding
-    result enum.
-
-    Args:
-        result: The TestResult object to validate.
-    """
-    buckets = [
-        (result.passed, records.TestResultEnums.TEST_RESULT_PASS),
-        (result.failed, records.TestResultEnums.TEST_RESULT_FAIL),
-        (result.error, records.TestResultEnums.TEST_RESULT_ERROR),
-        (result.skipped, records.TestResultEnums.TEST_RESULT_SKIP),
-    ]
-    for bucket_list, expected_enum in buckets:
-        for record in bucket_list:
-            assert record.result == expected_enum
+from tests.lib import utils
 
 
 class RecordsTest(unittest.TestCase):
@@ -291,7 +273,7 @@ class RecordsTest(unittest.TestCase):
         tr = records.TestResult()
         tr.add_record(record1)
         tr.add_record(record2)
-        validate_test_result(tr)
+        utils.validate_test_result(tr)
         self.assertFalse(tr.is_all_pass)
 
     def test_is_all_pass_with_add_class_error(self):
