@@ -14,11 +14,8 @@
 """This module is where all the record definitions and record containers live.
 """
 
-<<<<<<< HEAD
 import itertools
-=======
 import copy
->>>>>>> Changes based on design doc.
 import json
 import logging
 import pprint
