@@ -20,9 +20,7 @@ from mobly import base_test
 from mobly import config_parser
 from mobly import signals
 
-from tests.mobly import records_test
-
-validate_test_result = records_test.validate_test_result
+from tests.lib import utils
 
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 MSG_EXPECTED_TEST_FAILURE = "This is an expected test failure."
@@ -191,7 +189,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
-        validate_test_result(bt_cls.results)
+        utils.validate_test_result(bt_cls.results)
         self.assertEqual(actual_record.test_name, "setup_class")
 
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
@@ -974,7 +972,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
-        validate_test_result(bt_cls.results)
+        utils.validate_test_result(bt_cls.results)
         self.assertEqual(actual_record.test_name, "test_ha")
         self.assertEqual(
             actual_record.details,
