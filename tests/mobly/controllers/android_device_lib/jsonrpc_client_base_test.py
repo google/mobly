@@ -17,8 +17,7 @@ from builtins import str
 import json
 import mock
 import socket
-import sys
-import unittest
+from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from tests.lib import jsonrpc_client_test_base
@@ -32,11 +31,6 @@ class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
 class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.jsonrpc_client_base.
     """
-
-    def setUp(self):
-        if sys.version_info >= (3, 0):
-            self.assertRaisesRegexp = self.assertRaisesRegex
-
     @mock.patch('socket.create_connection')
     def test_open_timeout_io_error(self, mock_create_connection):
         """Test socket timeout with io error
@@ -70,7 +64,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         """
         self.setup_mock_socket_file(mock_create_connection, resp=None)
         client = FakeRpcClient()
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 jsonrpc_client_base.ProtocolError,
                 jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
             client.connect()
@@ -114,7 +108,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = self.MOCK_RESP_WITH_ERROR
 
-        with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, '1'):
+        with self.assertRaisesRegex(jsonrpc_client_base.ApiError, '1'):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
@@ -150,7 +144,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = (self.MOCK_RESP_TEMPLATE % 52).encode('utf8')
 
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 jsonrpc_client_base.ProtocolError,
                 jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
             client.some_rpc(1, 2, 3)
@@ -169,7 +163,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = None
 
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 jsonrpc_client_base.ProtocolError,
                 jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
             client.some_rpc(1, 2, 3)

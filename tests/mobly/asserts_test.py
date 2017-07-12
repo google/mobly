@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-import unittest
+from future.tests.base import unittest
 
 from mobly import asserts
 from mobly import signals
@@ -24,14 +23,9 @@ MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 class AssertsTest(unittest.TestCase):
     """Verifies that asserts.xxx functions raise the correct test signals.
     """
-
-    def setUp(self):
-        if sys.version_info >= (3, 0):
-            self.assertRaisesRegexp = self.assertRaisesRegex
-
     def test_assert_false(self):
         asserts.assert_false(False, MSG_EXPECTED_EXCEPTION)
-        with self.assertRaisesRegexp(signals.TestFailure,
+        with self.assertRaisesRegex(signals.TestFailure,
                                      MSG_EXPECTED_EXCEPTION):
             asserts.assert_false(True, MSG_EXPECTED_EXCEPTION)
 

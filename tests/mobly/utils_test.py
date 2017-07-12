@@ -14,9 +14,8 @@
 
 import mock
 import socket
-import sys
 import time
-import unittest
+from future.tests.base import unittest
 
 import portpicker
 from mobly import utils
@@ -28,13 +27,8 @@ class UtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.utils.
     """
-
-    def setUp(self):
-        if sys.version_info >= (3, 0):
-            self.assertRaisesRegexp = self.assertRaisesRegex
-
     def test_start_standing_subproc(self):
-        with self.assertRaisesRegexp(utils.Error, 'Process .* has terminated'):
+        with self.assertRaisesRegex(utils.Error, 'Process .* has terminated'):
             utils.start_standing_subprocess(
                 ['sleep', '0'], check_health_delay=0.5)
 
@@ -46,7 +40,7 @@ class UtilsTest(unittest.TestCase):
     def test_stop_standing_subproc_already_dead(self):
         p = utils.start_standing_subprocess(['sleep', '0'])
         time.sleep(0.5)
-        with self.assertRaisesRegexp(utils.Error, 'Process .* has terminated'):
+        with self.assertRaisesRegex(utils.Error, 'Process .* has terminated'):
             utils.stop_standing_subprocess(p)
 
     @mock.patch(
@@ -62,7 +56,7 @@ class UtilsTest(unittest.TestCase):
     @mock.patch('portpicker.PickUnusedPort', return_value=MOCK_AVAILABLE_PORT)
     def test_get_available_port_negative(self, mock_list_occupied_adb_ports,
                                          mock_pick_unused_port):
-        with self.assertRaisesRegexp(utils.Error, 'Failed to find.* retries'):
+        with self.assertRaisesRegex(utils.Error, 'Failed to find.* retries'):
             utils.get_available_host_port()
 
     @mock.patch(

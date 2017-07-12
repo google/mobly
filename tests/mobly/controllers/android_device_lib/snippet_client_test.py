@@ -16,8 +16,7 @@ from builtins import str
 from builtins import bytes
 
 import mock
-import sys
-import unittest
+from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import snippet_client
@@ -68,11 +67,6 @@ class MockAdbProxy(object):
 class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.snippet_client.
     """
-
-    def setUp(self):
-        if sys.version_info >= (3, 0):
-            self.assertRaisesRegexp = self.assertRaisesRegex
-
     def test_check_app_installed_normal(self):
         sc = self._make_client()
         sc._check_app_installed()
@@ -80,7 +74,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     def test_check_app_installed_fail_app_not_installed(self):
         sc = self._make_client(MockAdbProxy(apk_not_installed=True))
         expected_msg = '%s is not installed on .*' % MOCK_PACKAGE_NAME
-        with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
+        with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                      expected_msg):
             sc._check_app_installed()
 
@@ -88,7 +82,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         sc = self._make_client(MockAdbProxy(apk_not_instrumented=True))
         expected_msg = ('%s is installed on .*, but it is not instrumented.'
                         % MOCK_PACKAGE_NAME)
-        with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
+        with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                      expected_msg):
             sc._check_app_installed()
 
@@ -96,7 +90,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         sc = self._make_client(MockAdbProxy(target_not_installed=True))
         expected_msg = ('Instrumentation target %s is not installed on .*'
                         % MOCK_MISSING_PACKAGE_NAME)
-        with self.assertRaisesRegexp(jsonrpc_client_base.AppStartError,
+        with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                      expected_msg):
             sc._check_app_installed()
 
@@ -124,7 +118,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.assertEqual(123, callback._event_client.host_port)
 
         fake_file.resp = self.MOCK_RESP_WITH_ERROR
-        with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, '1'):
+        with self.assertRaisesRegex(jsonrpc_client_base.ApiError, '1'):
             callback.getAll('eventName')
 
     @mock.patch('socket.create_connection')
@@ -276,7 +270,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
                 b'',  # readline uses '' to mark EOF
             ])
         client = self._make_client()
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 jsonrpc_client_base.AppStartError,
                 'Unexpected EOF waiting for app to start'):
             client.start_app_and_connect()
