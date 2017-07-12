@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import unittest
 
 from mobly import records
@@ -25,6 +26,8 @@ class RecordsTest(unittest.TestCase):
     """
 
     def setUp(self):
+        if sys.version_info >= (3, 0):
+            self.assertRaisesRegexp = self.assertRaisesRegex
         self.tn = "test_name"
         self.details = "Some details about the test execution."
         self.float_extra = 12345.56789

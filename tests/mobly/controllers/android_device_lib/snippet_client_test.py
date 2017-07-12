@@ -16,6 +16,7 @@ from builtins import str
 from builtins import bytes
 
 import mock
+import sys
 import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
@@ -67,6 +68,10 @@ class MockAdbProxy(object):
 class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.snippet_client.
     """
+
+    def setUp(self):
+        if sys.version_info >= (3, 0):
+            self.assertRaisesRegexp = self.assertRaisesRegex
 
     def test_check_app_installed_normal(self):
         sc = self._make_client()

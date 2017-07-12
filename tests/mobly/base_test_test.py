@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import mock
+import sys
 import unittest
 
 from mobly import asserts
@@ -39,6 +40,8 @@ class SomeError(Exception):
 
 class BaseTestTest(unittest.TestCase):
     def setUp(self):
+        if sys.version_info >= (3, 0):
+            self.assertRaisesRegexp = self.assertRaisesRegex
         self.mock_test_cls_configs = config_parser.TestRunConfig()
         self.mock_test_cls_configs.log_path = '/tmp'
         self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}

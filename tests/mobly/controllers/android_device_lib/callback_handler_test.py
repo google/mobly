@@ -1,11 +1,11 @@
 # Copyright 2017 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import mock
+import sys
 import unittest
 
 from mobly.controllers.android_device_lib import callback_handler
@@ -34,6 +35,10 @@ MOCK_RAW_EVENT = {
 class CallbackHandlerTest(unittest.TestCase):
     """Unit tests for mobly.controllers.android_device_lib.callback_handler.
     """
+
+    def setUp(self):
+        if sys.version_info >= (3, 0):
+            self.assertRaisesRegexp = self.assertRaisesRegex
 
     def test_timeout_value(self):
         self.assertGreaterEqual(jsonrpc_client_base._SOCKET_READ_TIMEOUT,

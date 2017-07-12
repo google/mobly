@@ -14,6 +14,7 @@
 
 import mock
 import socket
+import sys
 import time
 import unittest
 
@@ -28,6 +29,10 @@ class UtilsTest(unittest.TestCase):
     under mobly.utils.
     """
 
+    def setUp(self):
+        if sys.version_info >= (3, 0):
+            self.assertRaisesRegexp = self.assertRaisesRegex
+
     def test_start_standing_subproc(self):
         with self.assertRaisesRegexp(utils.Error, 'Process .* has terminated'):
             utils.start_standing_subprocess(
@@ -37,6 +42,7 @@ class UtilsTest(unittest.TestCase):
         p = utils.start_standing_subprocess(['sleep', '5'])
         utils.stop_standing_subprocess(p)
         self.assertIsNotNone(p.poll())
+        p.kill()
 
     def test_stop_standing_subproc_already_dead(self):
         p = utils.start_standing_subprocess(['sleep', '0'])
