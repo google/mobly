@@ -38,7 +38,6 @@ class SomeError(Exception):
 
 
 class BaseTestTest(unittest.TestCase):
-
     def setUp(self):
         self.mock_test_cls_configs = config_parser.TestRunConfig()
         self.mock_test_cls_configs.log_path = '/tmp'
@@ -565,6 +564,25 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(bt_cls.results.summary_str(),
                          ("Error 0, Executed 0, Failed 0, Passed 0, "
                           "Requested 3, Skipped 3"))
+
+    def test_setup_and_teardown_execution_count(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                pass
+
+            def test_func2(self):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.setup_class = mock.Mock()
+        bt_cls.teardown_class = mock.Mock()
+        bt_cls.setup_test = mock.Mock()
+        bt_cls.teardown_test = mock.Mock()
+        bt_cls.run()
+        self.assertEqual(bt_cls.setup_class.call_count, 1)
+        self.assertEqual(bt_cls.teardown_class.call_count, 1)
+        self.assertEqual(bt_cls.setup_test.call_count, 2)
+        self.assertEqual(bt_cls.teardown_test.call_count, 2)
 
     def test_abort_class_in_test(self):
         class MockBaseTest(base_test.BaseTestClass):
