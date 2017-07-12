@@ -42,7 +42,6 @@ class UtilsTest(unittest.TestCase):
         p = utils.start_standing_subprocess(['sleep', '5'])
         utils.stop_standing_subprocess(p)
         self.assertIsNotNone(p.poll())
-        p.kill()
 
     def test_stop_standing_subproc_already_dead(self):
         p = utils.start_standing_subprocess(['sleep', '0'])
