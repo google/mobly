@@ -1,13 +1,15 @@
 # Mobly release history
 
 ## 1.5: New Snippet Startup Protocol
-  * Fixes critical bugs from 1.4.1
   * Improved compatibility between v1 snippets and older devices/emulators
   * Support temporarily disconnecting (without rebooting) Android devices from
     USB in a test, useful for power measurement.
+  * Fixes critical bugs from 1.4.1
 
 
 ## 1.4.1 [DO NOT USE]: New Snippet Startup Protocol
+  Warning: This release has multiple issues; please use 1.5.
+
   New
   * Support the new launch and connection mechanism in Snippet Lib 1.2.
 
@@ -18,8 +20,6 @@
 
   Deprecate
   * Old snippet launch protocol (V0)
-
-  Warning: This release has multiple issues; please use 1.5.
 
 
 ## 1.4: Generated Test Revamp
@@ -56,18 +56,18 @@
 
 
 ## 1.2.1: New Config Format and Async Rpc Support
-  * Fixes a critical bugs in 1.2
+  * Fixes critical bugs in 1.2
 
 
 ## 1.2 [DO NOT USE]: New Config Format and Async Rpc Support
+  Warning: This release has multiple issues; please use 1.2.1.
+
   * New config format with clear compartmentalization of different types of
     configs.
   * Utilize yaml format instead of json for new config.
   * Added support for Mobly Snippet Lib's Asynchronous Rpc calls.
   * Added support for handling async events from async Rpc calls.
   * Various improvements and bug fixes.
-
-  Warning: This release has multiple issues; please use 1.2.1.
 
 
 ## 1.1.2: SL4A Default No More
