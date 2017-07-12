@@ -553,6 +553,7 @@ class BaseTestClass(object):
             # Skip all tests peacefully.
             e.details = 'setup_class aborted due to: %s' % e.details
             self._skip_remaining_tests(e)
+            self._safe_exec_func(self.teardown_class)
             return self.results
         except Exception as e:
             # Setup class failed for unknown reasons.
@@ -564,9 +565,8 @@ class BaseTestClass(object):
             self._exec_procedure_func(self._on_fail, class_record)
             self.results.add_class_error(class_record)
             self._skip_remaining_tests(e)
-            return self.results
-        finally:
             self._safe_exec_func(self.teardown_class)
+            return self.results
         # Run tests in order.
         try:
             for test_name, test_method in tests:
