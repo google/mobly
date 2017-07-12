@@ -83,13 +83,14 @@ class CallbackHandler(object):
                     (timeout, MAX_TIMEOUT))
             timeout *= 1000  # convert to milliseconds for java side
         try:
-            raw_event = self._event_client.eventWaitAndGet(self._id,
-                                                           event_name, timeout)
+            raw_event = self._event_client.eventWaitAndGet(
+                self._id, event_name, timeout)
         except Exception as e:
             if 'EventSnippetException: timeout.' in str(e):
                 raise TimeoutError(
-                    'Timeout waiting for event "%s" triggered by %s (%s).' %
-                    (event_name, self._method_name, self._id))
+                    'Timed out after waiting %ss for event "%s" triggered by'
+                    ' %s (%s).' % (timeout, event_name, self._method_name,
+                                   self._id))
             raise
         return snippet_event.from_dict(raw_event)
 
