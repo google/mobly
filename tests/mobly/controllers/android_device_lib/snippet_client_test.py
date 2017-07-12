@@ -178,6 +178,64 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client.start_app_and_connect()
         self.assertEqual(123, client.device_port)
 
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'SnippetClient._file_exists')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'SnippetClient._do_start_app')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'SnippetClient._check_app_installed')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'SnippetClient._read_protocol_line')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'SnippetClient._connect_to_v1')
+    def test_snippet_start_app_and_connect_v1_persistent_session(
+            self, mock_connect_to_v1, mock_read_protocol_line,
+            mock_check_app_installed, mock_do_start_app,
+            mock_file_exists):
+        mock_read_protocol_line.side_effect = [
+            'SNIPPET START, PROTOCOL 1 234',
+            'SNIPPET SERVING, PORT 1234',
+            'SNIPPET START, PROTOCOL 1 234',
+            'SNIPPET SERVING, PORT 1234',
+            'SNIPPET START, PROTOCOL 1 234',
+            'SNIPPET SERVING, PORT 1234',
+        ]
+        # Test 'setsid' exists
+        mock_file_exists.return_value = True
+        client = self._make_client()
+        client.start_app_and_connect()
+        cmd_setsid = '%s am instrument -w -e action start %s/%s' % (
+            snippet_client._SETSID_PATH,
+            MOCK_PACKAGE_NAME,
+            snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
+        mock_do_start_app.assert_has_calls(mock.call(cmd_setsid))
+
+        # Test 'setsid' does not exist, but 'nohup' exsits
+        mock_file_exists.side_effect = [False, True]
+        client = self._make_client()
+        client.start_app_and_connect()
+        cmd_nohup = '%s am instrument -w -e action start %s/%s' % (
+            snippet_client._NOHUP_PATH,
+            MOCK_PACKAGE_NAME,
+            snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
+        mock_do_start_app.assert_has_calls([
+            mock.call(cmd_setsid),
+            mock.call(cmd_nohup)
+        ])
+
+        # Test both 'setsid' and 'nohup' do not exist
+        mock_file_exists.side_effect = [False, False]
+        client = self._make_client()
+        client.start_app_and_connect()
+        cmd_not_persist = ' am instrument -w -e action start %s/%s' % (
+            MOCK_PACKAGE_NAME,
+            snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
+        mock_do_start_app.assert_has_calls([
+            mock.call(cmd_setsid),
+            mock.call(cmd_nohup),
+            mock.call(cmd_not_persist)
+        ])
+
     @mock.patch('socket.create_connection')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.start_standing_subprocess')
