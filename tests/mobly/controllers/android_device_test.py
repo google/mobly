@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,7 @@ import mock
 import os
 import shutil
 import tempfile
-import unittest
+from future.tests.base import unittest
 
 from mobly.controllers import android_device
 
@@ -49,7 +49,6 @@ class AndroidDeviceTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.controllers.android_device.
     """
-
     def setUp(self):
         # Set log_path to logging since mobly logger setup is not called.
         if not hasattr(logging, "log_path"):
@@ -136,17 +135,17 @@ class AndroidDeviceTest(unittest.TestCase):
 
     def test_create_with_empty_config(self):
         expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             android_device.create([])
 
     def test_create_with_not_list_config(self):
         expected_msg = android_device.ANDROID_DEVICE_NOT_LIST_CONFIG_MSG
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             android_device.create("HAHA")
 
     def test_create_with_no_valid_config(self):
         expected_msg = "No valid config found in: .*"
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             android_device.create([1])
 
     def test_get_device_success_with_serial(self):
@@ -169,14 +168,14 @@ class AndroidDeviceTest(unittest.TestCase):
         ads = mock_android_device.get_mock_ads(5)
         expected_msg = ("Could not find a target device that matches condition"
                         ": {'serial': 5}.")
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad = android_device.get_device(ads, serial=len(ads))
 
     def test_get_device_too_many_matches(self):
         ads = mock_android_device.get_mock_ads(5)
         target_serial = ads[1].serial = ads[0].serial
         expected_msg = "More than one device matched: \['0', '0'\]"
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             android_device.get_device(ads, serial=target_serial)
 
     def test_start_services_on_ads(self):
@@ -192,7 +191,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ads[2].start_services = mock.MagicMock(
             side_effect=android_device.Error(msg))
         ads[2].stop_services = mock.MagicMock()
-        with self.assertRaisesRegexp(android_device.Error, msg):
+        with self.assertRaisesRegex(android_device.Error, msg):
             android_device._start_services_on_ads(ads)
         ads[0].stop_services.assert_called_once_with()
         ads[1].stop_services.assert_called_once_with()
@@ -272,7 +271,7 @@ class AndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         expected_msg = ".* Failed to take bugreport."
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.take_bug_report("test_something", "sometime")
 
     @mock.patch(
@@ -316,7 +315,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         expected_msg = ".* No ongoing adb logcat collection found."
         # Expect error if stop is called before start.
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.stop_adb_logcat()
         ad.start_adb_logcat()
         # Verify start did the correct operations.
@@ -333,7 +332,7 @@ class AndroidDeviceTest(unittest.TestCase):
             'Logcat thread is already running, cannot start another'
             ' one.')
         # Expect error if start is called back to back.
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.start_adb_logcat()
         # Verify stop did the correct operations.
         ad.stop_adb_logcat()
@@ -363,7 +362,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ad.adb_logcat_param = "-b radio"
         expected_msg = '.* No ongoing adb logcat collection found.'
         # Expect error if stop is called before start.
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.stop_adb_logcat()
         ad.start_adb_logcat()
         # Verify start did the correct operations.
@@ -401,7 +400,7 @@ class AndroidDeviceTest(unittest.TestCase):
         # Expect error if attempted to cat adb log before starting adb logcat.
         expected_msg = (".* Attempting to cat adb log when none"
                         " has been collected.")
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
         ad.start_adb_logcat()
         # Direct the log path of the ad to a temp dir to avoid racing.
@@ -450,7 +449,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         expected_msg = ('Snippet package "%s" has already been loaded under '
                         'name "snippet".') % MOCK_SNIPPET_PACKAGE_NAME
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.load_snippet('snippet2', MOCK_SNIPPET_PACKAGE_NAME)
 
     @mock.patch(
@@ -470,7 +469,7 @@ class AndroidDeviceTest(unittest.TestCase):
         expected_msg = ('Attribute "%s" is already registered with package '
                         '"%s", it cannot be used again.') % (
                             'snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME + 'haha')
 
     @mock.patch(
@@ -487,7 +486,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=1)
         expected_msg = ('Attribute "%s" already exists, please use a different'
                         ' name') % 'adb'
-        with self.assertRaisesRegexp(android_device.Error, expected_msg):
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.load_snippet('adb', MOCK_SNIPPET_PACKAGE_NAME)
 
     @mock.patch(

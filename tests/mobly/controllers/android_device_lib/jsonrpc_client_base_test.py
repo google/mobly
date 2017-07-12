@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,7 @@ from builtins import str
 import json
 import mock
 import socket
-import unittest
+from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from tests.lib import jsonrpc_client_test_base
@@ -31,7 +31,6 @@ class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
 class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.jsonrpc_client_base.
     """
-
     @mock.patch('socket.create_connection')
     def test_open_timeout_io_error(self, mock_create_connection):
         """Test socket timeout with io error
@@ -65,7 +64,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         """
         self.setup_mock_socket_file(mock_create_connection, resp=None)
         client = FakeRpcClient()
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 jsonrpc_client_base.ProtocolError,
                 jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
             client.connect()
@@ -109,7 +108,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = self.MOCK_RESP_WITH_ERROR
 
-        with self.assertRaisesRegexp(jsonrpc_client_base.ApiError, '1'):
+        with self.assertRaisesRegex(jsonrpc_client_base.ApiError, '1'):
             client.some_rpc(1, 2, 3)
 
     @mock.patch('socket.create_connection')
@@ -128,7 +127,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client._event_client = mock.Mock()
 
         callback = client.some_rpc(1, 2, 3)
-        self.assertEquals(callback.ret_value, 123)
+        self.assertEqual(callback.ret_value, 123)
         self.assertEqual(callback._id, '1-0')
 
     @mock.patch('socket.create_connection')
@@ -145,7 +144,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = (self.MOCK_RESP_TEMPLATE % 52).encode('utf8')
 
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 jsonrpc_client_base.ProtocolError,
                 jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
             client.some_rpc(1, 2, 3)
@@ -164,7 +163,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         fake_file.resp = None
 
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 jsonrpc_client_base.ProtocolError,
                 jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
             client.some_rpc(1, 2, 3)
@@ -182,7 +181,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client.connect()
 
         result = client.some_rpc(1, 2, 3)
-        self.assertEquals(result, 123)
+        self.assertEqual(result, 123)
 
         expected = {'id': 0, 'method': 'some_rpc', 'params': [1, 2, 3]}
         actual = json.loads(fake_file.last_write.decode('utf-8'))
@@ -203,7 +202,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client.connect()
 
         result = client.some_rpc(1, 2, 3)
-        self.assertEquals(result, 123)
+        self.assertEqual(result, 123)
 
         expected = {'id': 0, 'method': 'some_rpc', 'params': [1, 2, 3]}
         actual = json.loads(fake_file.last_write.decode('utf-8'))
@@ -225,7 +224,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             fake_file.resp = (self.MOCK_RESP_TEMPLATE % i).encode('utf-8')
             client.some_rpc()
 
-        self.assertEquals(next(client._counter), 10)
+        self.assertEqual(next(client._counter), 10)
 
 
 if __name__ == '__main__':

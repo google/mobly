@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import mock
-import unittest
+from future.tests.base import unittest
 
 from mobly import asserts
 from mobly import base_test
@@ -38,6 +38,7 @@ class SomeError(Exception):
 
 
 class BaseTestTest(unittest.TestCase):
+
     def setUp(self):
         self.mock_test_cls_configs = config_parser.TestRunConfig()
         self.mock_test_cls_configs.log_path = '/tmp'
@@ -95,7 +96,7 @@ class BaseTestTest(unittest.TestCase):
         expected_msg = (
             'Test method name not_a_test_something does not follow '
             'naming convention test_\*, abort.')
-        with self.assertRaisesRegexp(base_test.Error, expected_msg):
+        with self.assertRaisesRegex(base_test.Error, expected_msg):
             bt_cls.run()
 
     def test_cli_test_selection_override_self_tests_list(self):
@@ -133,7 +134,7 @@ class BaseTestTest(unittest.TestCase):
         expected_msg = (
             'Test method name not_a_test_something does not follow '
             'naming convention test_\*, abort.')
-        with self.assertRaisesRegexp(base_test.Error, expected_msg):
+        with self.assertRaisesRegex(base_test.Error, expected_msg):
             bt_cls.run(test_names=["not_a_test_something"])
 
     def test_default_execution_of_all_tests(self):
@@ -157,7 +158,7 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         expected_msg = ".* does not have test method test_something"
-        with self.assertRaisesRegexp(base_test.Error, expected_msg):
+        with self.assertRaisesRegex(base_test.Error, expected_msg):
             bt_cls.run(test_names=["test_something"])
         self.assertFalse(bt_cls.results.executed)
 
@@ -839,7 +840,7 @@ class BaseTestTest(unittest.TestCase):
         bc = base_test.BaseTestClass(self.mock_test_cls_configs)
         expected_msg = ('Missing required user param "%s" in test '
                         'configuration.') % required[0]
-        with self.assertRaisesRegexp(base_test.Error, expected_msg):
+        with self.assertRaisesRegex(base_test.Error, expected_msg):
             bc.unpack_userparams(required)
 
     def test_unpack_userparams_optional(self):

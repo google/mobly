@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,7 @@
 import mock
 import shutil
 import tempfile
-import unittest
+from future.tests.base import unittest
 
 from mobly import config_parser
 from mobly import signals
@@ -31,7 +31,6 @@ class TestRunnerTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.test_runner.
     """
-
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = config_parser.TestRunConfig()
@@ -50,7 +49,7 @@ class TestRunnerTest(unittest.TestCase):
 
     def test_register_controller_no_config(self):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with self.assertRaisesRegexp(signals.ControllerError,
+        with self.assertRaisesRegex(signals.ControllerError,
                                      'No corresponding config found for'):
             tr._register_controller(self.base_mock_test_config,
                                     mock_controller)
@@ -80,7 +79,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(mock_ctrlrs[1].magic, 'magic2')
         self.assertTrue(tr._controller_destructors[registered_name])
         expected_msg = 'Controller module .* has already been registered.'
-        with self.assertRaisesRegexp(signals.ControllerError, expected_msg):
+        with self.assertRaisesRegex(signals.ControllerError, expected_msg):
             tr._register_controller(mock_test_config, mock_controller)
 
     def test_register_controller_no_get_info(self):
@@ -131,7 +130,7 @@ class TestRunnerTest(unittest.TestCase):
         }
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         expected_msg = 'Expected to get at least 3 controller objects, got 2.'
-        with self.assertRaisesRegexp(signals.ControllerError, expected_msg):
+        with self.assertRaisesRegex(signals.ControllerError, expected_msg):
             tr._register_controller(
                 mock_test_config, mock_controller, min_number=3)
 
@@ -246,7 +245,7 @@ class TestRunnerTest(unittest.TestCase):
 
     def test_add_test_class_mismatched_log_path(self):
         tr = test_runner.TestRunner('/different/log/dir', self.test_bed_name)
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 test_runner.Error,
                 'TestRunner\'s log folder is "/different/log/dir", but a test '
                 r'config with a different log folder \("%s"\) was added.' %
@@ -256,7 +255,7 @@ class TestRunnerTest(unittest.TestCase):
 
     def test_add_test_class_mismatched_test_bed_name(self):
         tr = test_runner.TestRunner(self.log_dir, 'different_test_bed')
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 test_runner.Error,
                 'TestRunner\'s test bed is "different_test_bed", but a test '
                 r'config with a different test bed \("%s"\) was added.' %
@@ -266,7 +265,7 @@ class TestRunnerTest(unittest.TestCase):
 
     def test_run_no_tests(self):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with self.assertRaisesRegexp(test_runner.Error,
+        with self.assertRaisesRegex(test_runner.Error,
                                      'No tests to execute.'):
             tr.run()
 
@@ -278,7 +277,7 @@ class TestRunnerTest(unittest.TestCase):
             tmp = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
             mock_controller.MOBLY_CONTROLLER_CONFIG_NAME = None
             msg = 'Controller interface .* in .* cannot be null.'
-            with self.assertRaisesRegexp(signals.ControllerError, msg):
+            with self.assertRaisesRegex(signals.ControllerError, msg):
                 test_runner.verify_controller_module(mock_controller)
         finally:
             mock_controller.MOBLY_CONTROLLER_CONFIG_NAME = tmp
@@ -288,7 +287,7 @@ class TestRunnerTest(unittest.TestCase):
             tmp = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
             delattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME')
             msg = 'Module .* missing required controller module attribute'
-            with self.assertRaisesRegexp(signals.ControllerError, msg):
+            with self.assertRaisesRegex(signals.ControllerError, msg):
                 test_runner.verify_controller_module(mock_controller)
         finally:
             setattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME', tmp)

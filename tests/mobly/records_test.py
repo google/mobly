@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+from future.tests.base import unittest
 
 from mobly import records
 from mobly import signals
@@ -23,7 +23,6 @@ from tests.lib import utils
 class RecordsTest(unittest.TestCase):
     """This test class tests the implementation of classes in mobly.records.
     """
-
     def setUp(self):
         self.tn = "test_name"
         self.details = "Some details about the test execution."
@@ -207,7 +206,7 @@ class RecordsTest(unittest.TestCase):
         tr1 = records.TestResult()
         tr1.add_record(record1)
         expected_msg = "Operand .* of type .* is not a TestResult."
-        with self.assertRaisesRegexp(TypeError, expected_msg):
+        with self.assertRaisesRegex(TypeError, expected_msg):
             tr1 += "haha"
 
     def test_result_add_class_error_with_test_signal(self):
