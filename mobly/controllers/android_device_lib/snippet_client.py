@@ -89,7 +89,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass. Launches a snippet app and connects to it."""
         self._check_app_installed()
 
-        persists_shell_cmd = self._get_command_executable()
+        persists_shell_cmd = self._get_persist_command_executable()
         # Try launching the app with the v1 protocol. If that fails, fall back
         # to v0 for compatibility. Use info here so people know exactly what's
         # happening here, which is helpful since they need to create their own
@@ -305,7 +305,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             self.log.debug('Discarded line from instrumentation output: "%s"',
                            line)
 
-    def _get_command_executable(self):
+    def _get_persist_command_executable(self):
         """Check availability and return path of command if available."""
         for command in [_SETSID_COMMAND, _NOHUP_COMMAND]:
             try:
