@@ -387,6 +387,32 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
+    def test_on_fail_executed_if_both_test_and_teardown_test_fails(self):
+        my_mock = mock.MagicMock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_fail(self, test_name, begin_time):
+                my_mock("on_fail")
+
+            def teardown_test(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION + 'ha')
+
+            def test_something(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        my_mock.assert_called_once_with("on_fail")
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, self.mock_test_name)
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extra_errors,
+                         {'teardown_test': 'This is an expected exception.ha'})
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
+                            "Requested 1, Skipped 0")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
     def test_on_fail_executed_if_test_setup_fails_by_exception(self):
         my_mock = mock.MagicMock()
 

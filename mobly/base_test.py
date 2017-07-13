@@ -357,14 +357,11 @@ class BaseTestClass(object):
                 except Exception as e:
                     logging.exception(e)
                     tr_record.add_error('teardown_test', e)
-                    self._exec_procedure_func(self._on_fail, tr_record)
         except (signals.TestFailure, AssertionError) as e:
             tr_record.test_fail(e)
-            self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
             # Test skipped.
             tr_record.test_skip(e)
-            self._exec_procedure_func(self._on_skip, tr_record)
         except (signals.TestAbortClass, signals.TestAbortAll) as e:
             # Abort signals, pass along.
             tr_record.test_fail(e)
@@ -372,15 +369,19 @@ class BaseTestClass(object):
         except signals.TestPass as e:
             # Explicit test pass.
             tr_record.test_pass(e)
-            self._exec_procedure_func(self._on_pass, tr_record)
         except Exception as e:
             # Exception happened during test.
             tr_record.test_error(e)
-            self._exec_procedure_func(self._on_fail, tr_record)
         else:
             tr_record.test_pass()
-            self._exec_procedure_func(self._on_pass, tr_record)
         finally:
+            if tr_record.result in (records.TestResultEnums.TEST_RESULT_ERROR,
+                                    records.TestResultEnums.TEST_RESULT_FAIL):
+                self._exec_procedure_func(self._on_fail, tr_record)
+            elif tr_record.result == records.TestResultEnums.TEST_RESULT_PASS:
+                self._exec_procedure_func(self._on_pass, tr_record)
+            elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
+                self._exec_procedure_func(self._on_skip, tr_record)
             self.results.add_record(tr_record)
 
     def _assert_function_name_in_stack(self, expected_func_name):
