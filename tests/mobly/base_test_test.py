@@ -201,7 +201,12 @@ class BaseTestTest(unittest.TestCase):
         on_fail_call_check.assert_called_once_with("haha")
 
     def test_setup_test_fail_by_exception(self):
+        mock_on_fail = mock.Mock()
+
         class MockBaseTest(base_test.BaseTestClass):
+            def on_fail(self, *args):
+                mock_on_fail('on_fail')
+
             def setup_test(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
 
@@ -211,6 +216,7 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_something"])
+        mock_on_fail.assert_called_once_with('on_fail')
         actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
