@@ -37,7 +37,7 @@ _STOP_CMD = (
 # test is in progress. However, this requirement does not hold for the test that
 # deals with device USB disconnection (Once device disconnects, the shell
 # session that started the instrument ends, and UiAutomation fails with error:
-# "UiAutomation not connected"). To keep the shell session and redirects
+# "UiAutomation not connected"). To keep the shell session and redirect
 # stdin/stdout/stderr, use "setsid" or "nohup" while launching the
 # instrumentation test. Because these commands may not be available in every
 # android system, try to use them only if exists.
@@ -89,7 +89,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass. Launches a snippet app and connects to it."""
         self._check_app_installed()
 
-        persists_shell_cmd = self._get_command_path()
+        persists_shell_cmd = self._get_command_executable()
         # Try launching the app with the v1 protocol. If that fails, fall back
         # to v0 for compatibility. Use info here so people know exactly what's
         # happening here, which is helpful since they need to create their own
@@ -305,11 +305,12 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             self.log.debug('Discarded line from instrumentation output: "%s"',
                            line)
 
-    def _get_command_path(self):
+    def _get_command_executable(self):
         """Check availability and return path of command if available."""
         for command in [_SETSID_COMMAND, _NOHUP_COMMAND]:
             try:
-                return self._adb.shell('which %s' % command)
+                if command in self._adb.shell('which %s' % command):
+                    return command
             except adb.AdbError:
                 continue
         return ''
