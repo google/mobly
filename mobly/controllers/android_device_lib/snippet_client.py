@@ -41,9 +41,9 @@ _STOP_CMD = (
 # stdin/stdout/stderr, use "setsid" or "nohup" while launching the
 # instrumentation test. Because these commands may not be available in every
 # android system, try to use them only if exists.
-_SETSID_PATH = '/system/bin/setsid'
+_SETSID_COMMAND = 'setsid'
 
-_NOHUP_PATH = '/system/bin/nohup'
+_NOHUP_COMMAND = 'nohup'
 
 # Maximum time to wait for a v0 snippet to start on the device (10 minutes).
 # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is removed.
@@ -89,11 +89,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass. Launches a snippet app and connects to it."""
         self._check_app_installed()
 
-        persists_shell_cmd = ''
-        if self._file_exists(_SETSID_PATH):
-            persists_shell_cmd = _SETSID_PATH
-        elif self._file_exists(_NOHUP_PATH):
-            persists_shell_cmd = _NOHUP_PATH
+        persists_shell_cmd = self._get_command_path()
         # Try launching the app with the v1 protocol. If that fails, fall back
         # to v0 for compatibility. Use info here so people know exactly what's
         # happening here, which is helpful since they need to create their own
@@ -309,7 +305,11 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             self.log.debug('Discarded line from instrumentation output: "%s"',
                            line)
 
-    def _file_exists(self, path):
-        """Check whether or not a file exists on device."""
-        return_code = self._adb.shell('[ -e "%s" ]; echo $?' % path)
-        return return_code.strip() == '0'
+    def _get_command_path(self):
+        """Check availability and return path of command if available."""
+        for command in [_SETSID_COMMAND, _NOHUP_COMMAND]:
+            try:
+                return self._adb.shell('which %s' % command)
+            except adb.AdbError:
+                continue
+        return ''

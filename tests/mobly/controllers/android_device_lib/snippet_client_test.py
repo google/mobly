@@ -18,6 +18,7 @@ from builtins import bytes
 import mock
 import unittest
 
+from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import snippet_client
 from tests.lib import jsonrpc_client_test_base
@@ -51,8 +52,8 @@ class MockAdbProxy(object):
             return bytes('instrumentation:{p}/{r} (target={p})'.format(
                 p=MOCK_PACKAGE_NAME,
                 r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE), 'utf-8')
-        elif 'echo' in params:
-            return '0'
+        elif 'which' in params:
+            return ''
 
     def __getattr__(self, name):
         """All calls to the none-existent functions in adb proxy would
@@ -178,8 +179,12 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client.start_app_and_connect()
         self.assertEqual(123, client.device_port)
 
-    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-                'SnippetClient._file_exists')
+    def _mocked_shell(self, arg):
+        if 'setsid' in arg:
+            raise adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code')
+        else:
+            return 'nohup'
+
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'SnippetClient._do_start_app')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
@@ -188,10 +193,12 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
                 'SnippetClient._read_protocol_line')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'SnippetClient._connect_to_v1')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
     def test_snippet_start_app_and_connect_v1_persistent_session(
-            self, mock_connect_to_v1, mock_read_protocol_line,
-            mock_check_app_installed, mock_do_start_app,
-            mock_file_exists):
+            self, mock_get_port, mock_connect_to_v1, mock_read_protocol_line,
+            mock_check_app_installed, mock_do_start_app):
+        mock_get_port.return_value = 123
         mock_read_protocol_line.side_effect = [
             'SNIPPET START, PROTOCOL 1 234',
             'SNIPPET SERVING, PORT 1234',
@@ -200,22 +207,23 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             'SNIPPET START, PROTOCOL 1 234',
             'SNIPPET SERVING, PORT 1234',
         ]
+
         # Test 'setsid' exists
-        mock_file_exists.return_value = True
         client = self._make_client()
+        client._adb.shell = mock.Mock(return_value='setsid')
         client.start_app_and_connect()
         cmd_setsid = '%s am instrument -w -e action start %s/%s' % (
-            snippet_client._SETSID_PATH,
+            snippet_client._SETSID_COMMAND,
             MOCK_PACKAGE_NAME,
             snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
         mock_do_start_app.assert_has_calls(mock.call(cmd_setsid))
 
         # Test 'setsid' does not exist, but 'nohup' exsits
-        mock_file_exists.side_effect = [False, True]
         client = self._make_client()
+        client._adb.shell = self._mocked_shell
         client.start_app_and_connect()
         cmd_nohup = '%s am instrument -w -e action start %s/%s' % (
-            snippet_client._NOHUP_PATH,
+            snippet_client._NOHUP_COMMAND,
             MOCK_PACKAGE_NAME,
             snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
         mock_do_start_app.assert_has_calls([
@@ -224,7 +232,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         ])
 
         # Test both 'setsid' and 'nohup' do not exist
-        mock_file_exists.side_effect = [False, False]
+        client._adb.shell = mock.Mock(
+            side_effect=adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code'))
         client = self._make_client()
         client.start_app_and_connect()
         cmd_not_persist = ' am instrument -w -e action start %s/%s' % (
