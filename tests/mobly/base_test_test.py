@@ -394,11 +394,14 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
     def test_on_fail_executed_if_both_test_and_teardown_test_fails(self):
-        my_mock = mock.MagicMock()
+        on_fail_mock = mock.MagicMock()
 
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self, test_name, begin_time):
-                my_mock("on_fail")
+                on_fail_mock("on_fail")
+
+            def on_pass(self, test_name, begin_time):
+                never_call()
 
             def teardown_test(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION + 'ha')
@@ -408,7 +411,7 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
-        my_mock.assert_called_once_with("on_fail")
+        on_fail_mock.assert_called_once_with("on_fail")
         actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
