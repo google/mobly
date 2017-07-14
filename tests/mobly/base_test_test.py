@@ -334,6 +334,9 @@ class BaseTestTest(unittest.TestCase):
             def teardown_test(self):
                 my_mock("teardown_test")
 
+            def on_pass(self, test_name, begin_time):
+                never_call()
+
             def test_something(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
 
@@ -354,6 +357,9 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self, test_name, begin_time):
                 my_mock("on_fail")
+
+            def on_pass(self, test_name, begin_time):
+                never_call()
 
             def teardown_test(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
@@ -378,6 +384,9 @@ class BaseTestTest(unittest.TestCase):
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self, test_name, begin_time):
                 my_mock("on_fail")
+
+            def on_pass(self, test_name, begin_time):
+                never_call()
 
             def test_something(self):
                 asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
