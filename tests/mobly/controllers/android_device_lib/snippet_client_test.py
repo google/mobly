@@ -179,12 +179,6 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client.start_app_and_connect()
         self.assertEqual(123, client.device_port)
 
-    def _mocked_shell(self, arg):
-        if 'setsid' in arg:
-            raise adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code')
-        else:
-            return 'nohup'
-
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'SnippetClient._do_start_app')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
@@ -198,6 +192,13 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     def test_snippet_start_app_and_connect_v1_persistent_session(
             self, mock_get_port, mock_connect_to_v1, mock_read_protocol_line,
             mock_check_app_installed, mock_do_start_app):
+
+        def _mocked_shell(arg):
+            if 'setsid' in arg:
+                raise adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code')
+            else:
+                return 'nohup'
+
         mock_get_port.return_value = 123
         mock_read_protocol_line.side_effect = [
             'SNIPPET START, PROTOCOL 1 234',
@@ -220,7 +221,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         # Test 'setsid' does not exist, but 'nohup' exsits
         client = self._make_client()
-        client._adb.shell = self._mocked_shell
+        client._adb.shell = _mocked_shell
         client.start_app_and_connect()
         cmd_nohup = '%s am instrument -w -e action start %s/%s' % (
             snippet_client._NOHUP_COMMAND,

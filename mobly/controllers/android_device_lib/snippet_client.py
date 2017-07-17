@@ -313,4 +313,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                     return command
             except adb.AdbError:
                 continue
+        self.log.warning('No %s and %s commands available to launch instrument '
+                         'persistently, tests that depend on UiAutomator and '
+                         'at the same time performs USB disconnection may fail')
         return ''
