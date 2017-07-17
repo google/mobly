@@ -24,14 +24,26 @@ _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')
 
 # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is removed.
-_LAUNCH_CMD_V0 = ('am instrument -w -e action start -e port %s %s/' +
+_LAUNCH_CMD_V0 = ('%s am instrument -w -e action start -e port %s %s/' +
                   _INSTRUMENTATION_RUNNER_PACKAGE)
 
 _LAUNCH_CMD_V1 = (
-    'am instrument -w -e action start %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
+    '%s am instrument -w -e action start %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
 
 _STOP_CMD = (
     'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
+
+# Test that uses UiAutomation requires the shell session to be maintained while
+# test is in progress. However, this requirement does not hold for the test that
+# deals with device USB disconnection (Once device disconnects, the shell
+# session that started the instrument ends, and UiAutomation fails with error:
+# "UiAutomation not connected"). To keep the shell session and redirect
+# stdin/stdout/stderr, use "setsid" or "nohup" while launching the
+# instrumentation test. Because these commands may not be available in every
+# android system, try to use them only if exists.
+_SETSID_COMMAND = 'setsid'
+
+_NOHUP_COMMAND = 'nohup'
 
 # Maximum time to wait for a v0 snippet to start on the device (10 minutes).
 # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is removed.
@@ -60,7 +72,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def __init__(self, package, adb_proxy, log=logging.getLogger()):
         """Initializes a SnippetClient.
-  
+
         Args:
             package: (str) The package name of the apk where the snippets are
                      defined.
@@ -77,13 +89,14 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass. Launches a snippet app and connects to it."""
         self._check_app_installed()
 
+        persists_shell_cmd = self._get_persist_command()
         # Try launching the app with the v1 protocol. If that fails, fall back
         # to v0 for compatibility. Use info here so people know exactly what's
         # happening here, which is helpful since they need to create their own
         # instrumentations and manifest.
         self.log.info('Launching snippet apk %s with protocol v1',
                       self.package)
-        cmd = _LAUNCH_CMD_V1 % self.package
+        cmd = _LAUNCH_CMD_V1 % (persists_shell_cmd, self.package)
         start_time = time.time()
         self._proc = self._do_start_app(cmd)
 
@@ -106,7 +119,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             # Reuse the host port as the device port in v0 snippet. This isn't
             # safe in general, but the protocol is deprecated.
             self.device_port = self.host_port
-            cmd = _LAUNCH_CMD_V0 % (self.device_port, self.package)
+            cmd = _LAUNCH_CMD_V0 % (persists_shell_cmd, self.device_port, self.package)
             self._proc = self._do_start_app(cmd)
             self._connect_to_v0()
             self._launch_version = 'v0'
@@ -291,3 +304,17 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                 return line
             self.log.debug('Discarded line from instrumentation output: "%s"',
                            line)
+
+    def _get_persist_command(self):
+        """Check availability and return path of command if available."""
+        for command in [_SETSID_COMMAND, _NOHUP_COMMAND]:
+            try:
+                if command in self._adb.shell('which %s' % command):
+                    return command
+            except adb.AdbError:
+                continue
+        self.log.warning('No %s and %s commands available to launch instrument '
+                         'persistently, tests that depend on UiAutomator and '
+                         'at the same time performs USB disconnection may fail',
+                         _SETSID_COMMAND, _NOHUP_COMMAND)
+        return ''
