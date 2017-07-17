@@ -22,9 +22,11 @@ install_requires = [
     # mock-1.0.1 is the last version compatible with setuptools <17.1,
     # which is what comes with Ubuntu 14.04 LTS.
     'mock<=1.0.1',
+    'portpicker',
     'psutil',
     'pytz',
-    'pyyaml'
+    'pyyaml',
+    'timeout_decorator'
 ]
 
 if sys.version_info < (3, ):
@@ -33,7 +35,6 @@ if sys.version_info < (3, ):
         # "futures" is needed for py2 compatibility and it only works in 2.7
         'futures',
     ])
-
 
 if platform.system() == 'Windows':
     install_requires.append('pywin32')
@@ -58,20 +59,19 @@ class PyTest(test.test):
 def main():
     setuptools.setup(
         name='mobly',
-        version='1.2.1',
+        version='1.5',
         maintainer = 'Ang Li',
         maintainer_email = 'mobly-github@googlegroups.com',
         description='Automation framework for special end-to-end test cases',
         license='Apache2.0',
         url = 'https://github.com/google/mobly',
-        download_url = 'https://github.com/google/mobly/tarball/1.2.1',
+        download_url = 'https://github.com/google/mobly/tarball/1.5',
         packages=setuptools.find_packages(),
         include_package_data=False,
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
         tests_require=['pytest'],
         install_requires=install_requires,
-        cmdclass={'test': PyTest},
-    )
+        cmdclass={'test': PyTest}, )
 
 
 if __name__ == '__main__':

@@ -1,30 +1,29 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
+import functools
 import inspect
 import logging
-import os
 
-from mobly import asserts
-from mobly import keys
 from mobly import logger
 from mobly import records
 from mobly import signals
 from mobly import utils
 
 # Macro strings for test result reporting
-TEST_CASE_TOKEN = '[Test Case]'
+TEST_CASE_TOKEN = '[Test]'
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + ' %s %s'
 
 
@@ -36,7 +35,7 @@ class BaseTestClass(object):
     """Base class for all test classes to inherit from.
 
     This class gets all the controller objects from test_runner and executes
-    the test cases requested within itself.
+    the tests requested within itself.
 
     Most attributes of this class are set at runtime based on the configuration
     provided.
@@ -46,12 +45,12 @@ class BaseTestClass(object):
     `logging.info`.
 
     Attributes:
-        tests: A list of strings, each representing a test case name.
+        tests: A list of strings, each representing a test method name.
         TAG: A string used to refer to a test class. Default is the test class
              name.
         results: A records.TestResult object for aggregating test results from
-                 the execution of test cases.
-        current_test_name: A string that's the name of the test case currently
+                 the execution of tests.
+        current_test_name: A string that's the name of the test method currently
                            being executed. If no test is executing, this should
                            be None.
         log_path: string, specifies the root directory for all logs written
@@ -89,6 +88,7 @@ class BaseTestClass(object):
         self.register_controller = configs.register_controller
         self.results = records.TestResult()
         self.current_test_name = None
+        self._generated_test_table = collections.OrderedDict()
 
     def __enter__(self):
         return self
@@ -97,8 +97,8 @@ class BaseTestClass(object):
         self._safe_exec_func(self.clean_up)
 
     def unpack_userparams(self,
-                          req_param_names=[],
-                          opt_param_names=[],
+                          req_param_names=None,
+                          opt_param_names=None,
                           **kwargs):
         """An optional function that unpacks user defined parameters into
         individual variables.
@@ -126,6 +126,8 @@ class BaseTestClass(object):
         Raises:
             Error is raised if a required user params is not provided.
         """
+        req_param_names = req_param_names or []
+        opt_param_names = opt_param_names or []
         for k, v in kwargs.items():
             if k in self.user_params:
                 v = self.user_params[k]
@@ -146,6 +148,17 @@ class BaseTestClass(object):
                 logging.warning('Missing optional user param "%s" in '
                                 'configuration, continue.', name)
 
+    def setup_generated_tests(self):
+        """Preprocesses that need to be done before setup_class.
+
+        This phase is used to do pre-test processes like generating tests.
+        This is the only place `self.generate_tests` should be called.
+
+        If this function throws an error, the test class will be marked failure
+        and the "Requested" field will be 0 because the number of tests
+        requested is unknown at this point.
+        """
+
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
@@ -153,8 +166,8 @@ class BaseTestClass(object):
         self.setup_class()
 
     def setup_class(self):
-        """Setup function that will be called before executing any test case in
-        the test class.
+        """Setup function that will be called before executing any test in the
+        class.
 
         To signal setup failure, use asserts or raise your own exception.
 
@@ -162,8 +175,8 @@ class BaseTestClass(object):
         """
 
     def teardown_class(self):
-        """Teardown function that will be called after all the selected test
-        cases in the test class have been executed.
+        """Teardown function that will be called after all the selected tests in
+        the test class have been executed.
 
         Implementation is optional.
         """
@@ -183,7 +196,7 @@ class BaseTestClass(object):
 
     def setup_test(self):
         """Setup function that will be called every time before executing each
-        test case in the test class.
+        test method in the test class.
 
         To signal setup failure, use asserts or raise your own exception.
 
@@ -206,7 +219,7 @@ class BaseTestClass(object):
             self.current_test_name = None
 
     def teardown_test(self):
-        """Teardown function that will be called every time a test case has
+        """Teardown function that will be called every time a test method has
         been executed.
 
         Implementation is optional.
@@ -217,8 +230,7 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The records.TestResultRecord object for the failed test
-                    case.
+            record: The records.TestResultRecord object for the failed test.
         """
         test_name = record.test_name
         if record.details:
@@ -228,7 +240,7 @@ class BaseTestClass(object):
         self.on_fail(test_name, begin_time)
 
     def on_fail(self, test_name, begin_time):
-        """A function that is executed upon a test case failure.
+        """A function that is executed upon a test failure.
 
         User implementation is optional.
 
@@ -242,8 +254,7 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The records.TestResultRecord object for the passed test
-                    case.
+            record: The records.TestResultRecord object for the passed test.
         """
         test_name = record.test_name
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
@@ -254,7 +265,7 @@ class BaseTestClass(object):
         self.on_pass(test_name, begin_time)
 
     def on_pass(self, test_name, begin_time):
-        """A function that is executed upon a test case passing.
+        """A function that is executed upon a test passing.
 
         Implementation is optional.
 
@@ -268,8 +279,7 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The records.TestResultRecord object for the skipped test
-                    case.
+            record: The records.TestResultRecord object for the skipped test.
         """
         test_name = record.test_name
         begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
@@ -278,7 +288,7 @@ class BaseTestClass(object):
         self.on_skip(test_name, begin_time)
 
     def on_skip(self, test_name, begin_time):
-        """A function that is executed upon a test case being skipped.
+        """A function that is executed upon a test being skipped.
 
         Implementation is optional.
 
@@ -299,7 +309,7 @@ class BaseTestClass(object):
         Args:
             func: The procedure function to be executed.
             tr_record: The TestResultRecord object associated with the test
-                       case executed.
+                       executed.
         """
         try:
             func(tr_record)
@@ -310,20 +320,19 @@ class BaseTestClass(object):
                               func.__name__, self.current_test_name)
             tr_record.add_error(func.__name__, e)
 
-    def exec_one_testcase(self, test_name, test_func, args=(), **kwargs):
-        """Executes one test case and update test results.
+    def exec_one_test(self, test_name, test_method, args=(), **kwargs):
+        """Executes one test and update test results.
 
-        Executes one test case, create a records.TestResultRecord object with
-        the execution information, and add the record to the test class's test
-        results.
+        Executes setup_test, the test method, and teardown_test; then creates a
+        records.TestResultRecord object with the execution information and adds
+        the record to the test class's test results.
 
         Args:
             test_name: Name of the test.
-            test_func: The test function.
+            test_method: The test method.
             args: A tuple of params.
             kwargs: Extra kwargs.
         """
-        is_generate_trigger = False
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
         logging.info('%s %s', TEST_CASE_TOKEN, test_name)
@@ -331,9 +340,15 @@ class BaseTestClass(object):
             try:
                 self._setup_test(test_name)
                 if args or kwargs:
-                    test_func(*args, **kwargs)
+                    test_method(*args, **kwargs)
                 else:
-                    test_func()
+                    test_method()
+            except signals.TestPass:
+                raise
+            except Exception:
+                logging.exception('Exception occurred in %s.',
+                                  self.current_test_name)
+                raise
             finally:
                 try:
                     self._teardown_test(test_name)
@@ -344,7 +359,6 @@ class BaseTestClass(object):
                     tr_record.add_error('teardown_test', e)
                     self._exec_procedure_func(self._on_fail, tr_record)
         except (signals.TestFailure, AssertionError) as e:
-            logging.exception(e)
             tr_record.test_fail(e)
             self._exec_procedure_func(self._on_fail, tr_record)
         except signals.TestSkip as e:
@@ -359,12 +373,7 @@ class BaseTestClass(object):
             # Explicit test pass.
             tr_record.test_pass(e)
             self._exec_procedure_func(self._on_pass, tr_record)
-        except signals.TestSilent as e:
-            # This is a trigger test for generated tests, suppress reporting.
-            is_generate_trigger = True
-            self.results.requested.remove(test_name)
         except Exception as e:
-            logging.exception(e)
             # Exception happened during test.
             tr_record.test_error(e)
             self._exec_procedure_func(self._on_fail, tr_record)
@@ -372,61 +381,48 @@ class BaseTestClass(object):
             tr_record.test_pass()
             self._exec_procedure_func(self._on_pass, tr_record)
         finally:
-            if not is_generate_trigger:
-                self.results.add_record(tr_record)
+            self.results.add_record(tr_record)
 
-    def run_generated_testcases(self,
-                                test_func,
-                                settings,
-                                args=None,
-                                kwargs=None,
-                                tag='',
-                                name_func=None):
-        """Runs generated test cases.
+    def _assert_function_name_in_stack(self, expected_func_name):
+        """Asserts that the current stack contains the given function name."""
+        current_frame = inspect.currentframe()
+        caller_frames = inspect.getouterframes(current_frame, 2)
+        for caller_frame in caller_frames[2:]:
+            if caller_frame[3] == expected_func_name:
+                return
+        raise Error('"%s" cannot be called outside of %s' %
+                    (caller_frames[1][3], expected_func_name))
 
-        Generated test cases are not written down as functions, but as a list
-        of parameter sets. This way we reduce code repetition and improve
-        test case scalability.
+    def generate_tests(self, test_logic, name_func, arg_sets):
+        """Generates tests in the test class.
+
+        This function has to be called inside a test class's
+        `self.setup_generated_tests` function.
+
+        Generated tests are not written down as methods, but as a list of
+        parameter sets. This way we reduce code repetition and improve test
+        scalability.
 
         Args:
-            test_func: The common logic shared by all these generated test
-                       cases. This function should take at least one argument,
-                       which is a parameter set.
-            settings: A list of strings representing parameter sets. These are
-                      usually json strings that get loaded in the test_func.
-            args: Iterable of additional position args to be passed to
-                  test_func.
-            kwargs: Dict of additional keyword args to be passed to test_func
-            tag: Name of this group of generated test cases. Ignored if
-                 name_func is provided and operates properly.
-            name_func: A function that takes a test setting and generates a
-                       proper test name. The test name should be shorter than
-                       utils.MAX_FILENAME_LEN. Names over the limit will be
-                       truncated.
-
-        Returns:
-            A list of settings that did not pass.
+            test_logic: function, the common logic shared by all the generated
+                        tests.
+            name_func: function, generate a test name according to a set of
+                       test arguments. This function should take the same
+                       arguments as the test logic function. The test name
+                       should be shorter than utils.MAX_FILENAME_LEN. Names
+                       over the limit will be truncated.
+            arg_sets: a list of tuples, each tuple is a set of arguments to be
+                      passed to the test logic function and name function.
         """
-        args = args or ()
-        kwargs = kwargs or {}
-        failed_settings = []
-        for s in settings:
-            test_name = '%s %s' % (tag, s)
-            if name_func:
-                try:
-                    test_name = name_func(s, *args, **kwargs)
-                except:
-                    logging.exception('Failed to get test name from test_func.'
-                                      ' Fall back to default %s.', test_name)
-            self.results.requested.append(test_name)
-            if len(test_name) > utils.MAX_FILENAME_LEN:
-                test_name = test_name[:utils.MAX_FILENAME_LEN]
-            previous_success_cnt = len(self.results.passed)
-            self.exec_one_testcase(test_name, test_func, (s, ) + args,
-                                   **kwargs)
-            if len(self.results.passed) - previous_success_cnt != 1:
-                failed_settings.append(s)
-        return failed_settings
+        self._assert_function_name_in_stack('setup_generated_tests')
+        for args in arg_sets:
+            test_name = name_func(*args)
+            if test_name in self._get_all_test_names():
+                raise Error(
+                    'Test name "%s" already exists, cannot be duplicated!' %
+                    test_name)
+            test_func = functools.partial(test_logic, *args)
+            self._generated_test_table[test_name] = test_func
 
     def _safe_exec_func(self, func, *args):
         """Executes a function with exception safeguard.
@@ -450,95 +446,135 @@ class BaseTestClass(object):
                               func.__name__, self.TAG)
 
     def _get_all_test_names(self):
-        """Finds all the function names that match the test case naming
+        """Finds all the method names that match the test method naming
         convention in this class.
 
         Returns:
-            A list of strings, each is a test case name.
+            A list of strings, each is a test method name.
         """
         test_names = []
         for name, _ in inspect.getmembers(self, inspect.ismethod):
             if name.startswith('test_'):
                 test_names.append(name)
-        return test_names
+        return test_names + list(self._generated_test_table.keys())
 
-    def _get_test_funcs(self, test_names):
-        """Obtain the actual functions of test cases based on test names.
+    def _get_test_methods(self, test_names):
+        """Resolves test method names to bound test methods.
 
         Args:
-            test_names: A list of strings, each string is a test case name.
+            test_names: A list of strings, each string is a test method name.
 
         Returns:
-            A list of tuples of (string, function). String is the test case
-            name, function is the actual test case function.
+            A list of tuples of (string, function). String is the test method
+            name, function is the actual python method implementing its logic.
 
         Raises:
             Error is raised if the test name does not follow
             naming convention 'test_*'. This can only be caused by user input
             here.
         """
-        test_funcs = []
+        test_methods = []
         for test_name in test_names:
             if not test_name.startswith('test_'):
-                raise Error('Test case name %s does not follow naming '
+                raise Error('Test method name %s does not follow naming '
                             'convention test_*, abort.' % test_name)
-            try:
-                test_funcs.append((test_name, getattr(self, test_name)))
-            except AttributeError:
-                raise Error('%s does not have test case %s.' % (self.TAG,
-                                                                test_name))
-        return test_funcs
+            if hasattr(self, test_name):
+                test_method = getattr(self, test_name)
+            elif test_name in self._generated_test_table:
+                test_method = self._generated_test_table[test_name]
+            else:
+                raise Error('%s does not have test method %s.' % (self.TAG,
+                                                                  test_name))
+            test_methods.append((test_name, test_method))
+        return test_methods
+
+    def _skip_remaining_tests(self, exception):
+        """Marks any requested test that has not been executed in a class as
+        skipped.
+
+        This is useful for handling abort class signal.
+
+        Args:
+            exception: The exception object that was thrown to trigger the
+                       skip.
+        """
+        for test_name in self.results.requested:
+            if not self.results.is_test_executed(test_name):
+                test_record = records.TestResultRecord(test_name, self.TAG)
+                test_record.test_skip(exception)
+                self.results.add_record(test_record)
 
     def run(self, test_names=None):
-        """Runs test cases within a test class by the order they appear in the
-        execution list.
+        """Runs tests within a test class.
 
-        One of these test cases lists will be executed, shown here in priority
+        One of these test method lists will be executed, shown here in priority
         order:
         1. The test_names list, which is passed from cmd line. Invalid names
            are guarded by cmd line arg parsing.
         2. The self.tests list defined in test class. Invalid names are
            ignored.
-        3. All function that matches test case naming convention in the test
+        3. All function that matches test method naming convention in the test
            class.
 
         Args:
-            test_names: A list of string that are test case names requested in
+            test_names: A list of string that are test method names requested in
                 cmd line.
 
         Returns:
             The test results object of this class.
         """
+        # Executes pre-setup procedures, like generating test methods.
+        try:
+            self.setup_generated_tests()
+        except Exception as e:
+            logging.exception('Pre-setup processes failed for %s.', self.TAG)
+            class_record = records.TestResultRecord('setup_generated_tests',
+                                                    self.TAG)
+            class_record.test_begin()
+            class_record.test_error(e)
+            self.results.add_class_error(class_record)
+            return self.results
         logging.info('==========> %s <==========', self.TAG)
-        # Devise the actual test cases to run in the test class.
+        # Devise the actual test methods to run in the test class.
         if not test_names:
             if self.tests:
                 # Specified by run list in class.
                 test_names = list(self.tests)
             else:
-                # No test case specified by user, execute all in the test class
+                # No test method specified by user, execute all in test class.
                 test_names = self._get_all_test_names()
         self.results.requested = test_names
-        tests = self._get_test_funcs(test_names)
-        # A TestResultRecord used for when setup_class fails.
-        class_record = records.TestResultRecord('setup_class', self.TAG)
-        class_record.test_begin()
+        tests = self._get_test_methods(test_names)
         # Setup for the class.
         try:
             self._setup_class()
-        except Exception as e:
-            logging.exception('Failed to setup %s.', self.TAG)
-            class_record.test_fail(e)
-            self._exec_procedure_func(self._on_fail, class_record)
+        except signals.TestAbortClass as e:
+            # The test class is intentionally aborted.
+            # Skip all tests peacefully.
+            e.details = 'setup_class aborted due to: %s' % e.details
+            self._skip_remaining_tests(e)
             self._safe_exec_func(self.teardown_class)
-            self.results.fail_class(class_record)
+            return self.results
+        except Exception as e:
+            # Setup class failed for unknown reasons.
+            # Fail the class and skip all tests.
+            logging.exception('Error in setup_class %s.', self.TAG)
+            class_record = records.TestResultRecord('setup_class', self.TAG)
+            class_record.test_begin()
+            class_record.test_error(e)
+            self._exec_procedure_func(self._on_fail, class_record)
+            self.results.add_class_error(class_record)
+            self._skip_remaining_tests(e)
+            self._safe_exec_func(self.teardown_class)
             return self.results
         # Run tests in order.
         try:
-            for test_name, test_func in tests:
-                self.exec_one_testcase(test_name, test_func)
+            for test_name, test_method in tests:
+                self.exec_one_test(test_name, test_method)
             return self.results
-        except signals.TestAbortClass:
+        except signals.TestAbortClass as e:
+            e.details = 'Test class aborted due to: %s' % e.details
+            self._skip_remaining_tests(e)
             return self.results
         except signals.TestAbortAll as e:
             # Piggy-back test results on this exception object so we don't lose
@@ -551,8 +587,8 @@ class BaseTestClass(object):
                          self.results.summary_str())
 
     def clean_up(self):
-        """A function that is executed upon completion of all tests cases
-        selected in the test class.
+        """A function that is executed upon completion of all tests selected in
+        the test class.
 
         This function should clean up objects initialized in the constructor by
         user.

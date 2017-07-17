@@ -1,27 +1,28 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+from future.tests.base import unittest
 
 from mobly import records
 from mobly import signals
+
+from tests.lib import utils
 
 
 class RecordsTest(unittest.TestCase):
     """This test class tests the implementation of classes in mobly.records.
     """
-
     def setUp(self):
         self.tn = "test_name"
         self.details = "Some details about the test execution."
@@ -205,10 +206,10 @@ class RecordsTest(unittest.TestCase):
         tr1 = records.TestResult()
         tr1.add_record(record1)
         expected_msg = "Operand .* of type .* is not a TestResult."
-        with self.assertRaisesRegexp(TypeError, expected_msg):
+        with self.assertRaisesRegex(TypeError, expected_msg):
             tr1 += "haha"
 
-    def test_result_fail_class_with_test_signal(self):
+    def test_result_add_class_error_with_test_signal(self):
         record1 = records.TestResultRecord(self.tn)
         record1.test_begin()
         s = signals.TestPass(self.details, self.float_extra)
@@ -217,13 +218,13 @@ class RecordsTest(unittest.TestCase):
         tr.add_record(record1)
         s = signals.TestFailure(self.details, self.float_extra)
         record2 = records.TestResultRecord("SomeTest", s)
-        tr.fail_class(record2)
+        tr.add_class_error(record2)
         self.assertEqual(len(tr.passed), 1)
-        self.assertEqual(len(tr.failed), 1)
-        self.assertEqual(len(tr.executed), 2)
+        self.assertEqual(len(tr.error), 1)
+        self.assertEqual(len(tr.executed), 1)
 
-    def test_result_fail_class_with_special_error(self):
-        """Call TestResult.fail_class with an error class that requires more
+    def test_result_add_class_error_with_special_error(self):
+        """Call TestResult.add_class_error with an error class that requires more
         than one arg to instantiate.
         """
         record1 = records.TestResultRecord(self.tn)
@@ -239,10 +240,10 @@ class RecordsTest(unittest.TestCase):
 
         se = SpecialError("haha", 42)
         record2 = records.TestResultRecord("SomeTest", se)
-        tr.fail_class(record2)
+        tr.add_class_error(record2)
         self.assertEqual(len(tr.passed), 1)
-        self.assertEqual(len(tr.failed), 1)
-        self.assertEqual(len(tr.executed), 2)
+        self.assertEqual(len(tr.error), 1)
+        self.assertEqual(len(tr.executed), 1)
 
     def test_is_all_pass(self):
         s = signals.TestPass(self.details, self.float_extra)
@@ -271,18 +272,28 @@ class RecordsTest(unittest.TestCase):
         tr = records.TestResult()
         tr.add_record(record1)
         tr.add_record(record2)
+        utils.validate_test_result(tr)
         self.assertFalse(tr.is_all_pass)
 
-    def test_is_all_pass_with_fail_class(self):
-        """Verifies that is_all_pass yields correct value when fail_class is
+    def test_is_all_pass_with_add_class_error(self):
+        """Verifies that is_all_pass yields correct value when add_class_error is
         used.
         """
         record1 = records.TestResultRecord(self.tn)
         record1.test_begin()
         record1.test_fail(Exception("haha"))
         tr = records.TestResult()
-        tr.fail_class(record1)
+        tr.add_class_error(record1)
         self.assertFalse(tr.is_all_pass)
+
+    def test_is_test_executed(self):
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        record1.test_fail(Exception("haha"))
+        tr = records.TestResult()
+        tr.add_record(record1)
+        self.assertTrue(tr.is_test_executed(record1.test_name))
+        self.assertFalse(tr.is_test_executed(self.tn + 'ha'))
 
 
 if __name__ == "__main__":

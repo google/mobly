@@ -38,16 +38,10 @@ from builtins import str
 
 import json
 import logging
-import re
 import socket
 import threading
-import time
 
-from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import callback_handler
-
-# Maximum time to wait for the app to start on the device.
-APP_START_WAIT_TIME = 15
 
 # UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
 UNKNOWN_UID = -1
@@ -65,6 +59,10 @@ class Error(Exception):
 
 class AppStartError(Error):
     """Raised when the app is not able to be started."""
+
+
+class AppRestoreConnectionError(Error):
+    """Raised when failed to restore app from disconnection."""
 
 
 class ApiError(Error):
@@ -104,41 +102,67 @@ class JsonRpcClientBase(object):
         uid: (int) The uid of this session.
     """
 
-    def __init__(self,
-                 host_port,
-                 device_port,
-                 app_name,
-                 adb_proxy,
-                 log=logging.getLogger()):
+    def __init__(self, app_name, log=logging.getLogger()):
         """
         Args:
-            host_port: (int) The host port of this RPC client.
-            device_port: (int) The device port of this RPC client.
             app_name: (str) The user-visible name of the app being communicated
                       with.
-            adb_proxy: (adb.AdbProxy) The adb proxy to use to start the app.
+            log: (logging.Logger) logger to which to send log messages.
         """
-        self.host_port = host_port
-        self.device_port = device_port
+        self.host_port = None
+        self.device_port = None
         self.app_name = app_name
+        self.log = log
         self.uid = None
-        self._adb = adb_proxy
         self._client = None  # prevent close errors on connect failure
         self._conn = None
         self._counter = None
         self._lock = threading.Lock()
         self._event_client = None
-        self._log = log
 
     def __del__(self):
-        self.close()
+        self.disconnect()
 
     # Methods to be implemented by subclasses.
 
-    def _do_start_app(self):
-        """Starts the server app on the android device.
+    def start_app_and_connect(self):
+        """Starts the server app on the android device and connects to it.
+
+        After this, the self.host_port and self.device_port attributes must be
+        set.
 
         Must be implemented by subclasses.
+
+        Raises:
+            AppStartError: When the app was not able to be started.
+        """
+        raise NotImplementedError()
+
+    def stop_app(self):
+        """Kills any running instance of the app.
+
+        Must be implemented by subclasses.
+        """
+        raise NotImplementedError()
+
+    def restore_app_connection(self, port=None):
+        """Reconnects to the app after device USB was disconnected.
+
+        Instead of creating new instance of the client:
+          - Uses the given port (or finds a new available host_port if none is
+            given).
+          - Tries to connect to remote server with selected port.
+
+        Must be implemented by subclasses.
+
+        Args:
+          port: If given, this is the host port from which to connect to remote
+              device port. If not provided, find a new available port as host
+              port.
+
+        Raises:
+            AppRestoreConnectionError: When the app was not able to be
+            reconnected.
         """
         raise NotImplementedError()
 
@@ -155,41 +179,7 @@ class JsonRpcClientBase(object):
         """
         raise NotImplementedError()
 
-    def stop_app(self):
-        """Kills any running instance of the app.
-
-        Must be implemented by subclasses.
-        """
-        raise NotImplementedError()
-
-    def check_app_installed(self):
-        """Checks if app is installed.
-
-        Must be implemented by subclasses.
-        """
-        raise NotImplementedError()
-
     # Rest of the client methods.
-
-    def start_app(self, wait_time=APP_START_WAIT_TIME):
-        """Starts the server app on the android device.
-
-        Args:
-            wait_time: float, The time to wait for the app to come up before
-                       raising an error.
-
-        Raises:
-            AppStartError: When the app was not able to be started.
-        """
-        self.check_app_installed()
-        self._do_start_app()
-        for _ in range(wait_time):
-            time.sleep(1)
-            if self._is_app_running():
-                self._log.debug('Successfully started %s', self.app_name)
-                return
-        raise AppStartError('%s failed to start on %s.' %
-                            (self.app_name, self._adb.serial))
 
     def connect(self, uid=UNKNOWN_UID, cmd=JsonRpcCommand.INIT):
         """Opens a connection to a JSON RPC server.
@@ -210,7 +200,7 @@ class JsonRpcClientBase(object):
             ProtocolError: Raised when there is an error in the protocol.
         """
         self._counter = self._id_counter()
-        self._conn = socket.create_connection(('127.0.0.1', self.host_port),
+        self._conn = socket.create_connection(('localhost', self.host_port),
                                               _SOCKET_CONNECTION_TIMEOUT)
         self._conn.settimeout(_SOCKET_READ_TIMEOUT)
         self._client = self._conn.makefile(mode='brw')
@@ -224,34 +214,11 @@ class JsonRpcClientBase(object):
         else:
             self.uid = UNKNOWN_UID
 
-    def close(self):
+    def disconnect(self):
         """Close the connection to the remote client."""
         if self._conn:
             self._conn.close()
             self._conn = None
-
-    def _grep(self, regex, output):
-        """Similar to linux's `grep`, this returns the line in an output stream
-        that matches a given regex pattern.
-
-        This function is specifically used to grep strings from AdbProxy's
-        output. We have to do this in Python instead of using cli tools because
-        we need to support windows which does not have `grep` in all vesions.
-
-        Args:
-            regex: string, a regex that matches the expected pattern.
-            output: byte string, the raw output of the adb cmd.
-
-        Returns:
-            A list of strings, all of which are output lines that matches the
-            regex pattern.
-        """
-        lines = output.decode('utf-8').strip().splitlines()
-        results = []
-        for line in lines:
-            if re.search(regex, line):
-                results.append(line.strip())
-        return results
 
     def _cmd(self, command, uid=None):
         """Send a command to the server.
@@ -310,20 +277,6 @@ class JsonRpcClientBase(object):
                 ret_value=result['result'],
                 method_name=method)
         return result['result']
-
-    def _is_app_running(self):
-        """Checks if the app is currently running on an android device.
-
-        May be overridden by subclasses with custom sanity checks.
-        """
-        running = False
-        try:
-            self.connect()
-            running = True
-        finally:
-            self.close()
-            # This 'return' squashes exceptions from connect()
-            return running
 
     def __getattr__(self, name):
         """Wrapper for python magic to turn method calls into RPC calls."""

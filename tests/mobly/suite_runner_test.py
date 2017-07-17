@@ -21,53 +21,55 @@ from tests.lib import integration2_test
 
 class SuiteRunnerTest(unittest.TestCase):
     def test_select_no_args(self):
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=None)
-        self.assertEqual(
-            [('IntegrationTest', None), ('Integration2Test', None)],
-            identifiers)
+            selected_tests=None)
+        self.assertEqual({
+            integration_test.IntegrationTest: None,
+            integration2_test.Integration2Test: None,
+        }, identifiers)
 
     def test_select_by_class(self):
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=['IntegrationTest'])
-        self.assertEqual([('IntegrationTest', None)], identifiers)
+            selected_tests=['IntegrationTest'])
+        self.assertEqual({integration_test.IntegrationTest: None}, identifiers)
 
     def test_select_by_method(self):
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=[
+            selected_tests=[
                 'IntegrationTest.test_a', 'IntegrationTest.test_b'
             ])
-        self.assertEqual([('IntegrationTest', ['test_a', 'test_b'])],
-                         identifiers)
+        self.assertEqual({
+            integration_test.IntegrationTest: ['test_a', 'test_b']
+        }, identifiers)
 
     def test_select_all_clobbers_method(self):
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=['IntegrationTest.test_a', 'IntegrationTest'])
-        self.assertEqual([('IntegrationTest', None)], identifiers)
+            selected_tests=['IntegrationTest.test_a', 'IntegrationTest'])
+        self.assertEqual({integration_test.IntegrationTest: None}, identifiers)
 
-        identifiers = suite_runner._compute_test_identifiers(
+        identifiers = suite_runner._compute_selected_tests(
             test_classes=[
                 integration_test.IntegrationTest,
                 integration2_test.Integration2Test
             ],
-            selected_test_cases=['IntegrationTest', 'IntegrationTest.test_a'])
-        self.assertEqual([('IntegrationTest', None)], identifiers)
+            selected_tests=['IntegrationTest', 'IntegrationTest.test_a'])
+        self.assertEqual({integration_test.IntegrationTest: None}, identifiers)
 
 
 if __name__ == "__main__":

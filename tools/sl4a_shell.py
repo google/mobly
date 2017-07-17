@@ -35,6 +35,7 @@ u'N2F52'
 """
 
 import argparse
+import logging
 
 from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
@@ -42,7 +43,6 @@ from mobly.controllers.android_device_lib import jsonrpc_shell_base
 class Sl4aShell(jsonrpc_shell_base.JsonRpcShellBase):
     def _start_services(self, console_env):
         """Overrides superclass."""
-        self._ad.start_services()
         self._ad.load_sl4a()
         console_env['s'] = self._ad.sl4a
         console_env['sl4a'] = self._ad.sl4a
@@ -64,4 +64,5 @@ if __name__ == '__main__':
         help=
         'Device serial to connect to (if more than one device is connected)')
     args = parser.parse_args()
+    logging.basicConfig(level=logging.INFO)
     Sl4aShell().main(args.serial)

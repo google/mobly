@@ -1,11 +1,11 @@
 # Copyright 2017 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import mock
-import unittest
+from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import callback_handler
 from mobly.controllers.android_device_lib import jsonrpc_client_base
@@ -34,7 +34,6 @@ MOCK_RAW_EVENT = {
 class CallbackHandlerTest(unittest.TestCase):
     """Unit tests for mobly.controllers.android_device_lib.callback_handler.
     """
-
     def test_timeout_value(self):
         self.assertGreaterEqual(jsonrpc_client_base._SOCKET_READ_TIMEOUT,
                                 callback_handler.MAX_TIMEOUT)
@@ -66,7 +65,7 @@ class CallbackHandlerTest(unittest.TestCase):
             ret_value=None,
             method_name=None)
         expected_msg = 'Timeout waiting for event "ha" .*'
-        with self.assertRaisesRegexp(callback_handler.TimeoutError,
+        with self.assertRaisesRegex(callback_handler.TimeoutError,
                                      expected_msg):
             handler.waitAndGet('ha')
 
@@ -101,7 +100,7 @@ class CallbackHandlerTest(unittest.TestCase):
         def some_condition(event):
             return False
 
-        with self.assertRaisesRegexp(callback_handler.TimeoutError,
+        with self.assertRaisesRegex(callback_handler.TimeoutError,
                                      expected_msg):
             handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
 

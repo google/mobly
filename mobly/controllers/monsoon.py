@@ -23,6 +23,7 @@ import select
 import struct
 import sys
 import time
+import timeout_decorator
 import collections
 
 # http://pyserial.sourceforge.net/
@@ -35,6 +36,9 @@ from mobly import utils
 from mobly.controllers import android_device
 
 MOBLY_CONTROLLER_CONFIG_NAME = "Monsoon"
+
+# Default Timeout to wait for USB ON
+DEFAULT_TIMEOUT_USB_ON = 15
 
 
 def create(configs):
@@ -753,7 +757,7 @@ class Monsoon(object):
         except:
             return None
 
-    @utils.timeout(60)
+    @timeout_decorator.timeout(60, use_signals=False)
     def usb(self, state):
         """Sets the monsoon's USB passthrough mode. This is specific to the
         USB port in front of the monsoon box which connects to the powered
@@ -789,12 +793,6 @@ class Monsoon(object):
         if not self.dut:
             raise MonsoonError("Need to attach the device before using it.")
 
-    @utils.timeout(15)
-    def _wait_for_device(self, ad):
-        while ad.serial not in android_device.list_adb_devices():
-            pass
-        ad.adb.wait_for_device()
-
     def measure_power(self, hz, duration, tag, offset=30):
         """Measure power consumption of the attached device.
 
@@ -816,7 +814,7 @@ class Monsoon(object):
         data = None
         self.usb("auto")
         time.sleep(1)
-        with self.dut.handle_device_disconnect():
+        with self.dut.handle_usb_disconnect():
             time.sleep(1)
             try:
                 data = self.take_samples(hz, num, sample_offset=oset)
@@ -830,7 +828,7 @@ class Monsoon(object):
                 self.mon.StopDataCollection()
                 self.log.info("Finished taking samples, reconnecting to dut.")
                 self.usb("on")
-                self._wait_for_device(self.dut)
+                self.dut.wait_for_adb_detection(DEFAULT_TIMEOUT_USB_ON)
                 # Wait for device to come back online.
                 time.sleep(10)
                 self.dut.log.info("Dut reconnected.")

@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,14 +15,14 @@
 import base64
 import concurrent.futures
 import datetime
-import functools
 import logging
 import os
 import platform
+import portpicker
 import psutil
 import random
+import re
 import signal
-import socket
 import string
 import subprocess
 import time
@@ -32,10 +32,11 @@ from mobly.controllers.android_device_lib import adb
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
+# Number of times to retry to get available port
+MAX_PORT_ALLOCATION_RETRY = 50
 
 ascii_letters_and_digits = string.ascii_letters + string.digits
 valid_filename_chars = "-_." + ascii_letters_and_digits
-
 
 GMT_to_olson = {
     "GMT-9": "America/Anchorage",
@@ -105,7 +106,7 @@ def create_alias(target_path, alias_path):
     """
     if platform.system() == 'Windows' and not alias_path.endswith('.lnk'):
         alias_path += '.lnk'
-    if os.path.exists(alias_path):
+    if os.path.lexists(alias_path):
         os.remove(alias_path)
     if platform.system() == 'Windows':
         from win32com import client
@@ -187,7 +188,7 @@ def find_files(paths, file_predicate):
     file_list = []
     for path in paths:
         p = abs_path(path)
-        for dirPath, subdirList, fileList in os.walk(p):
+        for dirPath, _, fileList in os.walk(p):
             for fname in fileList:
                 name, ext = os.path.splitext(fname)
                 if file_predicate(name, ext):
@@ -241,7 +242,7 @@ def rand_ascii_str(length):
     Returns:
         The random string generated.
     """
-    letters = [random.choice(ascii_letters_and_digits) for i in range(length)]
+    letters = [random.choice(ascii_letters_and_digits) for _ in range(length)]
     return ''.join(letters)
 
 
@@ -291,7 +292,7 @@ def _assert_subprocess_running(proc):
     if ret is not None:
         out, err = proc.communicate()
         raise Error("Process %d has terminated. ret: %d, stderr: %s,"
-                             " stdout: %s" % (proc.pid, ret, err, out))
+                    " stdout: %s" % (proc.pid, ret, err, out))
 
 
 def start_standing_subprocess(cmd, check_health_delay=0, shell=False):
@@ -347,7 +348,7 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     Args:
         proc: Subprocess to terminate.
 
-    Throws:
+    Raises:
         Error: if the subprocess could not be stopped.
     """
     pid = proc.pid
@@ -366,7 +367,8 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
             child.wait(timeout=10)
         except:
             success = False
-            logging.exception('Failed to kill standing subprocess %d', child.pid)
+            logging.exception('Failed to kill standing subprocess %d',
+                              child.pid)
     try:
         process.kill()
         process.wait(timeout=10)
@@ -400,89 +402,44 @@ def wait_for_standing_subprocess(proc, timeout=None):
     proc.wait(timeout)
 
 
-# Timeout decorator block
-class TimeoutError(Exception):
-    """Exception for timeout decorator related errors.
-    """
-    pass
-
-
-def _timeout_handler(signum, frame):
-    """Handler function used by signal to terminate a timed out function.
-    """
-    raise TimeoutError()
-
-
-def timeout(sec):
-    """A decorator used to add time out check to a function.
-
-    This only works in main thread due to its dependency on signal module.
-    Do NOT use it if the decorated funtion does not run in the Main thread.
-
-    Args:
-        sec: Number of seconds to wait before the function times out.
-            No timeout if set to 0
-
-    Returns:
-        What the decorated function returns.
-
-    Raises:
-        TimeoutError is raised when time out happens.
-    """
-
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            if sec:
-                signal.signal(signal.SIGALRM, _timeout_handler)
-                signal.alarm(sec)
-            try:
-                return func(*args, **kwargs)
-            except TimeoutError:
-                raise TimeoutError(("Function {} timed out after {} "
-                                    "seconds.").format(func.__name__, sec))
-            finally:
-                signal.alarm(0)
-
-        return wrapper
-
-    return decorator
-
-
 def get_available_host_port():
     """Gets a host port number available for adb forward.
 
     Returns:
         An integer representing a port number on the host available for adb
         forward.
+
+    Raises:
+      Error: when no port is found after MAX_PORT_ALLOCATION_RETRY times.
     """
-    while True:
-        port = random.randint(1024, 9900)
-        if is_port_available(port):
+    for _ in range(MAX_PORT_ALLOCATION_RETRY):
+        port = portpicker.PickUnusedPort()
+        # Make sure adb is not using this port so we don't accidentally
+        # interrupt ongoing runs by trying to bind to the port.
+        if port not in adb.list_occupied_adb_ports():
             return port
+    raise Error('Failed to find available port after {} retries'.format(
+        MAX_PORT_ALLOCATION_RETRY))
 
 
-def is_port_available(port):
-    """Checks if a given port number is available on the system.
+def grep(regex, output):
+    """Similar to linux's `grep`, this returns the line in an output stream
+    that matches a given regex pattern.
+
+    It does not rely on the `grep` binary and is not sensitive to line endings,
+    so it can be used cross-platform.
 
     Args:
-        port: An integer which is the port number to check.
+        regex: string, a regex that matches the expected pattern.
+        output: byte string, the raw output of the adb cmd.
 
     Returns:
-        True if the port is available; False otherwise.
+        A list of strings, all of which are output lines that matches the
+        regex pattern.
     """
-    # Make sure adb is not using this port so we don't accidentally interrupt
-    # ongoing runs by trying to bind to the port.
-    if port in adb.list_occupied_adb_ports():
-        return False
-    s = None
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('localhost', port))
-        return True
-    except socket.error:
-        return False
-    finally:
-        if s:
-            s.close()
+    lines = output.decode('utf-8').strip().splitlines()
+    results = []
+    for line in lines:
+        if re.search(regex, line):
+            results.append(line.strip())
+    return results
