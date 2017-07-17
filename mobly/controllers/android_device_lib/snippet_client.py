@@ -315,5 +315,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                 continue
         self.log.warning('No %s and %s commands available to launch instrument '
                          'persistently, tests that depend on UiAutomator and '
-                         'at the same time performs USB disconnection may fail')
+                         'at the same time performs USB disconnection may fail',
+                         _SETSID_COMMAND, _NOHUP_COMMAND)
         return ''
