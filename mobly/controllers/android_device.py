@@ -947,8 +947,8 @@ class AndroidDevice(object):
         self._wait_for_device(self._is_adb_detectable, timeout)
 
     def wait_for_adb_detached(self, timeout=DEFAULT_TIMEOUT_USB_OFF):
-              """Waits until the USB is off."""
-                      self._wait_for_device(self._is_adb_detached, timeout)
+        """Waits until the USB is off."""
+            self._wait_for_device(self._is_adb_detached, timeout)
 
     def _is_boot_completed(self):
         """Checks if device boot is completed by verifying system property."""
@@ -967,8 +967,8 @@ class AndroidDevice(object):
         return False
 
     def _is_adb_detached(self):
-              """Checks if USB is off."""
-                      return not self._is_adb_detectable()
+        """Checks if USB is off."""
+            return not self._is_adb_detectable()
 
     def _wait_for_device(self, func, timeout):
         """Retry the provided function until it returns True or timed out.
