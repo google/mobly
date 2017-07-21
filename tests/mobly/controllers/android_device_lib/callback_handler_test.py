@@ -34,6 +34,7 @@ MOCK_RAW_EVENT = {
 class CallbackHandlerTest(unittest.TestCase):
     """Unit tests for mobly.controllers.android_device_lib.callback_handler.
     """
+
     def test_timeout_value(self):
         self.assertGreaterEqual(jsonrpc_client_base._SOCKET_READ_TIMEOUT,
                                 callback_handler.MAX_TIMEOUT)
@@ -64,9 +65,9 @@ class CallbackHandlerTest(unittest.TestCase):
             event_client=mock_event_client,
             ret_value=None,
             method_name=None)
-        expected_msg = 'Timeout waiting for event "ha" .*'
+        expected_msg = 'Timed out after waiting .*s for event "ha" .*'
         with self.assertRaisesRegex(callback_handler.TimeoutError,
-                                     expected_msg):
+                                    expected_msg):
             handler.waitAndGet('ha')
 
     def test_wait_for_event(self):
@@ -101,7 +102,7 @@ class CallbackHandlerTest(unittest.TestCase):
             return False
 
         with self.assertRaisesRegex(callback_handler.TimeoutError,
-                                     expected_msg):
+                                    expected_msg):
             handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
 
 
