@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import shutil
+import tempfile
+import yaml
+
 from future.tests.base import unittest
 
 from mobly import records
@@ -28,6 +33,10 @@ class RecordsTest(unittest.TestCase):
         self.details = "Some details about the test execution."
         self.float_extra = 12345.56789
         self.json_extra = {"ha": "whatever"}
+        self.tmp_path = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_path)
 
     def verify_record(self, record, result, details, extras):
         # Verify each field.
@@ -294,6 +303,31 @@ class RecordsTest(unittest.TestCase):
         tr.add_record(record1)
         self.assertTrue(tr.is_test_executed(record1.test_name))
         self.assertFalse(tr.is_test_executed(self.tn + 'ha'))
+
+    def test_summary_write_dump(self):
+        s = signals.TestFailure(self.details, self.float_extra)
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        record1.test_fail(s)
+        dump_path = os.path.join(self.tmp_path, 'ha.yaml')
+        writer = records.TestSummaryWriter(dump_path)
+        writer.dump(record1.to_dict(), records.TestSummaryEntryType.RECORD)
+        with open(dump_path, 'r') as f:
+            content = yaml.load(f)
+            self.assertEqual(content['Type'],
+                             records.TestSummaryEntryType.RECORD.value)
+
+    def test_summary_write_dump_raise(self):
+        s = signals.TestFailure(self.details, self.float_extra)
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        record1.test_fail(s)
+        dump_path = os.path.join(self.tmp_path, 'ha.yaml')
+        writer = records.TestSummaryWriter(dump_path)
+        with self.assertRaisesRegex(
+                records.Error, '.* is not a valid entry type, see records.'
+                'TestSummaryEntryType.'):
+            writer.dump(record1.to_dict(), 'something')
 
 
 if __name__ == "__main__":
