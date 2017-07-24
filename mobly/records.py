@@ -16,6 +16,7 @@
 
 import itertools
 import copy
+import enum
 import json
 import logging
 import pprint
@@ -32,8 +33,8 @@ OUTPUT_FILE_DEBUG_LOG = 'test_log.DEBUG'
 OUTPUT_FILE_SUMMARY = 'test_summary.yaml'
 
 
-class TestSummaryEntryType(object):
-    """Enums used to identify the type of entries in test summary file.
+class TestSummaryEntryType(enum.Enum):
+    """Constants used to identify the type of entries in test summary file.
 
     Test summary file contains multiple yaml documents. In order to parse this
     file efficiently, the write adds the type of each entry when it writes the
@@ -46,9 +47,9 @@ class TestSummaryEntryType(object):
     SUMMARY = 'Summary'
     CONTROLLER_INFO = 'ControllerInfo'
 
-    @classmethod
-    def isMember(cls, string):
-        return string in [cls.RECORD, cls.SUMMARY, cls.CONTROLLER_INFO]
+
+class Error(Exception):
+    """Raised for errors in records."""
 
 
 class TestSummaryWriter(object):
@@ -83,9 +84,15 @@ class TestSummaryWriter(object):
             content: dictionary, the content to serialize and write.
             entry_type: string, a string that is a member of
                         `TestSummaryEntryType`.
+
+        Raises:
+            recoreds.Error is raised if an invalid entry type is passed in.
         """
         new_content = copy.deepcopy(content)
-        new_content['Type'] = entry_type
+        if not isinstance(entry_type, TestSummaryEntryType):
+            raise Error('%s is not a valid entry type, see records.'
+                        'TestSummaryEntryType.' % entry_type)
+        new_content['Type'] = entry_type.value
         content_str = yaml.dump(new_content, explicit_start=True, indent=4)
         with open(self._path, 'a') as f:
             f.write(content_str)
@@ -254,7 +261,7 @@ class TestResultRecord(object):
     def json_str(self):
         """Converts this test record to a string in json format.
 
-        TODO(angli): Deprecate with old output format.
+        TODO(#270): Deprecate with old output format.
 
         Format of the json string is:
             {
@@ -319,7 +326,7 @@ class TestResult(object):
                 # '+' operator for TestResult is only valid when multiple
                 # TestResult objs were created in the same test run, which means
                 # the controller info would be the same across all of them.
-                # TODO(angli): have a better way to validate this situation.
+                # TODO(xpconanfan): have a better way to validate this situation.
                 setattr(sum_result, name, l_value)
         return sum_result
 
@@ -391,7 +398,7 @@ class TestResult(object):
     def json_str(self):
         """Converts this test result to a string in json format.
 
-        TODO(angli): Deprecate with old output format.
+        TODO(#270): Deprecate with old output format.
 
         Format of the json string is:
             {

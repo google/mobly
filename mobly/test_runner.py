@@ -443,7 +443,7 @@ class TestRunner(object):
     def _write_results_json_str(self, log_path):
         """Writes out a json file with the test result info for easy parsing.
 
-        # TODO(angli): Deprecate with old output format.
+        TODO(#270): Deprecate with old output format.
         """
         path = os.path.join(log_path, 'test_run_summary.json')
         with open(path, 'w') as f:
