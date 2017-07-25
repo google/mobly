@@ -82,16 +82,12 @@ class TestSummaryWriter(object):
 
         Args:
             content: dictionary, the content to serialize and write.
-            entry_type: string, a string that is a member of
-                        `TestSummaryEntryType`.
+            entry_type: a member of enum TestSummaryEntryType.
 
         Raises:
             recoreds.Error is raised if an invalid entry type is passed in.
         """
         new_content = copy.deepcopy(content)
-        if not isinstance(entry_type, TestSummaryEntryType):
-            raise Error('%s is not a valid entry type, see records.'
-                        'TestSummaryEntryType.' % entry_type)
         new_content['Type'] = entry_type.value
         content_str = yaml.dump(new_content, explicit_start=True, indent=4)
         with open(self._path, 'a') as f:
