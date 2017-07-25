@@ -11,18 +11,87 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module is where all the record definitions and record containers live.
+"""This module has classes for test result collection, and test result output.
 """
 
 import itertools
+import copy
+import enum
 import json
 import logging
 import pprint
 import sys
 import traceback
+import yaml
 
 from mobly import signals
 from mobly import utils
+
+# File names for the default files output by 
+OUTPUT_FILE_INFO_LOG = 'test_log.INFO'
+OUTPUT_FILE_DEBUG_LOG = 'test_log.DEBUG'
+OUTPUT_FILE_SUMMARY = 'test_summary.yaml'
+
+
+class TestSummaryEntryType(enum.Enum):
+    """Constants used to identify the type of entries in test summary file.
+
+    Test summary file contains multiple yaml documents. In order to parse this
+    file efficiently, the write adds the type of each entry when it writes the
+    entry to the file.
+
+    The idea is similar to how `TestResult.json_str` categorizes different
+    sections of a `TestResult` object in the serialized format.
+    """
+    RECORD = 'Record'
+    SUMMARY = 'Summary'
+    CONTROLLER_INFO = 'ControllerInfo'
+
+
+class Error(Exception):
+    """Raised for errors in records."""
+
+
+class TestSummaryWriter(object):
+    """Writer for the test result summary file of a test run.
+
+    For each test run, a writer is created to stream test results to the
+    summary file on disk.
+
+    The serialization and writing of the `TestResult` object is intentionally
+    kept out of `TestResult` class and put in this class. Because `TestResult`
+    can be operated on by suites, like `+` operation, and it is difficult to
+    guarantee the consistency between `TestResult` in memory and the files on
+    disk. Also, this separation makes it easier to provide a more generic way
+    for users to consume the test summary, like via a database instead of a
+    file.
+    """
+
+    def __init__(self, path):
+        self._path = path
+
+    def dump(self, content, entry_type):
+        """Dumps a dictionary as a yaml document to the summary file.
+
+        Each call to this method dumps a separate yaml document to the same
+        summary file associated with a test run.
+
+        The content of the dumped dictionary has an extra field `TYPE` that
+        specifies the type of each yaml document, which is the flag for parsers
+        to identify each document.
+
+        Args:
+            content: dictionary, the content to serialize and write.
+            entry_type: a member of enum TestSummaryEntryType.
+
+        Raises:
+            recoreds.Error is raised if an invalid entry type is passed in.
+        """
+        new_content = copy.deepcopy(content)
+        new_content['Type'] = entry_type.value
+        content_str = yaml.dump(new_content, explicit_start=True, indent=4)
+        with open(self._path, 'a') as f:
+            f.write(content_str)
 
 
 class TestResultEnums(object):
@@ -188,6 +257,8 @@ class TestResultRecord(object):
     def json_str(self):
         """Converts this test record to a string in json format.
 
+        TODO(#270): Deprecate with old output format.
+
         Format of the json string is:
             {
                 'Test Name': <test name>,
@@ -251,7 +322,7 @@ class TestResult(object):
                 # '+' operator for TestResult is only valid when multiple
                 # TestResult objs were created in the same test run, which means
                 # the controller info would be the same across all of them.
-                # TODO(angli): have a better way to validate this situation.
+                # TODO(xpconanfan): have a better way to validate this situation.
                 setattr(sum_result, name, l_value)
         return sum_result
 
@@ -276,9 +347,9 @@ class TestResult(object):
 
     def add_controller_info(self, name, info):
         try:
-            json.dumps(info)
+            yaml.dump(info)
         except TypeError:
-            logging.warning('Controller info for %s is not JSON serializable!'
+            logging.warning('Controller info for %s is not YAML serializable!'
                             ' Coercing it to string.' % name)
             self.controller_info[name] = str(info)
             return
@@ -322,6 +393,8 @@ class TestResult(object):
 
     def json_str(self):
         """Converts this test result to a string in json format.
+
+        TODO(#270): Deprecate with old output format.
 
         Format of the json string is:
             {

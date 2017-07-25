@@ -20,6 +20,7 @@ import os
 import re
 import sys
 
+from mobly import records
 from mobly import utils
 
 log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
@@ -162,11 +163,24 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     if filename is None:
         filename = get_log_file_timestamp()
         utils.create_dir(log_path)
+    # TODO(#270): Deprecate `test_run_details.txt` when we remove old output
+    # format support.
     fh = logging.FileHandler(os.path.join(log_path, 'test_run_details.txt'))
     fh.setFormatter(f_formatter)
     fh.setLevel(logging.DEBUG)
-    log.addHandler(ch)
     log.addHandler(fh)
+    # Write logger output to files
+    fh_info = logging.FileHandler(
+        os.path.join(log_path, records.OUTPUT_FILE_INFO_LOG))
+    fh_info.setFormatter(f_formatter)
+    fh_info.setLevel(logging.INFO)
+    fh_debug = logging.FileHandler(
+        os.path.join(log_path, records.OUTPUT_FILE_DEBUG_LOG))
+    fh_debug.setFormatter(f_formatter)
+    fh_debug.setLevel(logging.DEBUG)
+    log.addHandler(ch)
+    log.addHandler(fh_info)
+    log.addHandler(fh_debug)
     log.log_path = log_path
     logging.log_path = log_path
 
@@ -224,4 +238,3 @@ def normalize_log_line_timestamp(log_line_timestamp):
     norm_tp = log_line_timestamp.replace(' ', '_')
     norm_tp = norm_tp.replace(':', '-')
     return norm_tp
-

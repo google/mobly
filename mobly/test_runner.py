@@ -158,7 +158,7 @@ def verify_controller_module(module):
 
         def get_info(objects):
             [Optional] Gets info from the controller objects used in a test
-            run. The info will be included in test_result_summary.json under
+            run. The info will be included in test_summary.yaml under
             the key 'ControllerInfo'. Such information could include unique
             ID, version, or anything that could be useful for describing the
             test bed and debugging.
@@ -262,9 +262,7 @@ class TestRunner(object):
                 (self._test_bed_name, config.test_bed_name))
         self._test_run_infos.append(
             TestRunner._TestRunInfo(
-                config=config,
-                test_class=test_class,
-                tests=tests))
+                config=config, test_class=test_class, tests=tests))
 
     def _run_test_class(self, config, test_class, tests=None):
         """Instantiates and executes a test class.
@@ -300,6 +298,8 @@ class TestRunner(object):
             raise Error('No tests to execute.')
         start_time = logger.get_log_file_timestamp()
         log_path = os.path.join(self._log_dir, self._test_bed_name, start_time)
+        summary_writer = records.TestSummaryWriter(
+            os.path.join(log_path, records.OUTPUT_FILE_SUMMARY))
         logger.setup_test_logger(log_path, self._test_bed_name)
         try:
             for test_run_info in self._test_run_infos:
@@ -308,7 +308,7 @@ class TestRunner(object):
                 test_config.log_path = log_path
                 test_config.register_controller = functools.partial(
                     self._register_controller, test_config)
-
+                test_config.summary_writer = summary_writer
                 try:
                     self._run_test_class(test_config, test_run_info.test_class,
                                          test_run_info.tests)
@@ -319,6 +319,11 @@ class TestRunner(object):
                 finally:
                     self._unregister_controllers()
         finally:
+            # Write controller info and summary to summary file.
+            summary_writer.dump(self.results.controller_info,
+                                records.TestSummaryEntryType.CONTROLLER_INFO)
+            summary_writer.dump(self.results.summary_dict(),
+                                records.TestSummaryEntryType.SUMMARY)
             # Stop and show summary.
             msg = '\nSummary for test run %s@%s: %s\n' % (
                 self._test_bed_name, start_time, self.results.summary_str())
@@ -438,7 +443,7 @@ class TestRunner(object):
     def _write_results_json_str(self, log_path):
         """Writes out a json file with the test result info for easy parsing.
 
-        TODO(angli): This should be replaced by standard log record mechanism.
+        TODO(#270): Deprecate with old output format.
         """
         path = os.path.join(log_path, 'test_run_summary.json')
         with open(path, 'w') as f:
