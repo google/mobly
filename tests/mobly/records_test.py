@@ -317,18 +317,6 @@ class RecordsTest(unittest.TestCase):
             self.assertEqual(content['Type'],
                              records.TestSummaryEntryType.RECORD.value)
 
-    def test_summary_write_dump_raise(self):
-        s = signals.TestFailure(self.details, self.float_extra)
-        record1 = records.TestResultRecord(self.tn)
-        record1.test_begin()
-        record1.test_fail(s)
-        dump_path = os.path.join(self.tmp_path, 'ha.yaml')
-        writer = records.TestSummaryWriter(dump_path)
-        with self.assertRaisesRegex(
-                records.Error, '.* is not a valid entry type, see records.'
-                'TestSummaryEntryType.'):
-            writer.dump(record1.to_dict(), 'something')
-
 
 if __name__ == "__main__":
     unittest.main()
