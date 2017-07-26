@@ -27,7 +27,7 @@ import yaml
 from mobly import signals
 from mobly import utils
 
-# File names for the default files output by 
+# File names for the output files.
 OUTPUT_FILE_INFO_LOG = 'test_log.INFO'
 OUTPUT_FILE_DEBUG_LOG = 'test_log.DEBUG'
 OUTPUT_FILE_SUMMARY = 'test_summary.yaml'
@@ -89,7 +89,8 @@ class TestSummaryWriter(object):
         """
         new_content = copy.deepcopy(content)
         new_content['Type'] = entry_type.value
-        content_str = yaml.dump(new_content, explicit_start=True, indent=4)
+        content_str = yaml.safe_dump(
+            new_content, explicit_start=True, indent=4)
         with open(self._path, 'a') as f:
             f.write(content_str)
 
