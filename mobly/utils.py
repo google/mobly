@@ -478,8 +478,6 @@ def wait_until(func, timeout):
                 if func():
                     return
             except Exception:
-                # adb shell calls may fail during certain period of booting
-                # process, which is normal. Ignoring these errors.
                 pass
             time.sleep(5)
     try:

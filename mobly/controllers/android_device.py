@@ -974,7 +974,8 @@ class AndroidDevice(object):
     def is_adb_detectable(self):
         """Checks if USB is on and device is ready by verifying adb devices.
 
-        Note that adb.wait_for_device() could be blocking in some cases.
+        Note that adb.wait_for_device() could be blocking for long time
+        in some cases.
         """
         serials = list_adb_devices()
         if self.serial in serials:
