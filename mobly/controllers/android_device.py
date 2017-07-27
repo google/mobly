@@ -949,9 +949,15 @@ class AndroidDevice(object):
         detected = time.time()
 
         # Also make sure device is up before returning to user
+        remaining_timeout = timeout-(detected-start)
+        if remaining_timeout <= 0:
+            raise DeviceError(
+                    self,
+                    'Timed out waiting for %s adb detection.' % self.serial)
+
         utils.wait_until(
                 lambda: True if self.adb.wait_for_device() == '' else False,
-                timeout=detected-start)
+                timeout=remaining_timeout)
 
     def is_boot_completed(self):
         """Checks if device boot is completed by verifying system property.
