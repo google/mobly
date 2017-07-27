@@ -949,7 +949,7 @@ class AndroidDevice(object):
         detected = time.time()
 
         # Also make sure device is up before returning to user
-        remaining_timeout = timeout-(detected-start)
+        remaining_timeout = timeout - (detected - start)
         if remaining_timeout <= 0:
             raise DeviceError(
                     self,
@@ -976,7 +976,6 @@ class AndroidDevice(object):
 
         Note that adb.wait_for_device() could be blocking in some cases.
         """
-        self.adb.wait_for_device()
         serials = list_adb_devices()
         if self.serial in serials:
             self.log.info('Device %s USB is on.', self.serial)
