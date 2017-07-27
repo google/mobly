@@ -96,7 +96,7 @@ def create(configs):
     for ad in ads:
         if ad.serial not in valid_ad_identifiers:
             raise DeviceError(ad, 'Android device is specified in config but'
-                                  ' is not attached.')
+                              ' is not attached.')
     _start_services_on_ads(ads)
     return ads
 
@@ -251,8 +251,8 @@ def get_instances_with_configs(configs):
             serial = c.pop('serial')
         except KeyError:
             raise Error(
-                    'Required value "serial" is missing in AndroidDevice config %s.'
-                    % c)
+                'Required value "serial" is missing in AndroidDevice config %s.'
+                % c)
         is_required = c.get(KEY_DEVICE_REQUIRED, True)
         try:
             ad = AndroidDevice(serial)
@@ -332,8 +332,8 @@ def get_device(ads, **kwargs):
     filtered = filter_devices(ads, _get_device_filter)
     if not filtered:
         raise Error(
-                'Could not find a target device that matches condition: %s.' %
-                kwargs)
+            'Could not find a target device that matches condition: %s.' %
+            kwargs)
     elif len(filtered) == 1:
         return filtered[0]
     else:
@@ -671,9 +671,9 @@ class AndroidDevice(object):
         for k, v in config.items():
             if hasattr(self, k):
                 raise DeviceError(
-                        self,
-                        ('Attribute %s already exists with value %s, cannot set '
-                         'again.') % (k, getattr(self, k)))
+                    self,
+                    ('Attribute %s already exists with value %s, cannot set '
+                     'again.') % (k, getattr(self, k)))
             setattr(self, k, v)
 
     def root_adb(self):
@@ -706,25 +706,25 @@ class AndroidDevice(object):
         # Should not load snippet with the same attribute more than once.
         if name in self._snippet_clients:
             raise SnippetError(
-                    self,
-                    'Attribute "%s" is already registered with package "%s", it '
-                    'cannot be used again.' %
-                    (name, self._snippet_clients[name].package))
+                self,
+                'Attribute "%s" is already registered with package "%s", it '
+                'cannot be used again.' %
+                (name, self._snippet_clients[name].package))
         # Should not load snippet with an existing attribute.
         if hasattr(self, name):
             raise SnippetError(
-                    self,
-                    'Attribute "%s" already exists, please use a different name.' %
-                    name)
+                self,
+                'Attribute "%s" already exists, please use a different name.' %
+                name)
         # Should not load the same snippet package more than once.
         for client_name, client in self._snippet_clients.items():
             if package == client.package:
                 raise SnippetError(
-                        self,
-                        'Snippet package "%s" has already been loaded under name'
-                        ' "%s".' % (package, client_name))
+                    self,
+                    'Snippet package "%s" has already been loaded under name'
+                    ' "%s".' % (package, client_name))
         client = snippet_client.SnippetClient(
-                package=package, adb_proxy=self.adb, log=self.log)
+            package=package, adb_proxy=self.adb, log=self.log)
         client.start_app_and_connect()
         self._snippet_clients[name] = client
         setattr(self, name, client)
@@ -760,8 +760,8 @@ class AndroidDevice(object):
         """
         if not self.adb_logcat_file_path:
             raise DeviceError(
-                    self,
-                    'Attempting to cat adb log when none has been collected.')
+                self,
+                'Attempting to cat adb log when none has been collected.')
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
         adb_excerpt_path = os.path.join(self.log_path, 'AdbLogExcerpts')
@@ -809,8 +809,8 @@ class AndroidDevice(object):
         """
         if self._adb_logcat_process:
             raise DeviceError(
-                    self,
-                    'Logcat thread is already running, cannot start another one.')
+                self,
+                'Logcat thread is already running, cannot start another one.')
         if clear_log:
             self._clear_adb_log()
         # Disable adb log spam filter for rootable devices. Have to stop and
@@ -948,7 +948,7 @@ class AndroidDevice(object):
         utils.wait_until(self.is_adb_detectable, timeout)
         detected = time.time()
 
-        # Also make sure device is up before returning from this function
+        # Also make sure device is up before returning to user
         utils.wait_until(
                 lambda: True if self.adb.wait_for_device() == '' else False,
                 timeout=detected-start)
@@ -970,6 +970,7 @@ class AndroidDevice(object):
 
         Note that adb.wait_for_device() could be blocking in some cases.
         """
+        self.adb.wait_for_device()
         serials = list_adb_devices()
         if self.serial in serials:
             self.log.info('Device %s USB is on.', self.serial)
