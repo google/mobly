@@ -20,6 +20,7 @@ import contextlib
 import logging
 import os
 import time
+import timeout_decorator
 
 from mobly import logger as mobly_logger
 from mobly import signals
@@ -95,7 +96,7 @@ def create(configs):
     for ad in ads:
         if ad.serial not in valid_ad_identifiers:
             raise DeviceError(ad, 'Android device is specified in config but'
-                              ' is not attached.')
+                                  ' is not attached.')
     _start_services_on_ads(ads)
     return ads
 
@@ -250,8 +251,8 @@ def get_instances_with_configs(configs):
             serial = c.pop('serial')
         except KeyError:
             raise Error(
-                'Required value "serial" is missing in AndroidDevice config %s.'
-                % c)
+                    'Required value "serial" is missing in AndroidDevice config %s.'
+                    % c)
         is_required = c.get(KEY_DEVICE_REQUIRED, True)
         try:
             ad = AndroidDevice(serial)
@@ -331,8 +332,8 @@ def get_device(ads, **kwargs):
     filtered = filter_devices(ads, _get_device_filter)
     if not filtered:
         raise Error(
-            'Could not find a target device that matches condition: %s.' %
-            kwargs)
+                'Could not find a target device that matches condition: %s.' %
+                kwargs)
     elif len(filtered) == 1:
         return filtered[0]
     else:
@@ -670,9 +671,9 @@ class AndroidDevice(object):
         for k, v in config.items():
             if hasattr(self, k):
                 raise DeviceError(
-                    self,
-                    ('Attribute %s already exists with value %s, cannot set '
-                     'again.') % (k, getattr(self, k)))
+                        self,
+                        ('Attribute %s already exists with value %s, cannot set '
+                         'again.') % (k, getattr(self, k)))
             setattr(self, k, v)
 
     def root_adb(self):
@@ -705,25 +706,25 @@ class AndroidDevice(object):
         # Should not load snippet with the same attribute more than once.
         if name in self._snippet_clients:
             raise SnippetError(
-                self,
-                'Attribute "%s" is already registered with package "%s", it '
-                'cannot be used again.' %
-                (name, self._snippet_clients[name].package))
+                    self,
+                    'Attribute "%s" is already registered with package "%s", it '
+                    'cannot be used again.' %
+                    (name, self._snippet_clients[name].package))
         # Should not load snippet with an existing attribute.
         if hasattr(self, name):
             raise SnippetError(
-                self,
-                'Attribute "%s" already exists, please use a different name.' %
-                name)
+                    self,
+                    'Attribute "%s" already exists, please use a different name.' %
+                    name)
         # Should not load the same snippet package more than once.
         for client_name, client in self._snippet_clients.items():
             if package == client.package:
                 raise SnippetError(
-                    self,
-                    'Snippet package "%s" has already been loaded under name'
-                    ' "%s".' % (package, client_name))
+                        self,
+                        'Snippet package "%s" has already been loaded under name'
+                        ' "%s".' % (package, client_name))
         client = snippet_client.SnippetClient(
-            package=package, adb_proxy=self.adb, log=self.log)
+                package=package, adb_proxy=self.adb, log=self.log)
         client.start_app_and_connect()
         self._snippet_clients[name] = client
         setattr(self, name, client)
@@ -759,8 +760,8 @@ class AndroidDevice(object):
         """
         if not self.adb_logcat_file_path:
             raise DeviceError(
-                self,
-                'Attempting to cat adb log when none has been collected.')
+                    self,
+                    'Attempting to cat adb log when none has been collected.')
         end_time = mobly_logger.get_log_line_timestamp()
         self.log.debug('Extracting adb log from logcat.')
         adb_excerpt_path = os.path.join(self.log_path, 'AdbLogExcerpts')
@@ -808,8 +809,8 @@ class AndroidDevice(object):
         """
         if self._adb_logcat_process:
             raise DeviceError(
-                self,
-                'Logcat thread is already running, cannot start another one.')
+                    self,
+                    'Logcat thread is already running, cannot start another one.')
         if clear_log:
             self._clear_adb_log()
         # Disable adb log spam filter for rootable devices. Have to stop and
@@ -927,7 +928,7 @@ class AndroidDevice(object):
         """
         timeout = 15 * 60
 
-        self._wait_for_device(self._is_boot_completed, timeout)
+        utils.wait_until(self.is_boot_completed, timeout)
 
     def wait_for_adb_detection(self, timeout=DEFAULT_TIMEOUT_USB_ON):
         """Waits until the USB is back on and device is detected with adb
@@ -943,61 +944,37 @@ class AndroidDevice(object):
         different a lot from case to case. User should have more knowledge of
         this value.
         """
-        timeout_start = time.time()
-        self._wait_for_device(self._is_adb_detectable, timeout)
+        start = time.time()
+        utils.wait_until(self.is_adb_detectable, timeout)
+        detected = time.time()
 
-    def _is_boot_completed(self):
-        """Checks if device boot is completed by verifying system property."""
+        # Also make sure device is up before returning from this function
+        utils.wait_until(
+                lambda: True if self.adb.wait_for_device() == '' else False,
+                timeout=detected-start)
+
+    def is_boot_completed(self):
+        """Checks if device boot is completed by verifying system property.
+
+        Note that adb.wait_for_device() could be blocking in some cases.
+        """
+        self.adb.wait_for_device()
         completed = self.adb.getprop('sys.boot_completed')
         if completed == '1':
             self.log.info('Device %s boot completed.', self.serial)
             return True
         return False
 
-    def _is_adb_detectable(self):
-        """Checks if USB is on and device is ready by verifying adb devices."""
+    def is_adb_detectable(self):
+        """Checks if USB is on and device is ready by verifying adb devices.
+
+        Note that adb.wait_for_device() could be blocking in some cases.
+        """
         serials = list_adb_devices()
         if self.serial in serials:
             self.log.info('Device %s USB is on.', self.serial)
             return True
         return False
-
-    def _wait_for_device(self, func, timeout):
-        """Retry the provided function until it returns True or timed out.
-
-        The provided function is used to verify different adb connectivity cases
-        and it returns bool value to indicate if the verification is successful
-        or not.
-
-        For example:
-            To wait for device reboot to complete:
-                self._wait_for_device(self._is_boot_completed, timeout)
-            To wait for USB reconnect:
-                self._wait_for_device(self._is_adb_detectable, timeout)
-        Args:
-            func: A function that returns True when device condition is
-                expected. It returns False otherwise. This function could also
-                raise adb.AdbError if device is not ready over adb.
-            timeout: Timeout duration to wait for device adb connectivity.
-
-        Raises:
-            DeviceError: If timed out.
-        """
-        timeout_start = time.time()
-        self.adb.wait_for_device()
-        while time.time() < timeout_start + timeout:
-            try:
-                if func():
-                    return
-            except adb.AdbError:
-                # adb shell calls may fail during certain period of booting
-                # process, which is normal. Ignoring these errors.
-                pass
-            time.sleep(5)
-        raise DeviceError(
-            self,
-            'Timed out waiting for device adb connectivity with function: %s'
-            % func.__name__)
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.

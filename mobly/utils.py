@@ -26,7 +26,9 @@ import signal
 import string
 import subprocess
 import time
+import timeout_decorator
 import traceback
+
 
 from mobly.controllers.android_device_lib import adb
 # File name length is limited to 255 chars on some OS, so we need to make sure
@@ -443,3 +445,44 @@ def grep(regex, output):
         if re.search(regex, line):
             results.append(line.strip())
     return results
+
+def wait_until(func, timeout):
+    """Retry the provided function until it returns True or timed out.
+
+    This function is used to verify if the provided func returns
+    expected value. And it will retry until either the provided func
+    returns expected value, or timed out.
+
+    For example:
+        Wait for device reboot to complete:
+            wait_until(ad.is_boot_completed, timeout)
+        Wait for USB reconnect:
+            wait_until(ad.is_adb_detectable, timeout)
+        Wait for USB disconnect:
+            wait_until(lambda ad : not ad.is_adb_detectable(), timeout)
+
+    Args:
+        func: A function that returns True when certain condition is
+            expected. It returns False otherwise. Or, this function could
+            also raise Exception if the condition is not expected.
+        timeout: Timeout duration to wait for device adb connectivity.
+
+    Raises:
+        Error: If timed out while waiting for function to return expected
+            value.
+    """
+    @timeout_decorator.timeout(timeout)
+    def wait():
+        while True:
+            try:
+                if func():
+                    return
+            except Exception:
+                # adb shell calls may fail during certain period of booting
+                # process, which is normal. Ignoring these errors.
+                pass
+            time.sleep(5)
+    try:
+        wait()
+    except timeout_decorator.timeout_decorator.TimeoutError:
+        raise Error('Timed out waiting for function: %s' % func.__name__)
