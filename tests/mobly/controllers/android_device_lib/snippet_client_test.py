@@ -35,7 +35,6 @@ class MockAdbProxy(object):
         self.target_not_installed = kwargs.get('target_not_installed', False)
 
     def shell(self, params, shell=False):
-        print('+++++++++++++++++++++++++%s', params)
         if 'pm list package' in params:
             if self.apk_not_installed:
                 return b''
@@ -54,7 +53,6 @@ class MockAdbProxy(object):
                 p=MOCK_PACKAGE_NAME,
                 r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE), 'utf-8')
         elif 'which' in params:
-            print('haha')
             return b''
 
     def __getattr__(self, name):
