@@ -13,11 +13,14 @@
 # limitations under the License.
 
 import mock
+import os
 import shutil
 import tempfile
+import yaml
 from future.tests.base import unittest
 
 from mobly import config_parser
+from mobly import records
 from mobly import signals
 from mobly import test_runner
 
@@ -31,6 +34,7 @@ class TestRunnerTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.test_runner.
     """
+
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = config_parser.TestRunConfig()
@@ -50,7 +54,7 @@ class TestRunnerTest(unittest.TestCase):
     def test_register_controller_no_config(self):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         with self.assertRaisesRegex(signals.ControllerError,
-                                     'No corresponding config found for'):
+                                    'No corresponding config found for'):
             tr._register_controller(self.base_mock_test_config,
                                     mock_controller)
 
@@ -177,6 +181,37 @@ class TestRunnerTest(unittest.TestCase):
         }
         self.assertEqual(tr.results.controller_info, expected_info)
 
+    def test_summary_file_entries(self):
+        """Verifies the output summary's file format.
+
+        This focuses on the format of the file instead of the content of
+        entries, which is covered in base_test_test.
+        """
+        mock_test_config = self.base_mock_test_config.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{
+            'serial': 'xxxx',
+            'magic': 'Magic1'
+        }, {
+            'serial': 'xxxx',
+            'magic': 'Magic2'
+        }]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
+        tr.run()
+        summary_path = os.path.join(mock_test_config.log_path,
+                                    mock_test_config.test_bed_name, 'latest',
+                                    records.OUTPUT_FILE_SUMMARY)
+        with open(summary_path, 'r') as f:
+            summary_entries = list(yaml.load_all(f))
+        self.assertEqual(len(summary_entries), 4)
+        # Verify the first entry is the list of test names.
+        self.assertEqual(summary_entries[0]['Type'],
+                         records.TestSummaryEntryType.TEST_NAME_LIST.value)
+        self.assertEqual(summary_entries[1]['Type'],
+                         records.TestSummaryEntryType.RECORD.value)
+
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
         return_value=mock_android_device.MockAdbProxy(1))
@@ -265,8 +300,7 @@ class TestRunnerTest(unittest.TestCase):
 
     def test_run_no_tests(self):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with self.assertRaisesRegex(test_runner.Error,
-                                     'No tests to execute.'):
+        with self.assertRaisesRegex(test_runner.Error, 'No tests to execute.'):
             tr.run()
 
     def test_verify_controller_module(self):
