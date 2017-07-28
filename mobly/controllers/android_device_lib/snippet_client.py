@@ -27,8 +27,8 @@ _INSTRUMENTATION_RUNNER_PACKAGE = (
 _LAUNCH_CMD_V0 = ('%s am instrument -w -e action start -e port %s %s/' +
                   _INSTRUMENTATION_RUNNER_PACKAGE)
 
-_LAUNCH_CMD_V1 = (
-    '%s am instrument -w -e action start %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
+_LAUNCH_CMD_V1 = ('%s am instrument -w -e action start %s/' +
+                  _INSTRUMENTATION_RUNNER_PACKAGE)
 
 _STOP_CMD = (
     'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
@@ -119,7 +119,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             # Reuse the host port as the device port in v0 snippet. This isn't
             # safe in general, but the protocol is deprecated.
             self.device_port = self.host_port
-            cmd = _LAUNCH_CMD_V0 % (persists_shell_cmd, self.device_port, self.package)
+            cmd = _LAUNCH_CMD_V0 % (persists_shell_cmd, self.device_port,
+                                    self.package)
             self._proc = self._do_start_app(cmd)
             self._connect_to_v0()
             self._launch_version = 'v0'
@@ -165,8 +166,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             # Failed to connect to app, something went wrong.
             raise jsonrpc_client_base.AppRestoreConnectionError(
                 ('Failed to restore app connection for %s at host port %s, '
-                 'device port %s'),
-                self.package, self.host_port, self.device_port)
+                 'device port %s'), self.package, self.host_port,
+                self.device_port)
 
         # Because the previous connection was lost, update self._proc
         self._proc = None
@@ -250,8 +251,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     # removed.
     def _connect_to_v0(self):
         self._adb.forward(
-            ['tcp:%d' % self.host_port,
-             'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
         start_time = time.time()
         expiration_time = start_time + _APP_START_WAIT_TIME_V0
         while time.time() < expiration_time:
@@ -270,8 +270,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _connect_to_v1(self):
         self._adb.forward(
-            ['tcp:%d' % self.host_port,
-             'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
         self.connect()
 
     def _read_protocol_line(self):
@@ -309,12 +308,14 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Check availability and return path of command if available."""
         for command in [_SETSID_COMMAND, _NOHUP_COMMAND]:
             try:
-                if command in self._adb.shell('which %s' % command):
+                if command in self._adb.shell(['which',
+                                               command]).decode('utf-8'):
                     return command
             except adb.AdbError:
                 continue
-        self.log.warning('No %s and %s commands available to launch instrument '
-                         'persistently, tests that depend on UiAutomator and '
-                         'at the same time performs USB disconnection may fail',
-                         _SETSID_COMMAND, _NOHUP_COMMAND)
+        self.log.warning(
+            'No %s and %s commands available to launch instrument '
+            'persistently, tests that depend on UiAutomator and '
+            'at the same time performs USB disconnection may fail',
+            _SETSID_COMMAND, _NOHUP_COMMAND)
         return ''
