@@ -35,6 +35,7 @@ class MockAdbProxy(object):
         self.target_not_installed = kwargs.get('target_not_installed', False)
 
     def shell(self, params, shell=False):
+        print('+++++++++++++++++++++++++%s', params)
         if 'pm list package' in params:
             if self.apk_not_installed:
                 return b''
@@ -53,7 +54,8 @@ class MockAdbProxy(object):
                 p=MOCK_PACKAGE_NAME,
                 r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE), 'utf-8')
         elif 'which' in params:
-            return ''
+            print('haha')
+            return b''
 
     def __getattr__(self, name):
         """All calls to the none-existent functions in adb proxy would
@@ -196,7 +198,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             if 'setsid' in arg:
                 raise adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code')
             else:
-                return 'nohup'
+                return b'nohup'
 
         mock_get_port.return_value = 123
         mock_read_protocol_line.side_effect = [
@@ -210,7 +212,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         # Test 'setsid' exists
         client = self._make_client()
-        client._adb.shell = mock.Mock(return_value='setsid')
+        client._adb.shell = mock.Mock(return_value=b'setsid')
         client.start_app_and_connect()
         cmd_setsid = '%s am instrument -w -e action start %s/%s' % (
             snippet_client._SETSID_COMMAND,
