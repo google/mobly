@@ -688,7 +688,6 @@ class AndroidDevice(object):
         """Starts the snippet apk with the given package name and connects.
 
         Examples:
-            >>> ad = AndroidDevice()
             >>> ad.load_snippet(
                     name='maps', package='com.google.maps.snippets')
             >>> ad.maps.activateZoom('3')
