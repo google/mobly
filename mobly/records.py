@@ -90,10 +90,9 @@ class TestSummaryWriter(object):
         new_content = copy.deepcopy(content)
         new_content['Type'] = entry_type.value
         # Use safe_dump here to avoid language-specific tags in final output.
-        content_str = yaml.safe_dump(
-            new_content, explicit_start=True, indent=4)
         with open(self._path, 'a') as f:
-            f.write(content_str)
+            content_str = yaml.safe_dump(
+                new_content, f, explicit_start=True, indent=4)
 
 
 class TestResultEnums(object):
