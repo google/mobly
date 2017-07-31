@@ -503,9 +503,6 @@ class BaseTestClass(object):
             if not self.results.is_test_executed(test_name):
                 test_record = records.TestResultRecord(test_name, self.TAG)
                 test_record.test_skip(exception)
-                # Set the begin and end time to None as the test never started.
-                test_record.begin_time = None
-                test_record.end_time = None
                 self.results.add_record(test_record)
 
     def run(self, test_names=None):
