@@ -426,16 +426,16 @@ class TestResult(object):
         json_str = json.dumps(d, indent=4, sort_keys=True)
         return json_str
 
-    def get_requested_test_names(self):
-        """Gets the names of all the tests requested for a test run.
+    def requested_test_names_dict(self):
+        """Gets the requested test names of a test run in a dict format.
 
         Note a test can be requested multiple times, so there can be duplicated
         values
 
         Returns:
-            A list of strings, each string is a test name.
+            A dict with a key and the list of strings.
         """
-        return copy.deepcopy(self.requested)
+        return {'Requested Tests': copy.deepcopy(self.requested)}
 
     def summary_str(self):
         """Gets a string that summarizes the stats of this test result.

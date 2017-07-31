@@ -552,9 +552,8 @@ class BaseTestClass(object):
                 # No test method specified by user, execute all in test class.
                 test_names = self._get_all_test_names()
         self.results.requested = test_names
-        self.summary_writer.dump({
-            'Requested Tests': self.results.requested
-        }, records.TestSummaryEntryType.TEST_NAME_LIST)
+        self.summary_writer.dump(self.results.requested_test_names_dict(),
+                                 records.TestSummaryEntryType.TEST_NAME_LIST)
         tests = self._get_test_methods(test_names)
         # Setup for the class.
         try:
