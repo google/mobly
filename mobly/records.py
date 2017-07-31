@@ -43,8 +43,16 @@ class TestSummaryEntryType(enum.Enum):
     The idea is similar to how `TestResult.json_str` categorizes different
     sections of a `TestResult` object in the serialized format.
     """
+    # A list of all the tests requested for a test run.
+    # This is dumped at the beginning of a summary file so we know what was
+    # requested in case the test is interrupted and the final summary is not.
+    # created.
+    TEST_NAME_LIST = 'TestNameList'
+    # Records of test results.
     RECORD = 'Record'
+    # A summary of the test run stats, like how many test failed.
     SUMMARY = 'Summary'
+    # Information on the controllers used in the test.
     CONTROLLER_INFO = 'ControllerInfo'
 
 
@@ -417,6 +425,17 @@ class TestResult(object):
         d['Summary'] = self.summary_dict()
         json_str = json.dumps(d, indent=4, sort_keys=True)
         return json_str
+
+    def requested_test_names_dict(self):
+        """Gets the requested test names of a test run in a dict format.
+
+        Note a test can be requested multiple times, so there can be duplicated
+        values
+
+        Returns:
+            A dict with a key and the list of strings.
+        """
+        return {'Requested Tests': copy.deepcopy(self.requested)}
 
     def summary_str(self):
         """Gets a string that summarizes the stats of this test result.
