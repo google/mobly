@@ -127,7 +127,7 @@ class TestResultEnums(object):
 
 
 class TestResultRecord(object):
-    """A record that holds the information of a single test case.
+    """A record that holds the information of a single test.
 
     Attributes:
         test_name: string, the name of the test.
