@@ -187,12 +187,6 @@ class BaseTestClass(object):
         called.
         """
         self.current_test_name = test_name
-        try:
-            # Write test start token to adb log if android device is attached.
-            for ad in self.android_devices:
-                ad.sl4a.logV('%s BEGIN %s' % (TEST_CASE_TOKEN, test_name))
-        except:
-            pass
         self.setup_test()
 
     def setup_test(self):
@@ -208,12 +202,6 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of teardown_test
         is called.
         """
-        try:
-            # Write test end token to adb log if android device is attached.
-            for ad in self.android_devices:
-                ad.sl4a.logV('%s END %s' % (TEST_CASE_TOKEN, test_name))
-        except:
-            pass
         try:
             self.teardown_test()
         finally:
