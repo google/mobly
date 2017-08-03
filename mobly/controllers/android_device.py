@@ -20,6 +20,7 @@ import contextlib
 import logging
 import os
 import time
+import timeout_decorator
 
 from mobly import logger as mobly_logger
 from mobly import signals
@@ -926,7 +927,7 @@ class AndroidDevice(object):
         """
         timeout = 15 * 60
 
-        self._wait_for_device(self._is_boot_completed, timeout)
+        utils.wait_until(self.is_boot_completed, timeout)
 
     def wait_for_adb_detection(self, timeout=DEFAULT_TIMEOUT_USB_ON):
         """Waits until the USB is back on and device is detected with adb
@@ -942,61 +943,44 @@ class AndroidDevice(object):
         different a lot from case to case. User should have more knowledge of
         this value.
         """
-        timeout_start = time.time()
-        self._wait_for_device(self._is_adb_detectable, timeout)
+        start = time.time()
+        utils.wait_until(self.is_adb_detectable, timeout)
+        detected = time.time()
 
-    def _is_boot_completed(self):
-        """Checks if device boot is completed by verifying system property."""
+        # Also make sure device is up before returning to user
+        remaining_timeout = timeout - (detected - start)
+        if remaining_timeout <= 0:
+            raise DeviceError(
+                    self,
+                    'Timed out waiting for %s adb detection.' % self.serial)
+
+        utils.wait_until(
+                lambda: True if self.adb.wait_for_device() == '' else False,
+                timeout=remaining_timeout)
+
+    def is_boot_completed(self):
+        """Checks if device boot is completed by verifying system property.
+
+        Note that adb.wait_for_device() could be blocking in some cases.
+        """
+        self.adb.wait_for_device()
         completed = self.adb.getprop('sys.boot_completed')
         if completed == '1':
             self.log.info('Device %s boot completed.', self.serial)
             return True
         return False
 
-    def _is_adb_detectable(self):
-        """Checks if USB is on and device is ready by verifying adb devices."""
+    def is_adb_detectable(self):
+        """Checks if USB is on and device is ready by verifying adb devices.
+
+        Note that adb.wait_for_device() could be blocking for long time
+        in some cases.
+        """
         serials = list_adb_devices()
         if self.serial in serials:
             self.log.info('Device %s USB is on.', self.serial)
             return True
         return False
-
-    def _wait_for_device(self, func, timeout):
-        """Retry the provided function until it returns True or timed out.
-
-        The provided function is used to verify different adb connectivity cases
-        and it returns bool value to indicate if the verification is successful
-        or not.
-
-        For example:
-            To wait for device reboot to complete:
-                self._wait_for_device(self._is_boot_completed, timeout)
-            To wait for USB reconnect:
-                self._wait_for_device(self._is_adb_detectable, timeout)
-        Args:
-            func: A function that returns True when device condition is
-                expected. It returns False otherwise. This function could also
-                raise adb.AdbError if device is not ready over adb.
-            timeout: Timeout duration to wait for device adb connectivity.
-
-        Raises:
-            DeviceError: If timed out.
-        """
-        timeout_start = time.time()
-        self.adb.wait_for_device()
-        while time.time() < timeout_start + timeout:
-            try:
-                if func():
-                    return
-            except adb.AdbError:
-                # adb shell calls may fail during certain period of booting
-                # process, which is normal. Ignoring these errors.
-                pass
-            time.sleep(5)
-        raise DeviceError(
-            self,
-            'Timed out waiting for device adb connectivity with function: %s'
-            % func.__name__)
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.
