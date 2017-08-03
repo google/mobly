@@ -80,7 +80,7 @@ def main(argv=None):
         help='Specify which test beds to run tests on.')
     if not argv:
         argv = sys.argv[1:]
-    args = parser.parse_args(argv)
+    args = parser.parse_known_args(argv)
     # Load test config file.
     test_configs = config_parser.load_test_config_file(args.config[0],
                                                        args.test_bed)
