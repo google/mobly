@@ -326,6 +326,9 @@ class TestRunnerTest(unittest.TestCase):
         finally:
             setattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME', tmp)
 
+    def test_main(self):
+        tmp = test_runner.main(['-c', self.tmp_dir+"/file.txt"])
+
 
 if __name__ == "__main__":
     unittest.main()

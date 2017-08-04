@@ -70,7 +70,7 @@ def run_suite(test_classes, argv=None):
         help='A list of test classes and optional tests to execute.')
     if not argv:
         argv = sys.argv[1:]
-    args = parser.parse_known_args(argv)
+    args = parser.parse_args(argv)
     # Load test config file.
     test_configs = config_parser.load_test_config_file(args.config[0])
 
