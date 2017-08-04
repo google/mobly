@@ -23,6 +23,19 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')
 
+# Major version of the launch and communication protocol being used by this
+# client.
+# Incrementing this means that compatibility with clients using the older
+# version is broken. Avoid breaking compatibility unless there is no other
+# choice.
+_PROTOCOL_MAJOR_VERSION = 1
+
+# Minor version of the launch and communication protocol.
+# Increment this when new features are added to the launch and communication
+# protocol that are backwards compatible with the old protocol and don't break
+# existing clients.
+_PROTOCOL_MINOR_VERSION = 0
+
 _LAUNCH_CMD = ('%s am instrument -w -e action start %s/' +
                _INSTRUMENTATION_RUNNER_PACKAGE)
 
@@ -82,8 +95,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # process. Starting snippets can be slow, especially if there are
         # multiple, and this avoids the perception that the framework is hanging
         # for a long time doing nothing.
-        self.log.info('Launching snippet apk %s with protocol v1',
-                      self.package)
+        self.log.info('Launching snippet apk %s with protocol %d.%d',
+                      self.package, _PROTOCOL_MAJOR_VERSION,
+                      _PROTOCOL_MINOR_VERSION)
         cmd = _LAUNCH_CMD % (persists_shell_cmd, self.package)
         start_time = time.time()
         self._proc = self._do_start_app(cmd)
