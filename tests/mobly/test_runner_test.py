@@ -15,7 +15,6 @@
 import mock
 import os
 import shutil
-import sys
 import tempfile
 import yaml
 from future.tests.base import unittest
@@ -29,7 +28,6 @@ from tests.lib import mock_android_device
 from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import integration2_test
-
 
 
 class TestRunnerTest(unittest.TestCase):
