@@ -340,11 +340,34 @@ def get_device(ads, **kwargs):
         raise Error('More than one device matched: %s' % serials)
 
 
+def take_screenshots(ads, test_name, begin_time):
+    """Takes screenshots on a list of android devices.
+
+    If you want to take a screenshot, call this function with a list of
+    android_device objects in on_fail.
+
+    Args:
+        ads: A list of AndroidDevice instances.
+        test_name: Name of the test method.
+        begin_time: Logline format timestamp taken when the test started.
+    """
+    begin_time = mobly_logger.normalize_log_line_timestamp(begin_time)
+    for ad in ads:
+        screenshot_path = os.path.join(ad.log_path, 'Screenshots')
+        base_name = ',%s,%s.png' % (begin_time, ad.serial)
+        test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
+        out_name = test_name[:test_name_len] + base_name
+        full_out_path = os.path.join(screenshot_path,
+                                     out_name.replace(' ', r'\ '))
+        ad.take_screenshot(full_out_path)
+        ad.log.info('Screenshot for %s taken at %s.', test_name, full_out_path)
+
+
 def take_bug_reports(ads, test_name, begin_time):
     """Takes bug reports on a list of android devices.
 
     If you want to take a bug report, call this function with a list of
-    android_device objects in on_fail. But reports will be taken on all the
+    android_device objects in on_fail. Bug reports will be taken on all the
     devices in the list concurrently. Bug report takes a relative long
     time to take, so use this cautiously.
 
@@ -842,6 +865,24 @@ class AndroidDevice(object):
             raise DeviceError(self, 'No ongoing adb logcat collection found.')
         utils.stop_standing_subprocess(self._adb_logcat_process)
         self._adb_logcat_process = None
+
+    def take_screenshot(self, output_file):
+        """Takes a screenshot of the device in png format.
+
+        Args:
+            output_file: (str) path to which to write the screenshot.
+        """
+        # On devices <N, the output is subject to newline formatting so binary
+        # data gets corrupted. Work around this by writing it to a file on
+        # device in a temporary location, pulling the file, and then deleting it
+        # on the device. An alternative would be to encode it on stdout for
+        # transport, such as base64.
+        temp_file = '/data/local/tmp/screenshot-%s.png' % (
+            utils.rand_ascii_str(16))
+        self.adb.shell('screencap -p "%s"' % temp_file)
+        utils.create_dir(os.path.dirname(output_file))
+        self.adb.pull([temp_file, output_file])
+        self.adb.shell('rm "%s"' % temp_file)
 
     def take_bug_report(self, test_name, begin_time):
         """Takes a bug report on the device and stores it in a file.
