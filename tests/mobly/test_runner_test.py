@@ -335,11 +335,9 @@ class TestRunnerTest(unittest.TestCase):
     @mock.patch(
         'mobly.test_runner.TestRunner',
         return_value=mock.MagicMock())
-    def test_main(self, mock_test_runner, mock_config, mock_find_test):
-        try:
-            test_runner.main(['-c', "test_config", '-b', 'hello'])
-        except:
-            self.fail("test_runner main() function parses unknown cmd args incorrectly")
+    def test_main_parse_args(self, mock_test_runner, mock_config, mock_find_test):
+        test_runner.main(['-c', "test_config", '-b', 'hello'])
+        mock_config.assert_called_with("test_config", None)
 
 
 
