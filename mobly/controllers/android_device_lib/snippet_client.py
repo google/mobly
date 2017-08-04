@@ -23,12 +23,21 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')
 
-# TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is removed.
-_LAUNCH_CMD_V0 = ('%s am instrument -w -e action start -e port %s %s/' +
-                  _INSTRUMENTATION_RUNNER_PACKAGE)
+# Major version of the launch and communication protocol being used by this
+# client.
+# Incrementing this means that compatibility with clients using the older
+# version is broken. Avoid breaking compatibility unless there is no other
+# choice.
+_PROTOCOL_MAJOR_VERSION = 1
 
-_LAUNCH_CMD_V1 = ('%s am instrument -w -e action start %s/' +
-                  _INSTRUMENTATION_RUNNER_PACKAGE)
+# Minor version of the launch and communication protocol.
+# Increment this when new features are added to the launch and communication
+# protocol that are backwards compatible with the old protocol and don't break
+# existing clients.
+_PROTOCOL_MINOR_VERSION = 0
+
+_LAUNCH_CMD = ('%s am instrument -w -e action start %s/' +
+               _INSTRUMENTATION_RUNNER_PACKAGE)
 
 _STOP_CMD = (
     'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
@@ -45,10 +54,6 @@ _SETSID_COMMAND = 'setsid'
 
 _NOHUP_COMMAND = 'nohup'
 
-# Maximum time to wait for a v0 snippet to start on the device (10 minutes).
-# TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is removed.
-_APP_START_WAIT_TIME_V0 = 10 * 60
-
 
 class Error(Exception):
     pass
@@ -62,9 +67,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     """A client for interacting with snippet APKs using Mobly Snippet Lib.
 
     See superclass documentation for a list of public attributes.
-
-    It currently supports both v0 and v1 snippet launch protocols, although
-    support for v0 will be removed in a future version.
 
     For a description of the launch protocols, see the documentation in
     mobly-snippet-lib, SnippetRunner.java.
@@ -83,60 +85,42 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self.package = package
         self._adb = adb_proxy
         self._proc = None
-        self._launch_version = 'v1'
 
     def start_app_and_connect(self):
         """Overrides superclass. Launches a snippet app and connects to it."""
         self._check_app_installed()
 
         persists_shell_cmd = self._get_persist_command()
-        # Try launching the app with the v1 protocol. If that fails, fall back
-        # to v0 for compatibility. Use info here so people know exactly what's
-        # happening here, which is helpful since they need to create their own
-        # instrumentations and manifest.
-        self.log.info('Launching snippet apk %s with protocol v1',
-                      self.package)
-        cmd = _LAUNCH_CMD_V1 % (persists_shell_cmd, self.package)
+        # Use info here so people can follow along with the snippet startup
+        # process. Starting snippets can be slow, especially if there are
+        # multiple, and this avoids the perception that the framework is hanging
+        # for a long time doing nothing.
+        self.log.info('Launching snippet apk %s with protocol %d.%d',
+                      self.package, _PROTOCOL_MAJOR_VERSION,
+                      _PROTOCOL_MINOR_VERSION)
+        cmd = _LAUNCH_CMD % (persists_shell_cmd, self.package)
         start_time = time.time()
         self._proc = self._do_start_app(cmd)
 
-        # "Instrumentation crashed" could be due to several reasons, eg
-        # exception thrown during startup or just a launch protocol 0 snippet
-        # dying because it needs the port flag. Sadly we have no way to tell so
-        # just warn and retry as v0.
-        # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is
-        # removed.
+        # Check protocol version and get the device port
         line = self._read_protocol_line()
+        match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$', line)
+        if not match or match.group(1) != '1':
+            raise ProtocolVersionError(line)
+
+        line = self._read_protocol_line()
+        match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
+        if not match:
+            raise ProtocolVersionError(line)
+        self.device_port = int(match.group(1))
+
         # Forward the device port to a new host port, and connect to that port
         self.host_port = utils.get_available_host_port()
-        if line in ('INSTRUMENTATION_RESULT: shortMsg=Process crashed.',
-                    'INSTRUMENTATION_RESULT: shortMsg='
-                    'java.lang.IllegalArgumentException'):
-            self.log.warning('Snippet %s crashed on startup. This might be an '
-                             'actual error or a snippet using deprecated v0 '
-                             'start protocol. Retrying as a v0 snippet.',
-                             self.package)
-            # Reuse the host port as the device port in v0 snippet. This isn't
-            # safe in general, but the protocol is deprecated.
-            self.device_port = self.host_port
-            cmd = _LAUNCH_CMD_V0 % (persists_shell_cmd, self.device_port,
-                                    self.package)
-            self._proc = self._do_start_app(cmd)
-            self._connect_to_v0()
-            self._launch_version = 'v0'
-        else:
-            # Check protocol version and get the device port
-            match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$',
-                             line)
-            if not match or match.group(1) != '1':
-                raise ProtocolVersionError(line)
+        self._adb.forward(
+            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+        self.connect()
 
-            line = self._read_protocol_line()
-            match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
-            if not match:
-                raise ProtocolVersionError(line)
-            self.device_port = int(match.group(1))
-            self._connect_to_v1()
+        # Yaaay! We're done!
         self.log.debug('Snippet %s started after %.1fs on host port %s',
                        self.package, time.time() - start_time, self.host_port)
 
@@ -157,11 +141,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             AppRestoreConnectionError: When the app was not able to be started.
         """
         self.host_port = port or utils.get_available_host_port()
+        self._adb.forward(
+            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
         try:
-            if self._launch_version == 'v0':
-                self._connect_to_v0()
-            else:
-                self._connect_to_v1()
+            self.connect()
         except:
             # Failed to connect to app, something went wrong.
             raise jsonrpc_client_base.AppRestoreConnectionError(
@@ -246,32 +229,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             adb_cmd += ['-s', self._adb.serial]
         adb_cmd += ['shell', launch_cmd]
         return utils.start_standing_subprocess(adb_cmd, shell=False)
-
-    # TODO(adorokhine): delete this in Mobly 1.6 when snippet v0 support is
-    # removed.
-    def _connect_to_v0(self):
-        self._adb.forward(
-            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
-        start_time = time.time()
-        expiration_time = start_time + _APP_START_WAIT_TIME_V0
-        while time.time() < expiration_time:
-            self.log.debug('Attempting to start %s.', self.package)
-            try:
-                self.connect()
-                return
-            except:
-                self.log.debug(
-                    'v0 snippet %s is not yet running, retrying',
-                    self.package,
-                    exc_info=True)
-            time.sleep(1)
-        raise jsonrpc_client_base.AppStartError(
-            '%s failed to start on %s.' % (self.package, self._adb.serial))
-
-    def _connect_to_v1(self):
-        self._adb.forward(
-            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
-        self.connect()
 
     def _read_protocol_line(self):
         """Reads the next line of instrumentation output relevant to snippets.
