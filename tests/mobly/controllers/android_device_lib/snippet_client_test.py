@@ -186,11 +186,11 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'SnippetClient._read_protocol_line')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-                'SnippetClient._connect_to_v1')
+                'SnippetClient.connect')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.get_available_host_port')
-    def test_snippet_start_app_and_connect_v1_persistent_session(
-            self, mock_get_port, mock_connect_to_v1, mock_read_protocol_line,
+    def test_snippet_start_app_and_connect_persistent_session(
+            self, mock_get_port, mock_connect, mock_read_protocol_line,
             mock_check_app_installed, mock_do_start_app):
         def _mocked_shell(arg):
             if 'setsid' in arg:
@@ -319,7 +319,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
                                     'Unexpected EOF waiting for app to start'):
             client.start_app_and_connect()
 
-    def _make_client(self, adb_proxy=MockAdbProxy()):
+    def _make_client(self, adb_proxy=None):
+        adb_proxy = adb_proxy or MockAdbProxy()
         return snippet_client.SnippetClient(
             package=MOCK_PACKAGE_NAME, adb_proxy=adb_proxy)
 

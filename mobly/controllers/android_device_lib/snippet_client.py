@@ -23,8 +23,8 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')
 
-_LAUNCH_CMD = (
-    'am instrument -w -e action start %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
+_LAUNCH_CMD = ('%s am instrument -w -e action start %s/' +
+               _INSTRUMENTATION_RUNNER_PACKAGE)
 
 _STOP_CMD = (
     'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
