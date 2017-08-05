@@ -339,6 +339,9 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
         try:
             child.kill()
             child.wait(timeout=10)
+        except psutil.NoSuchProcess:
+            # Ignore if the child process has already terminated.
+            pass
         except:
             failed.append(child.pid)
             logging.exception('Failed to kill standing subprocess %d',
@@ -346,8 +349,11 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     try:
         process.kill()
         process.wait(timeout=10)
+    except psutil.NoSuchProcess:
+        # Ignore if the process has already terminated.
+        pass
     except:
-        failed.append(process.pid)
+        failed.append(pid)
         logging.exception('Failed to kill standing subprocess %d', pid)
     if failed:
         raise Error('Failed to kill standing subprocesses: %s' % failed)
