@@ -39,6 +39,17 @@ class CallbackHandlerTest(unittest.TestCase):
         self.assertGreaterEqual(jsonrpc_client_base._SOCKET_READ_TIMEOUT,
                                 callback_handler.MAX_TIMEOUT)
 
+    def test_callback_id_property(self):
+        mock_event_client = mock.Mock()
+        handler = callback_handler.CallbackHandler(
+            callback_id=MOCK_CALLBACK_ID,
+            event_client=mock_event_client,
+            ret_value=None,
+            method_name=None)
+        self.assertEqual(handler.callback_id, MOCK_CALLBACK_ID)
+        with self.assertRaisesRegex(AttributeError, "can't set attribute"):
+            handler.callback_id = 'ha'
+
     def test_event_dict_to_snippet_event(self):
         mock_event_client = mock.Mock()
         mock_event_client.eventWaitAndGet = mock.Mock(
