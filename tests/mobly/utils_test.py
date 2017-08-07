@@ -18,7 +18,6 @@ import time
 from future.tests.base import unittest
 
 import portpicker
-import psutil
 from mobly import utils
 
 MOCK_AVAILABLE_PORT = 5
@@ -28,17 +27,21 @@ class UtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.utils.
     """
-
     def test_start_standing_subproc(self):
-        p = utils.start_standing_subprocess(['sleep', '1'])
-        p1 = psutil.Process(p.pid)
-        self.assertTrue(p1.is_running())
+        with self.assertRaisesRegex(utils.Error, 'Process .* has terminated'):
+            utils.start_standing_subprocess(
+                ['sleep', '0'], check_health_delay=0.5)
 
     def test_stop_standing_subproc(self):
-        p = utils.start_standing_subprocess(['sleep', '4'])
-        p1 = psutil.Process(p.pid)
+        p = utils.start_standing_subprocess(['sleep', '5'])
         utils.stop_standing_subprocess(p)
-        self.assertFalse(p1.is_running())
+        self.assertIsNotNone(p.poll())
+
+    def test_stop_standing_subproc_already_dead(self):
+        p = utils.start_standing_subprocess(['sleep', '0'])
+        time.sleep(0.5)
+        with self.assertRaisesRegex(utils.Error, 'Process .* has terminated'):
+            utils.stop_standing_subprocess(p)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
