@@ -273,13 +273,29 @@ def concurrent_exec(func, param_list):
             try:
                 return_vals.append(future.result())
             except Exception as exc:
-                logging.exception("{} generated an exception: {}".format(
+                print("{} generated an exception: {}".format(
                     params, traceback.format_exc()))
                 return_vals.append(exc)
         return return_vals
 
 
-def start_standing_subprocess(cmd, shell=False):
+def _assert_subprocess_running(proc):
+    """Checks if a subprocess has terminated on its own.
+
+    Args:
+        proc: A subprocess returned by subprocess.Popen.
+
+    Raises:
+        Error is raised if the subprocess has stopped.
+    """
+    ret = proc.poll()
+    if ret is not None:
+        out, err = proc.communicate()
+        raise Error("Process %d has terminated. ret: %d, stderr: %s,"
+                    " stdout: %s" % (proc.pid, ret, err, out))
+
+
+def start_standing_subprocess(cmd, check_health_delay=0, shell=False):
     """Starts a long-running subprocess.
 
     This is not a blocking call and the subprocess started by it should be
@@ -288,27 +304,36 @@ def start_standing_subprocess(cmd, shell=False):
     For short-running commands, you should use subprocess.check_call, which
     blocks.
 
+    You can specify a health check after the subprocess is started to make sure
+    it did not stop prematurely.
+
     Args:
         cmd: string, the command to start the subprocess with.
+        check_health_delay: float, the number of seconds to wait after the
+                            subprocess starts to check its health. Default is 0,
+                            which means no check.
         shell: bool, True to run this command through the system shell,
             False to invoke it directly. See subprocess.Proc() docs.
 
     Returns:
         The subprocess that was started.
     """
-    logging.debug('Starting standing subprocess with: %s', cmd)
+    logging.debug('Start standing subprocess with cmd: %s', cmd)
     proc = subprocess.Popen(
         cmd,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=shell)
+    logging.debug('Start standing subprocess with cmd: %s', cmd)
     # Leaving stdin open causes problems for input, e.g. breaking the
     # code.inspect() shell (http://stackoverflow.com/a/25512460/1612937), so
     # explicitly close it assuming it is not needed for standing subprocesses.
     proc.stdin.close()
     proc.stdin = None
-    logging.debug('Started standing subprocess %d', proc.pid)
+    if check_health_delay > 0:
+        time.sleep(check_health_delay)
+        _assert_subprocess_running(proc)
     return proc
 
 
@@ -327,9 +352,10 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
         Error: if the subprocess could not be stopped.
     """
     pid = proc.pid
-    logging.debug('Stopping standing subprocess %d', pid)
+    logging.debug('Stop standing subprocess %d', pid)
+    _assert_subprocess_running(proc)
     process = psutil.Process(pid)
-    failed = []
+    success = True
     try:
         children = process.children(recursive=True)
     except AttributeError:
@@ -339,25 +365,18 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
         try:
             child.kill()
             child.wait(timeout=10)
-        except psutil.NoSuchProcess:
-            # Ignore if the child process has already terminated.
-            pass
         except:
-            failed.append(child.pid)
+            success = False
             logging.exception('Failed to kill standing subprocess %d',
                               child.pid)
     try:
         process.kill()
         process.wait(timeout=10)
-    except psutil.NoSuchProcess:
-        # Ignore if the process has already terminated.
-        pass
     except:
-        failed.append(pid)
+        success = False
         logging.exception('Failed to kill standing subprocess %d', pid)
-    if failed:
-        raise Error('Failed to kill standing subprocesses: %s' % failed)
-    logging.debug('Stopped standing subprocess %d', pid)
+    if not success:
+        raise Error('Some standing subprocess failed to die')
 
 
 def wait_for_standing_subprocess(proc, timeout=None):
