@@ -60,6 +60,10 @@ class CallbackHandler(object):
         self.ret_value = ret_value
         self._method_name = method_name
 
+    @property
+    def callback_id(self):
+        return self._id
+
     def waitAndGet(self, event_name, timeout=DEFAULT_TIMEOUT):
         """Blocks until an event of the specified name has been received and
         return the event, or timeout.
