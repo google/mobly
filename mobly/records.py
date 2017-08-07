@@ -217,13 +217,18 @@ class TestResultRecord(object):
         elif isinstance(e, Exception):
             self.details = failure_location + str(e)
         # Record stacktrace of the exception.
-        # In py2, exception objects don't have built-in traceback, so we have
-        # to immediately retrieve stacktrace from `sys.exc_info`.
-        _, _, exc_traceback = sys.exc_info()
+        # This check cannot be based on try...except, which messes up
+        # `exc_info`.
+        if e and hasattr(e, '__traceback__'):
+            exc_traceback = e.__traceback__
+        else:
+            # In py2, exception objects don't have built-in traceback, so we
+            # have to immediately retrieve stacktrace from `sys.exc_info`.
+            _, _, exc_traceback = sys.exc_info()
         if exc_traceback:
             stacktrace_str = ''.join(traceback.format_tb(exc_traceback))
             self.stacktrace = stacktrace_str
-            if not hasattr(e, 'stacktrace_str'):
+            if e and not hasattr(e, 'stacktrace_str'):
                 e.stacktrace_str = stacktrace_str
 
     def test_pass(self, e=None):
@@ -279,7 +284,14 @@ class TestResultRecord(object):
         """
         self.result = TestResultEnums.TEST_RESULT_ERROR
         self.extra_errors[position] = e
-        _, _, exc_traceback = sys.exc_info()
+        # This check cannot be based on try...except, which messes up
+        # `exc_info`.
+        if e and hasattr(e, '__traceback__'):
+            exc_traceback = e.__traceback__
+        else:
+            # In py2, exception objects don't have built-in traceback, so we
+            # have to immediately retrieve stacktrace from `sys.exc_info`.
+            _, _, exc_traceback = sys.exc_info()
         if exc_traceback:
             stacktrace_str = ''.join(traceback.format_tb(exc_traceback))
             if not hasattr(e, 'stacktrace_str'):
