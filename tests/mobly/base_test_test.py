@@ -529,6 +529,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
+        print(actual_record.to_dict())
         self.assertEqual(
             str(actual_record.extra_errors['_on_pass']), expected_msg)
         self.assertEqual(actual_record.test_name, self.mock_test_name)
@@ -552,13 +553,58 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, "Test Body Exception.")
         self.assertIsNone(actual_record.extras)
-        # self.assertIsNone(actual_record.to_dict())
         self.assertEqual(
             str(actual_record.extra_errors["teardown_test"]),
             "Details=This is an expected exception., Extras=None")
         expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_exception_objects_in_record(self):
+        """Checks that the exception objects are correctly tallied.
+        """
+        expected_termination_signal = Exception('Test Body Exception.')
+        expected_extra_error = Exception('teardown_test Exception.')
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def teardown_test(self):
+                raise expected_extra_error
+
+            def test_something(self):
+                raise expected_termination_signal
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.error[0]
+        self.assertIs(actual_record.termination_signal,
+                      expected_termination_signal)
+        self.assertIsNotNone(actual_record.termination_signal.stacktrace_str)
+        self.assertEqual(len(actual_record.extra_errors), 1)
+        extra_error = actual_record.extra_errors['teardown_test']
+        self.assertIs(extra_error, expected_extra_error)
+        self.assertIsNotNone(extra_error.stacktrace_str)
+        self.assertIsNone(actual_record.extras)
+
+    def test_promote_extra_errors_to_termination_signal(self):
+        """If no termination singal is specified, use the first extra error as
+        the termination signal.
+        """
+        expected_extra_error = Exception('teardown_test Exception.')
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def teardown_test(self):
+                raise expected_extra_error
+
+            def test_something(self):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.error[0]
+        self.assertFalse(actual_record.extra_errors)
+        self.assertEqual(actual_record.details,
+                         'teardown_test: teardown_test Exception.')
+        self.assertIsNotNone(actual_record.stacktrace)
 
     def test_explicit_pass_but_teardown_test_raises_an_exception(self):
         """Test record result should be marked as ERROR as opposed to PASS.

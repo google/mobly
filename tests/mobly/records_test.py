@@ -28,6 +28,7 @@ from tests.lib import utils
 class RecordsTest(unittest.TestCase):
     """This test class tests the implementation of classes in mobly.records.
     """
+
     def setUp(self):
         self.tn = "test_name"
         self.details = "Some details about the test execution."
@@ -58,7 +59,7 @@ class RecordsTest(unittest.TestCase):
         d[records.TestResultEnums.RECORD_END_TIME] = record.end_time
         d[records.TestResultEnums.RECORD_UID] = None
         d[records.TestResultEnums.RECORD_CLASS] = None
-        d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
+        d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = []
         d[records.TestResultEnums.RECORD_STACKTRACE] = None
         actual_d = record.to_dict()
         self.assertDictEqual(actual_d, d)

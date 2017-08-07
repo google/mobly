@@ -120,6 +120,7 @@ class TestResultEnums(object):
     RECORD_EXTRA_ERRORS = 'Extra Errors'
     RECORD_DETAILS = 'Details'
     RECORD_STACKTRACE = 'Stacktrace'
+    RECORD_POSITION = 'Position'
     TEST_RESULT_PASS = 'PASS'
     TEST_RESULT_FAIL = 'FAIL'
     TEST_RESULT_SKIP = 'SKIP'
@@ -128,6 +129,21 @@ class TestResultEnums(object):
 
 class TestResultRecord(object):
     """A record that holds the information of a single test.
+
+    The record object holds all information of a test, including all the
+    exceptions occurred during the test.
+
+    A test can terminate for two reasons:
+      1. the test function executes to the end and completes naturally.
+      2. the test is terminated by an exception, which we call
+         "termination signal".
+
+    The termination signal is treated differently. Its content are extracted
+    into first-tier attributes of the record object, like `details` and
+    `stacktrace`, for easy consumption.
+
+    Note the termination signal is not always an error, it can also be explicit
+    pass signal or abort/skip signals.
 
     Attributes:
         test_name: string, the name of the test.
@@ -143,8 +159,8 @@ class TestResultRecord(object):
                  be None.
         stacktrace: string, the stacktrace for the exception that terminated
                     the test.
-        extra_errors: OrderedDict, any extra errors occurred during the entire
-                      test lifecycle. The order of occurrence is preserved.
+        extra_errors: OrderedDict, all exceptions occurred during the entire test
+                    lifecycle. The order of occurrence is preserved.
     """
 
     def __init__(self, t_name, t_class=None):
@@ -157,6 +173,7 @@ class TestResultRecord(object):
         self.extras = None
         self.details = None
         self.stacktrace = None
+        self.termination_signal = None
         self.extra_errors = collections.OrderedDict()
 
     def test_begin(self):
@@ -183,13 +200,17 @@ class TestResultRecord(object):
         self.result = result
         if self.extra_errors:
             self.result = TestResultEnums.TEST_RESULT_ERROR
-        # When no explicit termination signal is provided, use the first extra
-        # error as the signal if there is any.
         failure_location = ''
-        if e is None and self.extra_errors:
+        # If a termination signal is provided, record it.
+        if e:
+            self.termination_signal = e
+        # Otherwise, use the first exception occurred to populate fields like
+        # details and extras.
+        elif e is None and self.extra_errors:
             failure_location, e = self.extra_errors.popitem(last=False)
         if failure_location:
             failure_location += ': '
+        # Populate record fields based on the type of the termination signal.
         if isinstance(e, signals.TestSignal):
             self.details = failure_location + str(e.details)
             self.extras = e.extras
@@ -197,7 +218,10 @@ class TestResultRecord(object):
             self.details = failure_location + str(e)
         _, _, exc_traceback = sys.exc_info()
         if exc_traceback:
-            self.stacktrace = ''.join(traceback.format_tb(exc_traceback))
+            stacktrace_str = ''.join(traceback.format_tb(exc_traceback))
+            self.stacktrace = stacktrace_str
+            if not hasattr(e, 'stacktrace_str'):
+                e.stacktrace_str = stacktrace_str
 
     def test_pass(self, e=None):
         """To mark the test as passed in this record.
@@ -235,7 +259,7 @@ class TestResultRecord(object):
         """
         self._test_end(TestResultEnums.TEST_RESULT_ERROR, e)
 
-    def add_error(self, tag, e):
+    def add_error(self, position, e):
         """Add extra error happened during a test mark the test result as
         ERROR.
 
@@ -247,11 +271,16 @@ class TestResultRecord(object):
         error is added to the record's extra errors.
 
         Args:
-            tag: A string describing where this error came from, e.g. 'on_pass'.
+            position: string, where this error occurred, e.g. 'teardown_test'.
             e: An exception object.
         """
         self.result = TestResultEnums.TEST_RESULT_ERROR
-        self.extra_errors[tag] = e
+        self.extra_errors[position] = e
+        _, _, exc_traceback = sys.exc_info()
+        if exc_traceback:
+            stacktrace_str = ''.join(traceback.format_tb(exc_traceback))
+            if not hasattr(e, 'stacktrace_str'):
+                e.stacktrace_str = stacktrace_str
 
     def __str__(self):
         d = self.to_dict()
@@ -263,6 +292,30 @@ class TestResultRecord(object):
         """This returns a short string representation of the test record."""
         t = utils.epoch_to_human_time(self.begin_time)
         return '%s %s %s' % (t, self.test_name, self.result)
+
+    def _get_extra_errors_list(self):
+        """Gets a list of dicts representing the extra errors in order.
+
+        Converts the exception objects for extra errors to dicts, so they can
+        be properly serialized.
+
+        Returns:
+            A list of dicts, each dict represent an exception. The order of the
+            list matches the order of the errors occurred in a test.
+        """
+        results = []
+        for position, e in self.extra_errors.items():
+            exception_dict = {}
+            exception_dict[TestResultEnums.RECORD_DETAILS] = str(e)
+            exception_dict[TestResultEnums.RECORD_POSITION] = position
+            exception_dict[
+                TestResultEnums.RECORD_STACKTRACE] = e.stacktrace_str
+            try:
+                exception_dict[TestResultEnums.RECORD_EXTRAS] = e.extras
+            except AttributeError:
+                pass
+            results.append(exception_dict)
+        return results
 
     def to_dict(self):
         """Gets a dictionary representating the content of this class.
@@ -279,7 +332,7 @@ class TestResultRecord(object):
         d[TestResultEnums.RECORD_UID] = self.uid
         d[TestResultEnums.RECORD_EXTRAS] = self.extras
         d[TestResultEnums.RECORD_DETAILS] = self.details
-        d[TestResultEnums.RECORD_EXTRA_ERRORS] = dict(self.extra_errors)
+        d[TestResultEnums.RECORD_EXTRA_ERRORS] = self._get_extra_errors_list()
         d[TestResultEnums.RECORD_STACKTRACE] = self.stacktrace
         return d
 
