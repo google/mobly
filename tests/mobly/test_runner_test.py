@@ -336,8 +336,8 @@ class TestRunnerTest(unittest.TestCase):
         'mobly.test_runner.TestRunner',
         return_value=mock.MagicMock())
     def test_main_parse_args(self, mock_test_runner, mock_config, mock_find_test):
-        test_runner.main(['-c', "test_config", '-b', 'hello'])
-        mock_config.assert_called_with("test_config", None)
+        test_runner.main(['-c', 'some/path/foo.yaml', '-b', 'hello'])
+        mock_config.assert_called_with('some/path/foo.yaml', None)
 
 
 
