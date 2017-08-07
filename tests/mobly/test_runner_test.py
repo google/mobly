@@ -326,6 +326,18 @@ class TestRunnerTest(unittest.TestCase):
         finally:
             setattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME', tmp)
 
+    @mock.patch(
+        'mobly.test_runner._find_test_class',
+        return_value=type('SampleTest', (), {}))
+    @mock.patch(
+        'mobly.test_runner.config_parser.load_test_config_file',
+        return_value=[config_parser.TestRunConfig()])
+    @mock.patch('mobly.test_runner.TestRunner', return_value=mock.MagicMock())
+    def test_main_parse_args(self, mock_test_runner, mock_config,
+                             mock_find_test):
+        test_runner.main(['-c', 'some/path/foo.yaml', '-b', 'hello'])
+        mock_config.assert_called_with('some/path/foo.yaml', None)
+
 
 if __name__ == "__main__":
     unittest.main()
