@@ -216,6 +216,9 @@ class TestResultRecord(object):
             self.extras = e.extras
         elif isinstance(e, Exception):
             self.details = failure_location + str(e)
+        # Record stacktrace of the exception.
+        # In py2, exception objects don't have built-in traceback, so we have
+        # to immediately retrieve stacktrace from `sys.exc_info`.
         _, _, exc_traceback = sys.exc_info()
         if exc_traceback:
             stacktrace_str = ''.join(traceback.format_tb(exc_traceback))
