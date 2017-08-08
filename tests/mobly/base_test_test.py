@@ -384,6 +384,7 @@ class BaseTestTest(unittest.TestCase):
 
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self, test_name, begin_time):
+                assert self.current_test_name == 'test_something'
                 my_mock("on_fail")
 
             def on_pass(self, test_name, begin_time):
