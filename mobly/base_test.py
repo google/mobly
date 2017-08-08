@@ -202,10 +202,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of teardown_test
         is called.
         """
-        try:
-            self.teardown_test()
-        finally:
-            self.current_test_name = None
+        self.teardown_test()
 
     def teardown_test(self):
         """Teardown function that will be called every time a test method has
@@ -374,6 +371,7 @@ class BaseTestClass(object):
             self.results.add_record(tr_record)
             self.summary_writer.dump(tr_record.to_dict(),
                                      records.TestSummaryEntryType.RECORD)
+            self.current_test_name = None
 
     def _assert_function_name_in_stack(self, expected_func_name):
         """Asserts that the current stack contains the given function name."""
