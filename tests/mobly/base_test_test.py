@@ -190,9 +190,11 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
+        skipped_record = bt_cls.results.skipped[0]
+        self.assertIsNone(skipped_record.begin_time)
+        self.assertIsNone(skipped_record.end_time)
         utils.validate_test_result(bt_cls.results)
         self.assertEqual(actual_record.test_name, "setup_class")
-
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         expected_summary = ("Error 1, Executed 0, Failed 0, Passed 0, "
@@ -871,6 +873,8 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.skipped[0]
+        self.assertIsNotNone(actual_record.begin_time)
+        self.assertIsNotNone(actual_record.end_time)
         self.assertEqual(actual_record.test_name, "test_func")
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
@@ -886,6 +890,8 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.skipped[0]
+        self.assertIsNotNone(actual_record.begin_time)
+        self.assertIsNotNone(actual_record.end_time)
         self.assertEqual(actual_record.test_name, "test_func")
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)

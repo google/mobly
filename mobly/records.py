@@ -166,7 +166,8 @@ class TestResultRecord(object):
                 be any exception instance or of any subclass of
                 mobly.signals.TestSignal.
         """
-        self.end_time = utils.get_current_epoch_time()
+        if self.begin_time is not None:
+            self.end_time = utils.get_current_epoch_time()
         self.result = result
         if self.extra_errors:
             self.result = TestResultEnums.TEST_RESULT_ERROR
