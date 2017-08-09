@@ -226,7 +226,8 @@ class TestResultRecord(object):
             # have to immediately retrieve stacktrace from `sys.exc_info`.
             _, _, exc_traceback = sys.exc_info()
         if exc_traceback:
-            stacktrace_str = ''.join(traceback.format_tb(exc_traceback))
+            stacktrace_str = ''.join(
+                traceback.format_exception(e.__class__, e, exc_traceback))
             self.stacktrace = stacktrace_str
             if e and not hasattr(e, 'stacktrace_str'):
                 e.stacktrace_str = stacktrace_str
@@ -293,7 +294,8 @@ class TestResultRecord(object):
             # have to immediately retrieve stacktrace from `sys.exc_info`.
             _, _, exc_traceback = sys.exc_info()
         if exc_traceback:
-            stacktrace_str = ''.join(traceback.format_tb(exc_traceback))
+            stacktrace_str = ''.join(
+                traceback.format_exception(e.__class__, e, exc_traceback))
             if not hasattr(e, 'stacktrace_str'):
                 e.stacktrace_str = stacktrace_str
 
