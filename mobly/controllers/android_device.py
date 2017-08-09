@@ -49,6 +49,8 @@ KEY_DEVICE_REQUIRED = 'required'
 # Default Timeout to wait for USB ON
 DEFAULT_TIMEOUT_USB_ON = 5 * 60
 
+DEFAULT_TIMEOUT_BOOT_COMPLETION = 15 * 60
+
 
 class Error(signals.ControllerError):
     pass
@@ -682,7 +684,7 @@ class AndroidDevice(object):
         mode per security restrictions.
         """
         self.adb.root()
-        self.adb.wait_for_device()
+        self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION)
 
     def load_snippet(self, name, package):
         """Starts the snippet apk with the given package name and connects.
@@ -943,7 +945,6 @@ class AndroidDevice(object):
         different a lot from case to case. User should have more knowledge of
         this value.
         """
-        timeout_start = time.time()
         self._wait_for_device(self._is_adb_detectable, timeout)
 
     def _is_boot_completed(self):
@@ -974,6 +975,9 @@ class AndroidDevice(object):
                 self._wait_for_device(self._is_boot_completed, timeout)
             To wait for USB reconnect:
                 self._wait_for_device(self._is_adb_detectable, timeout)
+            To wait for USB disconnect:
+                self._wait_for_device(lambda: self.adb._is_adb_detectable() : False ? True, timeout)
+
         Args:
             func: A function that returns True when device condition is
                 expected. It returns False otherwise. This function could also
@@ -984,8 +988,8 @@ class AndroidDevice(object):
             DeviceError: If timed out.
         """
         timeout_start = time.time()
-        self.adb.wait_for_device()
-        while time.time() < timeout_start + timeout:
+        self.adb.wait_for_device(timeout=timeout)
+        while time.time() <  timeout_start + timeout:
             try:
                 if func():
                     return
