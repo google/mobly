@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,15 +41,15 @@ class AdbError(Exception):
         return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
                 ) % (self.cmd, self.ret_code, self.stdout, self.stderr)
 
-class AdbTimeoutError(AdbError):
 
+class AdbTimeoutError(AdbError):
     def __init__(self, cmd, timeout):
         self.cmd = cmd
         self.timeout = timeout
 
     def __str__(self):
-        return ('Timed out Adb cmd "%s". timeout: %s'
-                ) % (self.cmd, self.timeout)
+        return ('Timed out Adb cmd "%s". timeout: %s') % (self.cmd,
+                                                          self.timeout)
 
 
 def list_occupied_adb_ports():
@@ -108,7 +108,7 @@ class AdbProxy(object):
                 See subprocess.Popen() documentation.
             shell: bool, True to run this command through the system shell,
                 False to invoke it directly. See subprocess.Popen() docs.
-            timeout: int in seconds, if given, command will timeout after
+            timeout: int seconds, if given, command will timeout after
                 so many seconds.
 
         Returns:
@@ -136,7 +136,7 @@ class AdbProxy(object):
         else:
             raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, args, shell, timeout=None):
+    def _exec_adb_cmd(self, name, args, shell, timeout):
         if shell:
             # Add quotes around "adb" in case the ADB path contains spaces. This
             # is pretty common on Windows (e.g. Program Files).
@@ -183,13 +183,14 @@ class AdbProxy(object):
                     See subprocess.Proc() documentation.
                 shell: bool, True to run this command through the system shell,
                     False to invoke it directly. See subprocess.Proc() docs.
-                timeout: int in seconds, the timeout value to run adb command.
+                timeout: in seconds, the timeout value to run adb command.
 
             Returns:
                 The output of the adb command run if exit code is 0.
             """
             args = args or ''
             clean_name = name.replace('_', '-')
-            return self._exec_adb_cmd(clean_name, args, shell=shell, timeout=timeout)
+            return self._exec_adb_cmd(
+                clean_name, args, shell=shell, timeout=timeout)
 
         return adb_call

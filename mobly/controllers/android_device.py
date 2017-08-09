@@ -989,7 +989,7 @@ class AndroidDevice(object):
         """
         timeout_start = time.time()
         self.adb.wait_for_device(timeout=timeout)
-        while time.time() <  timeout_start + timeout:
+        while time.time() < timeout_start + timeout:
             try:
                 if func():
                     return
@@ -1000,8 +1000,8 @@ class AndroidDevice(object):
             time.sleep(5)
         raise DeviceError(
             self,
-            'Timed out waiting for device adb connectivity with function: %s'
-            % func.__name__)
+            'Timed out waiting for device adb connectivity with function: %s' %
+            func.__name__)
 
     def _get_active_snippet_info(self):
         """Collects information on currently active snippet clients.
