@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import collections
+import copy
 import functools
 import inspect
 import logging
@@ -218,21 +219,18 @@ class BaseTestClass(object):
         Args:
             record: The records.TestResultRecord object for the failed test.
         """
-        test_name = record.test_name
-        if record.details:
-            logging.error(record.details)
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        logging.info(RESULT_LINE_TEMPLATE, test_name, record.result)
-        self.on_fail(test_name, begin_time)
+        logging.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
+        self.on_fail(copy.deepcopy(record))
 
-    def on_fail(self, test_name, begin_time):
+    def on_fail(self, record):
         """A function that is executed upon a test failure.
 
         User implementation is optional.
 
         Args:
-            test_name: Name of the test that triggered this function.
-            begin_time: Logline format timestamp taken when the test started.
+            record: records.TestResultRecord, the test record for this test,
+                    containing all information of the test execution including
+                    exception objects.
         """
 
     def _on_pass(self, record):
@@ -242,22 +240,21 @@ class BaseTestClass(object):
         Args:
             record: The records.TestResultRecord object for the passed test.
         """
-        test_name = record.test_name
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
         msg = record.details
         if msg:
             logging.info(msg)
-        logging.info(RESULT_LINE_TEMPLATE, test_name, record.result)
-        self.on_pass(test_name, begin_time)
+        logging.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
+        self.on_pass(copy.deepcopy(record))
 
-    def on_pass(self, test_name, begin_time):
+    def on_pass(self, record):
         """A function that is executed upon a test passing.
 
         Implementation is optional.
 
         Args:
-            test_name: Name of the test that triggered this function.
-            begin_time: Logline format timestamp taken when the test started.
+            record: records.TestResultRecord, the test record for this test,
+                    containing all information of the test execution including
+                    exception objects.
         """
 
     def _on_skip(self, record):
@@ -267,20 +264,19 @@ class BaseTestClass(object):
         Args:
             record: The records.TestResultRecord object for the skipped test.
         """
-        test_name = record.test_name
-        begin_time = logger.epoch_to_log_line_timestamp(record.begin_time)
-        logging.info(RESULT_LINE_TEMPLATE, test_name, record.result)
         logging.info('Reason to skip: %s', record.details)
-        self.on_skip(test_name, begin_time)
+        logging.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
+        self.on_skip(copy.deepcopy(record))
 
-    def on_skip(self, test_name, begin_time):
+    def on_skip(self, record):
         """A function that is executed upon a test being skipped.
 
         Implementation is optional.
 
         Args:
-            test_name: Name of the test that triggered this function.
-            begin_time: Logline format timestamp taken when the test started.
+            record: records.TestResultRecord, the test record for this test,
+                    containing all information of the test execution including
+                    exception objects.
         """
 
     def _exec_procedure_func(self, func, tr_record):

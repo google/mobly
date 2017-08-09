@@ -184,7 +184,7 @@ class BaseTestTest(unittest.TestCase):
                 if not self.results.is_all_pass:
                     teardown_class_call_check("heehee")
 
-            def on_fail(self, test_name, begin_time):
+            def on_fail(self, record):
                 on_fail_call_check("haha")
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
@@ -337,7 +337,7 @@ class BaseTestTest(unittest.TestCase):
             def teardown_test(self):
                 my_mock("teardown_test")
 
-            def on_pass(self, test_name, begin_time):
+            def on_pass(self, record):
                 never_call()
 
             def test_something(self):
@@ -358,10 +358,10 @@ class BaseTestTest(unittest.TestCase):
         my_mock = mock.MagicMock()
 
         class MockBaseTest(base_test.BaseTestClass):
-            def on_fail(self, test_name, begin_time):
+            def on_fail(self, record):
                 my_mock("on_fail")
 
-            def on_pass(self, test_name, begin_time):
+            def on_pass(self, record):
                 never_call()
 
             def teardown_test(self):
@@ -385,11 +385,11 @@ class BaseTestTest(unittest.TestCase):
         my_mock = mock.MagicMock()
 
         class MockBaseTest(base_test.BaseTestClass):
-            def on_fail(self, test_name, begin_time):
+            def on_fail(self, record):
                 assert self.current_test_name == 'test_something'
                 my_mock("on_fail")
 
-            def on_pass(self, test_name, begin_time):
+            def on_pass(self, record):
                 never_call()
 
             def test_something(self):
@@ -406,14 +406,49 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
+    def test_procedure_function_gets_correct_record(self):
+        on_fail_mock = mock.MagicMock()
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_fail(self, record):
+                on_fail_mock.record = record
+
+            def test_something(self):
+                asserts.fail(MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_something')
+        self.assertEqual(on_fail_mock.record.test_name, actual_record.test_name)
+        self.assertEqual(on_fail_mock.record.begin_time, actual_record.begin_time)
+        self.assertEqual(on_fail_mock.record.end_time, actual_record.end_time)
+        self.assertEqual(on_fail_mock.record.stacktrace, actual_record.stacktrace)
+        self.assertEqual(on_fail_mock.record.extras, actual_record.extras)
+        self.assertEqual(on_fail_mock.record.extra_errors, actual_record.extra_errors)
+        # But they are not the same object.
+        self.assertIsNot(on_fail_mock.record, actual_record)
+
+    def test_on_fail_cannot_modify_original_record(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_fail(self, record):
+                record.test_name = 'blah'
+
+            def test_something(self):
+                asserts.assert_true(False, MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_something')
+
     def test_on_fail_executed_if_both_test_and_teardown_test_fails(self):
         on_fail_mock = mock.MagicMock()
 
         class MockBaseTest(base_test.BaseTestClass):
-            def on_fail(self, test_name, begin_time):
+            def on_fail(self, record):
                 on_fail_mock("on_fail")
 
-            def on_pass(self, test_name, begin_time):
+            def on_pass(self, record):
                 never_call()
 
             def teardown_test(self):
@@ -442,7 +477,7 @@ class BaseTestTest(unittest.TestCase):
             def setup_test(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
 
-            def on_fail(self, test_name, begin_time):
+            def on_fail(self, record):
                 my_mock("on_fail")
 
             def test_something(self):
@@ -482,7 +517,7 @@ class BaseTestTest(unittest.TestCase):
         expected_msg = "Something failed in on_pass."
 
         class MockBaseTest(base_test.BaseTestClass):
-            def on_pass(self, test_name, begin_time):
+            def on_pass(self, record):
                 raise Exception(expected_msg)
 
             def test_something(self):
@@ -543,9 +578,22 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
+    def test_on_pass_cannot_modify_original_record(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def on_pass(self, record):
+                record.test_name = 'blah'
+
+            def test_something(self):
+                asserts.explicit_pass('Extra pass!')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.passed[0]
+        self.assertEqual(actual_record.test_name, 'test_something')
+
     def test_on_pass_raise_exception(self):
         class MockBaseTest(base_test.BaseTestClass):
-            def on_pass(self, test_name, begin_time):
+            def on_pass(self, record):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
 
             def test_something(self):
@@ -566,7 +614,7 @@ class BaseTestTest(unittest.TestCase):
 
     def test_on_fail_raise_exception(self):
         class MockBaseTest(base_test.BaseTestClass):
-            def on_fail(self, test_name, begin_time):
+            def on_fail(self, record):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
 
             def test_something(self):
