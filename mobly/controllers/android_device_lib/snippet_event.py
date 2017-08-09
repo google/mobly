@@ -36,7 +36,7 @@ class SnippetEvent(object):
         callback_id: string, the callback ID associated with the event.
         name: string, the name of the event.
         creation_time: int, the epoch time when the event is created on the
-                       Rpc server side.
+            Rpc server side.
         data: dictionary, the data held by the event. Can be None.
     """
 

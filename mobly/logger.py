@@ -90,8 +90,8 @@ def epoch_to_log_line_timestamp(epoch_time, time_zone=None):
     Args:
         epoch_time: integer, an epoch timestamp in ms.
         time_zone: instance of tzinfo, time zone information.
-                   Using pytz rather than python 3.2 time_zone implementation
-                   for python 2 compatibility reasons.
+            Using pytz rather than python 3.2 time_zone implementation for
+            python 2 compatibility reasons.
 
     Returns:
         A string that is the corresponding timestamp in log line timestamp
@@ -143,7 +143,7 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
         log_path: Location of the log file.
         prefix: A prefix for each log line in terminal.
         filename: Name of the log file. The default is the time the logger
-                  is requested.
+            is requested.
     """
     log = logging.getLogger()
     kill_test_logger(log)

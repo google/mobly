@@ -94,7 +94,7 @@ def load_test_config_file(test_config_path, tb_filters=None):
     Args:
         test_config_path: Path to the test configuration file.
         tb_filters: A subset of test bed names to be pulled from the config
-                    file. If None, then all test beds will be selected.
+            file. If None, then all test beds will be selected.
 
     Returns:
         A list of test configuration dicts to be passed to
@@ -144,7 +144,7 @@ def _load_config_file(path):
 
     Args:
         path: A string that is the full path to the config file, including the
-              file name.
+            file name.
 
     Returns:
         A dict that represents info in the config file.
@@ -159,15 +159,15 @@ class TestRunConfig(object):
 
     Attributes:
         log_path: string, specifies the root directory for all logs written by
-                  a test run.
+            a test run.
         test_bed_name: string, the name of the test bed used by a test run.
         controller_configs: dict, configs used for instantiating controller
-                            objects.
+            objects.
         user_params: dict, all the parameters to be consumed by the test logic.
         register_controller: func, used by test classes to register controller
-                             modules.
+            modules.
         summary_writer: records.TestSummaryWriter, used to write elements to
-                        the test result summary file.
+            the test result summary file.
     """
 
     def __init__(self):

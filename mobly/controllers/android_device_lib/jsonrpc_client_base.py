@@ -26,12 +26,12 @@ Response:
 {
     "id": <int id of request that this response maps to>,
     "result": <Arbitrary JSON object containing the result of executing the
-               method. If the method could not be executed or returned void,
-               contains 'null'.>,
+        method. If the method could not be executed or returned void,
+        contains 'null'.>,
     "error": <String containing the error thrown by executing the method.
-              If no error occurred, contains 'null'.>
+        If no error occurred, contains 'null'.>
     "callback": <String that represents a callback ID used to identify events
-                 associated with a particular CallbackHandler object.>
+        associated with a particular CallbackHandler object.>
 """
 
 from builtins import str
@@ -106,7 +106,7 @@ class JsonRpcClientBase(object):
         """
         Args:
             app_name: (str) The user-visible name of the app being communicated
-                      with.
+                with.
             log: (logging.Logger) logger to which to send log messages.
         """
         self.host_port = None
@@ -191,7 +191,7 @@ class JsonRpcClientBase(object):
 
         Args:
             uid: int, The uid of the session to join, or UNKNOWN_UID to start a
-                 new session.
+                new session.
             cmd: JsonRpcCommand, The command to use for creating the connection.
 
         Raises:

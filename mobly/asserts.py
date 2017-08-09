@@ -40,7 +40,7 @@ def assert_equal(first, second, msg=None, extras=None):
         expr: The expression that is evaluated.
         msg: A string that adds additional info about the failure.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
     """
     try:
         _pyunit_proxy.assertEqual(first, second)
@@ -68,9 +68,9 @@ def assert_raises(expected_exception, extras=None, *args, **kwargs):
 
     Args:
         expected_exception: An exception class that is expected to be
-                            raised.
+            raised.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
     """
     context = _AssertRaisesContext(expected_exception, extras=extras)
     return context
@@ -94,9 +94,9 @@ def assert_raises_regex(expected_exception,
 
     Args:
         expected_exception: An exception class that is expected to be
-                            raised.
+            raised.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
     """
     context = _AssertRaisesContext(expected_exception,
                                    expected_regex,
@@ -111,7 +111,7 @@ def assert_true(expr, msg, extras=None):
         expr: The expression that is evaluated.
         msg: A string explaining the details in case of failure.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
     """
     if not expr:
         fail(msg, extras)
@@ -124,7 +124,7 @@ def assert_false(expr, msg, extras=None):
         expr: The expression that is evaluated.
         msg: A string explaining the details in case of failure.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
     """
     if expr:
         fail(msg, extras)
@@ -136,7 +136,7 @@ def skip(reason, extras=None):
     Args:
         reason: The reason this test is skipped.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
 
     Raises:
         signals.TestSkip is raised to mark a test as skipped.
@@ -151,7 +151,7 @@ def skip_if(expr, reason, extras=None):
         expr: The expression that is evaluated.
         reason: The reason this test is skipped.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
     """
     if expr:
         skip(reason, extras)
@@ -166,7 +166,7 @@ def abort_class(reason, extras=None):
     Args:
         reason: The reason to abort.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
 
     Raises:
         signals.TestAbortClass is raised to abort all subsequent tests in a
@@ -186,7 +186,7 @@ def abort_class_if(expr, reason, extras=None):
         expr: The expression that is evaluated.
         reason: The reason to abort.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
 
     Raises:
         signals.TestAbortClass is raised to abort all subsequent tests in a
@@ -203,7 +203,7 @@ def abort_all(reason, extras=None):
     Args:
         reason: The reason to abort.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
 
     Raises:
         signals.TestAbortAll is raised to abort all subsequent tests.
@@ -218,7 +218,7 @@ def abort_all_if(expr, reason, extras=None):
         expr: The expression that is evaluated.
         reason: The reason to abort.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
 
     Raises:
         signals.TestAbortAll is raised to abort all subsequent tests.
@@ -233,7 +233,7 @@ def fail(msg, extras=None):
     Args:
         msg: A string explaining the details of the failure.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
 
     Raises:
         signals.TestFailure is raised to mark a test as failed.
@@ -251,7 +251,7 @@ def explicit_pass(msg, extras=None):
     Args:
         msg: A string explaining the details of the passed test.
         extras: An optional field for extra information to be included in
-                test result.
+            test result.
 
     Raises:
         signals.TestPass is raised to mark a test as passed.

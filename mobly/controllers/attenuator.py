@@ -129,7 +129,7 @@ class AttenuatorPath(object):
 
         Args:
             value: This is a floating point value for nominal attenuation to be
-                   set. Unit is db.
+                set. Unit is db.
         """
         self.attenuation_device.set_atten(self.idx, value)
 

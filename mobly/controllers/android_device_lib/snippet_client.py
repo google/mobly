@@ -77,7 +77,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
         Args:
             package: (str) The package name of the apk where the snippets are
-                     defined.
+                defined.
             adb_proxy: (adb.AdbProxy) Adb proxy for running adb commands.
             log: (logging.Logger) logger to which to send log messages.
         """
@@ -241,7 +241,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
         Raises:
             jsonrpc_client_base.AppStartError: If EOF is reached without any
-                                               protocol lines being read.
+                protocol lines being read.
         """
         while True:
             line = self._proc.stdout.readline().decode('utf-8')
