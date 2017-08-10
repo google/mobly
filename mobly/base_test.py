@@ -217,7 +217,7 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: records.TestResultRecord,  a copy of the test record for
+            record: records.TestResultRecord, a copy of the test record for
                     this test, containing all information of the test execution
                     including exception objects.
         """
@@ -230,7 +230,7 @@ class BaseTestClass(object):
         User implementation is optional.
 
         Args:
-            record: records.TestResultRecord,  a copy of the test record for
+            record: records.TestResultRecord, a copy of the test record for
                     this test, containing all information of the test execution
                     including exception objects.
         """
@@ -240,7 +240,7 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: records.TestResultRecord,  a copy of the test record for
+            record: records.TestResultRecord, a copy of the test record for
                     this test, containing all information of the test execution
                     including exception objects.
         """
@@ -256,7 +256,7 @@ class BaseTestClass(object):
         Implementation is optional.
 
         Args:
-            record: records.TestResultRecord,  a copy of the test record for
+            record: records.TestResultRecord, a copy of the test record for
                     this test, containing all information of the test execution
                     including exception objects.
         """
@@ -266,7 +266,7 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: records.TestResultRecord,  a copy of the test record for
+            record: records.TestResultRecord, a copy of the test record for
                     this test, containing all information of the test execution
                     including exception objects.
         """
@@ -280,7 +280,7 @@ class BaseTestClass(object):
         Implementation is optional.
 
         Args:
-            record: records.TestResultRecord,  a copy of the test record for
+            record: records.TestResultRecord, a copy of the test record for
                     this test, containing all information of the test execution
                     including exception objects.
         """
@@ -288,8 +288,10 @@ class BaseTestClass(object):
     def _exec_procedure_func(self, func, tr_record):
         """Executes a procedure function like on_pass, on_fail etc.
 
-        This function will alternate the 'Result' of the test's record if
-        exceptions happened when executing the procedure function.
+        This function will alter the 'Result' of the test's record if
+        exceptions happened when executing the procedure function, but
+        prevents procedure functions from altering test records themselves
+        by only passing in a copy.
 
         This will let signals.TestAbortAll through so abort_all works in all
         procedure functions.
