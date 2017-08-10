@@ -48,21 +48,20 @@ class BaseTestClass(object):
     Attributes:
         tests: A list of strings, each representing a test method name.
         TAG: A string used to refer to a test class. Default is the test class
-             name.
+            name.
         results: A records.TestResult object for aggregating test results from
-                 the execution of tests.
+            the execution of tests.
         current_test_name: A string that's the name of the test method currently
-                           being executed. If no test is executing, this should
-                           be None.
+            being executed. If no test is executing, this should be None.
         log_path: string, specifies the root directory for all logs written
-                  by a test run.
+            by a test run.
         test_bed_name: string, the name of the test bed used by a test run.
         controller_configs: dict, configs used for instantiating controller
-                            objects.
+            objects.
         user_params: dict, custom parameters from user, to be consumed by
-                     the test logic.
+            the test logic.
         register_controller: func, used by test classes to register
-                             controller modules.
+            controller modules.
     """
 
     TAG = None
@@ -122,8 +121,8 @@ class BaseTestClass(object):
             opt_param_names: A list of names of the optional user params.
             **kwargs: Arguments that provide default values.
                 e.g. unpack_userparams(required_list, opt_list, arg_a='hello')
-                     self.arg_a will be 'hello' unless it is specified again in
-                     required_list or opt_list.
+                self.arg_a will be 'hello' unless it is specified again in
+                required_list or opt_list.
 
         Raises:
             Error is raised if a required user params is not provided.
@@ -231,8 +230,8 @@ class BaseTestClass(object):
 
         Args:
             record: records.TestResultRecord, a copy of the test record for
-                    this test, containing all information of the test execution
-                    including exception objects.
+                this test, containing all information of the test execution
+                including exception objects.
         """
 
     def _on_pass(self, record):
@@ -241,8 +240,8 @@ class BaseTestClass(object):
 
         Args:
             record: records.TestResultRecord, a copy of the test record for
-                    this test, containing all information of the test execution
-                    including exception objects.
+                this test, containing all information of the test execution
+                including exception objects.
         """
         msg = record.details
         if msg:
@@ -257,8 +256,8 @@ class BaseTestClass(object):
 
         Args:
             record: records.TestResultRecord, a copy of the test record for
-                    this test, containing all information of the test execution
-                    including exception objects.
+                this test, containing all information of the test execution
+                including exception objects.
         """
 
     def _on_skip(self, record):
@@ -267,8 +266,8 @@ class BaseTestClass(object):
 
         Args:
             record: records.TestResultRecord, a copy of the test record for
-                    this test, containing all information of the test execution
-                    including exception objects.
+                this test, containing all information of the test execution
+                including exception objects.
         """
         logging.info('Reason to skip: %s', record.details)
         logging.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
@@ -281,8 +280,8 @@ class BaseTestClass(object):
 
         Args:
             record: records.TestResultRecord, a copy of the test record for
-                    this test, containing all information of the test execution
-                    including exception objects.
+                this test, containing all information of the test execution
+                including exception objects.
         """
 
     def _exec_procedure_func(self, func, tr_record):
@@ -299,7 +298,7 @@ class BaseTestClass(object):
         Args:
             func: The procedure function to be executed.
             tr_record: The TestResultRecord object associated with the test
-                       executed.
+                executed.
         """
         try:
           # Pass a copy of the record instead of the actual object so that it
@@ -401,14 +400,13 @@ class BaseTestClass(object):
 
         Args:
             test_logic: function, the common logic shared by all the generated
-                        tests.
+                tests.
             name_func: function, generate a test name according to a set of
-                       test arguments. This function should take the same
-                       arguments as the test logic function. The test name
-                       should be shorter than utils.MAX_FILENAME_LEN. Names
-                       over the limit will be truncated.
+                test arguments. This function should take the same arguments as
+                the test logic function. The test name should be shorter than
+                utils.MAX_FILENAME_LEN. Names over the limit will be truncated.
             arg_sets: a list of tuples, each tuple is a set of arguments to be
-                      passed to the test logic function and name function.
+                passed to the test logic function and name function.
         """
         self._assert_function_name_in_stack('setup_generated_tests')
         for args in arg_sets:
@@ -492,7 +490,7 @@ class BaseTestClass(object):
 
         Args:
             exception: The exception object that was thrown to trigger the
-                       skip.
+                skip.
         """
         for test_name in self.results.requested:
             if not self.results.is_test_executed(test_name):

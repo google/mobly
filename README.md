@@ -66,4 +66,4 @@ triggering custom device-side code from host-side Mobly tests. You could use exi
 Android libraries like UI Automator and Espresso.
 * [Mobly Bundled Snippets](https://github.com/google/mobly-bundled-snippets): a set
 of Snippets to allow Mobly tests to control Android devices by exposing a simplified
-verison of the public Android API suitable for testing.
+version of the public Android API suitable for testing.

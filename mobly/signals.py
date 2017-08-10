@@ -29,7 +29,7 @@ class TestSignal(Exception):
     Attribute:
         details: A string that describes the reason for raising this signal.
         extras: A json-serializable data type to convey extra information about
-                a test result.
+            a test result.
     """
 
     def __init__(self, details, extras=None):

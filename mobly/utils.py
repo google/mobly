@@ -180,7 +180,7 @@ def find_files(paths, file_predicate):
     Args:
         paths: A list of directory paths where to find the files.
         file_predicate: A function that returns True if the file name and
-          extension are desired.
+            extension are desired.
 
     Returns:
         A list of files that match the predicate.
