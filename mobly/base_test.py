@@ -216,10 +216,12 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The records.TestResultRecord object for the failed test.
+            record: records.TestResultRecord, a copy of the test record for
+                    this test, containing all information of the test execution
+                    including exception objects.
         """
         logging.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        self.on_fail(copy.deepcopy(record))
+        self.on_fail(record)
 
     def on_fail(self, record):
         """A function that is executed upon a test failure.
@@ -227,9 +229,9 @@ class BaseTestClass(object):
         User implementation is optional.
 
         Args:
-            record: records.TestResultRecord, the test record for this test,
-                containing all information of the test execution including
-                exception objects.
+            record: records.TestResultRecord, a copy of the test record for
+                this test, containing all information of the test execution
+                including exception objects.
         """
 
     def _on_pass(self, record):
@@ -237,13 +239,15 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The records.TestResultRecord object for the passed test.
+            record: records.TestResultRecord, a copy of the test record for
+                this test, containing all information of the test execution
+                including exception objects.
         """
         msg = record.details
         if msg:
             logging.info(msg)
         logging.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        self.on_pass(copy.deepcopy(record))
+        self.on_pass(record)
 
     def on_pass(self, record):
         """A function that is executed upon a test passing.
@@ -251,9 +255,9 @@ class BaseTestClass(object):
         Implementation is optional.
 
         Args:
-            record: records.TestResultRecord, the test record for this test,
-                containing all information of the test execution including
-                exception objects.
+            record: records.TestResultRecord, a copy of the test record for
+                this test, containing all information of the test execution
+                including exception objects.
         """
 
     def _on_skip(self, record):
@@ -261,11 +265,13 @@ class BaseTestClass(object):
         called.
 
         Args:
-            record: The records.TestResultRecord object for the skipped test.
+            record: records.TestResultRecord, a copy of the test record for
+                this test, containing all information of the test execution
+                including exception objects.
         """
         logging.info('Reason to skip: %s', record.details)
         logging.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
-        self.on_skip(copy.deepcopy(record))
+        self.on_skip(record)
 
     def on_skip(self, record):
         """A function that is executed upon a test being skipped.
@@ -273,16 +279,18 @@ class BaseTestClass(object):
         Implementation is optional.
 
         Args:
-            record: records.TestResultRecord, the test record for this test,
-                containing all information of the test execution including
-                exception objects.
+            record: records.TestResultRecord, a copy of the test record for
+                this test, containing all information of the test execution
+                including exception objects.
         """
 
     def _exec_procedure_func(self, func, tr_record):
         """Executes a procedure function like on_pass, on_fail etc.
 
-        This function will alternate the 'Result' of the test's record if
-        exceptions happened when executing the procedure function.
+        This function will alter the 'Result' of the test's record if
+        exceptions happened when executing the procedure function, but
+        prevents procedure functions from altering test records themselves
+        by only passing in a copy.
 
         This will let signals.TestAbortAll through so abort_all works in all
         procedure functions.
@@ -293,7 +301,9 @@ class BaseTestClass(object):
                 executed.
         """
         try:
-            func(tr_record)
+          # Pass a copy of the record instead of the actual object so that it
+          # will not be modified.
+          func(copy.deepcopy(tr_record))
         except signals.TestAbortAll:
             raise
         except Exception as e:
