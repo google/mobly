@@ -52,7 +52,7 @@ def main(argv=None):
 
     Args:
         argv: A list that is then parsed as cli args. If None, defaults to cli
-              input.
+            input.
     """
     # Parse cli args.
     parser = argparse.ArgumentParser(description='Mobly Test Executable.')
@@ -143,8 +143,8 @@ def verify_controller_module(module):
             [Required] Creates controller objects from configurations.
             Args:
                 configs: A list of serialized data like string/dict. Each
-                         element of the list is a configuration for a
-                         controller object.
+                    element of the list is a configuration for a controller
+                    object.
             Returns:
                 A list of objects.
 
@@ -164,7 +164,7 @@ def verify_controller_module(module):
             test bed and debugging.
             Args:
                 objects: A list of controller objects created by the create
-                         function.
+                    function.
             Returns:
                 A list of json serializable objects, each represents the
                 info of a controller object. The order of the info object
@@ -177,11 +177,11 @@ def verify_controller_module(module):
 
     Args:
         module: An object that is a controller module. This is usually
-                imported with import statements or loaded by importlib.
+            imported with import statements or loaded by importlib.
 
     Raises:
         ControllerError: if the module does not match the Mobly controller
-                         interface, or one of the required members is null.
+            interface, or one of the required members is null.
     """
     required_attributes = ('create', 'destroy', 'MOBLY_CONTROLLER_CONFIG_NAME')
     for attr in required_attributes:
@@ -205,7 +205,7 @@ class TestRunner(object):
 
     Attributes:
         self.results: The test result object used to record the results of
-                      this test run.
+            this test run.
     """
 
     class _TestRunInfo(object):
@@ -240,15 +240,15 @@ class TestRunner(object):
 
         Args:
             config: config_parser.TestRunConfig, configuration to execute this
-                    test class with.
+                test class with.
             test_class: class, test class to execute.
             tests: list of strings, optional list of test names within the
-                   class to execute.
+                class to execute.
 
         Raises:
             Error: if the provided config has a log_path or test_bed_name which
-                   differs from the arguments provided to this TestRunner's
-                   constructor.
+                differs from the arguments provided to this TestRunner's
+                constructor.
         """
         if self._log_dir != config.log_path:
             raise Error(
@@ -292,7 +292,7 @@ class TestRunner(object):
 
         Raises:
             Error: if no tests have previously been added to this runner using
-                   add_test_class(...).
+                add_test_class(...).
         """
         if not self._test_run_infos:
             raise Error('No tests to execute.')
@@ -343,12 +343,12 @@ class TestRunner(object):
             config: A config_parser.TestRunConfig object.
             module: A module that follows the controller module interface.
             required: A bool. If True, failing to register the specified
-                      controller module raises exceptions. If False, the objects
-                      failed to instantiate will be skipped.
+                controller module raises exceptions. If False, the objects
+                failed to instantiate will be skipped.
             min_number: An integer that is the minimum number of controller
-                        objects to be created. Default is one, since you should
-                        not register a controller module without expecting at
-                        least one object.
+                objects to be created. Default is one, since you should not
+                register a controller module without expecting at least one
+                object.
 
         Returns:
             A list of controller objects instantiated from controller_module, or

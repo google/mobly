@@ -106,7 +106,7 @@ class JsonRpcClientBase(object):
         """
         Args:
             app_name: (str) The user-visible name of the app being communicated
-                      with.
+                with.
             log: (logging.Logger) logger to which to send log messages.
         """
         self.host_port = None
@@ -191,7 +191,7 @@ class JsonRpcClientBase(object):
 
         Args:
             uid: int, The uid of the session to join, or UNKNOWN_UID to start a
-                 new session.
+                new session.
             cmd: JsonRpcCommand, The command to use for creating the connection.
 
         Raises:

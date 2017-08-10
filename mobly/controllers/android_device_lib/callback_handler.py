@@ -43,7 +43,7 @@ class CallbackHandler(object):
         'callbackId': <string, callbackId>,
         'name': <string, name of the event>,
         'time': <long, epoch time of when the event was created on the server
-                 side>,
+            side>,
         'data': <dict, extra data from the callback on the server side>
     }
 
@@ -77,7 +77,7 @@ class CallbackHandler(object):
 
         Raises:
             Error: If the specified timeout is longer than the max timeout
-                   supported.
+                supported.
             TimeoutError: The expected event does not occur within time limit.
         """
         if timeout:
@@ -113,17 +113,17 @@ class CallbackHandler(object):
         consumption.
 
         Args:
-          event_name: string, the name of the event to wait for.
-          predicate: function, a function that takes an event (dictionary) and
-                     returns a bool.
-          timeout: float, default is 120s.
+            event_name: string, the name of the event to wait for.
+            predicate: function, a function that takes an event (dictionary) and
+                returns a bool.
+            timeout: float, default is 120s.
 
         Returns:
-          dictionary, the event that satisfies the predicate if received.
+            dictionary, the event that satisfies the predicate if received.
 
         Raises:
-          TimeoutError: raised if no event that satisfies the predicate is
-                        received after timeout seconds.
+            TimeoutError: raised if no event that satisfies the predicate is
+                received after timeout seconds.
         """
         deadline = time.time() + timeout
         while time.time() <= deadline:

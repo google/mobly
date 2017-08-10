@@ -49,7 +49,7 @@ def run_suite(test_classes, argv=None):
     Args:
         test_classes: List of python classes containing Mobly tests.
         argv: A list that is then parsed as cli args. If None, defaults to cli
-              input.
+            input.
     """
     # Parse cli args.
     parser = argparse.ArgumentParser(description='Mobly Suite Executable.')
@@ -107,16 +107,20 @@ def _compute_selected_tests(test_classes, selected_tests):
     """Computes tests to run for each class from selector strings.
 
     This function transforms a list of selector strings (such as FooTest or
-    FooTest.test_method_a) to a dict where keys are test_name classes, and values are
-    lists of selected tests in those classes. None means all tests in that class
-    are selected.
+    FooTest.test_method_a) to a dict where keys are test_name classes, and
+    values are lists of selected tests in those classes. None means all tests in
+    that class are selected.
 
     Args:
         test_classes: (list of class) all classes that are part of this suite.
         selected_tests: (list of string) list of tests to execute, eg:
-             ['FooTest', 'BarTest',
-              'BazTest.test_method_a', 'BazTest.test_method_b'].
-             May be empty, in which case all tests in the class are selected.
+            [
+                'FooTest',
+                'BarTest',
+                'BazTest.test_method_a',
+                'BazTest.test_method_b'
+            ].
+            May be empty, in which case all tests in the class are selected.
 
     Returns:
         dict: test_name class -> list(test_name name):

@@ -71,7 +71,7 @@ def create(configs):
 
     Args:
         configs: A list of dicts, each representing a configuration for an
-                 Android device.
+            Android device.
 
     Returns:
         A list of AndroidDevice objects.
@@ -372,16 +372,16 @@ class AndroidDevice(object):
     Attributes:
         serial: A string that's the serial number of the Androi device.
         log_path: A string that is the path where all logs collected on this
-                  android device should be stored.
+            android device should be stored.
         log: A logger adapted from root logger with an added prefix specific
-             to an AndroidDevice instance. The default prefix is
-             [AndroidDevice|<serial>]. Use self.debug_tag = 'tag' to use a
-             different tag in the prefix.
+            to an AndroidDevice instance. The default prefix is
+            [AndroidDevice|<serial>]. Use self.debug_tag = 'tag' to use a
+            different tag in the prefix.
         adb_logcat_file_path: A string that's the full path to the adb logcat
-                              file collected, if any.
+            file collected, if any.
         adb: An AdbProxy object used for interacting with the device via adb.
         fastboot: A FastbootProxy object used for interacting with the device
-                  via fastboot.
+            via fastboot.
     """
 
     def __init__(self, serial=''):
@@ -694,9 +694,9 @@ class AndroidDevice(object):
 
         Args:
             name: The attribute name to which to attach the snippet server.
-                  e.g. name='maps' will attach the snippet server to ad.maps.
+                e.g. name='maps' will attach the snippet server to ad.maps.
             package: The package name defined in AndroidManifest.xml of the
-                     snippet apk.
+                snippet apk.
 
         Raises:
             SnippetError is raised if illegal load operations are attempted.

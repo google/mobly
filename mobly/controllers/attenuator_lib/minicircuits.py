@@ -53,7 +53,7 @@ class AttenuatorDevice(object):
 
         Args::
             host: A valid hostname (IP address or DNS-resolvable name) to an
-                  MC-DAT attenuator instrument.
+                MC-DAT attenuator instrument.
             port: An optional port number (defaults to telnet default 23)
         """
         self._telnet_client.open(host, port)
@@ -78,8 +78,8 @@ class AttenuatorDevice(object):
 
         Args:
             idx: Zero-based index int which is the identifier for a particular
-                 signal path in an instrument. For instruments that only has one
-                 channel, this is ignored by the device.
+                signal path in an instrument. For instruments that only has one
+                channel, this is ignored by the device.
             value: A float that is the attenuation value to set.
 
         Raises:
@@ -109,7 +109,7 @@ class AttenuatorDevice(object):
 
         Args:
             idx: This zero-based index is the identifier for a particular
-                 attenuator in an instrument.
+                attenuator in an instrument.
 
         Raises:
             Error is raised if the underlying telnet connection to the
