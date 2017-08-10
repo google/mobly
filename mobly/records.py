@@ -129,6 +129,14 @@ class TestResultEnums(object):
 
 class ExceptionRecord(object):
     """A wrapper class for representing exception objects in TestResultRecord.
+
+    Attributes:
+        exception: Exception object, the original Exception.
+        stacktrace: string, stacktrace of the Exception.
+        extras: optional serializable, this corresponds to the
+            `TestSignal.extras` field.
+        position: string, an optional label specifying the position where the
+            Exception ocurred.
     """
 
     def __init__(self, e, position=None):
@@ -238,6 +246,11 @@ class TestResultRecord(object):
             self.termination_signal = ExceptionRecord(e)
 
     def finalize_record(self):
+        """Finalizes the content of a record.
+
+        No write operation should be performed on the record after this is
+        called.
+        """
         if self.extra_errors:
             if self.result in (TestResultEnums.TEST_RESULT_PASS,
                                TestResultEnums.TEST_RESULT_SKIP):
@@ -417,6 +430,9 @@ class TestResult(object):
         """Adds a test record to test result.
 
         A record is considered executed once it's added to the test result.
+
+        Adding the record finalizes the content of a record, so no change
+        should be made to the record afterwards.
 
         Args:
             record: A test record object to add.
