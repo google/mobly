@@ -245,11 +245,14 @@ class TestResultRecord(object):
         if e:
             self.termination_signal = ExceptionRecord(e)
 
-    def finalize_record(self):
-        """Finalizes the content of a record.
+    def update_record(self):
+        """Updates the content of a record.
 
-        No write operation should be performed on the record after this is
-        called.
+        Several display fields like "details" and "stacktrace" need to be
+        updated based on the content of the record object.
+
+        As the content of the record change, call this method to update all
+        the appropirate fields.
         """
         if self.extra_errors:
             if self.result in (TestResultEnums.TEST_RESULT_PASS,
@@ -437,7 +440,7 @@ class TestResult(object):
         Args:
             record: A test record object to add.
         """
-        record.finalize_record()
+        record.update_record()
         if record.result == TestResultEnums.TEST_RESULT_SKIP:
             self.skipped.append(record)
             return
@@ -470,7 +473,7 @@ class TestResult(object):
         Args:
             test_record: A TestResultRecord object for the test class.
         """
-        test_record.finalize_record()
+        test_record.update_record()
         self.error.append(test_record)
 
     def is_test_executed(self, test_name):

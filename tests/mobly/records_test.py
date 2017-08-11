@@ -40,7 +40,7 @@ class RecordsTest(unittest.TestCase):
         shutil.rmtree(self.tmp_path)
 
     def verify_record(self, record, result, details, extras, stacktrace=None):
-        record.finalize_record()
+        record.update_record()
         # Verify each field.
         self.assertEqual(record.test_name, self.tn)
         self.assertEqual(record.result, result)

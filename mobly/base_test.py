@@ -301,9 +301,9 @@ class BaseTestClass(object):
                 executed.
         """
         try:
-          # Pass a copy of the record instead of the actual object so that it
-          # will not be modified.
-          func(copy.deepcopy(tr_record))
+            # Pass a copy of the record instead of the actual object so that it
+            # will not be modified.
+            func(copy.deepcopy(tr_record))
         except signals.TestAbortAll:
             raise
         except Exception as e:
@@ -369,6 +369,7 @@ class BaseTestClass(object):
             if not teardown_test_failed:
                 tr_record.test_pass()
         finally:
+            tr_record.update_record()
             if tr_record.result in (records.TestResultEnums.TEST_RESULT_ERROR,
                                     records.TestResultEnums.TEST_RESULT_FAIL):
                 self._exec_procedure_func(self._on_fail, tr_record)
