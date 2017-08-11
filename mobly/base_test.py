@@ -175,6 +175,19 @@ class BaseTestClass(object):
         Implementation is optional.
         """
 
+    def _teardown_class(self):
+        """Proxy function to guarantee the base implementation of
+        teardown_class is called.
+        """
+        record = records.TestResultRecord('teardown_class', self.TAG)
+        record.test_begin()
+        try:
+            self.teardown_class()
+        except Exception as e:
+            record.test_error(e)
+            record.update_record()
+            self.results.add_class_error(record)
+
     def teardown_class(self):
         """Teardown function that will be called after all the selected tests in
         the test class have been executed.
@@ -557,7 +570,7 @@ class BaseTestClass(object):
             # Skip all tests peacefully.
             e.details = 'setup_class aborted due to: %s' % e.details
             self._skip_remaining_tests(e)
-            self._safe_exec_func(self.teardown_class)
+            self._teardown_class()
             return self.results
         except Exception as e:
             # Setup class failed for unknown reasons.
@@ -571,7 +584,7 @@ class BaseTestClass(object):
             self.summary_writer.dump(class_record.to_dict(),
                                      records.TestSummaryEntryType.RECORD)
             self._skip_remaining_tests(e)
-            self._safe_exec_func(self.teardown_class)
+            self._teardown_class()
             return self.results
         # Run tests in order.
         try:
@@ -588,7 +601,7 @@ class BaseTestClass(object):
             setattr(e, 'results', self.results)
             raise e
         finally:
-            self._safe_exec_func(self.teardown_class)
+            self._teardown_class()
             logging.info('Summary for test class %s: %s', self.TAG,
                          self.results.summary_str())
 
