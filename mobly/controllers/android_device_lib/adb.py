@@ -108,8 +108,8 @@ class AdbProxy(object):
                 See subprocess.Popen() documentation.
             shell: bool, True to run this command through the system shell,
                 False to invoke it directly. See subprocess.Popen() docs.
-            timeout: int seconds, if given, command will timeout after
-                so many seconds.
+            timeout: int, the number of seconds to wait before timing out.
+                If not specified, no timeout takes effect.
 
         Returns:
             The output of the adb command run if exit code is 0.
@@ -183,7 +183,8 @@ class AdbProxy(object):
                     See subprocess.Proc() documentation.
                 shell: bool, True to run this command through the system shell,
                     False to invoke it directly. See subprocess.Proc() docs.
-                timeout: in seconds, the timeout value to run adb command.
+                timeout: int, the number of seconds to wait before timing out.
+                    If not specified, no timeout takes effect.
 
             Returns:
                 The output of the adb command run if exit code is 0.

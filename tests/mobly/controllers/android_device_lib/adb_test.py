@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import adb
@@ -20,6 +22,8 @@ from mobly.controllers.android_device_lib import adb
 class AdbTest(unittest.TestCase):
     """Unit tests for mobly.controllers.android_device_lib.adb.
     """
+
+    PYTHON_PATH = sys.executable
 
     def test_exec_cmd_no_timeout_success(self):
         reply = adb.AdbProxy()._exec_cmd(
@@ -33,13 +37,17 @@ class AdbTest(unittest.TestCase):
 
     def test_exec_cmd_with_timeout_success(self):
         reply = adb.AdbProxy()._exec_cmd(
-            ["echo", "test;", "sleep", "0.2"], shell=False, timeout=1)
-        self.assertEqual("test; sleep 0.2\n", reply.decode('utf-8'))
+            ["echo", "test;", self.PYTHON_PATH, "-c",
+             "'import time; time.sleep(0.1)'"], shell=False, timeout=1)
+        self.assertEqual(
+            "test; " + self.PYTHON_PATH
+            + " -c 'import time; time.sleep(0.1)'\n", reply.decode('utf-8'))
 
     def test_exec_cmd_timed_out(self):
         with self.assertRaisesRegex(adb.AdbError, "Timed out Adb cmd .*"):
             adb.AdbProxy()._exec_cmd(
-                ["sleep", "0.2"], shell=False, timeout=0.1)
+                [self.PYTHON_PATH, "-c", "import time; time.sleep(0.2)"],
+                shell=False, timeout=0.1)
 
 
 if __name__ == "__main__":
