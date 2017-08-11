@@ -147,7 +147,7 @@ class AdbProxy(object):
             if self.serial:
                 adb_cmd = '"%s" -s "%s" %s %s' % (ADB, self.serial, name, args)
             else:
-                adb_cmd = '"adb" %s %s' % (ADB, name, args)
+                adb_cmd = '"%s" %s %s' % (ADB, name, args)
         else:
             adb_cmd = [ADB]
             if self.serial:
