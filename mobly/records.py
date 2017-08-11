@@ -196,17 +196,10 @@ class TestResultRecord(object):
         begin_time: Epoch timestamp of when the test started.
         end_time: Epoch timestamp of when the test ended.
         uid: Unique identifier of a test.
+        termination_signal: ExceptionRecord, the main exception of the test.
+        extra_errors: OrderedDict, all exceptions occurred during the entire
+            test lifecycle. The order of occurrence is preserved.
         result: TestResultEnum.TEAT_RESULT_*, PASS/FAIL/SKIP.
-        extras: User defined extra information of the test result, must be
-                serializable.
-        details: string, description of the cause of the test's termination.
-                 Note a passed test can have this as well due to the explicit
-                 pass signal. If the test passed implicitly, this field would
-                 be None.
-        stacktrace: string, the stacktrace for the exception that terminated
-                    the test.
-        extra_errors: OrderedDict, all exceptions occurred during the entire test
-                    lifecycle. The order of occurrence is preserved.
     """
 
     def __init__(self, t_name, t_class=None):
@@ -221,16 +214,27 @@ class TestResultRecord(object):
 
     @property
     def details(self):
+        """String description of the cause of the test's termination.
+
+        Note a passed test can have this as well due to the explicit pass
+        signal. If the test passed implicitly, this field would be None.
+        """
         if self.termination_signal:
             return self.termination_signal.details
 
     @property
     def stacktrace(self):
+        """The stacktrace string for the exception that terminated the test.
+        """
         if self.termination_signal:
             return self.termination_signal.stacktrace
 
     @property
     def extras(self):
+        """User defined extra information of the test result.
+
+        Must be serializable.
+        """
         if self.termination_signal:
             return self.termination_signal.extras
 
@@ -247,8 +251,8 @@ class TestResultRecord(object):
         Args:
             result: One of the TEST_RESULT enums in TestResultEnums.
             e: A test termination signal (usually an exception object). It can
-               be any exception instance or of any subclass of
-               mobly.signals.TestSignal.
+                be any exception instance or of any subclass of
+                mobly.signals.TestSignal.
         """
         if self.begin_time is not None:
             self.end_time = utils.get_current_epoch_time()
