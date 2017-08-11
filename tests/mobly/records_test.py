@@ -131,15 +131,14 @@ class RecordsTest(unittest.TestCase):
         # Verify stacktrace separately if we expect a non-None value.
         # Because stacktrace includes file names and line numbers, we can't do
         # a simple equality check.
-        record.stacktrace = None
         self.verify_record(
             record=record,
             result=records.TestResultEnums.TEST_RESULT_FAIL,
             details='Something failed.',
             extras=None,
-            stacktrace=
-            'in test_result_record_fail_stacktrace\n    raise Exception(\'Something failed.\')\nException: Something failed.\n'
-        )
+            stacktrace='in test_result_record_fail_stacktrace\n    '
+            'raise Exception(\'Something failed.\')\nException: '
+            'Something failed.\n')
 
     def test_result_record_fail_with_float_extra(self):
         record = records.TestResultRecord(self.tn)

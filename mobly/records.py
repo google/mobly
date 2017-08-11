@@ -218,10 +218,21 @@ class TestResultRecord(object):
         self.termination_signal = None
         self.extra_errors = collections.OrderedDict()
         self.result = None
-        # The fields below are based on termination_signal's content.
-        self.extras = None
-        self.details = None
-        self.stacktrace = None
+
+    @property
+    def details(self):
+        if self.termination_signal:
+            return self.termination_signal.details
+
+    @property
+    def stacktrace(self):
+        if self.termination_signal:
+            return self.termination_signal.stacktrace
+
+    @property
+    def extras(self):
+        if self.termination_signal:
+            return self.termination_signal.extras
 
     def test_begin(self):
         """Call this when the test begins execution.
@@ -255,17 +266,12 @@ class TestResultRecord(object):
         the appropirate fields.
         """
         if self.extra_errors:
-            if self.result in (TestResultEnums.TEST_RESULT_PASS,
-                               TestResultEnums.TEST_RESULT_SKIP):
+            if self.result != TestResultEnums.TEST_RESULT_FAIL:
                 self.result = TestResultEnums.TEST_RESULT_ERROR
         # If no termination signal is provided, use the first exception
         # occurred as the termination signal.
         if not self.termination_signal and self.extra_errors:
             _, self.termination_signal = self.extra_errors.popitem(last=False)
-        if self.termination_signal:
-            self.details = self.termination_signal.details
-            self.stacktrace = self.termination_signal.stacktrace
-            self.extras = self.termination_signal.extras
 
     def test_pass(self, e=None):
         """To mark the test as passed in this record.
@@ -320,9 +326,11 @@ class TestResultRecord(object):
             position: string, where this error occurred, e.g. 'teardown_test'.
             e: An exception object.
         """
-        if self.result in (None, TestResultEnums.TEST_RESULT_PASS,
-                           TestResultEnums.TEST_RESULT_SKIP):
+        if self.result != TestResultEnums.TEST_RESULT_FAIL:
             self.result = TestResultEnums.TEST_RESULT_ERROR
+        if position in self.extra_errors:
+            raise Error('An exception is already recorded with position "%s",'
+                        ' cannot reuse.' % position)
         self.extra_errors[position] = ExceptionRecord(e, position=position)
 
     def __str__(self):
