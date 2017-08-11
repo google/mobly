@@ -28,6 +28,7 @@ from tests.lib import utils
 class RecordsTest(unittest.TestCase):
     """This test class tests the implementation of classes in mobly.records.
     """
+
     def setUp(self):
         self.tn = "test_name"
         self.details = "Some details about the test execution."
@@ -38,7 +39,8 @@ class RecordsTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_path)
 
-    def verify_record(self, record, result, details, extras):
+    def verify_record(self, record, result, details, extras, stacktrace=None):
+        record.update_record()
         # Verify each field.
         self.assertEqual(record.test_name, self.tn)
         self.assertEqual(record.result, result)
@@ -58,9 +60,15 @@ class RecordsTest(unittest.TestCase):
         d[records.TestResultEnums.RECORD_END_TIME] = record.end_time
         d[records.TestResultEnums.RECORD_UID] = None
         d[records.TestResultEnums.RECORD_CLASS] = None
-        d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
-        d[records.TestResultEnums.RECORD_STACKTRACE] = None
+        d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = []
+        d[records.TestResultEnums.RECORD_STACKTRACE] = stacktrace
         actual_d = record.to_dict()
+        # Verify stacktrace partially match as stacktraces often have file path
+        # in them.
+        if stacktrace:
+            stacktrace_key = records.TestResultEnums.RECORD_STACKTRACE
+            self.assertTrue(
+                d.pop(stacktrace_key) in actual_d.pop(stacktrace_key))
         self.assertDictEqual(actual_d, d)
         # Verify that these code paths do not cause crashes and yield non-empty
         # results.
@@ -123,16 +131,14 @@ class RecordsTest(unittest.TestCase):
         # Verify stacktrace separately if we expect a non-None value.
         # Because stacktrace includes file names and line numbers, we can't do
         # a simple equality check.
-        self.assertTrue('Something failed.' in record.stacktrace)
-        self.assertTrue(
-            'in test_result_record_fail_stacktrace\n    raise Exception' in
-            record.stacktrace)
-        record.stacktrace = None
         self.verify_record(
             record=record,
             result=records.TestResultEnums.TEST_RESULT_FAIL,
             details='Something failed.',
-            extras=None)
+            extras=None,
+            stacktrace='in test_result_record_fail_stacktrace\n    '
+            'raise Exception(\'Something failed.\')\nException: '
+            'Something failed.\n')
 
     def test_result_record_fail_with_float_extra(self):
         record = records.TestResultRecord(self.tn)
