@@ -60,7 +60,7 @@ class RecordsTest(unittest.TestCase):
         d[records.TestResultEnums.RECORD_END_TIME] = record.end_time
         d[records.TestResultEnums.RECORD_UID] = None
         d[records.TestResultEnums.RECORD_CLASS] = None
-        d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = []
+        d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
         d[records.TestResultEnums.RECORD_STACKTRACE] = stacktrace
         actual_d = record.to_dict()
         # Verify stacktrace partially match as stacktraces often have file path
