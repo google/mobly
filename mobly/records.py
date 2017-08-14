@@ -363,9 +363,10 @@ class TestResultRecord(object):
         d[TestResultEnums.RECORD_UID] = self.uid
         d[TestResultEnums.RECORD_EXTRAS] = self.extras
         d[TestResultEnums.RECORD_DETAILS] = self.details
-        d[TestResultEnums.RECORD_EXTRA_ERRORS] = [
-            e.to_dict() for e in self.extra_errors.values()
-        ]
+        d[TestResultEnums.RECORD_EXTRA_ERRORS] = {
+            key: value.to_dict()
+            for (key, value) in self.extra_errors.items()
+        }
         d[TestResultEnums.RECORD_STACKTRACE] = self.stacktrace
         return d
 
