@@ -44,10 +44,18 @@ class AdbTest(unittest.TestCase):
             + " -c 'import time; time.sleep(0.1)'\n", reply.decode('utf-8'))
 
     def test_exec_cmd_timed_out(self):
-        with self.assertRaisesRegex(adb.AdbError, "Timed out Adb cmd .*"):
+        with self.assertRaisesRegex(
+            adb.AdbTimeoutError, "Timed out Adb cmd .*"):
             adb.AdbProxy()._exec_cmd(
                 [self.PYTHON_PATH, "-c", "import time; time.sleep(0.2)"],
                 shell=False, timeout=0.1)
+
+    def test_exec_cmd_timed_negative_error(self):
+        with self.assertRaisesRegex(
+                adb.AdbError, "Timeout is a negative value: .*"):
+            adb.AdbProxy()._exec_cmd(
+                    [self.PYTHON_PATH, "-c", "import time; time.sleep(0.2)"],
+                    shell=False, timeout=-1)
 
 
 if __name__ == "__main__":

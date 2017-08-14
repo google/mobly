@@ -43,13 +43,13 @@ class AdbError(Exception):
 
 
 class AdbTimeoutError(AdbError):
-    def __init__(self, cmd, timeout):
-        self.cmd = cmd
-        self.timeout = timeout
+    """Raised when there is an command timeout error."""
+
+    def __init__(self, message):
+        self.message = message
 
     def __str__(self):
-        return ('Timed out Adb cmd "%s". timeout: %s') % (self.cmd,
-                                                          self.timeout)
+        return (self.message)
 
 
 def list_occupied_adb_ports():
@@ -108,7 +108,7 @@ class AdbProxy(object):
                 See subprocess.Popen() documentation.
             shell: bool, True to run this command through the system shell,
                 False to invoke it directly. See subprocess.Popen() docs.
-            timeout: int, the number of seconds to wait before timing out.
+            timeout: float, the number of seconds to wait before timing out.
                 If not specified, no timeout takes effect.
 
         Returns:
@@ -126,7 +126,11 @@ class AdbProxy(object):
                 process.wait(timeout=timeout)
             except psutil.TimeoutExpired:
                 process.terminate()
-                raise AdbTimeoutError(cmd=args, timeout=timeout)
+                raise AdbTimeoutError(
+                    'Timed out Adb cmd "%s". timeout: %s' % (args, timeout))
+        elif timeout and timeout < 0:
+            raise AdbTimeoutError("Timeout is a negative value: %s" % timeout)
+
         (out, err) = proc.communicate()
         ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s', args, out,
@@ -183,7 +187,7 @@ class AdbProxy(object):
                     See subprocess.Proc() documentation.
                 shell: bool, True to run this command through the system shell,
                     False to invoke it directly. See subprocess.Proc() docs.
-                timeout: int, the number of seconds to wait before timing out.
+                timeout: float, the number of seconds to wait before timing out.
                     If not specified, no timeout takes effect.
 
             Returns:

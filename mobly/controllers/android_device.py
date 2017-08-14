@@ -47,7 +47,7 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 KEY_DEVICE_REQUIRED = 'required'
 
 # Default Timeout to wait for boot completion
-DEFAULT_TIMEOUT_BOOT_COMPLETION = 15 * 60
+DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
 
 
 class Error(signals.ControllerError):
@@ -682,7 +682,8 @@ class AndroidDevice(object):
         mode per security restrictions.
         """
         self.adb.root()
-        self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION)
+        self.adb.wait_for_device(
+            timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
 
     def load_snippet(self, name, package):
         """Starts the snippet apk with the given package name and connects.
@@ -920,10 +921,15 @@ class AndroidDevice(object):
             return False, clean_out
         return True, clean_out
 
-    def wait_for_boot_completion(self, timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION):
+    def wait_for_boot_completion(
+            self, timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND):
         """Waits for Android framework to broadcast ACTION_BOOT_COMPLETED.
 
         This function times out after 15 minutes.
+
+        Args:
+            timeout: float, the number of seconds to wait before timing out.
+                If not specified, no timeout takes effect.
         """
         timeout_start = time.time()
 
