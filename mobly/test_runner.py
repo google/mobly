@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
 
@@ -56,14 +57,20 @@ def main(argv=None):
     """
     # Parse cli args.
     parser = argparse.ArgumentParser(description='Mobly Test Executable.')
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
         '-c',
         '--config',
         nargs=1,
         type=str,
-        required=True,
         metavar='<PATH>',
         help='Path to the test configuration file.')
+    group.add_argument(
+        '-l',
+        '--list_tests',
+        action='store_true',
+        help='Print the names of the tests defined in a script without '
+        'executing them. If the script ')
     parser.add_argument(
         '--tests',
         '--test_case',
@@ -81,11 +88,14 @@ def main(argv=None):
     if not argv:
         argv = sys.argv[1:]
     args = parser.parse_known_args(argv)[0]
+    # Find the test class in the test script.
+    test_class = _find_test_class()
+    if args.list_tests:
+        _print_test_names(test_class)
+        sys.exit(0)
     # Load test config file.
     test_configs = config_parser.load_test_config_file(args.config[0],
                                                        args.test_bed)
-    # Find the test class in the test script.
-    test_class = _find_test_class()
     # Parse test specifiers if exist.
     tests = None
     if args.tests:
@@ -129,6 +139,25 @@ def _find_test_class():
                       [t.__name__ for t in test_classes])
         sys.exit(1)
     return test_classes[0]
+
+
+def _print_test_names(test_class):
+    """Prints the names of all the tests in a test module.
+
+    If the module has generated tests defined based on controller info, this
+    may not be able to print the generated tests.
+
+    Args:
+        test_class: module, the test module to print names from.
+    """
+    cls = test_class(config_parser.TestRunConfig())
+    try:
+        cls.setup_generated_tests()
+    except:
+        logging.exception('Failed to retrieve generated tests.')
+    print('==========> %s <==========' % cls.TAG)
+    for name in cls.get_existing_test_names():
+        print(name)
 
 
 def verify_controller_module(module):

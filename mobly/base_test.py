@@ -415,7 +415,7 @@ class BaseTestClass(object):
         self._assert_function_name_in_stack('setup_generated_tests')
         for args in arg_sets:
             test_name = name_func(*args)
-            if test_name in self._get_all_test_names():
+            if test_name in self.get_existing_test_names():
                 raise Error(
                     'Test name "%s" already exists, cannot be duplicated!' %
                     test_name)
@@ -443,9 +443,15 @@ class BaseTestClass(object):
             logging.exception('Exception happened when executing %s in %s.',
                               func.__name__, self.TAG)
 
-    def _get_all_test_names(self):
-        """Finds all the method names that match the test method naming
-        convention in this class.
+    def get_existing_test_names(self):
+        """Gets the names of existing tests in the class.
+
+        A method in the class is considered a test if its name starts with
+        "test_".
+
+        Note this only gets the names of tests that already exist. If
+        `setup_generated_test` has not happened when this was called, the
+        generated tests won't be listed.
 
         Returns:
             A list of strings, each is a test method name.
@@ -544,7 +550,7 @@ class BaseTestClass(object):
                 test_names = list(self.tests)
             else:
                 # No test method specified by user, execute all in test class.
-                test_names = self._get_all_test_names()
+                test_names = self.get_existing_test_names()
         self.results.requested = test_names
         self.summary_writer.dump(self.results.requested_test_names_dict(),
                                  records.TestSummaryEntryType.TEST_NAME_LIST)
