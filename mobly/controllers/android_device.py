@@ -351,9 +351,14 @@ def take_bug_reports(ads, test_name, begin_time):
     Args:
         ads: A list of AndroidDevice instances.
         test_name: Name of the test method that triggered this bug report.
-        begin_time: Logline format timestamp taken when the test started.
+        begin_time: timestamp taken when the test started, can be either
+            string or int.
     """
-    begin_time = mobly_logger.normalize_log_line_timestamp(begin_time)
+    try:
+        begin_time = mobly_logger.normalize_log_line_timestamp(begin_time)
+    except AttributeError:
+        # Ignore errors from this step if begin_time is not string.
+        pass
 
     def take_br(test_name, begin_time, ad):
         ad.take_bug_report(test_name, begin_time)
