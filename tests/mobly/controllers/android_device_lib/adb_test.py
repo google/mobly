@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
+import mock
 
 from future.tests.base import unittest
 
@@ -23,39 +23,70 @@ class AdbTest(unittest.TestCase):
     """Unit tests for mobly.controllers.android_device_lib.adb.
     """
 
-    PYTHON_PATH = sys.executable
+    def _mock_process(self, mock_psutil_process, mock_popen):
+        # the created proc object in adb._exec_cmd()
+        mock_proc = mock.Mock()
+        mock_popen.return_value = mock_proc
 
-    def test_exec_cmd_no_timeout_success(self):
+        # the created process object in adb._exec_cmd()
+        mock_psutil_process.return_value = mock.Mock()
+
+        mock_proc.communicate = mock.Mock(return_value=("out".encode('utf-8'),
+                                                        "err".encode('utf-8')))
+        mock_proc.returncode = 0
+        return (mock_psutil_process, mock_popen)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
+    def test_exec_cmd_no_timeout_success(self, mock_psutil_process,
+                                         mock_Popen):
+        self._mock_process(mock_psutil_process, mock_Popen)
+
         reply = adb.AdbProxy()._exec_cmd(
-            ["echo", "test"], shell=False, timeout=None)
-        self.assertEqual("test\n", reply.decode('utf-8'))
+            ["fake_cmd"], shell=False, timeout=None)
+        self.assertEqual("out", reply.decode('utf-8'))
 
-    def test_exec_cmd_error_no_timeout(self):
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
+    def test_exec_cmd_error_no_timeout(self, mock_psutil_process, mock_popen):
+        self._mock_process(mock_psutil_process, mock_popen)
+        # update return code to indicate command execution error
+        mock_popen.return_value.returncode = 1
+
         with self.assertRaisesRegex(adb.AdbError,
                                     "Error executing adb cmd .*"):
-            adb.AdbProxy()._exec_cmd(["false"], shell=False, timeout=None)
+            adb.AdbProxy()._exec_cmd(["fake_cmd"], shell=False, timeout=None)
 
-    def test_exec_cmd_with_timeout_success(self):
-        reply = adb.AdbProxy()._exec_cmd(
-            ["echo", "test;", self.PYTHON_PATH, "-c",
-             "'import time; time.sleep(0.1)'"], shell=False, timeout=1)
-        self.assertEqual(
-            "test; " + self.PYTHON_PATH
-            + " -c 'import time; time.sleep(0.1)'\n", reply.decode('utf-8'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
+    def test_exec_cmd_with_timeout_success(self, mock_psutil_process,
+                                           mock_popen):
+        self._mock_process(mock_psutil_process, mock_popen)
 
-    def test_exec_cmd_timed_out(self):
-        with self.assertRaisesRegex(
-            adb.AdbTimeoutError, "Timed out Adb cmd .*"):
-            adb.AdbProxy()._exec_cmd(
-                [self.PYTHON_PATH, "-c", "import time; time.sleep(0.2)"],
-                shell=False, timeout=0.1)
+        reply = adb.AdbProxy()._exec_cmd(["fake_cmd"], shell=False, timeout=1)
+        self.assertEqual("out", reply.decode('utf-8'))
 
-    def test_exec_cmd_timed_negative_error(self):
-        with self.assertRaisesRegex(
-                adb.AdbError, "Timeout is a negative value: .*"):
-            adb.AdbProxy()._exec_cmd(
-                    [self.PYTHON_PATH, "-c", "import time; time.sleep(0.2)"],
-                    shell=False, timeout=-1)
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
+    def test_exec_cmd_timed_out(self, mock_psutil_process, mock_popen):
+        self._mock_process(mock_psutil_process, mock_popen)
+        # mock process.wait(timeout=timeout) to
+        # throw psutil.TimeoutExpired exception
+        mock_psutil_process.return_value.wait.side_effect = (
+            adb.psutil.TimeoutExpired('Timed out'))
+
+        with self.assertRaisesRegex(adb.AdbTimeoutError,
+                                    "Timed out Adb cmd .*"):
+            adb.AdbProxy()._exec_cmd(["fake_cmd"], shell=False, timeout=0.1)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
+    def test_exec_cmd_with_negative_timeout_value(self, mock_psutil_process,
+                                                  mock_popen):
+        self._mock_process(mock_psutil_process, mock_popen)
+        with self.assertRaisesRegex(adb.AdbError,
+                                    "Timeout is a negative value: .*"):
+            adb.AdbProxy()._exec_cmd(["fake_cmd"], shell=False, timeout=-1)
 
 
 if __name__ == "__main__":

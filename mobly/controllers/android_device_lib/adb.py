@@ -126,8 +126,8 @@ class AdbProxy(object):
                 process.wait(timeout=timeout)
             except psutil.TimeoutExpired:
                 process.terminate()
-                raise AdbTimeoutError(
-                    'Timed out Adb cmd "%s". timeout: %s' % (args, timeout))
+                raise AdbTimeoutError('Timed out Adb cmd "%s". timeout: %s' %
+                                      (args, timeout))
         elif timeout and timeout < 0:
             raise AdbTimeoutError("Timeout is a negative value: %s" % timeout)
 
