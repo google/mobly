@@ -70,7 +70,7 @@ def main(argv=None):
         '--list_tests',
         action='store_true',
         help='Print the names of the tests defined in a script without '
-        'executing them.')
+        'executing them. If the script ')
     parser.add_argument(
         '--tests',
         '--test_case',
@@ -91,7 +91,7 @@ def main(argv=None):
     # Find the test class in the test script.
     test_class = _find_test_class()
     if args.list_tests:
-        _list_tests(test_class)
+        _print_test_names(test_class)
         sys.exit(0)
     # Load test config file.
     test_configs = config_parser.load_test_config_file(args.config[0],
@@ -141,13 +141,22 @@ def _find_test_class():
     return test_classes[0]
 
 
-def _list_tests(test_class):
+def _print_test_names(test_class):
+    """Prints the names of all the tests in a test module.
+
+    If the module has generated tests defined based on controller info, this
+    may not be able to print the generated tests.
+
+    Args:
+        test_class: module, the test module to print names from.
+    """
     cls = test_class(config_parser.TestRunConfig())
     try:
         cls.setup_generated_tests()
     except:
         logging.exception('Failed to retrieve generated tests.')
-    for name in cls.get_all_test_names():
+    print('==========> %s <==========' % cls.TAG)
+    for name in cls.get_existing_test_names():
         print(name)
 
 
