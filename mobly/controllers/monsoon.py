@@ -828,7 +828,7 @@ class Monsoon(object):
                 self.mon.StopDataCollection()
                 self.log.info("Finished taking samples, reconnecting to dut.")
                 self.usb("on")
-                self.dut.wait_for_adb_detection(DEFAULT_TIMEOUT_USB_ON)
+                self.dut.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_USB_ON)
                 # Wait for device to come back online.
                 time.sleep(10)
                 self.dut.log.info("Dut reconnected.")

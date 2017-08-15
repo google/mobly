@@ -102,7 +102,7 @@ class MockAdbProxy(object):
         simply return the adb command string.
         """
 
-        def adb_call(*args):
+        def adb_call(*args, **kwargs):
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
 
