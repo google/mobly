@@ -265,11 +265,13 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_something"])
-        actual_record = bt_cls.results.failed[0]
+        actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        # Make sure the full stacktrace of `setup_test` is preserved.
+        self.assertTrue('self.setup_test()' in actual_record.stacktrace)
         self.assertIsNone(actual_record.extras)
-        expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "
+        expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -1009,6 +1011,23 @@ class BaseTestTest(unittest.TestCase):
                 asserts.skip_if(False, MSG_UNEXPECTED_EXCEPTION)
                 asserts.skip_if(
                     True, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                never_call()
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_func"])
+        actual_record = bt_cls.results.skipped[0]
+        self.assertIsNotNone(actual_record.begin_time)
+        self.assertIsNotNone(actual_record.end_time)
+        self.assertEqual(actual_record.test_name, "test_func")
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_skip_in_setup_test(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_test(self):
+                asserts.skip(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+
+            def test_func(self):
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)

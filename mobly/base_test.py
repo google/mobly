@@ -17,6 +17,7 @@ import copy
 import functools
 import inspect
 import logging
+import sys
 
 from mobly import logger
 from mobly import records
@@ -329,7 +330,7 @@ class BaseTestClass(object):
 
         Executes setup_test, the test method, and teardown_test; then creates a
         records.TestResultRecord object with the execution information and adds
-        the record to the test class's test results.
+        the record to the test class's test result s.
 
         Args:
             test_name: Name of the test.
@@ -343,7 +344,12 @@ class BaseTestClass(object):
         teardown_test_failed = False
         try:
             try:
-                self._setup_test(test_name)
+                try:
+                    self._setup_test(test_name)
+                except signals.TestFailure as e:
+                    new_e = signals.TestError(e.details, e.extras)
+                    _, _, new_e.__traceback__ = sys.exc_info()
+                    raise new_e
                 if args or kwargs:
                     test_method(*args, **kwargs)
                 else:
