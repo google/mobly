@@ -85,10 +85,10 @@ class CallbackHandler(object):
                 raise Error(
                     'Specified timeout %s is longer than max timeout %s.' %
                     (timeout, MAX_TIMEOUT))
-            timeout *= 1000  # convert to milliseconds for java side
+        timeout_ms = timeout * 1000  # convert to milliseconds for java side
         try:
             raw_event = self._event_client.eventWaitAndGet(
-                self._id, event_name, timeout)
+                self._id, event_name, timeout_ms)
         except Exception as e:
             if 'EventSnippetException: timeout.' in str(e):
                 raise TimeoutError(
