@@ -46,6 +46,10 @@ class TestSignal(Exception):
         return 'Details=%s, Extras=%s' % (self.details, self.extras)
 
 
+class TestError(TestSignal):
+    """Raised when a test has an unexpected error."""
+
+
 class TestFailure(TestSignal):
     """Raised when a test has failed."""
 

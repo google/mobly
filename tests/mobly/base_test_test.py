@@ -239,11 +239,13 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_something"])
-        actual_record = bt_cls.results.failed[0]
+        actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        # Make sure the full stacktrace of `setup_test` is preserved.
+        self.assertTrue('self.setup_test()' in actual_record.stacktrace)
         self.assertIsNone(actual_record.extras)
-        expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "
+        expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
@@ -407,6 +409,7 @@ class BaseTestTest(unittest.TestCase):
 
     def test_procedure_function_gets_correct_record(self):
         on_fail_mock = mock.MagicMock()
+
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self, record):
                 on_fail_mock.record = record
@@ -418,12 +421,16 @@ class BaseTestTest(unittest.TestCase):
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
         self.assertEqual(actual_record.test_name, 'test_something')
-        self.assertEqual(on_fail_mock.record.test_name, actual_record.test_name)
-        self.assertEqual(on_fail_mock.record.begin_time, actual_record.begin_time)
+        self.assertEqual(on_fail_mock.record.test_name,
+                         actual_record.test_name)
+        self.assertEqual(on_fail_mock.record.begin_time,
+                         actual_record.begin_time)
         self.assertEqual(on_fail_mock.record.end_time, actual_record.end_time)
-        self.assertEqual(on_fail_mock.record.stacktrace, actual_record.stacktrace)
+        self.assertEqual(on_fail_mock.record.stacktrace,
+                         actual_record.stacktrace)
         self.assertEqual(on_fail_mock.record.extras, actual_record.extras)
-        self.assertEqual(on_fail_mock.record.extra_errors, actual_record.extra_errors)
+        self.assertEqual(on_fail_mock.record.extra_errors,
+                         actual_record.extra_errors)
         # But they are not the same object.
         self.assertIsNot(on_fail_mock.record, actual_record)
 
