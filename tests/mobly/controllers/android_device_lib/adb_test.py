@@ -91,18 +91,24 @@ class AdbTest(unittest.TestCase):
     def test_exec_adb_cmd(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             adb.AdbProxy().shell(['arg1', 'arg2'])
-            mock_exec_cmd.assert_called_once_with(['adb', 'shell', 'arg1', 'arg2'], shell=False, timeout=None)
+            mock_exec_cmd.assert_called_once_with(
+                ['adb', 'shell', 'arg1', 'arg2'], shell=False, timeout=None)
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             adb.AdbProxy('12345').shell(['arg1', 'arg2'])
-            mock_exec_cmd.assert_called_once_with(['adb', '-s', '12345', 'shell', 'arg1', 'arg2'], shell=False, timeout=None)
+            mock_exec_cmd.assert_called_once_with(
+                ['adb', '-s', '12345', 'shell', 'arg1', 'arg2'],
+                shell=False,
+                timeout=None)
 
     def test_exec_adb_cmd_with_shell_true(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             adb.AdbProxy().shell('arg1 arg2', shell=True)
-            mock_exec_cmd.assert_called_once_with('"adb" shell arg1 arg2', shell=True, timeout=None)
+            mock_exec_cmd.assert_called_once_with(
+                '"adb" shell arg1 arg2', shell=True, timeout=None)
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             adb.AdbProxy('12345').shell('arg1 arg2', shell=True)
-            mock_exec_cmd.assert_called_once_with('"adb" -s "12345" shell arg1 arg2', shell=True, timeout=None)
+            mock_exec_cmd.assert_called_once_with(
+                '"adb" -s "12345" shell arg1 arg2', shell=True, timeout=None)
 
 
 if __name__ == "__main__":
