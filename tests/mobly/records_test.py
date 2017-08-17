@@ -340,7 +340,9 @@ class RecordsTest(unittest.TestCase):
             raise RecordTestError('Oh ha!')
         except RecordTestError as e:
             er = records.ExceptionRecord(e)
-        copy.deepcopy(er)
+        new_er = copy.deepcopy(er)
+        self.assertIsNot(er, new_er)
+        self.assertDictEqual(er.to_dict(), new_er.to_dict())
 
 
 if __name__ == "__main__":
