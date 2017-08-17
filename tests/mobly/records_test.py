@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import os
 import shutil
 import tempfile
@@ -23,6 +24,16 @@ from mobly import records
 from mobly import signals
 
 from tests.lib import utils
+
+
+class RecordTestError(Exception):
+    """Error class with constructors that take extra args.
+
+    Used for ExceptionRecord tests.
+    """
+
+    def __init__(self, something):
+        self._something = something
 
 
 class RecordsTest(unittest.TestCase):
@@ -322,6 +333,14 @@ class RecordsTest(unittest.TestCase):
             content = yaml.load(f)
             self.assertEqual(content['Type'],
                              records.TestSummaryEntryType.RECORD.value)
+
+    def test_exception_record_deepcopy(self):
+        """Makes sure ExceptionRecord wrapper handles deep copy properly."""
+        try:
+            raise RecordTestError('Oh ha!')
+        except RecordTestError as e:
+            er = records.ExceptionRecord(e)
+        copy.deepcopy(er)
 
 
 if __name__ == "__main__":

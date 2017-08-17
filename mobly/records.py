@@ -172,6 +172,22 @@ class ExceptionRecord(object):
         result[TestResultEnums.RECORD_EXTRAS] = copy.deepcopy(self.extras)
         return result
 
+    def __deepcopy__(self, memo):
+        """Overrides deepcopy for the class.
+
+        If the exception object has a constructor that takes extra args, deep
+        copy won't work. So we need to have a custom logic for deepcopy.
+        """
+        try:
+            exception = copy.deepcopy(self.exception)
+        except TypeError:
+            # If the exception object cannot be copied, use the original
+            # exception object.
+            exception = self.exception
+        result = ExceptionRecord(exception, self.position)
+        result.stacktrace = self.stacktrace
+        return result
+
 
 class TestResultRecord(object):
     """A record that holds the information of a single test.
