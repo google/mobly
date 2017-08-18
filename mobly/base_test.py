@@ -330,7 +330,7 @@ class BaseTestClass(object):
 
         Executes setup_test, the test method, and teardown_test; then creates a
         records.TestResultRecord object with the execution information and adds
-        the record to the test class's test result s.
+        the record to the test class's test results.
 
         Args:
             test_name: Name of the test.
