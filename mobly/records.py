@@ -186,6 +186,9 @@ class ExceptionRecord(object):
             exception = self.exception
         result = ExceptionRecord(exception, self.position)
         result.stacktrace = self.stacktrace
+        result.details = self.details
+        result.extras = self.extras
+        result.position = self.position
         return result
 
 
