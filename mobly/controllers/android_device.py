@@ -949,7 +949,7 @@ class AndroidDevice(object):
         """Checks if device boot is completed by verifying system property."""
         completed = self.adb.getprop('sys.boot_completed')
         if completed == '1':
-            self.log.info('Device %s boot completed.', self.serial)
+            self.log.debug('Device boot completed.')
             return True
         return False
 
@@ -957,7 +957,7 @@ class AndroidDevice(object):
         """Checks if USB is on and device is ready by verifying adb devices."""
         serials = list_adb_devices()
         if self.serial in serials:
-            self.log.info('Device %s USB is on.', self.serial)
+            self.log.debug('Is now adb detectable.')
             return True
         return False
 
