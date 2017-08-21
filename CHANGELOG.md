@@ -1,7 +1,7 @@
 # Mobly release history
 
 
-## 1.6: New Output
+## 1.6.1: New Output
 
 ### New
   * New output file scheme, with better clarity and streamable summary file.
