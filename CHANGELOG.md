@@ -4,20 +4,20 @@
 ## 1.6: New Output
 
 ### New
-* New output file scheme, with better clarity and streamable summary file.
-* Improved result reporting: more consistent, more debug info, no hiding
-  errors.
-* adb commands now support timeout param.
-  E.g. `adb.wait_for_device(timeout=10)`
+  * New output file scheme, with better clarity and streamable summary file.
+  * Improved result reporting: more consistent, more debug info, no hiding
+    errors.
+  * adb commands now support timeout param.
+    E.g. `adb.wait_for_device(timeout=10)`
 
 ### Breaking Changes
-* Signature change of procedure functions like `on_fail`.
-  * Old: `on_fail(test_name, begin_time)`
-  * New: `on_fail(record)`
+  * Signature change of procedure functions like `on_fail`.
+    * Old: `on_fail(test_name, begin_time)`
+    * New: `on_fail(record)`
 
 ### Deprecated
-* Old generated test code path
-* Support for old snippet protocol (v0)
+  * Old generated test code path
+  * Support for old snippet protocol (v0)
 
 Full list of fixes [here](https://github.com/google/mobly/milestone/12?closed=1).
 
