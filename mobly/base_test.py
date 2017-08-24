@@ -318,7 +318,7 @@ class BaseTestClass(object):
             # Pass a copy of the record instead of the actual object so that it
             # will not be modified.
             func(copy.deepcopy(tr_record))
-        except signals.TestAbortAll:
+        except (signals.TestAbortAll, signals.TestAbortClass):
             raise
         except Exception as e:
             logging.exception('Exception happened when executing %s for %s.',
@@ -346,6 +346,8 @@ class BaseTestClass(object):
             try:
                 try:
                     self._setup_test(test_name)
+                except (signals.TestAbortAll, signals.TestAbortClass):
+                    raise
                 except signals.TestFailure as e:
                     new_e = signals.TestError(e.details, e.extras)
                     _, _, new_e.__traceback__ = sys.exc_info()
@@ -389,17 +391,20 @@ class BaseTestClass(object):
                 tr_record.test_pass()
         finally:
             tr_record.update_record()
-            if tr_record.result in (records.TestResultEnums.TEST_RESULT_ERROR,
-                                    records.TestResultEnums.TEST_RESULT_FAIL):
-                self._exec_procedure_func(self._on_fail, tr_record)
-            elif tr_record.result == records.TestResultEnums.TEST_RESULT_PASS:
-                self._exec_procedure_func(self._on_pass, tr_record)
-            elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
-                self._exec_procedure_func(self._on_skip, tr_record)
-            self.results.add_record(tr_record)
-            self.summary_writer.dump(tr_record.to_dict(),
-                                     records.TestSummaryEntryType.RECORD)
-            self.current_test_name = None
+            try:
+                if tr_record.result in (
+                        records.TestResultEnums.TEST_RESULT_ERROR,
+                        records.TestResultEnums.TEST_RESULT_FAIL):
+                    self._exec_procedure_func(self._on_fail, tr_record)
+                elif tr_record.result == records.TestResultEnums.TEST_RESULT_PASS:
+                    self._exec_procedure_func(self._on_pass, tr_record)
+                elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
+                    self._exec_procedure_func(self._on_skip, tr_record)
+            finally:
+                self.results.add_record(tr_record)
+                self.summary_writer.dump(tr_record.to_dict(),
+                                         records.TestSummaryEntryType.RECORD)
+                self.current_test_name = None
 
     def _assert_function_name_in_stack(self, expected_func_name):
         """Asserts that the current stack contains the given function name."""
