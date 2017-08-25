@@ -725,7 +725,12 @@ class AndroidDevice(object):
                     ' "%s".' % (package, client_name))
         client = snippet_client.SnippetClient(
             package=package, adb_proxy=self.adb, log=self.log)
-        client.start_app_and_connect()
+        try:
+            client.start_app_and_connect()
+        except:
+            # If errors happen, make sure we clean up before raising.
+            client.stop_app()
+            raise
         self._snippet_clients[name] = client
         setattr(self, name, client)
 
