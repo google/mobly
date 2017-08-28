@@ -346,7 +346,7 @@ class BaseTestClass(object):
             try:
                 try:
                     self._setup_test(test_name)
-                except (signals.TestAbortAll, signals.TestAbortClass):
+                except signals.TestAbortSignal:
                     raise
                 except signals.TestFailure as e:
                     new_e = signals.TestError(e.details, e.extras)
@@ -365,7 +365,7 @@ class BaseTestClass(object):
             finally:
                 try:
                     self._teardown_test(test_name)
-                except signals.TestAbortAll:
+                except signals.TestAbortSignal:
                     raise
                 except Exception as e:
                     logging.exception(e)
@@ -376,7 +376,7 @@ class BaseTestClass(object):
         except signals.TestSkip as e:
             # Test skipped.
             tr_record.test_skip(e)
-        except (signals.TestAbortClass, signals.TestAbortAll) as e:
+        except signals.TestAbortSignal as e:
             # Abort signals, pass along.
             tr_record.test_fail(e)
             raise e
@@ -582,7 +582,7 @@ class BaseTestClass(object):
         # Setup for the class.
         try:
             self._setup_class()
-        except signals.TestAbortClass as e:
+        except signals.TestAbortSignal as e:
             # The test class is intentionally aborted.
             # Skip all tests peacefully.
             e.details = 'setup_class aborted due to: %s' % e.details
