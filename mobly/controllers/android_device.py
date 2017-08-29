@@ -725,7 +725,17 @@ class AndroidDevice(object):
                     ' "%s".' % (package, client_name))
         client = snippet_client.SnippetClient(
             package=package, adb_proxy=self.adb, log=self.log)
-        client.start_app_and_connect()
+        try:
+            client.start_app_and_connect()
+        except Exception as e:
+            # If errors happen, make sure we clean up before raising.
+            try:
+                client.stop_app()
+            except:
+                self.log.exception(
+                    'Failed to stop app after failure to launch.')
+            # Raise the error from start app failure.
+            raise e
         self._snippet_clients[name] = client
         setattr(self, name, client)
 
