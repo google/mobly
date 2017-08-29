@@ -318,7 +318,7 @@ class BaseTestClass(object):
             # Pass a copy of the record instead of the actual object so that it
             # will not be modified.
             func(copy.deepcopy(tr_record))
-        except (signals.TestAbortAll, signals.TestAbortClass):
+        except signals.TestAbortSignal:
             raise
         except Exception as e:
             logging.exception('Exception happened when executing %s for %s.',
