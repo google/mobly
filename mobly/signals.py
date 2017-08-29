@@ -62,13 +62,18 @@ class TestSkip(TestSignal):
     """Raised when a test has been skipped."""
 
 
-class TestAbortClass(TestSignal):
+class TestAbortSignal(TestSignal):
+    """Base class for abort signals.
+    """
+
+
+class TestAbortClass(TestAbortSignal):
     """Raised when all subsequent tests within the same test class should
     be aborted.
     """
 
 
-class TestAbortAll(TestSignal):
+class TestAbortAll(TestAbortSignal):
     """Raised when all subsequent tests should be aborted."""
 
 

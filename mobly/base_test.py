@@ -318,7 +318,7 @@ class BaseTestClass(object):
             # Pass a copy of the record instead of the actual object so that it
             # will not be modified.
             func(copy.deepcopy(tr_record))
-        except signals.TestAbortAll:
+        except signals.TestAbortSignal:
             raise
         except Exception as e:
             logging.exception('Exception happened when executing %s for %s.',
@@ -363,7 +363,7 @@ class BaseTestClass(object):
             finally:
                 try:
                     self._teardown_test(test_name)
-                except signals.TestAbortAll:
+                except signals.TestAbortSignal:
                     raise
                 except Exception as e:
                     logging.exception(e)
@@ -374,7 +374,7 @@ class BaseTestClass(object):
         except signals.TestSkip as e:
             # Test skipped.
             tr_record.test_skip(e)
-        except (signals.TestAbortClass, signals.TestAbortAll) as e:
+        except signals.TestAbortSignal as e:
             # Abort signals, pass along.
             tr_record.test_fail(e)
             raise e
@@ -389,17 +389,20 @@ class BaseTestClass(object):
                 tr_record.test_pass()
         finally:
             tr_record.update_record()
-            if tr_record.result in (records.TestResultEnums.TEST_RESULT_ERROR,
-                                    records.TestResultEnums.TEST_RESULT_FAIL):
-                self._exec_procedure_func(self._on_fail, tr_record)
-            elif tr_record.result == records.TestResultEnums.TEST_RESULT_PASS:
-                self._exec_procedure_func(self._on_pass, tr_record)
-            elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
-                self._exec_procedure_func(self._on_skip, tr_record)
-            self.results.add_record(tr_record)
-            self.summary_writer.dump(tr_record.to_dict(),
-                                     records.TestSummaryEntryType.RECORD)
-            self.current_test_name = None
+            try:
+                if tr_record.result in (
+                        records.TestResultEnums.TEST_RESULT_ERROR,
+                        records.TestResultEnums.TEST_RESULT_FAIL):
+                    self._exec_procedure_func(self._on_fail, tr_record)
+                elif tr_record.result == records.TestResultEnums.TEST_RESULT_PASS:
+                    self._exec_procedure_func(self._on_pass, tr_record)
+                elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
+                    self._exec_procedure_func(self._on_skip, tr_record)
+            finally:
+                self.results.add_record(tr_record)
+                self.summary_writer.dump(tr_record.to_dict(),
+                                         records.TestSummaryEntryType.RECORD)
+                self.current_test_name = None
 
     def _assert_function_name_in_stack(self, expected_func_name):
         """Asserts that the current stack contains the given function name."""
@@ -577,7 +580,7 @@ class BaseTestClass(object):
         # Setup for the class.
         try:
             self._setup_class()
-        except signals.TestAbortClass as e:
+        except signals.TestAbortSignal as e:
             # The test class is intentionally aborted.
             # Skip all tests peacefully.
             e.details = 'setup_class aborted due to: %s' % e.details

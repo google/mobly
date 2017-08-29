@@ -739,6 +739,48 @@ class BaseTestTest(unittest.TestCase):
                          ("Error 0, Executed 0, Failed 0, Passed 0, "
                           "Requested 3, Skipped 3"))
 
+    def test_abort_class_in_setup_test(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_test(self):
+                asserts.abort_class(MSG_EXPECTED_EXCEPTION)
+
+            def test_1(self):
+                never_call()
+
+            def test_2(self):
+                never_call()
+
+            def test_3(self):
+                never_call()
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_1", "test_2", "test_3"])
+        self.assertEqual(len(bt_cls.results.skipped), 2)
+        self.assertEqual(bt_cls.results.summary_str(),
+                         ("Error 0, Executed 1, Failed 1, Passed 0, "
+                          "Requested 3, Skipped 2"))
+
+    def test_abort_class_in_on_fail(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_1(self):
+                asserts.fail(MSG_EXPECTED_EXCEPTION)
+
+            def test_2(self):
+                never_call()
+
+            def test_3(self):
+                never_call()
+
+            def on_fail(self, record):
+                asserts.abort_class(MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_1", "test_2", "test_3"])
+        self.assertEqual(len(bt_cls.results.skipped), 2)
+        self.assertEqual(bt_cls.results.summary_str(),
+                         ("Error 0, Executed 1, Failed 1, Passed 0, "
+                          "Requested 3, Skipped 2"))
+
     def test_setup_and_teardown_execution_count(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
