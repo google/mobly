@@ -727,7 +727,7 @@ class AndroidDevice(object):
             package=package, adb_proxy=self.adb, log=self.log)
         try:
             client.start_app_and_connect()
-        except:
+        except Exception as e:
             # If errors happen, make sure we clean up before raising.
             try:
                 client.stop_app()
@@ -735,7 +735,7 @@ class AndroidDevice(object):
                 self.log.exception(
                     'Failed to stop app after failure to launch.')
             # Raise the error from start app failure.
-            raise
+            raise e
         self._snippet_clients[name] = client
         setattr(self, name, client)
 
