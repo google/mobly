@@ -836,10 +836,12 @@ class AndroidDevice(object):
             extra_params = self.adb_logcat_param
         except AttributeError:
             extra_params = ''
-        cmd = '"%s" -s %s logcat -v threadtime %s >> %s' % (adb.ADB,
-                                                            self.serial,
-                                                            extra_params,
-                                                            logcat_file_path)
+        cmd = '"%s" -s %s logcat -v threadtime %s >> %s' % (
+            adb.ADB,
+            self.serial,
+            extra_params,
+            # Only need to escape space here as it's a raw cli string for `>>`.
+            logcat_file_path.replace(' ', r'\ '))
         process = utils.start_standing_subprocess(cmd, shell=True)
         self._adb_logcat_process = process
         self.adb_logcat_file_path = logcat_file_path
