@@ -829,19 +829,17 @@ class AndroidDevice(object):
         if self.is_rootable:
             self.adb.shell('logpersist.stop --clear')
             self.adb.shell('logpersist.start')
-        f_name = 'adblog,%s,%s.txt' % (self.model, self.serial)
+        f_name = 'adblog,%s,%s.txt' % ('model a c', self.serial)
         utils.create_dir(self.log_path)
-        logcat_file_path = os.path.join(self.log_path, f_name)
+        logcat_file_path = '"%s"' % os.path.join(self.log_path, f_name)
         try:
             extra_params = self.adb_logcat_param
         except AttributeError:
             extra_params = ''
-        cmd = '"%s" -s %s logcat -v threadtime %s >> %s' % (
-            adb.ADB,
-            self.serial,
-            extra_params,
-            # Only need to escape space here as it's a raw cli string for `>>`.
-            logcat_file_path.replace(' ', r'\ '))
+        cmd = '"%s" -s %s logcat -v threadtime %s >> %s' % (adb.ADB,
+                                                            self.serial,
+                                                            extra_params,
+                                                            logcat_file_path)
         process = utils.start_standing_subprocess(cmd, shell=True)
         self._adb_logcat_process = process
         self.adb_logcat_file_path = logcat_file_path
