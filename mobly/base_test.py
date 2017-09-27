@@ -21,6 +21,7 @@ import sys
 
 from mobly import records
 from mobly import signals
+from mobly import test_info
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = '[Test]'
@@ -50,8 +51,11 @@ class BaseTestClass(object):
             name.
         results: A records.TestResult object for aggregating test results from
             the execution of tests.
-        current_test_name: A string that's the name of the test method currently
-            being executed. If no test is executing, this should be None.
+        current_test_name: [Deprecated, use `self.current_test_info.test_name`]
+            A string that's the name of the test method currently being
+            executed. If no test is executing, this should be None.
+        current_test_info: TestInfo, runtime information on the test currently
+            being executed.
         log_path: string, specifies the root directory for all logs written
             by a test run.
         test_bed_name: string, the name of the test bed used by a test run.
@@ -87,6 +91,7 @@ class BaseTestClass(object):
         self.register_controller = configs.register_controller
         self.results = records.TestResult()
         self.summary_writer = configs.summary_writer
+        # Deprecated, use `self.current_test_info.test_name`.
         self.current_test_name = None
         self._generated_test_table = collections.OrderedDict()
 
@@ -338,6 +343,8 @@ class BaseTestClass(object):
         """
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
+        self.current_test_info = test_info.TestInfo(test_name, self.log_path,
+                                                    tr_record)
         logging.info('%s %s', TEST_CASE_TOKEN, test_name)
         teardown_test_failed = False
         try:
@@ -400,6 +407,7 @@ class BaseTestClass(object):
                 self.results.add_record(tr_record)
                 self.summary_writer.dump(tr_record.to_dict(),
                                          records.TestSummaryEntryType.RECORD)
+                self.current_test_info = None
                 self.current_test_name = None
 
     def _assert_function_name_in_stack(self, expected_func_name):

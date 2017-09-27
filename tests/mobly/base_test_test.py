@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import mock
+import shutil
+import tempfile
+
 from future.tests.base import unittest
 
 from mobly import asserts
@@ -39,12 +43,16 @@ class SomeError(Exception):
 
 class BaseTestTest(unittest.TestCase):
     def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
         self.mock_test_cls_configs = config_parser.TestRunConfig()
         self.mock_test_cls_configs.summary_writer = mock.Mock()
-        self.mock_test_cls_configs.log_path = '/tmp'
+        self.mock_test_cls_configs.log_path = self.tmp_dir
         self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
         self.mock_test_cls_configs.reporter = mock.MagicMock()
         self.mock_test_name = "test_something"
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
 
     def test_current_test_name(self):
         class MockBaseTest(base_test.BaseTestClass):
@@ -58,6 +66,24 @@ class BaseTestTest(unittest.TestCase):
         bt_cls.run(test_names=["test_func"])
         actual_record = bt_cls.results.passed[0]
         self.assertEqual(actual_record.test_name, "test_func")
+        self.assertIsNone(actual_record.details)
+        self.assertIsNone(actual_record.extras)
+
+    def test_current_test_info(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                asserts.assert_true(
+                    self.current_test_info.test_name == 'test_func',
+                    'Got unexpected test name %s.' %
+                    self.current_test_info.test_name)
+                output_path = self.current_test_info.test_output_path
+                asserts.assert_true(
+                    os.path.exists(output_path), 'test output path missing')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        actual_record = bt_cls.results.passed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
 
