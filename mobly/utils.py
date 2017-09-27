@@ -357,6 +357,11 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
         logging.exception('Failed to kill standing subprocess %d', pid)
     if failed:
         raise Error('Failed to kill standing subprocesses: %s' % failed)
+    # Call wait and close pipes on the original Python object so we don't get
+    # runtime warnings.
+    proc.stdout.close()
+    proc.stderr.close()
+    proc.wait()
     logging.debug('Stopped standing subprocess %d', pid)
 
 
