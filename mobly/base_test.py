@@ -19,7 +19,6 @@ import inspect
 import logging
 import sys
 
-from mobly import logger
 from mobly import records
 from mobly import signals
 from mobly import utils
@@ -436,7 +435,7 @@ class BaseTestClass(object):
         """
         self._assert_function_name_in_stack('setup_generated_tests')
         for args in arg_sets:
-            test_name = name_func(*args)
+            test_name = name_func(*args)[:utils.MAX_FILENAME_LEN]
             if test_name in self.get_existing_test_names():
                 raise Error(
                     'Test name "%s" already exists, cannot be duplicated!' %
