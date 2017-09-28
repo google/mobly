@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import mock
+import platform
 import socket
 import time
 from future.tests.base import unittest
@@ -29,13 +30,17 @@ class UtilsTest(unittest.TestCase):
     under mobly.utils.
     """
 
+    def setUp(self):
+        system = platform.system()
+        self.sleep_cmd = 'timeout' if system == 'Windows' else 'sleep'
+
     def test_start_standing_subproc(self):
-        p = utils.start_standing_subprocess(['sleep', '1'])
+        p = utils.start_standing_subprocess([self.sleep_cmd, '1'])
         p1 = psutil.Process(p.pid)
         self.assertTrue(p1.is_running())
 
     def test_stop_standing_subproc(self):
-        p = utils.start_standing_subprocess(['sleep', '4'])
+        p = utils.start_standing_subprocess([self.sleep_cmd, '4'])
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
