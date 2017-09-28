@@ -30,15 +30,16 @@ class UtilsTest(unittest.TestCase):
     under mobly.utils.
     """
 
+    def setUp(self):
+        self.sleep_cmd = 'timeout' if platform.system() == 'Windows' else 'sleep'
+    
     def test_start_standing_subproc(self):
-        cmd = 'timeout' if platform.system() == 'Windows' else 'sleep'
-        p = utils.start_standing_subprocess([cmd, '1'])
+        p = utils.start_standing_subprocess([self.sleep_cmd, '1'])
         p1 = psutil.Process(p.pid)
         self.assertTrue(p1.is_running())
 
     def test_stop_standing_subproc(self):
-        cmd = 'timeout' if platform.system() == 'Windows' else 'sleep'
-        p = utils.start_standing_subprocess([cmd, '4'])
+        p = utils.start_standing_subprocess([self.sleep_cmd, '4'])
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
