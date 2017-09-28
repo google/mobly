@@ -33,7 +33,7 @@ class UtilsTest(unittest.TestCase):
     def setUp(self):
         system = platform.system()
         self.sleep_cmd = 'timeout' if system == 'Windows' else 'sleep'
-    
+
     def test_start_standing_subproc(self):
         p = utils.start_standing_subprocess([self.sleep_cmd, '1'])
         p1 = psutil.Process(p.pid)
