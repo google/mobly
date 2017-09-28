@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import mock
+import platform
 import socket
 import time
 from future.tests.base import unittest
@@ -30,12 +31,14 @@ class UtilsTest(unittest.TestCase):
     """
 
     def test_start_standing_subproc(self):
-        p = utils.start_standing_subprocess(['sleep', '1'])
+        cmd = 'timeout' if platform.system() == 'Windows' else 'sleep'
+        p = utils.start_standing_subprocess([cmd, '1'])
         p1 = psutil.Process(p.pid)
         self.assertTrue(p1.is_running())
 
     def test_stop_standing_subproc(self):
-        p = utils.start_standing_subprocess(['sleep', '4'])
+        cmd = 'timeout' if platform.system() == 'Windows' else 'sleep'
+        p = utils.start_standing_subprocess([cmd, '4'])
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
