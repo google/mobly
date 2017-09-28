@@ -723,8 +723,7 @@ class AndroidDevice(object):
                     self,
                     'Snippet package "%s" has already been loaded under name'
                     ' "%s".' % (package, client_name))
-        client = snippet_client.SnippetClient(
-            package=package, adb_proxy=self.adb, log=self.log)
+        client = snippet_client.SnippetClient(package=package, ad=self)
         try:
             client.start_app_and_connect()
         except Exception as e:

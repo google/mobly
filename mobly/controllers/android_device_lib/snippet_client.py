@@ -18,6 +18,7 @@ import time
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
+from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 _INSTRUMENTATION_RUNNER_PACKAGE = (
@@ -55,10 +56,6 @@ _SETSID_COMMAND = 'setsid'
 _NOHUP_COMMAND = 'nohup'
 
 
-class Error(Exception):
-    pass
-
-
 class ProtocolVersionError(jsonrpc_client_base.AppStartError):
     """Raised when the protocol reported by the snippet is unknown."""
 
@@ -72,18 +69,18 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     mobly-snippet-lib, SnippetRunner.java.
     """
 
-    def __init__(self, package, adb_proxy, log=logging.getLogger()):
+    def __init__(self, package, ad):
         """Initializes a SnippetClient.
 
         Args:
             package: (str) The package name of the apk where the snippets are
                 defined.
-            adb_proxy: (adb.AdbProxy) Adb proxy for running adb commands.
-            log: (logging.Logger) logger to which to send log messages.
+            ad: (AndroidDevice) the device object associated with this client.
         """
-        super(SnippetClient, self).__init__(app_name=package, log=log)
+        super(SnippetClient, self).__init__(app_name=package, ad=ad)
         self.package = package
-        self._adb = adb_proxy
+        self._ad = ad
+        self._adb = ad.adb
         self._proc = None
 
     def start_app_and_connect(self):
@@ -106,12 +103,12 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         line = self._read_protocol_line()
         match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$', line)
         if not match or match.group(1) != '1':
-            raise ProtocolVersionError(line)
+            raise ProtocolVersionError(self._ad, line)
 
         line = self._read_protocol_line()
         match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
         if not match:
-            raise ProtocolVersionError(line)
+            raise ProtocolVersionError(self._ad, line)
         self.device_port = int(match.group(1))
 
         # Forward the device port to a new host port, and connect to that port
@@ -147,7 +144,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             self.connect()
         except:
             # Failed to connect to app, something went wrong.
-            raise jsonrpc_client_base.AppRestoreConnectionError(
+            raise jsonrpc_client_base.AppRestoreConnectionError(self._ad
                 ('Failed to restore app connection for %s at host port %s, '
                  'device port %s'), self.package, self.host_port,
                 self.device_port)
@@ -170,8 +167,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                 utils.stop_standing_subprocess(self._proc)
             out = self._adb.shell(_STOP_CMD % self.package).decode('utf-8')
             if 'OK (0 tests)' not in out:
-                raise Error('Failed to stop existing apk. Unexpected '
-                            'output: %s' % out)
+                raise errors.DeviceError(self._ad,
+                    'Failed to stop existing apk. Unexpected output: %s' % out)
         finally:
             # Always clean up the adb port
             if self.host_port:
@@ -179,8 +176,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _start_event_client(self):
         """Overrides superclass."""
-        event_client = SnippetClient(
-            package=self.package, adb_proxy=self._adb, log=self.log)
+        event_client = SnippetClient(package=self.package, ad=self)
         event_client.host_port = self.host_port
         event_client.device_port = self.device_port
         event_client.connect(self.uid,
@@ -201,16 +197,15 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         out = self._adb.shell('pm list package')
         if not utils.grep('^package:%s$' % self.package, out):
             raise jsonrpc_client_base.AppStartError(
-                '%s is not installed on %s' % (self.package, self._adb.serial))
+                self._ad, '%s is not installed.' % self.package)
         # Check that the app is instrumented.
         out = self._adb.shell('pm list instrumentation')
         matched_out = utils.grep('^instrumentation:%s/%s' %
                                  (self.package,
                                   _INSTRUMENTATION_RUNNER_PACKAGE), out)
         if not matched_out:
-            raise jsonrpc_client_base.AppStartError(
-                '%s is installed on %s, but it is not instrumented.' %
-                (self.package, self._adb.serial))
+            raise jsonrpc_client_base.AppStartError(self._ad,
+                '%s is installed, but it is not instrumented.' % self.package)
         match = re.search('^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
                           matched_out[0])
         target_name = match.group(3)
@@ -219,9 +214,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         if target_name != self.package:
             out = self._adb.shell('pm list package')
             if not utils.grep('^package:%s$' % target_name, out):
-                raise jsonrpc_client_base.AppStartError(
-                    'Instrumentation target %s is not installed on %s' %
-                    (target_name, self._adb.serial))
+                raise jsonrpc_client_base.AppStartError(self._ad,
+                    'Instrumentation target %s is not installed.' %
+                    target_name)
 
     def _do_start_app(self, launch_cmd):
         adb_cmd = [adb.ADB]
@@ -246,7 +241,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         while True:
             line = self._proc.stdout.readline().decode('utf-8')
             if not line:
-                raise jsonrpc_client_base.AppStartError(
+                raise jsonrpc_client_base.AppStartError(self._ad,
                     'Unexpected EOF waiting for app to start')
             # readline() uses an empty string to mark EOF, and a single newline
             # to mark regular empty lines in the output. Don't move the strip()

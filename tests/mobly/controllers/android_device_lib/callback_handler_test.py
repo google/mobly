@@ -45,7 +45,8 @@ class CallbackHandlerTest(unittest.TestCase):
             callback_id=MOCK_CALLBACK_ID,
             event_client=mock_event_client,
             ret_value=None,
-            method_name=None)
+            method_name=None,
+            ad=mock.Mock())
         self.assertEqual(handler.callback_id, MOCK_CALLBACK_ID)
         with self.assertRaisesRegex(AttributeError, "can't set attribute"):
             handler.callback_id = 'ha'
@@ -58,7 +59,8 @@ class CallbackHandlerTest(unittest.TestCase):
             callback_id=MOCK_CALLBACK_ID,
             event_client=mock_event_client,
             ret_value=None,
-            method_name=None)
+            method_name=None,
+            ad=mock.Mock())
         event = handler.waitAndGet('ha')
         self.assertEqual(event.name, MOCK_RAW_EVENT['name'])
         self.assertEqual(event.creation_time, MOCK_RAW_EVENT['time'])
@@ -70,12 +72,14 @@ class CallbackHandlerTest(unittest.TestCase):
         java_timeout_msg = ('com.google.android.mobly.snippet.event.'
                             'EventSnippet$EventSnippetException: timeout.')
         mock_event_client.eventWaitAndGet = mock.Mock(
-            side_effect=jsonrpc_client_base.ApiError(java_timeout_msg))
+            side_effect=jsonrpc_client_base.ApiError(mock.Mock(),
+                java_timeout_msg))
         handler = callback_handler.CallbackHandler(
             callback_id=MOCK_CALLBACK_ID,
             event_client=mock_event_client,
             ret_value=None,
-            method_name=None)
+            method_name=None,
+            ad=mock.Mock())
         expected_msg = 'Timed out after waiting .*s for event "ha" .*'
         with self.assertRaisesRegex(callback_handler.TimeoutError,
                                     expected_msg):
@@ -89,7 +93,8 @@ class CallbackHandlerTest(unittest.TestCase):
             callback_id=MOCK_CALLBACK_ID,
             event_client=mock_event_client,
             ret_value=None,
-            method_name=None)
+            method_name=None,
+            ad=mock.Mock())
 
         def some_condition(event):
             return event.data['successful']
@@ -104,7 +109,8 @@ class CallbackHandlerTest(unittest.TestCase):
             callback_id=MOCK_CALLBACK_ID,
             event_client=mock_event_client,
             ret_value=None,
-            method_name=None)
+            method_name=None,
+            ad=mock.Mock())
         expected_msg = (
             'Timed out after 0.01s waiting for an "AsyncTaskResult" event that'
             ' satisfies the predicate "some_condition".')

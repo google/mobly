@@ -14,6 +14,7 @@
 
 import time
 
+from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import snippet_event
 
 # The max timeout cannot be larger than the max time the socket waits for a
@@ -23,7 +24,7 @@ MAX_TIMEOUT = 60 * 10
 DEFAULT_TIMEOUT = 120  # two minutes
 
 
-class Error(Exception):
+class Error(errors.DeviceError):
     pass
 
 
@@ -54,11 +55,12 @@ class CallbackHandler(object):
         ret_value: The direct return value of the async Rpc call.
     """
 
-    def __init__(self, callback_id, event_client, ret_value, method_name):
+    def __init__(self, callback_id, event_client, ret_value, method_name, ad):
         self._id = callback_id
         self._event_client = event_client
         self.ret_value = ret_value
         self._method_name = method_name
+        self._ad = ad
 
     @property
     def callback_id(self):
@@ -82,7 +84,7 @@ class CallbackHandler(object):
         """
         if timeout:
             if timeout > MAX_TIMEOUT:
-                raise Error(
+                raise Error(self._ad,
                     'Specified timeout %s is longer than max timeout %s.' %
                     (timeout, MAX_TIMEOUT))
         # Convert to milliseconds for java side.
@@ -92,7 +94,7 @@ class CallbackHandler(object):
                 self._id, event_name, timeout_ms)
         except Exception as e:
             if 'EventSnippetException: timeout.' in str(e):
-                raise TimeoutError(
+                raise TimeoutError(self._ad,
                     'Timed out after waiting %ss for event "%s" triggered by'
                     ' %s (%s).' % (timeout, event_name, self._method_name,
                                    self._id))
@@ -140,7 +142,7 @@ class CallbackHandler(object):
                 break
             if predicate(event):
                 return event
-        raise TimeoutError(
+        raise TimeoutError(self._ad,
             'Timed out after %ss waiting for an "%s" event that satisfies the '
             'predicate "%s".' % (timeout, event_name, predicate.__name__))
 
