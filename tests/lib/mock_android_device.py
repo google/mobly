@@ -68,7 +68,7 @@ class MockAdbProxy(object):
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
 
-    def shell(self, params):
+    def shell(self, params, timeout=None):
         if params == "id -u":
             return b"root"
         elif params == "bugreportz":
@@ -90,7 +90,7 @@ class MockAdbProxy(object):
         elif params == "sys.boot_completed":
             return "1"
 
-    def bugreport(self, args, shell=False):
+    def bugreport(self, args, shell=False, timeout=None):
         expected = os.path.join(logging.log_path,
                                 'AndroidDevice%s' % self.serial, 'BugReports',
                                 'test_something,sometime,%s' % self.serial)
