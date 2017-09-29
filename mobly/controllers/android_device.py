@@ -728,12 +728,13 @@ class AndroidDevice(object):
         try:
             client.start_app_and_connect()
         except Exception as e:
+            self.log.exception('Failed to start app and connect.')
             # If errors happen, make sure we clean up before raising.
             try:
                 client.stop_app()
             except:
                 self.log.exception(
-                    'Failed to stop app after failure to launch.')
+                    'Failed to stop app after failure to start app and connect.')
             # Raise the error from start app failure.
             raise e
         self._snippet_clients[name] = client
