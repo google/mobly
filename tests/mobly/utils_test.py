@@ -35,15 +35,23 @@ class UtilsTest(unittest.TestCase):
         self.sleep_cmd = 'timeout' if system == 'Windows' else 'sleep'
 
     def test_start_standing_subproc(self):
-        p = utils.start_standing_subprocess([self.sleep_cmd, '1'])
-        p1 = psutil.Process(p.pid)
-        self.assertTrue(p1.is_running())
+        try:
+            p = utils.start_standing_subprocess([self.sleep_cmd, '0.1'])
+            p1 = psutil.Process(p.pid)
+            self.assertTrue(p1.is_running())
+        finally:
+            p.stdout.close()
+            p.stderr.close()
+            p.wait()
 
     def test_stop_standing_subproc(self):
         p = utils.start_standing_subprocess([self.sleep_cmd, '4'])
         p1 = psutil.Process(p.pid)
+        start_time = time.time()
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
+        stop_time = time.time()
+        self.assertTrue(stop_time - start_time < 0.1)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
