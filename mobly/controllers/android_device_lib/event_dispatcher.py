@@ -169,7 +169,7 @@ class EventDispatcher:
                 Never times out if None.
 
         Returns:
-            event: The oldest entry of the specified event. None if timed out.
+            The oldest entry of the specified event. None if timed out.
 
         Raises:
             IllegalStateError: Raised if pop is called before the dispatcher
@@ -260,8 +260,8 @@ class EventDispatcher:
                 matching the condition exits when the function is called.
 
         Returns:
-            results: Pop events whose names match a regex pattern.
-                Empty if none exist and the wait timed out.
+            Pop events whose names match a regex pattern.
+            Empty if none exist and the wait timed out.
 
         Raises:
             IllegalStateError: Raised if pop is called before the dispatcher
@@ -307,9 +307,9 @@ class EventDispatcher:
         If no event of this name has been polled, wait for one to.
 
         Returns:
-            queue: A queue storing all the events of the specified name.
-                None if timed out.
-            timeout: Number of seconds to wait for the operation.
+            A queue storing all the events of the specified name.
+            None if timed out.
+            Number of seconds to wait for the operation.
 
         Raises:
             queue.Empty: Raised if the queue does not exist and timeout has
@@ -373,9 +373,9 @@ class EventDispatcher:
                 out. Never times out if None.
 
         Returns:
-            worker: A concurrent.Future object associated with the handler.
-                If blocking call worker.result() is triggered, the handler
-                needs to return something to unblock.
+            A concurrent.Future object associated with the handler.
+            If blocking call worker.result() is triggered, the handler
+            needs to return something to unblock.
         """
         worker = self.executor.submit(self._handle, event_handler, event_name,
                                       user_args, event_timeout, cond,
@@ -392,7 +392,7 @@ class EventDispatcher:
             event_name: Name of the events to be popped.
 
         Returns:
-           results: List of the desired events.
+           List of the desired events.
 
         Raises:
             IllegalStateError: Raised if pop is called before the dispatcher

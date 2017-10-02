@@ -139,7 +139,7 @@ def skip(reason, extras=None):
             test result.
 
     Raises:
-        signals.TestSkip is raised to mark a test as skipped.
+        signals.TestSkip: Mark a test as skipped.
     """
     raise signals.TestSkip(reason, extras)
 
@@ -169,8 +169,8 @@ def abort_class(reason, extras=None):
             test result.
 
     Raises:
-        signals.TestAbortClass is raised to abort all subsequent tests in a
-        test class.
+        signals.TestAbortClass: Abort all subsequent tests in a
+            test class.
     """
     raise signals.TestAbortClass(reason, extras)
 
@@ -189,8 +189,8 @@ def abort_class_if(expr, reason, extras=None):
             test result.
 
     Raises:
-        signals.TestAbortClass is raised to abort all subsequent tests in a
-        test class.
+        signals.TestAbortClass: Abort all subsequent tests in a
+            test class.
     """
     if expr:
         abort_class(reason, extras)
@@ -206,7 +206,7 @@ def abort_all(reason, extras=None):
             test result.
 
     Raises:
-        signals.TestAbortAll is raised to abort all subsequent tests.
+        signals.TestAbortAll: Abort all subsequent tests.
     """
     raise signals.TestAbortAll(reason, extras)
 
@@ -221,7 +221,7 @@ def abort_all_if(expr, reason, extras=None):
             test result.
 
     Raises:
-        signals.TestAbortAll is raised to abort all subsequent tests.
+        signals.TestAbortAll: Abort all subsequent tests.
     """
     if expr:
         abort_all(reason, extras)
@@ -236,7 +236,7 @@ def fail(msg, extras=None):
             test result.
 
     Raises:
-        signals.TestFailure is raised to mark a test as failed.
+        signals.TestFailure: Mark a test as failed.
     """
     raise signals.TestFailure(msg, extras)
 
@@ -254,7 +254,7 @@ def explicit_pass(msg, extras=None):
             test result.
 
     Raises:
-        signals.TestPass is raised to mark a test as passed.
+        signals.TestPass: Mark a test as passed.
     """
     raise signals.TestPass(msg, extras)
 

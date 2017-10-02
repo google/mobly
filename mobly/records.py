@@ -94,7 +94,7 @@ class TestSummaryWriter(object):
             entry_type: a member of enum TestSummaryEntryType.
 
         Raises:
-            recoreds.Error is raised if an invalid entry type is passed in.
+            recoreds.Error: It is raised if an invalid entry type is passed in.
         """
         new_content = copy.deepcopy(content)
         new_content['Type'] = entry_type.value
@@ -395,10 +395,13 @@ class TestResultRecord(object):
         TODO(#270): Deprecate with old output format.
 
         Format of the json string is:
+
+        .. code-block:: json
+
             {
-                'Test Name': <test name>,
-                'Begin Time': <epoch timestamp>,
-                'Details': <details>,
+                "Test Name": "test name",
+                "Begin Time": "epoch timestamp",
+                "Details": "details",
                 ...
             }
 
@@ -537,6 +540,9 @@ class TestResult(object):
         TODO(#270): Deprecate with old output format.
 
         Format of the json string is:
+
+        .. code-block:: json
+
             {
                 'Results': [
                     {<executed test record 1>},

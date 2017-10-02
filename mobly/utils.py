@@ -396,7 +396,7 @@ def get_available_host_port():
         forward.
 
     Raises:
-      Error: when no port is found after MAX_PORT_ALLOCATION_RETRY times.
+        Error: when no port is found after MAX_PORT_ALLOCATION_RETRY times.
     """
     for _ in range(MAX_PORT_ALLOCATION_RETRY):
         port = portpicker.PickUnusedPort()

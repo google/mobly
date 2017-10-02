@@ -26,7 +26,7 @@ class TestSignal(Exception):
     """Base class for all test result control signals. This is used to signal
     the result of a test.
 
-    Attribute:
+    Attributes:
         details: A string that describes the reason for raising this signal.
         extras: A json-serializable data type to convey extra information about
             a test result.

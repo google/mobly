@@ -126,7 +126,7 @@ class BaseTestClass(object):
                 required_list or opt_list.
 
         Raises:
-            Error is raised if a required user params is not provided.
+            Error: It is raised if a required user params is not provided.
         """
         req_param_names = req_param_names or []
         opt_param_names = opt_param_names or []
@@ -468,8 +468,8 @@ class BaseTestClass(object):
     def get_existing_test_names(self):
         """Gets the names of existing tests in the class.
 
-        A method in the class is considered a test if its name starts with
-        "test_".
+        A method in the class is considered a test if its name is
+        `test_something`.
 
         Note this only gets the names of tests that already exist. If
         `setup_generated_test` has not happened when this was called, the
@@ -495,9 +495,9 @@ class BaseTestClass(object):
             name, function is the actual python method implementing its logic.
 
         Raises:
-            Error is raised if the test name does not follow
-            naming convention 'test_*'. This can only be caused by user input
-            here.
+            Error: It is raised if the test name does not follow
+                naming convention 'test_*'. This can only be caused by user input
+                here.
         """
         test_methods = []
         for test_name in test_names:
@@ -537,6 +537,7 @@ class BaseTestClass(object):
 
         One of these test method lists will be executed, shown here in priority
         order:
+
         1. The test_names list, which is passed from cmd line. Invalid names
            are guarded by cmd line arg parsing.
         2. The self.tests list defined in test class. Invalid names are
