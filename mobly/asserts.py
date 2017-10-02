@@ -31,13 +31,14 @@ _pyunit_proxy = _ProxyTest()
 
 
 def assert_equal(first, second, msg=None, extras=None):
-    """Assert an expression evaluates to true, otherwise fail the test.
+    """Assert the equality of objects, otherwise fail the test.
 
     Error message is "first != second" by default. Additional explanation can
     be supplied in the message.
 
     Args:
-        expr: The expression that is evaluated.
+        first: The first object to compare.
+        second: The second object to compare.
         msg: A string that adds additional info about the failure.
         extras: An optional field for extra information to be included in
             test result.
@@ -98,9 +99,8 @@ def assert_raises_regex(expected_exception,
         extras: An optional field for extra information to be included in
             test result.
     """
-    context = _AssertRaisesContext(expected_exception,
-                                   expected_regex,
-                                   extras=extras)
+    context = _AssertRaisesContext(
+        expected_exception, expected_regex, extras=extras)
     return context
 
 
@@ -242,9 +242,12 @@ def fail(msg, extras=None):
 def explicit_pass(msg, extras=None):
     """Explicitly pass a test.
 
-    A test with not uncaught exception will pass implicitly so the usage of
-    this is optional. It is intended for reporting extra information when a
-    test passes.
+    This will pass the test explicitly regardless of any other error happened
+    in the test body. E.g. even if errors have been recorded with `expects`,
+    the test will still be marked pass if this is called.
+
+    A test without uncaught exception will pass implicitly so this should be
+    used scarcely.
 
     Args:
         msg: A string explaining the details of the passed test.
@@ -275,8 +278,8 @@ class _AssertRaisesContext(object):
                 exc_name = self.expected.__name__
             except AttributeError:
                 exc_name = str(self.expected)
-            raise signals.TestFailure('%s not raised' % exc_name,
-                                      extras=self.extras)
+            raise signals.TestFailure(
+                '%s not raised' % exc_name, extras=self.extras)
         if not issubclass(exc_type, self.expected):
             # let unexpected exceptions pass through
             return False
@@ -289,7 +292,7 @@ class _AssertRaisesContext(object):
             expected_regexp = re.compile(expected_regexp)
         if not expected_regexp.search(str(exc_value)):
             raise signals.TestFailure(
-                '"%s" does not match "%s"' %
-                (expected_regexp.pattern, str(exc_value)),
+                '"%s" does not match "%s"' % (expected_regexp.pattern,
+                                              str(exc_value)),
                 extras=self.extras)
         return True

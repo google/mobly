@@ -347,14 +347,17 @@ class TestResultRecord(object):
 
         Args:
             position: string, where this error occurred, e.g. 'teardown_test'.
-            e: An exception object.
+            e: An exception or a `signals.ExceptionRecord` object.
         """
         if self.result != TestResultEnums.TEST_RESULT_FAIL:
             self.result = TestResultEnums.TEST_RESULT_ERROR
         if position in self.extra_errors:
             raise Error('An exception is already recorded with position "%s",'
                         ' cannot reuse.' % position)
-        self.extra_errors[position] = ExceptionRecord(e, position=position)
+        if isinstance(e, ExceptionRecord):
+            self.extra_errors[position] = e
+        else:
+            self.extra_errors[position] = ExceptionRecord(e, position=position)
 
     def __str__(self):
         d = self.to_dict()
