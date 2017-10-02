@@ -14,22 +14,23 @@
 """Controller module for attenuators.
 
 Sample Config:
-    .. code-block:: python
 
-        "Attenuator": [
-            {
-                "address": "192.168.1.12",
-                "port": 23,
-                "model": "minicircuits",
-                "paths": ["AP1-2G", "AP1-5G", "AP2-2G", "AP2-5G"]
-            },
-            {
-                "address": "192.168.1.14",
-                "port": 23,
-                "model": "minicircuits",
-                "paths": ["AP-DUT"]
-            }
-        ]
+.. code-block:: python
+
+    "Attenuator": [
+        {
+            "address": "192.168.1.12",
+            "port": 23,
+            "model": "minicircuits",
+            "paths": ["AP1-2G", "AP1-5G", "AP2-2G", "AP2-5G"]
+        },
+        {
+            "address": "192.168.1.14",
+            "port": 23,
+            "model": "minicircuits",
+            "paths": ["AP-DUT"]
+        }
+    ]
 """
 import importlib
 import logging

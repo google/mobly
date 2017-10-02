@@ -1,0 +1,383 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.controllers.sniffer &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mobly.controllers.sniffer</h1><div class="highlight"><pre>
+<span class="c1"># Copyright 2016 Google Inc.</span>
+<span class="c1"># </span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1"># </span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1"># </span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">MOBLY_CONTROLLER_CONFIG_NAME</span> <span class="o">=</span> <span class="s2">&quot;Sniffer&quot;</span>
+
+
+<div class="viewcode-block" id="create"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.create">[docs]</a><span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">configs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Initializes the sniffer structures based on the JSON configuration. The</span>
+<span class="sd">    expected keys are:</span>
+
+<span class="sd">        Type: A first-level type of sniffer. Planned to be &#39;local&#39; for sniffers</span>
+<span class="sd">            running on the local machine, or &#39;remote&#39; for sniffers running</span>
+<span class="sd">            remotely.</span>
+
+<span class="sd">        SubType: The specific sniffer type to be used.</span>
+
+<span class="sd">        Interface: The WLAN interface used to configure the sniffer.</span>
+
+<span class="sd">        BaseConfigs: A dictionary specifying baseline configurations of the</span>
+<span class="sd">            sniffer. Configurations can be overridden when starting a capture.</span>
+<span class="sd">            The keys must be one of the Sniffer.CONFIG_KEY_* values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">objs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">configs</span><span class="p">:</span>
+        <span class="n">sniffer_type</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s2">&quot;Type&quot;</span><span class="p">]</span>
+        <span class="n">sniffer_subtype</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s2">&quot;SubType&quot;</span><span class="p">]</span>
+        <span class="n">interface</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s2">&quot;Interface&quot;</span><span class="p">]</span>
+        <span class="n">base_configs</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s2">&quot;BaseConfigs&quot;</span><span class="p">]</span>
+        <span class="n">module_name</span> <span class="o">=</span> <span class="s2">&quot;mobly.controllers.sniffer_lib.{}.{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">sniffer_type</span><span class="p">,</span> <span class="n">sniffer_subtype</span><span class="p">)</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">module_name</span><span class="p">)</span>
+        <span class="n">objs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">Sniffer</span><span class="p">(</span><span class="n">interface</span><span class="p">,</span>
+                                   <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(),</span>
+                                   <span class="n">base_configs</span><span class="o">=</span><span class="n">base_configs</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">objs</span></div>
+
+
+<div class="viewcode-block" id="destroy"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.destroy">[docs]</a><span class="k">def</span> <span class="nf">destroy</span><span class="p">(</span><span class="n">objs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Destroys the sniffers and terminates any ongoing capture sessions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">sniffer</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sniffer</span><span class="o">.</span><span class="n">stop_capture</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">SnifferError</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SnifferError"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.SnifferError">[docs]</a><span class="k">class</span> <span class="nc">SnifferError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is the Exception class defined for all errors generated by</span>
+<span class="sd">    Sniffer-related modules.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="InvalidDataError"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.InvalidDataError">[docs]</a><span class="k">class</span> <span class="nc">InvalidDataError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This exception is thrown when invalid configuration data is passed</span>
+<span class="sd">    to a method.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ExecutionError"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.ExecutionError">[docs]</a><span class="k">class</span> <span class="nc">ExecutionError</span><span class="p">(</span><span class="n">SnifferError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This exception is thrown when trying to configure the capture device</span>
+<span class="sd">    or when trying to execute the capture operation.</span>
+
+<span class="sd">    When this exception is seen, it is possible that the sniffer module is run</span>
+<span class="sd">    without sudo (for local sniffers) or keys are out-of-date (for remote</span>
+<span class="sd">    sniffers).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="InvalidOperationError"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.InvalidOperationError">[docs]</a><span class="k">class</span> <span class="nc">InvalidOperationError</span><span class="p">(</span><span class="n">SnifferError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Certain methods may only be accessed when the instance upon which they</span>
+<span class="sd">    are invoked is in a certain state. This indicates that the object is not</span>
+<span class="sd">    in the correct state for a method to be called.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Sniffer"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.Sniffer">[docs]</a><span class="k">class</span> <span class="nc">Sniffer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class defines an object representing a sniffer.</span>
+
+<span class="sd">    The object defines the generic behavior of sniffers - irrespective of how</span>
+<span class="sd">    they are implemented, or where they are located: on the local machine or on</span>
+<span class="sd">    the remote machine.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">CONFIG_KEY_CHANNEL</span> <span class="o">=</span> <span class="s2">&quot;channel&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">base_configs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The constructor for the Sniffer. It constructs a sniffer and</span>
+<span class="sd">        configures it to be ready for capture.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            interface: A string specifying the interface used to configure the</span>
+<span class="sd">                sniffer.</span>
+<span class="sd">            logger: Mobly logger object.</span>
+<span class="sd">            base_configs: A dictionary containing baseline configurations of the</span>
+<span class="sd">                sniffer. These can be overridden when staring a capture. The</span>
+<span class="sd">                keys are specified by Sniffer.CONFIG_KEY_*.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            self: A configured sniffer.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidDataError: if the config_path is invalid.</span>
+<span class="sd">            NoPermissionError: if an error occurs while configuring the</span>
+<span class="sd">                sniffer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Sniffer.get_descriptor"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.Sniffer.get_descriptor">[docs]</a>    <span class="k">def</span> <span class="nf">get_descriptor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function returns a string describing the sniffer. The specific</span>
+<span class="sd">        string (and its format) is up to each derived sniffer type.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A string describing the sniffer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Sniffer.get_type"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.Sniffer.get_type">[docs]</a>    <span class="k">def</span> <span class="nf">get_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function returns the type of the sniffer.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The type (string) of the sniffer. Corresponds to the &#39;Type&#39; key of</span>
+<span class="sd">            the sniffer configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Sniffer.get_subtype"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.Sniffer.get_subtype">[docs]</a>    <span class="k">def</span> <span class="nf">get_subtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function returns the sub-type of the sniffer.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The sub-type (string) of the sniffer. Corresponds to the &#39;SubType&#39;</span>
+<span class="sd">            key of the sniffer configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Sniffer.get_interface"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.Sniffer.get_interface">[docs]</a>    <span class="k">def</span> <span class="nf">get_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function returns The interface used to configure the sniffer,</span>
+<span class="sd">        e.g. &#39;wlan0&#39;.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The interface (string) used to configure the sniffer. Corresponds to</span>
+<span class="sd">            the &#39;Interface&#39; key of the sniffer configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Sniffer.get_capture_file"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.Sniffer.get_capture_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_capture_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The sniffer places a capture in the logger directory. This function</span>
+<span class="sd">        enables the caller to obtain the path of that capture.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The full path of the current or last capture.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Sniffer.start_capture"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.Sniffer.start_capture">[docs]</a>    <span class="k">def</span> <span class="nf">start_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">override_configs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                      <span class="n">additional_args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                      <span class="n">duration</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                      <span class="n">packet_count</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function starts a capture which is saved to the specified file</span>
+<span class="sd">        path.</span>
+
+<span class="sd">        Depending on the type/subtype and configuration of the sniffer the</span>
+<span class="sd">        capture may terminate on its own or may require an explicit call to the</span>
+<span class="sd">        stop_capture() function.</span>
+
+<span class="sd">        This is a non-blocking function so a terminating function must be</span>
+<span class="sd">        called either explicitly or implicitly:</span>
+
+<span class="sd">            - Explicitly: call either stop_capture() or wait_for_capture()</span>
+
+<span class="sd">            - Implicitly: use with a with clause. The wait_for_capture() function</span>
+<span class="sd">                will be called if a duration is specified (i.e. is not</span>
+<span class="sd">                None), otherwise a stop_capture() will be called.</span>
+
+<span class="sd">        The capture is saved to a file in the log path of the logger. Use</span>
+<span class="sd">        the get_capture_file() to get the full path to the current or most</span>
+<span class="sd">        recent capture.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            override_configs: A dictionary which is combined with the</span>
+<span class="sd">                base_configs (&quot;BaseConfigs&quot; in the sniffer configuration). The</span>
+<span class="sd">                keys (specified by Sniffer.CONFIG_KEY_*) determine the</span>
+<span class="sd">                configuration of the sniffer for this specific capture.</span>
+<span class="sd">            additional_args: A string specifying additional raw</span>
+<span class="sd">                command-line arguments to pass to the underlying sniffer. The</span>
+<span class="sd">                interpretation of these flags is sniffer-dependent.</span>
+<span class="sd">            duration: An integer specifying the number of seconds over which to</span>
+<span class="sd">                capture packets. The sniffer will be terminated after this</span>
+<span class="sd">                duration. Used in implicit mode when using a &#39;with&#39; clause. In</span>
+<span class="sd">                explicit control cases may have to be performed using a</span>
+<span class="sd">                sleep+stop or as the timeout argument to the wait function.</span>
+<span class="sd">            packet_count: An integer specifying the number of packets to capture</span>
+<span class="sd">                before terminating. Should be used with duration to guarantee</span>
+<span class="sd">                that capture terminates at some point (even if did not capture</span>
+<span class="sd">                the specified number of packets).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An ActiveCaptureContext process which can be used with a &#39;with&#39;</span>
+<span class="sd">            clause.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidDataError: for invalid configurations</span>
+<span class="sd">            NoPermissionError: if an error occurs while configuring and running</span>
+<span class="sd">                the sniffer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Sniffer.stop_capture"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.Sniffer.stop_capture">[docs]</a>    <span class="k">def</span> <span class="nf">stop_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function stops a capture and guarantees that the capture is</span>
+<span class="sd">        saved to the capture file configured during the start_capture() method.</span>
+<span class="sd">        Depending on the type of the sniffer the file may previously contain</span>
+<span class="sd">        partial results (e.g. for a local sniffer) or may not exist until the</span>
+<span class="sd">        stop_capture() method is executed (e.g. for a remote sniffer).</span>
+
+<span class="sd">        Depending on the type/subtype and configuration of the sniffer the</span>
+<span class="sd">        capture may terminate on its own without requiring a call to this</span>
+<span class="sd">        function. In such a case it is still necessary to call either this</span>
+<span class="sd">        function or the wait_for_capture() function to make sure that the</span>
+<span class="sd">        capture file is moved to the correct location.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NoPermissionError: No permission when trying to stop a capture</span>
+<span class="sd">                and save the capture file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Sniffer.wait_for_capture"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.Sniffer.wait_for_capture">[docs]</a>    <span class="k">def</span> <span class="nf">wait_for_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function waits for a capture to terminate and guarantees that</span>
+<span class="sd">        the capture is saved to the capture file configured during the</span>
+<span class="sd">        start_capture() method. Depending on the type of the sniffer the file</span>
+<span class="sd">        may previously contain partial results (e.g. for a local sniffer) or</span>
+<span class="sd">        may not exist until the stop_capture() method is executed (e.g. for a</span>
+<span class="sd">        remote sniffer).</span>
+
+<span class="sd">        Depending on the type/subtype and configuration of the sniffer the</span>
+<span class="sd">        capture may terminate on its own without requiring a call to this</span>
+<span class="sd">        function. In such a case it is still necessary to call either this</span>
+<span class="sd">        function or the stop_capture() function to make sure that the capture</span>
+<span class="sd">        file is moved to the correct location.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            timeout: An integer specifying the number of seconds to wait for</span>
+<span class="sd">                the capture to terminate on its own. On expiration of the</span>
+<span class="sd">                timeout the sniffer is stopped explicitly using the</span>
+<span class="sd">                stop_capture() function.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NoPermissionError: No permission when trying to stop a capture and</span>
+<span class="sd">                save the capture file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ActiveCaptureContext"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.sniffer.ActiveCaptureContext">[docs]</a><span class="k">class</span> <span class="nc">ActiveCaptureContext</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class defines an object representing an active sniffer capture.</span>
+
+<span class="sd">    The object is returned by a Sniffer.start_capture() command and terminates</span>
+<span class="sd">    the capture when the &#39;with&#39; clause exits. It is syntactic sugar for</span>
+<span class="sd">    try/finally.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_sniffer</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">_timeout</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sniffer</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span> <span class="o">=</span> <span class="n">sniffer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">traceback</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span><span class="o">.</span><span class="n">stop_capture</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span><span class="o">.</span><span class="n">wait_for_capture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sniffer</span> <span class="o">=</span> <span class="bp">None</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

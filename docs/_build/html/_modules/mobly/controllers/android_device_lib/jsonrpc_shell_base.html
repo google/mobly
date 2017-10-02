@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.controllers.android_device_lib.jsonrpc_shell_base &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mobly.controllers.android_device_lib.jsonrpc_shell_base</h1><div class="highlight"><pre>
+<span class="c1"># Copyright 2016 Google Inc.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Shared library for frontends to jsonrpc servers.&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">code</span>
+<span class="kn">import</span> <span class="nn">pprint</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">mobly.controllers</span> <span class="kn">import</span> <span class="n">android_device</span>
+
+
+<div class="viewcode-block" id="Error"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.jsonrpc_shell_base.Error">[docs]</a><span class="k">class</span> <span class="nc">Error</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="JsonRpcShellBase"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase">[docs]</a><span class="k">class</span> <span class="nc">JsonRpcShellBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_start_services</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">console_env</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Starts the services needed by this client and adds them to console_env.</span>
+<span class="sd">  </span>
+<span class="sd">        Must be implemented by subclasses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="bp">NotImplemented</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_get_banner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serial</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the user-friendly banner message to print before the console.</span>
+<span class="sd">  </span>
+<span class="sd">        Must be implemented by subclasses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="bp">NotImplemented</span><span class="p">()</span>
+
+<div class="viewcode-block" id="JsonRpcShellBase.load_device"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase.load_device">[docs]</a>    <span class="k">def</span> <span class="nf">load_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serial</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates an AndroidDevice for the given serial number.</span>
+
+<span class="sd">        If no serial is given, it will be read from &#39;adb devices&#39; if there is</span>
+<span class="sd">        only one.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">serials</span> <span class="o">=</span> <span class="n">android_device</span><span class="o">.</span><span class="n">list_adb_devices</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">serials</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s1">&#39;No adb device found!&#39;</span><span class="p">)</span>
+        <span class="c1"># No serial provided, try to pick up the device automatically.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">serial</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">serials</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span>
+                    <span class="s1">&#39;Expected one phone, but </span><span class="si">%d</span><span class="s1"> found. Use the -s flag.&#39;</span> <span class="o">%</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">serials</span><span class="p">))</span>
+            <span class="n">serial</span> <span class="o">=</span> <span class="n">serials</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">serial</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">serials</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s1">&#39;Device &quot;</span><span class="si">%s</span><span class="s1">&quot; is not found by adb.&#39;</span> <span class="o">%</span> <span class="n">serial</span><span class="p">)</span>
+        <span class="n">ads</span> <span class="o">=</span> <span class="n">android_device</span><span class="o">.</span><span class="n">get_instances</span><span class="p">([</span><span class="n">serial</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ads</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ad</span> <span class="o">=</span> <span class="n">ads</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="JsonRpcShellBase.start_console"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase.start_console">[docs]</a>    <span class="k">def</span> <span class="nf">start_console</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Set up initial console environment</span>
+        <span class="n">console_env</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ad&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ad</span><span class="p">,</span>
+            <span class="s1">&#39;pprint&#39;</span><span class="p">:</span> <span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Start the services</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_services</span><span class="p">(</span><span class="n">console_env</span><span class="p">)</span>
+
+        <span class="c1"># Start the console</span>
+        <span class="n">console_banner</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_banner</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ad</span><span class="o">.</span><span class="n">serial</span><span class="p">)</span>
+        <span class="n">code</span><span class="o">.</span><span class="n">interact</span><span class="p">(</span><span class="n">banner</span><span class="o">=</span><span class="n">console_banner</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="n">console_env</span><span class="p">)</span>
+
+        <span class="c1"># Tear everything down</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ad</span><span class="o">.</span><span class="n">stop_services</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="JsonRpcShellBase.main"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serial</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_device</span><span class="p">(</span><span class="n">serial</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s1">&#39;ERROR: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">e</span><span class="p">,</span> <span class="nb">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_console</span><span class="p">()</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

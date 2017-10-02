@@ -317,7 +317,7 @@ def get_device(ads, **kwargs):
 
     Raises:
         Error: It is raised if none or more than one device is
-        matched.
+            matched.
     """
 
     def _get_device_filter(ad):
@@ -666,7 +666,7 @@ class AndroidDevice(object):
 
         Raises:
             Error: It is raised if the config is trying to overwrite
-            an existing attribute.
+                an existing attribute.
         """
         for k, v in config.items():
             if hasattr(self, k):
@@ -1016,11 +1016,12 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
     """A wrapper class that adds a prefix to each log line.
 
     Usage:
-        .. code-block:: python
+    
+    .. code-block:: python
 
-            my_log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-                'tag': <custom tag>
-            })
+        my_log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
+            'tag': <custom tag>
+        })
 
     Then each log line added by my_log will have a prefix
     '[AndroidDevice|<tag>]'

@@ -69,7 +69,7 @@ def _validate_testbed_configs(testbed_configs):
         testbed_configs: A list of testbed configuration dicts.
 
     Raises:
-        MoblyConfigError: it is raised if any part of the configuration is invalid.
+        MoblyConfigError: It is raised if any part of the configuration is invalid.
     """
     seen_names = set()
     # Cross checks testbed configs for resource conflicts.
