@@ -391,7 +391,7 @@ class EventDispatcher:
             event_name: Name of the events to be popped.
 
         Returns:
-           List of the desired events.
+            List of the desired events.
 
         Raises:
             IllegalStateError: Raised if pop is called before the dispatcher
