@@ -185,9 +185,9 @@ class Sniffer(object):
         This is a non-blocking function so a terminating function must be
         called either explicitly or implicitly:
 
-            - Explicitly: call either stop_capture() or wait_for_capture()
+            * Explicitly: call either stop_capture() or wait_for_capture()
 
-            - Implicitly: use with a with clause. The wait_for_capture() function
+            * Implicitly: use with a with clause. The wait_for_capture() function
                 will be called if a duration is specified (i.e. is not
                 None), otherwise a stop_capture() will be called.
 

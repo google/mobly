@@ -195,7 +195,7 @@ def verify_controller_module(module):
             the key 'ControllerInfo'. Such information could include unique
             ID, version, or anything that could be useful for describing the
             test bed and debugging.
-            
+
             Args:
                 objects: A list of controller objects created by the create
                     function.
@@ -390,12 +390,12 @@ class TestRunner(object):
             required controller.
 
         Raises:
-            ControllerError: It is raised if no corresponding config can
-                be found when required is True, Regardless of the value of
-                'required', it is raised if the controller module has already
-                been registered or any other error occurred in the registration
-                process. If the actual number of objects instantiated is less
-                than the min_number, it is also raised.
+            ControllerError:
+                * The controller module has already been registered.
+                * The actual number of objects instantiated is less than the `min_number`.
+                * `required` is True and no corresponding config can be found.
+                * Any other error occurred in the registration process.
+
         """
         verify_controller_module(module)
         # Use the module's name as the ref name

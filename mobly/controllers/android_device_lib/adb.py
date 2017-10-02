@@ -115,8 +115,8 @@ class AdbProxy(object):
             The output of the adb command run if exit code is 0.
 
         Raises:
-            AdbError: It is raised if the adb command exit code is not 0.
-            AdbTimeoutError: It is raised if the adb command timed out.
+            AdbError: The adb command exit code is not 0.
+            AdbTimeoutError: The adb command timed out.
         """
         proc = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)

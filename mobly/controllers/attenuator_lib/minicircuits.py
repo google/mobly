@@ -83,11 +83,11 @@ class AttenuatorDevice(object):
             value: A float that is the attenuation value to set.
 
         Raises:
-            Error: It is raised if the underlying telnet connection to the
+            Error: The underlying telnet connection to the
                 instrument is not open.
-            IndexError: It is raised if the index of the attenuator is greater than
+            IndexError: The index of the attenuator is greater than
                 the maximum index of the underlying instrument.
-            ValueError: It is raised if the requested set value is greater than the
+            ValueError: The requested set value is greater than the
                 maximum attenuation value.
         """
         if not self.is_open:
@@ -112,7 +112,7 @@ class AttenuatorDevice(object):
                 attenuator in an instrument.
 
         Raises:
-            Error: It is raised if the underlying telnet connection to the
+            Error: The underlying telnet connection to the
                 instrument is not open.
 
         Returns:

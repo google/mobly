@@ -316,7 +316,7 @@ def get_device(ads, **kwargs):
         The target AndroidDevice instance.
 
     Raises:
-        Error: It is raised if none or more than one device is
+        Error: None or more than one device is
             matched.
     """
 
@@ -504,11 +504,11 @@ class AndroidDevice(object):
         USB disconnection, e.g. the following cases can be handled by this
         method:
 
-        - Power measurement: Using Monsoon device to measure battery consumption
+        * Power measurement: Using Monsoon device to measure battery consumption
             would potentially disconnect USB.
-        - Unplug USB so device loses connection.
-        - ADB connection over WiFi and WiFi got disconnected.
-        - Any other type of USB disconnection, as long as snippet session can be
+        * Unplug USB so device loses connection.
+        * ADB connection over WiFi and WiFi got disconnected.
+        * Any other type of USB disconnection, as long as snippet session can be
             kept alive while USB disconnected (reboot caused USB disconnection is
             not one of these cases because snippet session cannot survive reboot.
             Use handle_reboot() instead).
@@ -665,7 +665,7 @@ class AndroidDevice(object):
             config: A dictionary representing the configs.
 
         Raises:
-            Error: It is raised if the config is trying to overwrite
+            Error: The config is trying to overwrite
                 an existing attribute.
         """
         for k, v in config.items():
@@ -701,7 +701,7 @@ class AndroidDevice(object):
                 snippet apk.
 
         Raises:
-            SnippetError: It is raised if illegal load operations are attempted.
+            SnippetError: Illegal load operations are attempted.
         """
         # Should not load snippet with the same attribute more than once.
         if name in self._snippet_clients:
@@ -1003,7 +1003,7 @@ class AndroidDevice(object):
         use if there's no other option.
 
         Raises:
-            Error: It is raised if waiting for completion timed out.
+            Error: Waiting for completion timed out.
         """
         if self.is_bootloader:
             self.fastboot.reboot()
@@ -1016,7 +1016,7 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
     """A wrapper class that adds a prefix to each log line.
 
     Usage:
-    
+
     .. code-block:: python
 
         my_log = AndroidDeviceLoggerAdapter(logging.getLogger(), {

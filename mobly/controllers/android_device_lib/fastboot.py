@@ -28,7 +28,7 @@ def exe_cmd(*cmds):
         The output of the command run.
 
     Raises:
-        Exception: It is raised if an error occurred during the command execution.
+        Exception: An error occurred during the command execution.
     """
     cmd = ' '.join(cmds)
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)

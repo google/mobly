@@ -260,7 +260,7 @@ class EventDispatcher:
                 matching the condition exits when the function is called.
 
         Returns:
-            Pop events whose names match a regex pattern.
+            Events whose names match a regex pattern.
             Empty if none exist and the wait timed out.
 
         Raises:
@@ -309,7 +309,6 @@ class EventDispatcher:
         Returns:
             A queue storing all the events of the specified name.
             None if timed out.
-            Number of seconds to wait for the operation.
 
         Raises:
             queue.Empty: Raised if the queue does not exist and timeout has

@@ -90,7 +90,7 @@ def _validate_config(config):
         config: A dict that is the configuration for an attenuator device.
 
     Raises:
-        attenuator.Error: It is raised if a config is not valid.
+        attenuator.Error: A config is not valid.
     """
     required_keys = [KEY_ADDRESS, KEY_MODEL, KEY_PORT, KEY_PATHS]
     for key in required_keys:

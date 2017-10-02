@@ -94,7 +94,7 @@ class TestSummaryWriter(object):
             entry_type: a member of enum TestSummaryEntryType.
 
         Raises:
-            recoreds.Error: It is raised if an invalid entry type is passed in.
+            recoreds.Error: An invalid entry type is passed in.
         """
         new_content = copy.deepcopy(content)
         new_content['Type'] = entry_type.value
