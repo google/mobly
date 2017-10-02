@@ -70,7 +70,6 @@ class MonsoonProxy(object):
         while len(mydata) < 1000:
             mydata.extend(mon.CollectData())
         mon.StopDataCollection()
-
     """
 
     def __init__(self, device=None, serialno=None, wait=1):

@@ -399,9 +399,9 @@ class TestResultRecord(object):
         .. code-block:: json
 
             {
-                "Test Name": "test name",
-                "Begin Time": "epoch timestamp",
-                "Details": "details",
+                'Test Name': <test name>,
+                'Begin Time': <epoch timestamp>,
+                'Details': <details>,
                 ...
             }
 
