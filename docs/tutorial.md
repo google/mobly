@@ -56,12 +56,14 @@ if __name__ == '__main__':
   test_runner.main()
 ```
  
-*To execute:*
- 
-    $ python hello_world_test.py -c sample_config.yml
- 
-*Expect*
- 
+To execute:
+
+```
+$ python hello_world_test.py -c sample_config.yml
+```
+
+*Expect*:
+
 A "Hello World!" toast notification appears on your device's screen.
  
 Within SampleTestBed's `Controllers` section, we used `AndroidDevice: '*'` to tell
@@ -106,21 +108,24 @@ if __name__ == '__main__':
 ```
  
 *To execute:*
+
+```
+$ python hello_world_test.py -c sample_config.yml --test_case test_bye
+```
  
-    $ python hello_world_test.py -c sample_config.yml --test_case test_bye
- 
- 
-*Expect*
- 
+*Expect*:
+
 A "Goodbye!" toast notification appears on your device's screen.
  
 You can dictate what test cases to execute within a test script and their
-execution order, shown below:
- 
-    $ python hello_world_test.py -c sample_config.yml --test_case test_bye test_hello test_bye
- 
-*Expect*
- 
+execution order, for example:
+
+```
+$ python hello_world_test.py -c sample_config.yml --test_case test_bye test_hello test_bye
+```
+
+*Expect*:
+
 Toast notifications appear on your device's screen in the following order:
 "Goodbye!", "Hello World!", "Goodbye!".
  
@@ -184,11 +189,13 @@ TestBeds:
  
 You can choose which one to execute on with the command line argument
 `--test_bed`:
- 
-    $ python hello_world_test.py -c sample_config.yml --test_bed AbcTestBed
- 
-*Expect*
- 
+
+```
+$ python hello_world_test.py -c sample_config.yml --test_bed AbcTestBed
+```
+
+*Expect*:
+
 A "Hello World!" and a "Goodbye!" toast notification appear on your device's
 screen.
  
