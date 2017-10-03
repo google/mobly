@@ -49,6 +49,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             ad: AndroidDevice object.
         """
         super(Sl4aClient, self).__init__(app_name=_APP_NAME, ad=ad)
+        self._ad = ad
         self.ed = None
         self._adb = ad.adb
 
@@ -157,7 +158,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _start_event_client(self):
         # Start an EventDispatcher for the current sl4a session
-        event_client = Sl4aClient(self._adb, self.log)
+        event_client = Sl4aClient(self._ad)
         event_client.host_port = self.host_port
         event_client.device_port = self.device_port
         event_client.connect(
