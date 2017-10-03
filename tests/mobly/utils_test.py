@@ -47,11 +47,8 @@ class UtilsTest(unittest.TestCase):
     def test_stop_standing_subproc(self):
         p = utils.start_standing_subprocess([self.sleep_cmd, '4'])
         p1 = psutil.Process(p.pid)
-        start_time = time.time()
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
-        stop_time = time.time()
-        self.assertTrue(stop_time - start_time < 0.1)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
