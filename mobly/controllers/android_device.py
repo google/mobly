@@ -749,7 +749,7 @@ class AndroidDevice(object):
         Creates an sl4a client (self.sl4a) with one connection, and one
         EventDispatcher obj (self.ed) with the other connection.
         """
-        self.sl4a = sl4a_client.Sl4aClient(adb_proxy=self.adb, log=self.log)
+        self.sl4a = sl4a_client.Sl4aClient(ad=self)
         self.sl4a.start_app_and_connect()
         # Unpack the 'ed' attribute for compatibility.
         self.ed = self.sl4a.ed

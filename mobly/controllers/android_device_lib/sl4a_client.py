@@ -42,16 +42,16 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     ed: Event dispatcher instance for this sl4a client.
     """
 
-    def __init__(self, adb_proxy, log=logging.getLogger()):
+    def __init__(self, ad):
         """Initializes an Sl4aClient.
 
         Args:
-            self._adb: (adb.AdbProxy) The adb proxy to use to start the app.
-            log: (logging.Logger) logger to which to send log messages.
+            ad: AndroidDevice object.
         """
-        super(Sl4aClient, self).__init__(app_name=_APP_NAME, log=log)
+        super(Sl4aClient, self).__init__(app_name=_APP_NAME, ad=ad)
+        self._ad = ad
         self.ed = None
-        self._adb = adb_proxy
+        self._adb = ad.adb
 
     def start_app_and_connect(self):
         """Overrides superclass."""
@@ -158,7 +158,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _start_event_client(self):
         # Start an EventDispatcher for the current sl4a session
-        event_client = Sl4aClient(self._adb, self.log)
+        event_client = Sl4aClient(self._ad)
         event_client.host_port = self.host_port
         event_client.device_port = self.device_port
         event_client.connect(
