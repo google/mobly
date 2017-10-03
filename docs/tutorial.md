@@ -118,12 +118,14 @@ $ python hello_world_test.py -c sample_config.yml --test_case test_bye
 A "Goodbye!" toast notification appears on your device's screen.
  
 You can dictate what test cases to execute within a test script and their
-execution order, shown below:
- 
-    $ python hello_world_test.py -c sample_config.yml --test_case test_bye test_hello test_bye
- 
-*Expect*
- 
+execution order, for example:
+
+```
+$ python hello_world_test.py -c sample_config.yml --test_case test_bye test_hello test_bye
+```
+
+*Expect*:
+
 Toast notifications appear on your device's screen in the following order:
 "Goodbye!", "Hello World!", "Goodbye!".
  
