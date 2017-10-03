@@ -1,0 +1,959 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.controllers.android_device_lib package &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="index.html" />
+    <link rel="up" title="mobly.controllers package" href="mobly.controllers.html" />
+    <link rel="next" title="mobly.controllers.attenuator_lib package" href="mobly.controllers.attenuator_lib.html" />
+    <link rel="prev" title="mobly.controllers package" href="mobly.controllers.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="mobly-controllers-android-device-lib-package">
+<h1>mobly.controllers.android_device_lib package<a class="headerlink" href="#mobly-controllers-android-device-lib-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-mobly.controllers.android_device_lib.adb">
+<span id="mobly-controllers-android-device-lib-adb-module"></span><h2>mobly.controllers.android_device_lib.adb module<a class="headerlink" href="#module-mobly.controllers.android_device_lib.adb" title="Permalink to this headline">¶</a></h2>
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.adb.AdbError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.adb.</code><code class="descname">AdbError</code><span class="sig-paren">(</span><em>cmd</em>, <em>stdout</em>, <em>stderr</em>, <em>ret_code</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/adb.html#AdbError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.adb.AdbError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+<p>Raised when there is an error in adb operations.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mobly.controllers.android_device_lib.adb.AdbProxy">
+<em class="property">class </em><code class="descclassname">mobly.controllers.android_device_lib.adb.</code><code class="descname">AdbProxy</code><span class="sig-paren">(</span><em>serial=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/adb.html#AdbProxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.adb.AdbProxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Proxy class for ADB.</p>
+<p>For syntactic reasons, the &#8216;-&#8216; in adb commands need to be replaced with
+&#8216;_&#8217;. Can directly execute adb commands on an object:
+&gt;&gt; adb = AdbProxy(&lt;serial&gt;)
+&gt;&gt; adb.start_server()
+&gt;&gt; adb.devices() # will return the console output of &#8220;adb devices&#8221;.</p>
+<p>By default, command args are expected to be an iterable which is passed
+directly to subprocess.Popen():
+&gt;&gt; adb.shell([&#8216;echo&#8217;, &#8216;a&#8217;, &#8216;b&#8217;])</p>
+<p>This way of launching commands is recommended by the subprocess
+documentation to avoid shell injection vulnerabilities and avoid having to
+deal with multiple layers of shell quoting and different shell environments
+between different OSes.</p>
+<p>If you really want to run the command through the system shell, this is
+possible by supplying shell=True, but try to avoid this if possible:
+&gt;&gt; adb.shell(&#8216;cat /foo &gt; /tmp/file&#8217;, shell=True)</p>
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.adb.AdbProxy.forward">
+<code class="descname">forward</code><span class="sig-paren">(</span><em>args=None</em>, <em>shell=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/adb.html#AdbProxy.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.adb.AdbProxy.forward" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.adb.AdbProxy.getprop">
+<code class="descname">getprop</code><span class="sig-paren">(</span><em>prop_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/adb.html#AdbProxy.getprop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.adb.AdbProxy.getprop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a property of the device.</p>
+<p>This is a convenience wrapper for &#8220;adb shell getprop xxx&#8221;.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>prop_name</strong> &#8211; A string that is the name of the property to get.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A string that is the value of the property, or None if the property
+doesn&#8217;t exist.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.adb.AdbTimeoutError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.adb.</code><code class="descname">AdbTimeoutError</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/adb.html#AdbTimeoutError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.adb.AdbTimeoutError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.adb.AdbError" title="mobly.controllers.android_device_lib.adb.AdbError"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.adb.AdbError</span></code></a></p>
+<p>Raised when there is an command timeout error.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mobly.controllers.android_device_lib.adb.list_occupied_adb_ports">
+<code class="descclassname">mobly.controllers.android_device_lib.adb.</code><code class="descname">list_occupied_adb_ports</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/adb.html#list_occupied_adb_ports"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.adb.list_occupied_adb_ports" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lists all the host ports occupied by adb forward.</p>
+<p>This is useful because adb will silently override the binding if an attempt
+to bind to a port already used by adb was made, instead of throwing binding
+error. So one should always check what ports adb is using before trying to
+bind to a port with adb.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of integers representing occupied host ports.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.android_device_lib.event_dispatcher">
+<span id="mobly-controllers-android-device-lib-event-dispatcher-module"></span><h2>mobly.controllers.android_device_lib.event_dispatcher module<a class="headerlink" href="#module-mobly.controllers.android_device_lib.event_dispatcher" title="Permalink to this headline">¶</a></h2>
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.DuplicateError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.event_dispatcher.</code><code class="descname">DuplicateError</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#DuplicateError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.DuplicateError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcherError" title="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcherError"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.event_dispatcher.EventDispatcherError</span></code></a></p>
+<p>Raise when a duplicate is being created and it shouldn&#8217;t.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher">
+<em class="property">class </em><code class="descclassname">mobly.controllers.android_device_lib.event_dispatcher.</code><code class="descname">EventDispatcher</code><span class="sig-paren">(</span><em>sl4a</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class managing events for an sl4a connection.</p>
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.DEFAULT_TIMEOUT">
+<code class="descname">DEFAULT_TIMEOUT</code><em class="property"> = 60</em><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.DEFAULT_TIMEOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.clean_up">
+<code class="descname">clean_up</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.clean_up"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.clean_up" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clean up and release resources after the event dispatcher polling
+loop has been broken.</p>
+<p>The following things happen:
+1. Clear all events and flags.
+2. Close the sl4a client the event_dispatcher object holds.
+3. Shut down executor without waiting.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.clear_all_events">
+<code class="descname">clear_all_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.clear_all_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.clear_all_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear all event queues and their cached events.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.clear_events">
+<code class="descname">clear_events</code><span class="sig-paren">(</span><em>event_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.clear_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.clear_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear all events of a particular name.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>event_name</strong> &#8211; Name of the events to be popped.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.get_event_q">
+<code class="descname">get_event_q</code><span class="sig-paren">(</span><em>event_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.get_event_q"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.get_event_q" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain the queue storing events of the specified name.</p>
+<p>If no event of this name has been polled, wait for one to.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A queue storing all the events of the specified name.
+None if timed out.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">queue.Empty</span></code> &#8211;
+Raised if the queue does not exist and timeout has
+passed.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.handle_event">
+<code class="descname">handle_event</code><span class="sig-paren">(</span><em>event_handler</em>, <em>event_name</em>, <em>user_args</em>, <em>event_timeout=None</em>, <em>cond=None</em>, <em>cond_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.handle_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.handle_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle events that don&#8217;t have registered handlers</p>
+<p>In a new thread, poll one event of specified type from its queue and
+execute its handler. If no such event exists, the thread waits until
+one appears.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event_handler</strong> &#8211; Handler for the event, which should take at least
+one argument - the event json object.</li>
+<li><strong>event_name</strong> &#8211; Name of the event to be handled.</li>
+<li><strong>user_args</strong> &#8211; User arguments for the handler; to be passed in after
+the event json.</li>
+<li><strong>event_timeout</strong> &#8211; Number of seconds to wait for the event to come.</li>
+<li><strong>cond</strong> &#8211; A condition to wait on before executing the handler. Should
+be a threading.Event object.</li>
+<li><strong>cond_timeout</strong> &#8211; Number of seconds to wait before the condition times
+out. Never times out if None.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A concurrent.Future object associated with the handler.
+If blocking call worker.result() is triggered, the handler
+needs to return something to unblock.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.handle_subscribed_event">
+<code class="descname">handle_subscribed_event</code><span class="sig-paren">(</span><em>event_obj</em>, <em>event_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.handle_subscribed_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.handle_subscribed_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute the registered handler of an event.</p>
+<dl class="docutils">
+<dt>Retrieve the handler and its arguments, and execute the handler in a</dt>
+<dd>new thread.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>event_obj</strong> &#8211; Json object of the event.</li>
+<li><strong>event_name</strong> &#8211; Name of the event to call handler for.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.poll_events">
+<code class="descname">poll_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.poll_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.poll_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Continuously polls all types of events from sl4a.</p>
+<p>Events are sorted by name and store in separate queues.
+If there are registered handlers, the handlers will be called with
+corresponding event immediately upon event discovery, and the event
+won&#8217;t be stored. If exceptions occur, stop the dispatcher and return</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.pop_all">
+<code class="descname">pop_all</code><span class="sig-paren">(</span><em>event_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.pop_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.pop_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return and remove all stored events of a specified name.</p>
+<p>Pops all events from their queue. May miss the latest ones.
+If no event is available, return immediately.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>event_name</strong> &#8211; Name of the events to be popped.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">List of the desired events.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference internal" href="#mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError" title="mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError"><code class="xref py py-exc docutils literal"><span class="pre">IllegalStateError</span></code></a> &#8211;
+Raised if pop is called before the dispatcher
+starts polling.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.pop_event">
+<code class="descname">pop_event</code><span class="sig-paren">(</span><em>event_name</em>, <em>timeout=60</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.pop_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.pop_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pop an event from its queue.</p>
+<p>Return and remove the oldest entry of an event.
+Block until an event of specified name is available or
+times out if timeout is set.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event_name</strong> &#8211; Name of the event to be popped.</li>
+<li><strong>timeout</strong> &#8211; Number of seconds to wait when event is not present.
+Never times out if None.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The oldest entry of the specified event. None if timed out.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError" title="mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError"><code class="xref py py-exc docutils literal"><span class="pre">IllegalStateError</span></code></a> &#8211;
+Raised if pop is called before the dispatcher
+starts polling.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.pop_events">
+<code class="descname">pop_events</code><span class="sig-paren">(</span><em>regex_pattern</em>, <em>timeout</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.pop_events"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.pop_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pop events whose names match a regex pattern.</p>
+<p>If such event(s) exist, pop one event from each event queue that
+satisfies the condition. Otherwise, wait for an event that satisfies
+the condition to occur, with timeout.</p>
+<p>Results are sorted by timestamp in ascending order.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>regex_pattern</strong> &#8211; The regular expression pattern that an event name
+should match in order to be popped.</li>
+<li><strong>timeout</strong> &#8211; Number of seconds to wait for events in case no event
+matching the condition exits when the function is called.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Events whose names match a regex pattern.
+Empty if none exist and the wait timed out.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><a class="reference internal" href="#mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError" title="mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError"><code class="xref py py-exc docutils literal"><span class="pre">IllegalStateError</span></code></a> &#8211;
+Raised if pop is called before the dispatcher
+starts polling.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">queue.Empty</span></code> &#8211;
+Raised if no event was found before time out.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.register_handler">
+<code class="descname">register_handler</code><span class="sig-paren">(</span><em>handler</em>, <em>event_name</em>, <em>args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.register_handler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.register_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers an event handler.</p>
+<p>One type of event can only have one event handler associated with it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>handler</strong> &#8211; The event handler function to be registered.</li>
+<li><strong>event_name</strong> &#8211; Name of the event the handler is for.</li>
+<li><strong>args</strong> &#8211; User arguments to be passed to the handler when it&#8217;s called.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><a class="reference internal" href="#mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError" title="mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError"><code class="xref py py-exc docutils literal"><span class="pre">IllegalStateError</span></code></a> &#8211;
+Raised if attempts to register a handler after
+the dispatcher starts running.</li>
+<li><a class="reference internal" href="#mobly.controllers.android_device_lib.event_dispatcher.DuplicateError" title="mobly.controllers.android_device_lib.event_dispatcher.DuplicateError"><code class="xref py py-exc docutils literal"><span class="pre">DuplicateError</span></code></a> &#8211;
+Raised if attempts to register more than one
+handler for one type of event.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.start">
+<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts the event dispatcher.</p>
+<p>Initiates executor and start polling events.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference internal" href="#mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError" title="mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError"><code class="xref py py-exc docutils literal"><span class="pre">IllegalStateError</span></code></a> &#8211;
+Can&#8217;t start a dispatcher again when it&#8217;s already
+running.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.wait_for_event">
+<code class="descname">wait_for_event</code><span class="sig-paren">(</span><em>event_name</em>, <em>predicate</em>, <em>timeout=60</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcher.wait_for_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcher.wait_for_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for an event that satisfies a predicate to appear.</p>
+<p>Continuously pop events of a particular name and check against the
+predicate until an event that satisfies the predicate is popped or
+timed out. Note this will remove all the events of the same name that
+do not satisfy the predicate in the process.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event_name</strong> &#8211; Name of the event to be popped.</li>
+<li><strong>predicate</strong> &#8211; A function that takes an event and returns True if the
+predicate is satisfied, False otherwise.</li>
+<li><strong>timeout</strong> &#8211; Number of seconds to wait.</li>
+<li><strong>*args</strong> &#8211; Optional positional args passed to predicate().</li>
+<li><strong>**kwargs</strong> &#8211; Optional keyword args passed to predicate().</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The event that satisfies the predicate.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">queue.Empty</span></code> &#8211;
+Raised if no event that satisfies the predicate was
+found before time out.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcherError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.event_dispatcher.</code><code class="descname">EventDispatcherError</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#EventDispatcherError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcherError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.event_dispatcher.</code><code class="descname">IllegalStateError</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/event_dispatcher.html#IllegalStateError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.event_dispatcher.IllegalStateError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.event_dispatcher.EventDispatcherError" title="mobly.controllers.android_device_lib.event_dispatcher.EventDispatcherError"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.event_dispatcher.EventDispatcherError</span></code></a></p>
+<p>Raise when user tries to put event_dispatcher into an illegal state.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.android_device_lib.fastboot">
+<span id="mobly-controllers-android-device-lib-fastboot-module"></span><h2>mobly.controllers.android_device_lib.fastboot module<a class="headerlink" href="#module-mobly.controllers.android_device_lib.fastboot" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="mobly.controllers.android_device_lib.fastboot.FastbootProxy">
+<em class="property">class </em><code class="descclassname">mobly.controllers.android_device_lib.fastboot.</code><code class="descname">FastbootProxy</code><span class="sig-paren">(</span><em>serial=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/fastboot.html#FastbootProxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.fastboot.FastbootProxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Proxy class for fastboot.</p>
+<p>For syntactic reasons, the &#8216;-&#8216; in fastboot commands need to be replaced
+with &#8216;_&#8217;. Can directly execute fastboot commands on an object:
+&gt;&gt; fb = FastbootProxy(&lt;serial&gt;)
+&gt;&gt; fb.devices() # will return the console output of &#8220;fastboot devices&#8221;.</p>
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.fastboot.FastbootProxy.args">
+<code class="descname">args</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/fastboot.html#FastbootProxy.args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.fastboot.FastbootProxy.args" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="mobly.controllers.android_device_lib.fastboot.exe_cmd">
+<code class="descclassname">mobly.controllers.android_device_lib.fastboot.</code><code class="descname">exe_cmd</code><span class="sig-paren">(</span><em>*cmds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/fastboot.html#exe_cmd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.fastboot.exe_cmd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executes commands in a new shell. Directing stderr to PIPE.</p>
+<p>This is fastboot&#8217;s own exe_cmd because of its peculiar way of writing
+non-error info to stderr.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cmds</strong> &#8211; A sequence of commands and arguments.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The output of the command run.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> &#8211;
+An error occurred during the command execution.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.android_device_lib.jsonrpc_client_base">
+<span id="mobly-controllers-android-device-lib-jsonrpc-client-base-module"></span><h2>mobly.controllers.android_device_lib.jsonrpc_client_base module<a class="headerlink" href="#module-mobly.controllers.android_device_lib.jsonrpc_client_base" title="Permalink to this headline">¶</a></h2>
+<p>Base class for clients that communicate with apps over a JSON RPC interface.</p>
+<p>The JSON protocol expected by this module is:</p>
+<div class="highlight-json"><div class="highlight"><pre>Request:
+{
+    &quot;id&quot;: &lt;monotonically increasing integer containing the ID of
+           this request&gt;
+    &quot;method&quot;: &lt;string containing the name of the method to execute&gt;
+    &quot;params&quot;: &lt;JSON array containing the arguments to the method&gt;
+}
+
+Response:
+{
+    &quot;id&quot;: &lt;int id of request that this response maps to&gt;,
+    &quot;result&quot;: &lt;Arbitrary JSON object containing the result of
+               executing the method. If the method could not be
+               executed or returned void, contains &#39;null&#39;.&gt;,
+    &quot;error&quot;: &lt;String containing the error thrown by executing the
+              method. If no error occurred, contains &#39;null&#39;.&gt;
+    &quot;callback&quot;: &lt;String that represents a callback ID used to
+                 identify events associated with a particular
+                 CallbackHandler object.&gt;
+}
+</pre></div>
+</div>
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.ApiError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.jsonrpc_client_base.</code><code class="descname">ApiError</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#ApiError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.ApiError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.Error" title="mobly.controllers.android_device_lib.jsonrpc_client_base.Error"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.jsonrpc_client_base.Error</span></code></a></p>
+<p>Raised when remote API reports an error.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.AppRestoreConnectionError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.jsonrpc_client_base.</code><code class="descname">AppRestoreConnectionError</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#AppRestoreConnectionError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.AppRestoreConnectionError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.Error" title="mobly.controllers.android_device_lib.jsonrpc_client_base.Error"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.jsonrpc_client_base.Error</span></code></a></p>
+<p>Raised when failed to restore app from disconnection.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.AppStartError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.jsonrpc_client_base.</code><code class="descname">AppStartError</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#AppStartError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.AppStartError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.Error" title="mobly.controllers.android_device_lib.jsonrpc_client_base.Error"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.jsonrpc_client_base.Error</span></code></a></p>
+<p>Raised when the app is not able to be started.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.Error">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.jsonrpc_client_base.</code><code class="descname">Error</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#Error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase">
+<em class="property">class </em><code class="descclassname">mobly.controllers.android_device_lib.jsonrpc_client_base.</code><code class="descname">JsonRpcClientBase</code><span class="sig-paren">(</span><em>app_name</em>, <em>log=&lt;logging.RootLogger object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#JsonRpcClientBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Base class for jsonrpc clients that connect to remote servers.</p>
+<p>Connects to a remote device running a jsonrpc-compatible app. Before opening
+a connection a port forward must be setup to go over usb. This be done using
+adb.forward([local, remote]). Once the port has been forwarded it can be
+used in this object as the port of communication.</p>
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.host_port">
+<code class="descname">host_port</code><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.host_port" title="Permalink to this definition">¶</a></dt>
+<dd><p>(int) The host port of this RPC client.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.device_port">
+<code class="descname">device_port</code><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.device_port" title="Permalink to this definition">¶</a></dt>
+<dd><p>(int) The device port of this RPC client.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.app_name">
+<code class="descname">app_name</code><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.app_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>(str) The user-visible name of the app being communicated
+with.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.uid">
+<code class="descname">uid</code><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.uid" title="Permalink to this definition">¶</a></dt>
+<dd><p>(int) The uid of this session.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.__getattr__">
+<code class="descname">__getattr__</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#JsonRpcClientBase.__getattr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.__getattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for python magic to turn method calls into RPC calls.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.connect">
+<code class="descname">connect</code><span class="sig-paren">(</span><em>uid=-1</em>, <em>cmd='initiate'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#JsonRpcClientBase.connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens a connection to a JSON RPC server.</p>
+<p>Opens a connection to a remote client. The connection attempt will time
+out if it takes longer than _SOCKET_CONNECTION_TIMEOUT seconds. Each
+subsequent operation over this socket will time out after
+_SOCKET_READ_TIMEOUT seconds as well.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>uid</strong> &#8211; int, The uid of the session to join, or UNKNOWN_UID to start a
+new session.</li>
+<li><strong>cmd</strong> &#8211; JsonRpcCommand, The command to use for creating the connection.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">IOError</span></code> &#8211;
+Raised when the socket times out from io error</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">socket.timeout</span></code> &#8211;
+Raised when the socket waits to long for connection.</li>
+<li><a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError" title="mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError"><code class="xref py py-exc docutils literal"><span class="pre">ProtocolError</span></code></a> &#8211;
+Raised when there is an error in the protocol.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.disconnect">
+<code class="descname">disconnect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#JsonRpcClientBase.disconnect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.disconnect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close the connection to the remote client.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.restore_app_connection">
+<code class="descname">restore_app_connection</code><span class="sig-paren">(</span><em>port=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#JsonRpcClientBase.restore_app_connection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.restore_app_connection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reconnects to the app after device USB was disconnected.</p>
+<dl class="docutils">
+<dt>Instead of creating new instance of the client:</dt>
+<dd><ul class="first last simple">
+<li>Uses the given port (or finds a new available host_port if none is
+given).</li>
+<li>Tries to connect to remote server with selected port.</li>
+</ul>
+</dd>
+</dl>
+<p>Must be implemented by subclasses.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>port</strong> &#8211; If given, this is the host port from which to connect to remote
+device port. If not provided, find a new available port as host
+port.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.AppRestoreConnectionError" title="mobly.controllers.android_device_lib.jsonrpc_client_base.AppRestoreConnectionError"><code class="xref py py-exc docutils literal"><span class="pre">AppRestoreConnectionError</span></code></a> &#8211;
+When the app was not able to be</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">reconnected.</span></code></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.start_app_and_connect">
+<code class="descname">start_app_and_connect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#JsonRpcClientBase.start_app_and_connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.start_app_and_connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts the server app on the android device and connects to it.</p>
+<p>After this, the self.host_port and self.device_port attributes must be
+set.</p>
+<p>Must be implemented by subclasses.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.AppStartError" title="mobly.controllers.android_device_lib.jsonrpc_client_base.AppStartError"><code class="xref py py-exc docutils literal"><span class="pre">AppStartError</span></code></a> &#8211;
+When the app was not able to be started.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.stop_app">
+<code class="descname">stop_app</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#JsonRpcClientBase.stop_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase.stop_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kills any running instance of the app.</p>
+<p>Must be implemented by subclasses.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcCommand">
+<em class="property">class </em><code class="descclassname">mobly.controllers.android_device_lib.jsonrpc_client_base.</code><code class="descname">JsonRpcCommand</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#JsonRpcCommand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcCommand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Commands that can be invoked on all jsonrpc clients.</p>
+<p>INIT: Initializes a new session.
+CONTINUE: Creates a connection.</p>
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcCommand.CONTINUE">
+<code class="descname">CONTINUE</code><em class="property"> = 'continue'</em><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcCommand.CONTINUE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcCommand.INIT">
+<code class="descname">INIT</code><em class="property"> = 'initiate'</em><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcCommand.INIT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.jsonrpc_client_base.</code><code class="descname">ProtocolError</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_client_base.html#ProtocolError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.Error" title="mobly.controllers.android_device_lib.jsonrpc_client_base.Error"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.jsonrpc_client_base.Error</span></code></a></p>
+<p>Raised when there is some error in exchanging data with server.</p>
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID">
+<code class="descname">MISMATCHED_API_ID</code><em class="property"> = 'Mismatched API id.'</em><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE">
+<code class="descname">NO_RESPONSE_FROM_HANDSHAKE</code><em class="property"> = 'No response from handshake.'</em><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER">
+<code class="descname">NO_RESPONSE_FROM_SERVER</code><em class="property"> = 'No response from server.'</em><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.android_device_lib.jsonrpc_shell_base">
+<span id="mobly-controllers-android-device-lib-jsonrpc-shell-base-module"></span><h2>mobly.controllers.android_device_lib.jsonrpc_shell_base module<a class="headerlink" href="#module-mobly.controllers.android_device_lib.jsonrpc_shell_base" title="Permalink to this headline">¶</a></h2>
+<p>Shared library for frontends to jsonrpc servers.</p>
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_shell_base.Error">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.jsonrpc_shell_base.</code><code class="descname">Error</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_shell_base.html#Error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_shell_base.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase">
+<em class="property">class </em><code class="descclassname">mobly.controllers.android_device_lib.jsonrpc_shell_base.</code><code class="descname">JsonRpcShellBase</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_shell_base.html#JsonRpcShellBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase.load_device">
+<code class="descname">load_device</code><span class="sig-paren">(</span><em>serial=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_shell_base.html#JsonRpcShellBase.load_device"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase.load_device" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an AndroidDevice for the given serial number.</p>
+<p>If no serial is given, it will be read from &#8216;adb devices&#8217; if there is
+only one.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase.main">
+<code class="descname">main</code><span class="sig-paren">(</span><em>serial=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_shell_base.html#JsonRpcShellBase.main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase.start_console">
+<code class="descname">start_console</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/jsonrpc_shell_base.html#JsonRpcShellBase.start_console"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.jsonrpc_shell_base.JsonRpcShellBase.start_console" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.android_device_lib.sl4a_client">
+<span id="mobly-controllers-android-device-lib-sl4a-client-module"></span><h2>mobly.controllers.android_device_lib.sl4a_client module<a class="headerlink" href="#module-mobly.controllers.android_device_lib.sl4a_client" title="Permalink to this headline">¶</a></h2>
+<p>JSON RPC interface to android scripting engine.</p>
+<dl class="class">
+<dt id="mobly.controllers.android_device_lib.sl4a_client.Sl4aClient">
+<em class="property">class </em><code class="descclassname">mobly.controllers.android_device_lib.sl4a_client.</code><code class="descname">Sl4aClient</code><span class="sig-paren">(</span><em>adb_proxy</em>, <em>log=&lt;logging.RootLogger object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/sl4a_client.html#Sl4aClient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.sl4a_client.Sl4aClient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase" title="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase</span></code></a></p>
+<p>A client for interacting with SL4A using Mobly Snippet Lib.</p>
+<p>Extra public attributes:
+ed: Event dispatcher instance for this sl4a client.</p>
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.sl4a_client.Sl4aClient.restore_app_connection">
+<code class="descname">restore_app_connection</code><span class="sig-paren">(</span><em>port=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/sl4a_client.html#Sl4aClient.restore_app_connection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.sl4a_client.Sl4aClient.restore_app_connection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restores the sl4a after device got disconnected.</p>
+<dl class="docutils">
+<dt>Instead of creating new instance of the client:</dt>
+<dd><ul class="first last simple">
+<li>Uses the given port (or find a new available host_port if none is
+given).</li>
+<li>Tries to connect to remote server with selected port.</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>port</strong> &#8211; If given, this is the host port from which to connect to remote
+device port. If not provided, find a new available port as host
+port.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">AppRestoreConnectionError</span></code> &#8211;
+When the app was not able to be started.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.sl4a_client.Sl4aClient.start_app_and_connect">
+<code class="descname">start_app_and_connect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/sl4a_client.html#Sl4aClient.start_app_and_connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.sl4a_client.Sl4aClient.start_app_and_connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides superclass.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.sl4a_client.Sl4aClient.stop_app">
+<code class="descname">stop_app</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/sl4a_client.html#Sl4aClient.stop_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.sl4a_client.Sl4aClient.stop_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides superclass.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.sl4a_client.Sl4aClient.stop_event_dispatcher">
+<code class="descname">stop_event_dispatcher</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/sl4a_client.html#Sl4aClient.stop_event_dispatcher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.sl4a_client.Sl4aClient.stop_event_dispatcher" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.android_device_lib.snippet_client">
+<span id="mobly-controllers-android-device-lib-snippet-client-module"></span><h2>mobly.controllers.android_device_lib.snippet_client module<a class="headerlink" href="#module-mobly.controllers.android_device_lib.snippet_client" title="Permalink to this headline">¶</a></h2>
+<p>JSON RPC interface to Mobly Snippet Lib.</p>
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.snippet_client.Error">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.snippet_client.</code><code class="descname">Error</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/snippet_client.html#Error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.snippet_client.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="mobly.controllers.android_device_lib.snippet_client.ProtocolVersionError">
+<em class="property">exception </em><code class="descclassname">mobly.controllers.android_device_lib.snippet_client.</code><code class="descname">ProtocolVersionError</code><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/snippet_client.html#ProtocolVersionError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.snippet_client.ProtocolVersionError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.AppStartError" title="mobly.controllers.android_device_lib.jsonrpc_client_base.AppStartError"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.jsonrpc_client_base.AppStartError</span></code></a></p>
+<p>Raised when the protocol reported by the snippet is unknown.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mobly.controllers.android_device_lib.snippet_client.SnippetClient">
+<em class="property">class </em><code class="descclassname">mobly.controllers.android_device_lib.snippet_client.</code><code class="descname">SnippetClient</code><span class="sig-paren">(</span><em>package</em>, <em>adb_proxy</em>, <em>log=&lt;logging.RootLogger object&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/snippet_client.html#SnippetClient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.snippet_client.SnippetClient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase" title="mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase</span></code></a></p>
+<p>A client for interacting with snippet APKs using Mobly Snippet Lib.</p>
+<p>See superclass documentation for a list of public attributes.</p>
+<p>For a description of the launch protocols, see the documentation in
+mobly-snippet-lib, SnippetRunner.java.</p>
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.snippet_client.SnippetClient.restore_app_connection">
+<code class="descname">restore_app_connection</code><span class="sig-paren">(</span><em>port=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/snippet_client.html#SnippetClient.restore_app_connection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.snippet_client.SnippetClient.restore_app_connection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restores the app after device got reconnected.</p>
+<dl class="docutils">
+<dt>Instead of creating new instance of the client:</dt>
+<dd><ul class="first last simple">
+<li>Uses the given port (or find a new available host_port if none is
+given).</li>
+<li>Tries to connect to remote server with selected port.</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>port</strong> &#8211; If given, this is the host port from which to connect to remote
+device port. If not provided, find a new available port as host
+port.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">AppRestoreConnectionError</span></code> &#8211;
+When the app was not able to be started.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.snippet_client.SnippetClient.start_app_and_connect">
+<code class="descname">start_app_and_connect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/snippet_client.html#SnippetClient.start_app_and_connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.snippet_client.SnippetClient.start_app_and_connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overrides superclass. Launches a snippet app and connects to it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.android_device_lib.snippet_client.SnippetClient.stop_app">
+<code class="descname">stop_app</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/android_device_lib/snippet_client.html#SnippetClient.stop_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.android_device_lib.snippet_client.SnippetClient.stop_app" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.android_device_lib">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mobly.controllers.android_device_lib" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">mobly.controllers.android_device_lib package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.android_device_lib.adb">mobly.controllers.android_device_lib.adb module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.android_device_lib.event_dispatcher">mobly.controllers.android_device_lib.event_dispatcher module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.android_device_lib.fastboot">mobly.controllers.android_device_lib.fastboot module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.android_device_lib.jsonrpc_client_base">mobly.controllers.android_device_lib.jsonrpc_client_base module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.android_device_lib.jsonrpc_shell_base">mobly.controllers.android_device_lib.jsonrpc_shell_base module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.android_device_lib.sl4a_client">mobly.controllers.android_device_lib.sl4a_client module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.android_device_lib.snippet_client">mobly.controllers.android_device_lib.snippet_client module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.android_device_lib">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="mobly.html">mobly package</a><ul>
+  <li><a href="mobly.controllers.html">mobly.controllers package</a><ul>
+      <li>Previous: <a href="mobly.controllers.html" title="previous chapter">mobly.controllers package</a></li>
+      <li>Next: <a href="mobly.controllers.attenuator_lib.html" title="next chapter">mobly.controllers.attenuator_lib package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/mobly.controllers.android_device_lib.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="_sources/mobly.controllers.android_device_lib.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

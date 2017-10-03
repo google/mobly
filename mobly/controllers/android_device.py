@@ -316,8 +316,7 @@ def get_device(ads, **kwargs):
         The target AndroidDevice instance.
 
     Raises:
-        Error: None or more than one device is
-            matched.
+        Error: None or more than one device is matched.
     """
 
     def _get_device_filter(ad):
@@ -665,8 +664,7 @@ class AndroidDevice(object):
             config: A dictionary representing the configs.
 
         Raises:
-            Error: The config is trying to overwrite
-                an existing attribute.
+            Error: The config is trying to overwrite an existing attribute.
         """
         for k, v in config.items():
             if hasattr(self, k):

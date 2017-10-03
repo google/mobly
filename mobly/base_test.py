@@ -468,8 +468,8 @@ class BaseTestClass(object):
     def get_existing_test_names(self):
         """Gets the names of existing tests in the class.
 
-        A method in the class is considered a test if its name
-        starts with 'test_*'.
+        A method in the class is considered a test if its name starts with
+        'test_*'.
 
         Note this only gets the names of tests that already exist. If
         `setup_generated_test` has not happened when this was called, the
@@ -496,7 +496,7 @@ class BaseTestClass(object):
 
         Raises:
             Error: The test name does not follow naming convention 'test_*'.
-                This can only be caused by user input here.
+                This can only be caused by user input.
         """
         test_methods = []
         for test_name in test_names:

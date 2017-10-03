@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.controllers.sniffer_lib.local package &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="index.html" />
+    <link rel="up" title="mobly.controllers.sniffer_lib package" href="mobly.controllers.sniffer_lib.html" />
+    <link rel="prev" title="mobly.controllers.sniffer_lib package" href="mobly.controllers.sniffer_lib.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="mobly-controllers-sniffer-lib-local-package">
+<h1>mobly.controllers.sniffer_lib.local package<a class="headerlink" href="#mobly-controllers-sniffer-lib-local-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-mobly.controllers.sniffer_lib.local.local_base">
+<span id="mobly-controllers-sniffer-lib-local-local-base-module"></span><h2>mobly.controllers.sniffer_lib.local.local_base module<a class="headerlink" href="#module-mobly.controllers.sniffer_lib.local.local_base" title="Permalink to this headline">¶</a></h2>
+<p>Class for Local sniffers - i.e. running on the local machine.</p>
+<p>This class provides configuration for local interfaces but leaves
+the actual capture (sniff) to sub-classes.</p>
+<dl class="class">
+<dt id="mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase">
+<em class="property">class </em><code class="descclassname">mobly.controllers.sniffer_lib.local.local_base.</code><code class="descname">SnifferLocalBase</code><span class="sig-paren">(</span><em>interface</em>, <em>logger</em>, <em>base_configs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/local_base.html#SnifferLocalBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="mobly.controllers.html#mobly.controllers.sniffer.Sniffer" title="mobly.controllers.sniffer.Sniffer"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.sniffer.Sniffer</span></code></a></p>
+<p>This class defines the common behaviors of WLAN sniffers running on
+WLAN interfaces of the local machine.</p>
+<p>Specific mechanisms to capture packets over the local WLAN interfaces are
+implemented by sub-classes of this class - i.e. it is not a final class.</p>
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.get_capture_file">
+<code class="descname">get_capture_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/local_base.html#SnifferLocalBase.get_capture_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.get_capture_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.get_interface">
+<code class="descname">get_interface</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/local_base.html#SnifferLocalBase.get_interface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.get_interface" title="Permalink to this definition">¶</a></dt>
+<dd><p>See base class documentation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.get_type">
+<code class="descname">get_type</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/local_base.html#SnifferLocalBase.get_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.get_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>See base class documentation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.start_capture">
+<code class="descname">start_capture</code><span class="sig-paren">(</span><em>override_configs=None</em>, <em>additional_args=None</em>, <em>duration=None</em>, <em>packet_count=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/local_base.html#SnifferLocalBase.start_capture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.start_capture" title="Permalink to this definition">¶</a></dt>
+<dd><p>See base class documentation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.stop_capture">
+<code class="descname">stop_capture</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/local_base.html#SnifferLocalBase.stop_capture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.stop_capture" title="Permalink to this definition">¶</a></dt>
+<dd><p>See base class documentation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.wait_for_capture">
+<code class="descname">wait_for_capture</code><span class="sig-paren">(</span><em>timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/local_base.html#SnifferLocalBase.wait_for_capture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.wait_for_capture" title="Permalink to this definition">¶</a></dt>
+<dd><p>See base class documentation</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.sniffer_lib.local.tcpdump">
+<span id="mobly-controllers-sniffer-lib-local-tcpdump-module"></span><h2>mobly.controllers.sniffer_lib.local.tcpdump module<a class="headerlink" href="#module-mobly.controllers.sniffer_lib.local.tcpdump" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="mobly.controllers.sniffer_lib.local.tcpdump.Sniffer">
+<em class="property">class </em><code class="descclassname">mobly.controllers.sniffer_lib.local.tcpdump.</code><code class="descname">Sniffer</code><span class="sig-paren">(</span><em>config_path</em>, <em>logger</em>, <em>base_configs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/tcpdump.html#Sniffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.tcpdump.Sniffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase" title="mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase</span></code></a></p>
+<p>This class defines a sniffer which uses tcpdump as its back-end</p>
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.tcpdump.Sniffer.get_descriptor">
+<code class="descname">get_descriptor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/tcpdump.html#Sniffer.get_descriptor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.tcpdump.Sniffer.get_descriptor" title="Permalink to this definition">¶</a></dt>
+<dd><p>See base class documentation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.tcpdump.Sniffer.get_subtype">
+<code class="descname">get_subtype</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/tcpdump.html#Sniffer.get_subtype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.tcpdump.Sniffer.get_subtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>See base class documentation</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.sniffer_lib.local.tshark">
+<span id="mobly-controllers-sniffer-lib-local-tshark-module"></span><h2>mobly.controllers.sniffer_lib.local.tshark module<a class="headerlink" href="#module-mobly.controllers.sniffer_lib.local.tshark" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="mobly.controllers.sniffer_lib.local.tshark.Sniffer">
+<em class="property">class </em><code class="descclassname">mobly.controllers.sniffer_lib.local.tshark.</code><code class="descname">Sniffer</code><span class="sig-paren">(</span><em>config_path</em>, <em>logger</em>, <em>base_configs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/tshark.html#Sniffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.tshark.Sniffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase" title="mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase"><code class="xref py py-class docutils literal"><span class="pre">mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase</span></code></a></p>
+<p>This class defines a sniffer which uses tshark as its back-end</p>
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.tshark.Sniffer.get_descriptor">
+<code class="descname">get_descriptor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/tshark.html#Sniffer.get_descriptor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.tshark.Sniffer.get_descriptor" title="Permalink to this definition">¶</a></dt>
+<dd><p>See base class documentation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mobly.controllers.sniffer_lib.local.tshark.Sniffer.get_subtype">
+<code class="descname">get_subtype</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mobly/controllers/sniffer_lib/local/tshark.html#Sniffer.get_subtype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mobly.controllers.sniffer_lib.local.tshark.Sniffer.get_subtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>See base class documentation</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mobly.controllers.sniffer_lib.local">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mobly.controllers.sniffer_lib.local" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">mobly.controllers.sniffer_lib.local package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.sniffer_lib.local.local_base">mobly.controllers.sniffer_lib.local.local_base module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.sniffer_lib.local.tcpdump">mobly.controllers.sniffer_lib.local.tcpdump module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.sniffer_lib.local.tshark">mobly.controllers.sniffer_lib.local.tshark module</a></li>
+<li><a class="reference internal" href="#module-mobly.controllers.sniffer_lib.local">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="mobly.html">mobly package</a><ul>
+  <li><a href="mobly.controllers.html">mobly.controllers package</a><ul>
+  <li><a href="mobly.controllers.sniffer_lib.html">mobly.controllers.sniffer_lib package</a><ul>
+      <li>Previous: <a href="mobly.controllers.sniffer_lib.html" title="previous chapter">mobly.controllers.sniffer_lib package</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/mobly.controllers.sniffer_lib.local.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="_sources/mobly.controllers.sniffer_lib.local.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

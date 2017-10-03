@@ -1,0 +1,326 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.logger &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mobly.logger</h1><div class="highlight"><pre>
+<span class="c1"># Copyright 2016 Google Inc.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">records</span>
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">utils</span>
+
+<span class="n">log_line_format</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1">.</span><span class="si">%(msecs).03d</span><span class="s1"> </span><span class="si">%(levelname)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+<span class="c1"># The micro seconds are added by the format string above,</span>
+<span class="c1"># so the time format does not include ms.</span>
+<span class="n">log_line_time_format</span> <span class="o">=</span> <span class="s1">&#39;%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span>
+<span class="n">log_line_timestamp_len</span> <span class="o">=</span> <span class="mi">18</span>
+
+<span class="n">logline_timestamp_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_parse_logline_timestamp</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Parses a logline timestamp into a tuple.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        t: Timestamp in logline format.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        An iterable of date and time elements in the order of month, day, hour,</span>
+<span class="sd">        minute, second, microsecond.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">date</span><span class="p">,</span> <span class="n">time</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+    <span class="n">month</span><span class="p">,</span> <span class="n">day</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+    <span class="n">h</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+    <span class="n">s</span><span class="p">,</span> <span class="n">ms</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">ms</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="is_valid_logline_timestamp"><a class="viewcode-back" href="../../mobly.html#mobly.logger.is_valid_logline_timestamp">[docs]</a><span class="k">def</span> <span class="nf">is_valid_logline_timestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span> <span class="o">==</span> <span class="n">log_line_timestamp_len</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">logline_timestamp_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">timestamp</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">return</span> <span class="bp">False</span></div>
+
+
+<div class="viewcode-block" id="logline_timestamp_comparator"><a class="viewcode-back" href="../../mobly.html#mobly.logger.logline_timestamp_comparator">[docs]</a><span class="k">def</span> <span class="nf">logline_timestamp_comparator</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Comparator for timestamps in logline format.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        t1: Timestamp in logline format.</span>
+<span class="sd">        t2: Timestamp in logline format.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        -1 if t1 &lt; t2; 1 if t1 &gt; t2; 0 if t1 == t2.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dt1</span> <span class="o">=</span> <span class="n">_parse_logline_timestamp</span><span class="p">(</span><span class="n">t1</span><span class="p">)</span>
+    <span class="n">dt2</span> <span class="o">=</span> <span class="n">_parse_logline_timestamp</span><span class="p">(</span><span class="n">t2</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">u1</span><span class="p">,</span> <span class="n">u2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">dt1</span><span class="p">,</span> <span class="n">dt2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">u1</span> <span class="o">&lt;</span> <span class="n">u2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">u1</span> <span class="o">&gt;</span> <span class="n">u2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="mi">0</span></div>
+
+
+<span class="k">def</span> <span class="nf">_get_timestamp</span><span class="p">(</span><span class="n">time_format</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">delta</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">time_format</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="epoch_to_log_line_timestamp"><a class="viewcode-back" href="../../mobly.html#mobly.logger.epoch_to_log_line_timestamp">[docs]</a><span class="k">def</span> <span class="nf">epoch_to_log_line_timestamp</span><span class="p">(</span><span class="n">epoch_time</span><span class="p">,</span> <span class="n">time_zone</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts an epoch timestamp in ms to log line timestamp format, which</span>
+<span class="sd">    is readible for humans.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        epoch_time: integer, an epoch timestamp in ms.</span>
+<span class="sd">        time_zone: instance of tzinfo, time zone information.</span>
+<span class="sd">            Using pytz rather than python 3.2 time_zone implementation for</span>
+<span class="sd">            python 2 compatibility reasons.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A string that is the corresponding timestamp in log line timestamp</span>
+<span class="sd">        format.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span><span class="p">,</span> <span class="n">ms</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">epoch_time</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="n">time_zone</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S.&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ms</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_log_line_timestamp"><a class="viewcode-back" href="../../mobly.html#mobly.logger.get_log_line_timestamp">[docs]</a><span class="k">def</span> <span class="nf">get_log_line_timestamp</span><span class="p">(</span><span class="n">delta</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a timestamp in the format used by log lines.</span>
+
+<span class="sd">    Default is current time. If a delta is set, the return value will be</span>
+<span class="sd">    the current time offset by delta seconds.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        delta: Number of seconds to offset from current time; can be negative.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A timestamp in log line format with an offset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_timestamp</span><span class="p">(</span><span class="s1">&#39;%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_log_file_timestamp"><a class="viewcode-back" href="../../mobly.html#mobly.logger.get_log_file_timestamp">[docs]</a><span class="k">def</span> <span class="nf">get_log_file_timestamp</span><span class="p">(</span><span class="n">delta</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a timestamp in the format used for log file names.</span>
+
+<span class="sd">    Default is current time. If a delta is set, the return value will be</span>
+<span class="sd">    the current time offset by delta seconds.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        delta: Number of seconds to offset from current time; can be negative.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A timestamp in log filen name format with an offset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_get_timestamp</span><span class="p">(</span><span class="s1">&#39;%m-</span><span class="si">%d</span><span class="s1">-%Y_%H-%M-%S-</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_setup_test_logger</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Customizes the root logger for a test run.</span>
+
+<span class="sd">    The logger object has a stream handler and a file handler. The stream</span>
+<span class="sd">    handler logs INFO level to the terminal, the file handler logs DEBUG</span>
+<span class="sd">    level to files.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        log_path: Location of the log file.</span>
+<span class="sd">        prefix: A prefix for each log line in terminal.</span>
+<span class="sd">        filename: Name of the log file. The default is the time the logger</span>
+<span class="sd">            is requested.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
+    <span class="n">kill_test_logger</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="c1"># Log info to stream</span>
+    <span class="n">terminal_format</span> <span class="o">=</span> <span class="n">log_line_format</span>
+    <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
+        <span class="n">terminal_format</span> <span class="o">=</span> <span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">] </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">log_line_format</span><span class="p">)</span>
+    <span class="n">c_formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="n">terminal_format</span><span class="p">,</span> <span class="n">log_line_time_format</span><span class="p">)</span>
+    <span class="n">ch</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+    <span class="n">ch</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">c_formatter</span><span class="p">)</span>
+    <span class="n">ch</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="c1"># Log everything to file</span>
+    <span class="n">f_formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="n">log_line_format</span><span class="p">,</span> <span class="n">log_line_time_format</span><span class="p">)</span>
+    <span class="c1"># All the logs of this test class go into one directory</span>
+    <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">get_log_file_timestamp</span><span class="p">()</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">create_dir</span><span class="p">(</span><span class="n">log_path</span><span class="p">)</span>
+    <span class="c1"># TODO(#270): Deprecate `test_run_details.txt` when we remove old output</span>
+    <span class="c1"># format support.</span>
+    <span class="n">fh</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="s1">&#39;test_run_details.txt&#39;</span><span class="p">))</span>
+    <span class="n">fh</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">f_formatter</span><span class="p">)</span>
+    <span class="n">fh</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">fh</span><span class="p">)</span>
+    <span class="c1"># Write logger output to files</span>
+    <span class="n">fh_info</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">OUTPUT_FILE_INFO_LOG</span><span class="p">))</span>
+    <span class="n">fh_info</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">f_formatter</span><span class="p">)</span>
+    <span class="n">fh_info</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="n">fh_debug</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">OUTPUT_FILE_DEBUG_LOG</span><span class="p">))</span>
+    <span class="n">fh_debug</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">f_formatter</span><span class="p">)</span>
+    <span class="n">fh_debug</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">fh_info</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">fh_debug</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">log_path</span> <span class="o">=</span> <span class="n">log_path</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">log_path</span> <span class="o">=</span> <span class="n">log_path</span>
+
+
+<div class="viewcode-block" id="kill_test_logger"><a class="viewcode-back" href="../../mobly.html#mobly.logger.kill_test_logger">[docs]</a><span class="k">def</span> <span class="nf">kill_test_logger</span><span class="p">(</span><span class="n">logger</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Cleans up a test logger object by removing all of its handlers.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        logger: The logging object to clean up.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">):</span>
+            <span class="n">h</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="create_latest_log_alias"><a class="viewcode-back" href="../../mobly.html#mobly.logger.create_latest_log_alias">[docs]</a><span class="k">def</span> <span class="nf">create_latest_log_alias</span><span class="p">(</span><span class="n">actual_path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates a symlink to the latest test run logs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        actual_path: The source directory where the latest test run&#39;s logs are.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">alias_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">actual_path</span><span class="p">),</span> <span class="s1">&#39;latest&#39;</span><span class="p">)</span>
+    <span class="n">utils</span><span class="o">.</span><span class="n">create_alias</span><span class="p">(</span><span class="n">actual_path</span><span class="p">,</span> <span class="n">alias_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="setup_test_logger"><a class="viewcode-back" href="../../mobly.html#mobly.logger.setup_test_logger">[docs]</a><span class="k">def</span> <span class="nf">setup_test_logger</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Customizes the root logger for a test run.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        log_path: Location of the report file.</span>
+<span class="sd">        prefix: A prefix for each log line in terminal.</span>
+<span class="sd">        filename: Name of the files. The default is the time the objects</span>
+<span class="sd">            are requested.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">get_log_file_timestamp</span><span class="p">()</span>
+    <span class="n">utils</span><span class="o">.</span><span class="n">create_dir</span><span class="p">(</span><span class="n">log_path</span><span class="p">)</span>
+    <span class="n">_setup_test_logger</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Test output folder: &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span><span class="p">,</span> <span class="n">log_path</span><span class="p">)</span>
+    <span class="n">create_latest_log_alias</span><span class="p">(</span><span class="n">log_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="normalize_log_line_timestamp"><a class="viewcode-back" href="../../mobly.html#mobly.logger.normalize_log_line_timestamp">[docs]</a><span class="k">def</span> <span class="nf">normalize_log_line_timestamp</span><span class="p">(</span><span class="n">log_line_timestamp</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Replace special characters in log line timestamp with normal characters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        log_line_timestamp: A string in the log line timestamp format. Obtained</span>
+<span class="sd">            with get_log_line_timestamp.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A string representing the same time as input timestamp, but without</span>
+<span class="sd">        special characters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm_tp</span> <span class="o">=</span> <span class="n">log_line_timestamp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
+    <span class="n">norm_tp</span> <span class="o">=</span> <span class="n">norm_tp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">norm_tp</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.config_parser &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mobly.config_parser</h1><div class="highlight"><pre>
+<span class="c1"># Copyright 2016 Google Inc.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">str</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">yaml</span>
+
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">keys</span>
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">utils</span>
+
+<span class="c1"># An environment variable defining the base location for Mobly logs.</span>
+<span class="n">ENV_MOBLY_LOGPATH</span> <span class="o">=</span> <span class="s1">&#39;MOBLY_LOGPATH&#39;</span>
+<span class="n">_DEFAULT_LOG_PATH</span> <span class="o">=</span> <span class="s1">&#39;/tmp/logs/mobly/&#39;</span>
+
+
+<div class="viewcode-block" id="MoblyConfigError"><a class="viewcode-back" href="../../mobly.html#mobly.config_parser.MoblyConfigError">[docs]</a><span class="k">class</span> <span class="nc">MoblyConfigError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when there is a problem in test configuration file.&quot;&quot;&quot;</span></div>
+
+
+<span class="k">def</span> <span class="nf">_validate_test_config</span><span class="p">(</span><span class="n">test_config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validates the raw configuration loaded from the config file.</span>
+
+<span class="sd">    Making sure the required key &#39;TestBeds&#39; is present.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">required_key</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">if</span> <span class="n">required_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">test_config</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MoblyConfigError</span><span class="p">(</span>
+            <span class="s1">&#39;Required key </span><span class="si">%s</span><span class="s1"> missing in test config.&#39;</span> <span class="o">%</span> <span class="n">required_key</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_validate_testbed_name</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validates the name of a test bed.</span>
+
+<span class="sd">    Since test bed names are used as part of the test run id, it needs to meet</span>
+<span class="sd">    certain requirements.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: The test bed&#39;s name specified in config file.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        MoblyConfigError: The name does not meet any criteria.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MoblyConfigError</span><span class="p">(</span><span class="s2">&quot;Test bed names can&#39;t be empty.&quot;</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">char</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">utils</span><span class="o">.</span><span class="n">valid_filename_chars</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MoblyConfigError</span><span class="p">(</span>
+                <span class="s1">&#39;Char &quot;</span><span class="si">%s</span><span class="s1">&quot; is not allowed in test bed names.&#39;</span> <span class="o">%</span> <span class="n">char</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_validate_testbed_configs</span><span class="p">(</span><span class="n">testbed_configs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Validates the testbed configurations.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        testbed_configs: A list of testbed configuration dicts.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        MoblyConfigError: Some parts of the configuration is invalid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">seen_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="c1"># Cross checks testbed configs for resource conflicts.</span>
+    <span class="k">for</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">testbed_configs</span><span class="p">:</span>
+        <span class="c1"># Check for conflicts between multiple concurrent testbed configs.</span>
+        <span class="c1"># No need to call it if there&#39;s only one testbed config.</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed_name</span><span class="o">.</span><span class="n">value</span><span class="p">]</span>
+        <span class="n">_validate_testbed_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># Test bed names should be unique.</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">seen_names</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MoblyConfigError</span><span class="p">(</span><span class="s1">&#39;Duplicate testbed name </span><span class="si">%s</span><span class="s1"> found.&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">seen_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="load_test_config_file"><a class="viewcode-back" href="../../mobly.html#mobly.config_parser.load_test_config_file">[docs]</a><span class="k">def</span> <span class="nf">load_test_config_file</span><span class="p">(</span><span class="n">test_config_path</span><span class="p">,</span> <span class="n">tb_filters</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Processes the test configuration file provied by user.</span>
+
+<span class="sd">    Loads the configuration file into a dict, unpacks each testbed</span>
+<span class="sd">    config into its own dict, and validate the configuration in the</span>
+<span class="sd">    process.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        test_config_path: Path to the test configuration file.</span>
+<span class="sd">        tb_filters: A subset of test bed names to be pulled from the config</span>
+<span class="sd">            file. If None, then all test beds will be selected.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of test configuration dicts to be passed to</span>
+<span class="sd">        test_runner.TestRunner.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">configs</span> <span class="o">=</span> <span class="n">_load_config_file</span><span class="p">(</span><span class="n">test_config_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tb_filters</span><span class="p">:</span>
+        <span class="n">tbs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tb</span> <span class="ow">in</span> <span class="n">configs</span><span class="p">[</span><span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed</span><span class="o">.</span><span class="n">value</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">tb</span><span class="p">[</span><span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed_name</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="ow">in</span> <span class="n">tb_filters</span><span class="p">:</span>
+                <span class="n">tbs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tb</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tbs</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tb_filters</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MoblyConfigError</span><span class="p">(</span>
+                <span class="s1">&#39;Expect to find </span><span class="si">%d</span><span class="s1"> test bed configs, found </span><span class="si">%d</span><span class="s1">. Check if&#39;</span>
+                <span class="s1">&#39; you have the correct test bed names.&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tb_filters</span><span class="p">),</span>
+                                                           <span class="nb">len</span><span class="p">(</span><span class="n">tbs</span><span class="p">)))</span>
+        <span class="n">configs</span><span class="p">[</span><span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="n">tbs</span>
+    <span class="n">mobly_params</span> <span class="o">=</span> <span class="n">configs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_mobly_params</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="c1"># Decide log path.</span>
+    <span class="n">log_path</span> <span class="o">=</span> <span class="n">mobly_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_log_path</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                                <span class="n">_DEFAULT_LOG_PATH</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ENV_MOBLY_LOGPATH</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="n">log_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">ENV_MOBLY_LOGPATH</span><span class="p">]</span>
+    <span class="n">log_path</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">abs_path</span><span class="p">(</span><span class="n">log_path</span><span class="p">)</span>
+    <span class="c1"># Validate configs</span>
+    <span class="n">_validate_test_config</span><span class="p">(</span><span class="n">configs</span><span class="p">)</span>
+    <span class="n">_validate_testbed_configs</span><span class="p">(</span><span class="n">configs</span><span class="p">[</span><span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed</span><span class="o">.</span><span class="n">value</span><span class="p">])</span>
+    <span class="c1"># Transform config dict from user-facing key mapping to internal config object.</span>
+    <span class="n">test_configs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">original_bed_config</span> <span class="ow">in</span> <span class="n">configs</span><span class="p">[</span><span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed</span><span class="o">.</span><span class="n">value</span><span class="p">]:</span>
+        <span class="n">test_run_config</span> <span class="o">=</span> <span class="n">TestRunConfig</span><span class="p">()</span>
+        <span class="n">test_run_config</span><span class="o">.</span><span class="n">test_bed_name</span> <span class="o">=</span> <span class="n">original_bed_config</span><span class="p">[</span>
+            <span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed_name</span><span class="o">.</span><span class="n">value</span><span class="p">]</span>
+        <span class="n">test_run_config</span><span class="o">.</span><span class="n">log_path</span> <span class="o">=</span> <span class="n">log_path</span>
+        <span class="n">test_run_config</span><span class="o">.</span><span class="n">controller_configs</span> <span class="o">=</span> <span class="n">original_bed_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed_controllers</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">test_run_config</span><span class="o">.</span><span class="n">user_params</span> <span class="o">=</span> <span class="n">original_bed_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">keys</span><span class="o">.</span><span class="n">Config</span><span class="o">.</span><span class="n">key_testbed_test_params</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">test_configs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">test_run_config</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">test_configs</span></div>
+
+
+<span class="k">def</span> <span class="nf">_load_config_file</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads a test config file.</span>
+
+<span class="sd">    The test config file has to be in YAML format.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: A string that is the full path to the config file, including the</span>
+<span class="sd">            file name.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dict that represents info in the config file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">utils</span><span class="o">.</span><span class="n">abs_path</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">conf</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">conf</span>
+
+
+<div class="viewcode-block" id="TestRunConfig"><a class="viewcode-back" href="../../mobly.html#mobly.config_parser.TestRunConfig">[docs]</a><span class="k">class</span> <span class="nc">TestRunConfig</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The data class that holds all the information needed for a test run.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        log_path: string, specifies the root directory for all logs written by</span>
+<span class="sd">            a test run.</span>
+<span class="sd">        test_bed_name: string, the name of the test bed used by a test run.</span>
+<span class="sd">        controller_configs: dict, configs used for instantiating controller</span>
+<span class="sd">            objects.</span>
+<span class="sd">        user_params: dict, all the parameters to be consumed by the test logic.</span>
+<span class="sd">        register_controller: func, used by test classes to register controller</span>
+<span class="sd">            modules.</span>
+<span class="sd">        summary_writer: records.TestSummaryWriter, used to write elements to</span>
+<span class="sd">            the test result summary file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_path</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_bed_name</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">controller_configs</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user_params</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_controller</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary_writer</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="TestRunConfig.copy"><a class="viewcode-back" href="../../mobly.html#mobly.config_parser.TestRunConfig.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a deep copy of the current config.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

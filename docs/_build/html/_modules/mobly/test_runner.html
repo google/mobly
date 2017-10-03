@@ -1,0 +1,569 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.test_runner &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mobly.test_runner</h1><div class="highlight"><pre>
+<span class="c1"># Copyright 2016 Google Inc.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">future</span> <span class="kn">import</span> <span class="n">standard_library</span>
+<span class="n">standard_library</span><span class="o">.</span><span class="n">install_aliases</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">base_test</span>
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">config_parser</span>
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">records</span>
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">signals</span>
+
+
+<div class="viewcode-block" id="Error"><a class="viewcode-back" href="../../mobly.html#mobly.test_runner.Error">[docs]</a><span class="k">class</span> <span class="nc">Error</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../mobly.html#mobly.test_runner.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Execute the test class in a test module.</span>
+
+<span class="sd">    This is the default entry point for running a test script file directly.</span>
+<span class="sd">    In this case, only one test class in a test script is allowed.</span>
+
+<span class="sd">    To make your test script executable, add the following to your file:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        from mobly import test_runner</span>
+<span class="sd">        ...</span>
+<span class="sd">        if __name__ == &#39;__main__&#39;:</span>
+<span class="sd">            test_runner.main()</span>
+
+<span class="sd">    If you want to implement your own cli entry point, you could use function</span>
+<span class="sd">    execute_one_test_class(test_class, test_config, test_identifier)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        argv: A list that is then parsed as cli args. If None, defaults to cli</span>
+<span class="sd">            input.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Parse cli args.</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;Mobly Test Executable.&#39;</span><span class="p">)</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;-c&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;--config&#39;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;&lt;PATH&gt;&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to the test configuration file.&#39;</span><span class="p">)</span>
+    <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;-l&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;--list_tests&#39;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Print the names of the tests defined in a script without &#39;</span>
+        <span class="s1">&#39;executing them. If the script &#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;--tests&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;--test_case&#39;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;[test_a test_b...]&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;A list of tests in the test class to execute.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s1">&#39;-tb&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;--test_bed&#39;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s1">&#39;+&#39;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s1">&#39;[&lt;TEST BED NAME1&gt; &lt;TEST BED NAME2&gt; ...]&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Specify which test beds to run tests on.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">argv</span><span class="p">:</span>
+        <span class="n">argv</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1"># Find the test class in the test script.</span>
+    <span class="n">test_class</span> <span class="o">=</span> <span class="n">_find_test_class</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">list_tests</span><span class="p">:</span>
+        <span class="n">_print_test_names</span><span class="p">(</span><span class="n">test_class</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c1"># Load test config file.</span>
+    <span class="n">test_configs</span> <span class="o">=</span> <span class="n">config_parser</span><span class="o">.</span><span class="n">load_test_config_file</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                       <span class="n">args</span><span class="o">.</span><span class="n">test_bed</span><span class="p">)</span>
+    <span class="c1"># Parse test specifiers if exist.</span>
+    <span class="n">tests</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">tests</span><span class="p">:</span>
+        <span class="n">tests</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">tests</span>
+    <span class="c1"># Execute the test class with configs.</span>
+    <span class="n">ok</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">for</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">test_configs</span><span class="p">:</span>
+        <span class="n">runner</span> <span class="o">=</span> <span class="n">TestRunner</span><span class="p">(</span>
+            <span class="n">log_dir</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">log_path</span><span class="p">,</span> <span class="n">test_bed_name</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">test_bed_name</span><span class="p">)</span>
+        <span class="n">runner</span><span class="o">.</span><span class="n">add_test_class</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">test_class</span><span class="p">,</span> <span class="n">tests</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+            <span class="n">ok</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">is_all_pass</span> <span class="ow">and</span> <span class="n">ok</span>
+        <span class="k">except</span> <span class="n">signals</span><span class="o">.</span><span class="n">TestAbortAll</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;Exception when executing </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span>
+                              <span class="n">config</span><span class="o">.</span><span class="n">test_bed_name</span><span class="p">)</span>
+            <span class="n">ok</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ok</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_find_test_class</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Finds the test class in a test script.</span>
+
+<span class="sd">    Walk through module memebers and find the subclass of BaseTestClass. Only</span>
+<span class="sd">    one subclass is allowed in a test script.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The test class in the test module.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">test_classes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">main_module_members</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s1">&#39;__main__&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">module_member</span> <span class="ow">in</span> <span class="n">main_module_members</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">module_member</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">module_member</span><span class="p">,</span> <span class="n">base_test</span><span class="o">.</span><span class="n">BaseTestClass</span><span class="p">):</span>
+                <span class="n">test_classes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">module_member</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_classes</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Expected 1 test class per file, found </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span>
+                      <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">__name__</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">test_classes</span><span class="p">])</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">test_classes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_print_test_names</span><span class="p">(</span><span class="n">test_class</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Prints the names of all the tests in a test module.</span>
+
+<span class="sd">    If the module has generated tests defined based on controller info, this</span>
+<span class="sd">    may not be able to print the generated tests.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        test_class: module, the test module to print names from.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cls</span> <span class="o">=</span> <span class="n">test_class</span><span class="p">(</span><span class="n">config_parser</span><span class="o">.</span><span class="n">TestRunConfig</span><span class="p">())</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">setup_generated_tests</span><span class="p">()</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;Failed to retrieve generated tests.&#39;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;==========&gt; </span><span class="si">%s</span><span class="s1"> &lt;==========&#39;</span> <span class="o">%</span> <span class="n">cls</span><span class="o">.</span><span class="n">TAG</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cls</span><span class="o">.</span><span class="n">get_existing_test_names</span><span class="p">():</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="verify_controller_module"><a class="viewcode-back" href="../../mobly.html#mobly.test_runner.verify_controller_module">[docs]</a><span class="k">def</span> <span class="nf">verify_controller_module</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Verifies a module object follows the required interface for</span>
+<span class="sd">    controllers.</span>
+
+<span class="sd">    A Mobly controller module is a Python lib that can be used to control</span>
+<span class="sd">    a device, service, or equipment. To be Mobly compatible, a controller</span>
+<span class="sd">    module needs to have the following members:</span>
+
+<span class="sd">        def create(configs):</span>
+<span class="sd">            [Required] Creates controller objects from configurations.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                configs: A list of serialized data like string/dict. Each</span>
+<span class="sd">                    element of the list is a configuration for a controller</span>
+<span class="sd">                    object.</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                A list of objects.</span>
+
+<span class="sd">        def destroy(objects):</span>
+<span class="sd">            [Required] Destroys controller objects created by the create</span>
+<span class="sd">            function. Each controller object shall be properly cleaned up</span>
+<span class="sd">            and all the resources held should be released, e.g. memory</span>
+<span class="sd">            allocation, sockets, file handlers etc.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                A list of controller objects created by the create function.</span>
+
+<span class="sd">        def get_info(objects):</span>
+<span class="sd">            [Optional] Gets info from the controller objects used in a test</span>
+<span class="sd">            run. The info will be included in test_summary.yaml under</span>
+<span class="sd">            the key &#39;ControllerInfo&#39;. Such information could include unique</span>
+<span class="sd">            ID, version, or anything that could be useful for describing the</span>
+<span class="sd">            test bed and debugging.</span>
+
+<span class="sd">            Args:</span>
+<span class="sd">                objects: A list of controller objects created by the create</span>
+<span class="sd">                    function.</span>
+<span class="sd">            Returns:</span>
+<span class="sd">                A list of json serializable objects, each represents the</span>
+<span class="sd">                info of a controller object. The order of the info object</span>
+<span class="sd">                should follow that of the input objects.</span>
+
+<span class="sd">    Registering a controller module declares a test class&#39;s dependency the</span>
+<span class="sd">    controller. If the module config exists and the module matches the</span>
+<span class="sd">    controller interface, controller objects will be instantiated with</span>
+<span class="sd">    corresponding configs. The module should be imported first.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        module: An object that is a controller module. This is usually</span>
+<span class="sd">            imported with import statements or loaded by importlib.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ControllerError: if the module does not match the Mobly controller</span>
+<span class="sd">            interface, or one of the required members is null.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">required_attributes</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;create&#39;</span><span class="p">,</span> <span class="s1">&#39;destroy&#39;</span><span class="p">,</span> <span class="s1">&#39;MOBLY_CONTROLLER_CONFIG_NAME&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">required_attributes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">signals</span><span class="o">.</span><span class="n">ControllerError</span><span class="p">(</span>
+                <span class="s1">&#39;Module </span><span class="si">%s</span><span class="s1"> missing required controller module attribute&#39;</span>
+                <span class="s1">&#39; </span><span class="si">%s</span><span class="s1">.&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">signals</span><span class="o">.</span><span class="n">ControllerError</span><span class="p">(</span>
+                <span class="s1">&#39;Controller interface </span><span class="si">%s</span><span class="s1"> in </span><span class="si">%s</span><span class="s1"> cannot be null.&#39;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="TestRunner"><a class="viewcode-back" href="../../mobly.html#mobly.test_runner.TestRunner">[docs]</a><span class="k">class</span> <span class="nc">TestRunner</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The class that instantiates test classes, executes tests, and</span>
+<span class="sd">    report results.</span>
+
+<span class="sd">    One TestRunner instance is associated with one specific output folder and</span>
+<span class="sd">    testbed. TestRunner.run() will generate a single set of output files and</span>
+<span class="sd">    results for all tests that have been added to this runner.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        self.results: The test result object used to record the results of</span>
+<span class="sd">            this test run.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">class</span> <span class="nc">_TestRunInfo</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Identifies one test class to run, which tests to run, and config to</span>
+<span class="sd">        run it with.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">test_class</span><span class="p">,</span> <span class="n">tests</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">test_class</span> <span class="o">=</span> <span class="n">test_class</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tests</span> <span class="o">=</span> <span class="n">tests</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_dir</span><span class="p">,</span> <span class="n">test_bed_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor for TestRunner.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            log_dir: string, root folder where to write logs</span>
+<span class="sd">            test_bed_name: string, name of the testbed to run tests on</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_dir</span> <span class="o">=</span> <span class="n">log_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_test_bed_name</span> <span class="o">=</span> <span class="n">test_bed_name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">records</span><span class="o">.</span><span class="n">TestResult</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_test_run_infos</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Controller management. These members will be updated for each class.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controller_registry</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controller_destructors</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="TestRunner.add_test_class"><a class="viewcode-back" href="../../mobly.html#mobly.test_runner.TestRunner.add_test_class">[docs]</a>    <span class="k">def</span> <span class="nf">add_test_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">test_class</span><span class="p">,</span> <span class="n">tests</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds tests to the execution plan of this TestRunner.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: config_parser.TestRunConfig, configuration to execute this</span>
+<span class="sd">                test class with.</span>
+<span class="sd">            test_class: class, test class to execute.</span>
+<span class="sd">            tests: list of strings, optional list of test names within the</span>
+<span class="sd">                class to execute.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Error: if the provided config has a log_path or test_bed_name which</span>
+<span class="sd">                differs from the arguments provided to this TestRunner&#39;s</span>
+<span class="sd">                constructor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_dir</span> <span class="o">!=</span> <span class="n">config</span><span class="o">.</span><span class="n">log_path</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span>
+                <span class="s1">&#39;TestRunner</span><span class="se">\&#39;</span><span class="s1">s log folder is &quot;</span><span class="si">%s</span><span class="s1">&quot;, but a test config with a &#39;</span>
+                <span class="s1">&#39;different log folder (&quot;</span><span class="si">%s</span><span class="s1">&quot;) was added.&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_dir</span><span class="p">,</span>
+                                                            <span class="n">config</span><span class="o">.</span><span class="n">log_path</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_bed_name</span> <span class="o">!=</span> <span class="n">config</span><span class="o">.</span><span class="n">test_bed_name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span>
+                <span class="s1">&#39;TestRunner</span><span class="se">\&#39;</span><span class="s1">s test bed is &quot;</span><span class="si">%s</span><span class="s1">&quot;, but a test config with a &#39;</span>
+                <span class="s1">&#39;different test bed (&quot;</span><span class="si">%s</span><span class="s1">&quot;) was added.&#39;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_test_bed_name</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">test_bed_name</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_test_run_infos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">TestRunner</span><span class="o">.</span><span class="n">_TestRunInfo</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">test_class</span><span class="o">=</span><span class="n">test_class</span><span class="p">,</span> <span class="n">tests</span><span class="o">=</span><span class="n">tests</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_run_test_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">test_class</span><span class="p">,</span> <span class="n">tests</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Instantiates and executes a test class.</span>
+
+<span class="sd">        If tests is None, the tests listed in self.tests will be executed</span>
+<span class="sd">        instead. If self.tests is empty as well, every test in this test class</span>
+<span class="sd">        will be executed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: A config_parser.TestRunConfig object.</span>
+<span class="sd">            test_class: class, test class to execute.</span>
+<span class="sd">            tests: Optional list of test names within the class to execute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">test_class</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">as</span> <span class="n">test_instance</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">cls_result</span> <span class="o">=</span> <span class="n">test_instance</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tests</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">+=</span> <span class="n">cls_result</span>
+            <span class="k">except</span> <span class="n">signals</span><span class="o">.</span><span class="n">TestAbortAll</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">+=</span> <span class="n">e</span><span class="o">.</span><span class="n">results</span>
+                <span class="k">raise</span> <span class="n">e</span>
+
+<div class="viewcode-block" id="TestRunner.run"><a class="viewcode-back" href="../../mobly.html#mobly.test_runner.TestRunner.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Executes tests.</span>
+
+<span class="sd">        This will instantiate controller and test classes, execute tests, and</span>
+<span class="sd">        print a summary.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Error: if no tests have previously been added to this runner using</span>
+<span class="sd">                add_test_class(...).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_run_infos</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s1">&#39;No tests to execute.&#39;</span><span class="p">)</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">get_log_file_timestamp</span><span class="p">()</span>
+        <span class="n">log_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_bed_name</span><span class="p">,</span> <span class="n">start_time</span><span class="p">)</span>
+        <span class="n">summary_writer</span> <span class="o">=</span> <span class="n">records</span><span class="o">.</span><span class="n">TestSummaryWriter</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="n">records</span><span class="o">.</span><span class="n">OUTPUT_FILE_SUMMARY</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">setup_test_logger</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_bed_name</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">test_run_info</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_test_run_infos</span><span class="p">:</span>
+                <span class="c1"># Set up the test-specific config</span>
+                <span class="n">test_config</span> <span class="o">=</span> <span class="n">test_run_info</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">test_config</span><span class="o">.</span><span class="n">log_path</span> <span class="o">=</span> <span class="n">log_path</span>
+                <span class="n">test_config</span><span class="o">.</span><span class="n">register_controller</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_register_controller</span><span class="p">,</span> <span class="n">test_config</span><span class="p">)</span>
+                <span class="n">test_config</span><span class="o">.</span><span class="n">summary_writer</span> <span class="o">=</span> <span class="n">summary_writer</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_run_test_class</span><span class="p">(</span><span class="n">test_config</span><span class="p">,</span> <span class="n">test_run_info</span><span class="o">.</span><span class="n">test_class</span><span class="p">,</span>
+                                         <span class="n">test_run_info</span><span class="o">.</span><span class="n">tests</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">signals</span><span class="o">.</span><span class="n">TestAbortAll</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s1">&#39;Abort all subsequent test classes. Reason: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                    <span class="k">raise</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_unregister_controllers</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Write controller info and summary to summary file.</span>
+            <span class="n">summary_writer</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">controller_info</span><span class="p">,</span>
+                                <span class="n">records</span><span class="o">.</span><span class="n">TestSummaryEntryType</span><span class="o">.</span><span class="n">CONTROLLER_INFO</span><span class="p">)</span>
+            <span class="n">summary_writer</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">summary_dict</span><span class="p">(),</span>
+                                <span class="n">records</span><span class="o">.</span><span class="n">TestSummaryEntryType</span><span class="o">.</span><span class="n">SUMMARY</span><span class="p">)</span>
+            <span class="c1"># Stop and show summary.</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Summary for test run </span><span class="si">%s</span><span class="s1">@</span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_test_bed_name</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">summary_str</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_results_json_str</span><span class="p">(</span><span class="n">log_path</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">kill_test_logger</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">())</span></div>
+
+    <span class="k">def</span> <span class="nf">_register_controller</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                             <span class="n">min_number</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Loads a controller module and returns its loaded devices.</span>
+
+<span class="sd">        See the docstring of verify_controller_module() for a description of</span>
+<span class="sd">        what API a controller module must implement to be compatible with this</span>
+<span class="sd">        method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: A config_parser.TestRunConfig object.</span>
+<span class="sd">            module: A module that follows the controller module interface.</span>
+<span class="sd">            required: A bool. If True, failing to register the specified</span>
+<span class="sd">                controller module raises exceptions. If False, the objects</span>
+<span class="sd">                failed to instantiate will be skipped.</span>
+<span class="sd">            min_number: An integer that is the minimum number of controller</span>
+<span class="sd">                objects to be created. Default is one, since you should not</span>
+<span class="sd">                register a controller module without expecting at least one</span>
+<span class="sd">                object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of controller objects instantiated from controller_module, or</span>
+<span class="sd">            None if no config existed for this controller and it was not a</span>
+<span class="sd">            required controller.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ControllerError:</span>
+<span class="sd">                * The controller module has already been registered.</span>
+<span class="sd">                * The actual number of objects instantiated is less than the `min_number`.</span>
+<span class="sd">                * `required` is True and no corresponding config can be found.</span>
+<span class="sd">                * Any other error occurred in the registration process.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">verify_controller_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="c1"># Use the module&#39;s name as the ref name</span>
+        <span class="n">module_ref_name</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">__name__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">module_ref_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_controller_registry</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">signals</span><span class="o">.</span><span class="n">ControllerError</span><span class="p">(</span>
+                <span class="s1">&#39;Controller module </span><span class="si">%s</span><span class="s1"> has already been registered. It cannot &#39;</span>
+                <span class="s1">&#39;be registered again.&#39;</span> <span class="o">%</span> <span class="n">module_ref_name</span><span class="p">)</span>
+        <span class="c1"># Create controller objects.</span>
+        <span class="n">create</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">create</span>
+        <span class="n">module_config_name</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">MOBLY_CONTROLLER_CONFIG_NAME</span>
+        <span class="k">if</span> <span class="n">module_config_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">controller_configs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">required</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">signals</span><span class="o">.</span><span class="n">ControllerError</span><span class="p">(</span>
+                    <span class="s1">&#39;No corresponding config found for </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span>
+                    <span class="n">module_config_name</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s1">&#39;No corresponding config found for optional controller </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="n">module_config_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Make a deep copy of the config to pass to the controller module,</span>
+            <span class="c1"># in case the controller module modifies the config internally.</span>
+            <span class="n">original_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">controller_configs</span><span class="p">[</span><span class="n">module_config_name</span><span class="p">]</span>
+            <span class="n">controller_config</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">original_config</span><span class="p">)</span>
+            <span class="n">objects</span> <span class="o">=</span> <span class="n">create</span><span class="p">(</span><span class="n">controller_config</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+                <span class="s1">&#39;Failed to initialize objects for controller </span><span class="si">%s</span><span class="s1">, abort!&#39;</span><span class="p">,</span>
+                <span class="n">module_config_name</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">objects</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">signals</span><span class="o">.</span><span class="n">ControllerError</span><span class="p">(</span>
+                <span class="s1">&#39;Controller module </span><span class="si">%s</span><span class="s1"> did not return a list of objects, abort.&#39;</span>
+                <span class="o">%</span> <span class="n">module_ref_name</span><span class="p">)</span>
+        <span class="c1"># Check we got enough controller objects to continue.</span>
+        <span class="n">actual_number</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">objects</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">actual_number</span> <span class="o">&lt;</span> <span class="n">min_number</span><span class="p">:</span>
+            <span class="n">module</span><span class="o">.</span><span class="n">destroy</span><span class="p">(</span><span class="n">objects</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">signals</span><span class="o">.</span><span class="n">ControllerError</span><span class="p">(</span>
+                <span class="s1">&#39;Expected to get at least </span><span class="si">%d</span><span class="s1"> controller objects, got </span><span class="si">%d</span><span class="s1">.&#39;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="n">min_number</span><span class="p">,</span> <span class="n">actual_number</span><span class="p">))</span>
+        <span class="c1"># Save a shallow copy of the list for internal usage, so tests can&#39;t</span>
+        <span class="c1"># affect internal registry by manipulating the object list.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controller_registry</span><span class="p">[</span><span class="n">module_ref_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">objects</span><span class="p">)</span>
+        <span class="c1"># Collect controller information and write to test result.</span>
+        <span class="c1"># Implementation of &#39;get_info&#39; is optional for a controller module.</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s1">&#39;get_info&#39;</span><span class="p">):</span>
+            <span class="n">controller_info</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">get_info</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">objects</span><span class="p">))</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Controller </span><span class="si">%s</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">module_config_name</span><span class="p">,</span>
+                          <span class="n">controller_info</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">add_controller_info</span><span class="p">(</span><span class="n">module_config_name</span><span class="p">,</span>
+                                             <span class="n">controller_info</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;No optional debug info found for controller </span><span class="si">%s</span><span class="s1">. &#39;</span>
+                            <span class="s1">&#39;To provide it, implement get_info in this &#39;</span>
+                            <span class="s1">&#39;controller module.&#39;</span><span class="p">,</span> <span class="n">module_config_name</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Found </span><span class="si">%d</span><span class="s1"> objects for controller </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                      <span class="nb">len</span><span class="p">(</span><span class="n">objects</span><span class="p">),</span> <span class="n">module_config_name</span><span class="p">)</span>
+        <span class="n">destroy_func</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">destroy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controller_destructors</span><span class="p">[</span><span class="n">module_ref_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">destroy_func</span>
+        <span class="k">return</span> <span class="n">objects</span>
+
+    <span class="k">def</span> <span class="nf">_unregister_controllers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Destroy controller objects and clear internal registry.</span>
+
+<span class="sd">        This will be called after each test class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">destroy</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_controller_destructors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Destroying </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="n">destroy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_controller_registry</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;Exception occurred destroying </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controller_registry</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_controller_destructors</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">_write_results_json_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes out a json file with the test result info for easy parsing.</span>
+
+<span class="sd">        TODO(#270): Deprecate with old output format.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="s1">&#39;test_run_summary.json&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">json_str</span><span class="p">())</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

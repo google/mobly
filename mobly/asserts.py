@@ -169,8 +169,7 @@ def abort_class(reason, extras=None):
             test result.
 
     Raises:
-        signals.TestAbortClass: Abort all subsequent tests in a
-            test class.
+        signals.TestAbortClass: Abort all subsequent tests in a test class.
     """
     raise signals.TestAbortClass(reason, extras)
 
@@ -189,8 +188,7 @@ def abort_class_if(expr, reason, extras=None):
             test result.
 
     Raises:
-        signals.TestAbortClass: Abort all subsequent tests in a
-            test class.
+        signals.TestAbortClass: Abort all subsequent tests in a test class.
     """
     if expr:
         abort_class(reason, extras)

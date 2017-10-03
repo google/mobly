@@ -1,0 +1,364 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.controllers.android_device_lib.snippet_client &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mobly.controllers.android_device_lib.snippet_client</h1><div class="highlight"><pre>
+<span class="c1"># Copyright 2016 Google Inc.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;JSON RPC interface to Mobly Snippet Lib.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">mobly.controllers.android_device_lib</span> <span class="kn">import</span> <span class="n">adb</span>
+<span class="kn">from</span> <span class="nn">mobly.controllers.android_device_lib</span> <span class="kn">import</span> <span class="n">jsonrpc_client_base</span>
+
+<span class="n">_INSTRUMENTATION_RUNNER_PACKAGE</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s1">&#39;com.google.android.mobly.snippet.SnippetRunner&#39;</span><span class="p">)</span>
+
+<span class="c1"># Major version of the launch and communication protocol being used by this</span>
+<span class="c1"># client.</span>
+<span class="c1"># Incrementing this means that compatibility with clients using the older</span>
+<span class="c1"># version is broken. Avoid breaking compatibility unless there is no other</span>
+<span class="c1"># choice.</span>
+<span class="n">_PROTOCOL_MAJOR_VERSION</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1"># Minor version of the launch and communication protocol.</span>
+<span class="c1"># Increment this when new features are added to the launch and communication</span>
+<span class="c1"># protocol that are backwards compatible with the old protocol and don&#39;t break</span>
+<span class="c1"># existing clients.</span>
+<span class="n">_PROTOCOL_MINOR_VERSION</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="n">_LAUNCH_CMD</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> am instrument -w -e action start </span><span class="si">%s</span><span class="s1">/&#39;</span> <span class="o">+</span>
+               <span class="n">_INSTRUMENTATION_RUNNER_PACKAGE</span><span class="p">)</span>
+
+<span class="n">_STOP_CMD</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s1">&#39;am instrument -w -e action stop </span><span class="si">%s</span><span class="s1">/&#39;</span> <span class="o">+</span> <span class="n">_INSTRUMENTATION_RUNNER_PACKAGE</span><span class="p">)</span>
+
+<span class="c1"># Test that uses UiAutomation requires the shell session to be maintained while</span>
+<span class="c1"># test is in progress. However, this requirement does not hold for the test that</span>
+<span class="c1"># deals with device USB disconnection (Once device disconnects, the shell</span>
+<span class="c1"># session that started the instrument ends, and UiAutomation fails with error:</span>
+<span class="c1"># &quot;UiAutomation not connected&quot;). To keep the shell session and redirect</span>
+<span class="c1"># stdin/stdout/stderr, use &quot;setsid&quot; or &quot;nohup&quot; while launching the</span>
+<span class="c1"># instrumentation test. Because these commands may not be available in every</span>
+<span class="c1"># android system, try to use them only if exists.</span>
+<span class="n">_SETSID_COMMAND</span> <span class="o">=</span> <span class="s1">&#39;setsid&#39;</span>
+
+<span class="n">_NOHUP_COMMAND</span> <span class="o">=</span> <span class="s1">&#39;nohup&#39;</span>
+
+
+<div class="viewcode-block" id="Error"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.snippet_client.Error">[docs]</a><span class="k">class</span> <span class="nc">Error</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ProtocolVersionError"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.snippet_client.ProtocolVersionError">[docs]</a><span class="k">class</span> <span class="nc">ProtocolVersionError</span><span class="p">(</span><span class="n">jsonrpc_client_base</span><span class="o">.</span><span class="n">AppStartError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when the protocol reported by the snippet is unknown.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="SnippetClient"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.snippet_client.SnippetClient">[docs]</a><span class="k">class</span> <span class="nc">SnippetClient</span><span class="p">(</span><span class="n">jsonrpc_client_base</span><span class="o">.</span><span class="n">JsonRpcClientBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A client for interacting with snippet APKs using Mobly Snippet Lib.</span>
+
+<span class="sd">    See superclass documentation for a list of public attributes.</span>
+
+<span class="sd">    For a description of the launch protocols, see the documentation in</span>
+<span class="sd">    mobly-snippet-lib, SnippetRunner.java.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">package</span><span class="p">,</span> <span class="n">adb_proxy</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a SnippetClient.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            package: (str) The package name of the apk where the snippets are</span>
+<span class="sd">                defined.</span>
+<span class="sd">            adb_proxy: (adb.AdbProxy) Adb proxy for running adb commands.</span>
+<span class="sd">            log: (logging.Logger) logger to which to send log messages.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SnippetClient</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">app_name</span><span class="o">=</span><span class="n">package</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">package</span> <span class="o">=</span> <span class="n">package</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span> <span class="o">=</span> <span class="n">adb_proxy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="SnippetClient.start_app_and_connect"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.snippet_client.SnippetClient.start_app_and_connect">[docs]</a>    <span class="k">def</span> <span class="nf">start_app_and_connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Overrides superclass. Launches a snippet app and connects to it.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_app_installed</span><span class="p">()</span>
+
+        <span class="n">persists_shell_cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_persist_command</span><span class="p">()</span>
+        <span class="c1"># Use info here so people can follow along with the snippet startup</span>
+        <span class="c1"># process. Starting snippets can be slow, especially if there are</span>
+        <span class="c1"># multiple, and this avoids the perception that the framework is hanging</span>
+        <span class="c1"># for a long time doing nothing.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Launching snippet apk </span><span class="si">%s</span><span class="s1"> with protocol </span><span class="si">%d</span><span class="s1">.</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">,</span>
+                      <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="n">_PROTOCOL_MAJOR_VERSION</span><span class="p">,</span>
+                      <span class="n">_PROTOCOL_MINOR_VERSION</span><span class="p">)</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">_LAUNCH_CMD</span> <span class="o">%</span> <span class="p">(</span><span class="n">persists_shell_cmd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">)</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_start_app</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+        <span class="c1"># Check protocol version and get the device port</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_protocol_line</span><span class="p">()</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span> <span class="ow">or</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ProtocolVersionError</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+        <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_protocol_line</span><span class="p">()</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;^SNIPPET SERVING, PORT ([0-9]+)$&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ProtocolVersionError</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="c1"># Forward the device port to a new host port, and connect to that port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_available_host_port</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;tcp:</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span><span class="p">,</span> <span class="s1">&#39;tcp:</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_port</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+
+        <span class="c1"># Yaaay! We&#39;re done!</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Snippet </span><span class="si">%s</span><span class="s1"> started after </span><span class="si">%.1f</span><span class="s1">s on host port </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SnippetClient.restore_app_connection"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.snippet_client.SnippetClient.restore_app_connection">[docs]</a>    <span class="k">def</span> <span class="nf">restore_app_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Restores the app after device got reconnected.</span>
+
+<span class="sd">        Instead of creating new instance of the client:</span>
+<span class="sd">          - Uses the given port (or find a new available host_port if none is</span>
+<span class="sd">            given).</span>
+<span class="sd">          - Tries to connect to remote server with selected port.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          port: If given, this is the host port from which to connect to remote</span>
+<span class="sd">              device port. If not provided, find a new available port as host</span>
+<span class="sd">              port.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AppRestoreConnectionError: When the app was not able to be started.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span> <span class="o">=</span> <span class="n">port</span> <span class="ow">or</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_available_host_port</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;tcp:</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span><span class="p">,</span> <span class="s1">&#39;tcp:</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_port</span><span class="p">])</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c1"># Failed to connect to app, something went wrong.</span>
+            <span class="k">raise</span> <span class="n">jsonrpc_client_base</span><span class="o">.</span><span class="n">AppRestoreConnectionError</span><span class="p">(</span>
+                <span class="p">(</span><span class="s1">&#39;Failed to restore app connection for </span><span class="si">%s</span><span class="s1"> at host port </span><span class="si">%s</span><span class="s1">, &#39;</span>
+                 <span class="s1">&#39;device port </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">device_port</span><span class="p">)</span>
+
+        <span class="c1"># Because the previous connection was lost, update self._proc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_restore_event_client</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SnippetClient.stop_app"><a class="viewcode-back" href="../../../../mobly.controllers.android_device_lib.html#mobly.controllers.android_device_lib.snippet_client.SnippetClient.stop_app">[docs]</a>    <span class="k">def</span> <span class="nf">stop_app</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Kill the pending &#39;adb shell am instrument -w&#39; process if there is one.</span>
+        <span class="c1"># Although killing the snippet apk would abort this process anyway, we</span>
+        <span class="c1"># want to call stop_standing_subprocess() to perform a health check,</span>
+        <span class="c1"># print the failure stack trace if there was any, and reap it from the</span>
+        <span class="c1"># process table.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Stopping snippet apk </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Close the socket connection.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
+                <span class="n">utils</span><span class="o">.</span><span class="n">stop_standing_subprocess</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">shell</span><span class="p">(</span><span class="n">_STOP_CMD</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;OK (0 tests)&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s1">&#39;Failed to stop existing apk. Unexpected &#39;</span>
+                            <span class="s1">&#39;output: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">out</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Always clean up the adb port</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">forward</span><span class="p">([</span><span class="s1">&#39;--remove&#39;</span><span class="p">,</span> <span class="s1">&#39;tcp:</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span><span class="p">])</span></div>
+
+    <span class="k">def</span> <span class="nf">_start_event_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Overrides superclass.&quot;&quot;&quot;</span>
+        <span class="n">event_client</span> <span class="o">=</span> <span class="n">SnippetClient</span><span class="p">(</span>
+            <span class="n">package</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="n">adb_proxy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">)</span>
+        <span class="n">event_client</span><span class="o">.</span><span class="n">host_port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span>
+        <span class="n">event_client</span><span class="o">.</span><span class="n">device_port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_port</span>
+        <span class="n">event_client</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uid</span><span class="p">,</span>
+                             <span class="n">jsonrpc_client_base</span><span class="o">.</span><span class="n">JsonRpcCommand</span><span class="o">.</span><span class="n">CONTINUE</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">event_client</span>
+
+    <span class="k">def</span> <span class="nf">_restore_event_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Restores previously created event client.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_event_client</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_event_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_event_client</span><span class="p">()</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_client</span><span class="o">.</span><span class="n">host_port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">host_port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_client</span><span class="o">.</span><span class="n">device_port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_client</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_check_app_installed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Check that the Mobly Snippet app is installed.</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">shell</span><span class="p">(</span><span class="s1">&#39;pm list package&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">grep</span><span class="p">(</span><span class="s1">&#39;^package:</span><span class="si">%s</span><span class="s1">$&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">jsonrpc_client_base</span><span class="o">.</span><span class="n">AppStartError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> is not installed on </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">serial</span><span class="p">))</span>
+        <span class="c1"># Check that the app is instrumented.</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">shell</span><span class="p">(</span><span class="s1">&#39;pm list instrumentation&#39;</span><span class="p">)</span>
+        <span class="n">matched_out</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">grep</span><span class="p">(</span><span class="s1">&#39;^instrumentation:</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span>
+                                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span>
+                                  <span class="n">_INSTRUMENTATION_RUNNER_PACKAGE</span><span class="p">),</span> <span class="n">out</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">matched_out</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">jsonrpc_client_base</span><span class="o">.</span><span class="n">AppStartError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> is installed on </span><span class="si">%s</span><span class="s1">, but it is not instrumented.&#39;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">serial</span><span class="p">))</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s1">&#39;^instrumentation:(.*)\/(.*) \(target=(.*)\)$&#39;</span><span class="p">,</span>
+                          <span class="n">matched_out</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">target_name</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="c1"># Check that the instrumentation target is installed if it&#39;s not the</span>
+        <span class="c1"># same as the snippet package.</span>
+        <span class="k">if</span> <span class="n">target_name</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">package</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">shell</span><span class="p">(</span><span class="s1">&#39;pm list package&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">grep</span><span class="p">(</span><span class="s1">&#39;^package:</span><span class="si">%s</span><span class="s1">$&#39;</span> <span class="o">%</span> <span class="n">target_name</span><span class="p">,</span> <span class="n">out</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">jsonrpc_client_base</span><span class="o">.</span><span class="n">AppStartError</span><span class="p">(</span>
+                    <span class="s1">&#39;Instrumentation target </span><span class="si">%s</span><span class="s1"> is not installed on </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span>
+                    <span class="p">(</span><span class="n">target_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">serial</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_do_start_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">launch_cmd</span><span class="p">):</span>
+        <span class="n">adb_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="n">adb</span><span class="o">.</span><span class="n">ADB</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">serial</span><span class="p">:</span>
+            <span class="n">adb_cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;-s&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">serial</span><span class="p">]</span>
+        <span class="n">adb_cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;shell&#39;</span><span class="p">,</span> <span class="n">launch_cmd</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">start_standing_subprocess</span><span class="p">(</span><span class="n">adb_cmd</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_read_protocol_line</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reads the next line of instrumentation output relevant to snippets.</span>
+
+<span class="sd">        This method will skip over lines that don&#39;t start with &#39;SNIPPET&#39; or</span>
+<span class="sd">        &#39;INSTRUMENTATION_RESULT&#39;.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (str) Next line of snippet-related instrumentation output, stripped.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            jsonrpc_client_base.AppStartError: If EOF is reached without any</span>
+<span class="sd">                protocol lines being read.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">jsonrpc_client_base</span><span class="o">.</span><span class="n">AppStartError</span><span class="p">(</span>
+                    <span class="s1">&#39;Unexpected EOF waiting for app to start&#39;</span><span class="p">)</span>
+            <span class="c1"># readline() uses an empty string to mark EOF, and a single newline</span>
+            <span class="c1"># to mark regular empty lines in the output. Don&#39;t move the strip()</span>
+            <span class="c1"># call above the truthiness check, or this method will start</span>
+            <span class="c1"># considering any blank output line to be EOF.</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;INSTRUMENTATION_RESULT:&#39;</span><span class="p">)</span> <span class="ow">or</span>
+                    <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;SNIPPET &#39;</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s1">&#39;Accepted line from instrumentation output: &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">line</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Discarded line from instrumentation output: &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span><span class="p">,</span>
+                           <span class="n">line</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_persist_command</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check availability and return path of command if available.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="p">[</span><span class="n">_SETSID_COMMAND</span><span class="p">,</span> <span class="n">_NOHUP_COMMAND</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">command</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_adb</span><span class="o">.</span><span class="n">shell</span><span class="p">([</span><span class="s1">&#39;which&#39;</span><span class="p">,</span>
+                                               <span class="n">command</span><span class="p">])</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">command</span>
+            <span class="k">except</span> <span class="n">adb</span><span class="o">.</span><span class="n">AdbError</span><span class="p">:</span>
+                <span class="k">continue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s1">&#39;No </span><span class="si">%s</span><span class="s1"> and </span><span class="si">%s</span><span class="s1"> commands available to launch instrument &#39;</span>
+            <span class="s1">&#39;persistently, tests that depend on UiAutomator and &#39;</span>
+            <span class="s1">&#39;at the same time performs USB disconnection may fail&#39;</span><span class="p">,</span>
+            <span class="n">_SETSID_COMMAND</span><span class="p">,</span> <span class="n">_NOHUP_COMMAND</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

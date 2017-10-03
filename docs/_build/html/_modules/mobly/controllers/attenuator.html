@@ -1,0 +1,247 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.controllers.attenuator &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mobly.controllers.attenuator</h1><div class="highlight"><pre>
+<span class="c1"># Copyright 2016 Google Inc.</span>
+<span class="c1"># </span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1"># </span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1"># </span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;Controller module for attenuators.</span>
+
+<span class="sd">Sample Config:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    &quot;Attenuator&quot;: [</span>
+<span class="sd">        {</span>
+<span class="sd">            &quot;address&quot;: &quot;192.168.1.12&quot;,</span>
+<span class="sd">            &quot;port&quot;: 23,</span>
+<span class="sd">            &quot;model&quot;: &quot;minicircuits&quot;,</span>
+<span class="sd">            &quot;paths&quot;: [&quot;AP1-2G&quot;, &quot;AP1-5G&quot;, &quot;AP2-2G&quot;, &quot;AP2-5G&quot;]</span>
+<span class="sd">        },</span>
+<span class="sd">        {</span>
+<span class="sd">            &quot;address&quot;: &quot;192.168.1.14&quot;,</span>
+<span class="sd">            &quot;port&quot;: 23,</span>
+<span class="sd">            &quot;model&quot;: &quot;minicircuits&quot;,</span>
+<span class="sd">            &quot;paths&quot;: [&quot;AP-DUT&quot;]</span>
+<span class="sd">        }</span>
+<span class="sd">    ]</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">MOBLY_CONTROLLER_CONFIG_NAME</span> <span class="o">=</span> <span class="s2">&quot;Attenuator&quot;</span>
+<span class="c1"># Keys used inside a config dict for attenuator.</span>
+<span class="c1"># Keys for making the connection to the attenuator device. Right now we only</span>
+<span class="c1"># use telnet lib. This can be refactored when the need for a different</span>
+<span class="c1"># communication protocol arises.</span>
+<span class="n">KEY_ADDRESS</span> <span class="o">=</span> <span class="s2">&quot;address&quot;</span>
+<span class="n">KEY_PORT</span> <span class="o">=</span> <span class="s2">&quot;port&quot;</span>
+<span class="c1"># A string that is the model of the attenuator used. This is essentially the</span>
+<span class="c1"># module name for the underlying driver for the attenuator hardware.</span>
+<span class="n">KEY_MODEL</span> <span class="o">=</span> <span class="s2">&quot;model&quot;</span>
+<span class="c1"># A list of strings, each describing what&#39;s the connected to this attenuation</span>
+<span class="c1"># path</span>
+<span class="n">KEY_PATHS</span> <span class="o">=</span> <span class="s2">&quot;paths&quot;</span>
+
+<span class="n">PACKAGE_PATH_TEMPLATE</span> <span class="o">=</span> <span class="s2">&quot;mobly.controllers.attenuator_lib.</span><span class="si">%s</span><span class="s2">&quot;</span>
+
+
+<div class="viewcode-block" id="create"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.attenuator.create">[docs]</a><span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">configs</span><span class="p">):</span>
+    <span class="n">objs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">configs</span><span class="p">:</span>
+        <span class="n">_validate_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">attenuator_model</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="n">KEY_MODEL</span><span class="p">]</span>
+        <span class="c1"># Import the correct driver module for the attenuator device</span>
+        <span class="n">module_name</span> <span class="o">=</span> <span class="n">PACKAGE_PATH_TEMPLATE</span> <span class="o">%</span> <span class="n">attenuator_model</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">module_name</span><span class="p">)</span>
+        <span class="c1"># Create each</span>
+        <span class="n">attenuation_device</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">AttenuatorDevice</span><span class="p">(</span>
+            <span class="n">path_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="n">KEY_PATHS</span><span class="p">]))</span>
+        <span class="n">attenuation_device</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">attenuator_model</span>
+        <span class="n">instances</span> <span class="o">=</span> <span class="n">attenuation_device</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="n">KEY_ADDRESS</span><span class="p">],</span>
+                                            <span class="n">config</span><span class="p">[</span><span class="n">KEY_PORT</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">path_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="n">KEY_PATHS</span><span class="p">]):</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">AttenuatorPath</span><span class="p">(</span><span class="n">attenuation_device</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">path_name</span><span class="p">)</span>
+            <span class="n">objs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">objs</span></div>
+
+
+<div class="viewcode-block" id="destroy"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.attenuator.destroy">[docs]</a><span class="k">def</span> <span class="nf">destroy</span><span class="p">(</span><span class="n">objs</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">attenuation_path</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">:</span>
+        <span class="n">attenuation_path</span><span class="o">.</span><span class="n">attenuation_device</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Error"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.attenuator.Error">[docs]</a><span class="k">class</span> <span class="nc">Error</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is the Exception class defined for all errors generated by</span>
+<span class="sd">    Attenuator-related modules.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<span class="k">def</span> <span class="nf">_validate_config</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Verifies that a config dict for an attenuator device is valid.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config: A dict that is the configuration for an attenuator device.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        attenuator.Error: A config is not valid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">required_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">KEY_ADDRESS</span><span class="p">,</span> <span class="n">KEY_MODEL</span><span class="p">,</span> <span class="n">KEY_PORT</span><span class="p">,</span> <span class="n">KEY_PATHS</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">required_keys</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s2">&quot;Required key </span><span class="si">%s</span><span class="s2"> missing from config </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">config</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="AttenuatorPath"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.attenuator.AttenuatorPath">[docs]</a><span class="k">class</span> <span class="nc">AttenuatorPath</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A convenience class that allows users to control each attenuator path</span>
+<span class="sd">    separately as different objects, as opposed to passing in an index number</span>
+<span class="sd">    to the functions of an attenuator device object.</span>
+
+<span class="sd">    This decouples the test code from the actual attenuator device used in the</span>
+<span class="sd">    physical test bed.</span>
+
+<span class="sd">    For example, if a test needs to attenuate four signal paths, this allows the</span>
+<span class="sd">    test to do:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        self.attenuation_paths[0].set_atten(50)</span>
+<span class="sd">        self.attenuation_paths[1].set_atten(40)</span>
+
+<span class="sd">    instead of:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        self.attenuators[0].set_atten(0, 50)</span>
+<span class="sd">        self.attenuators[0].set_atten(1, 40)</span>
+
+<span class="sd">    The benefit the former is that the physical test bed can use either four</span>
+<span class="sd">    single-channel attenuators, or one four-channel attenuators. Whereas the</span>
+<span class="sd">    latter forces the test bed to use a four-channel attenuator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attenuation_device</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">attenuation_device</span><span class="o">.</span><span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attenuation_device</span> <span class="o">=</span> <span class="n">attenuation_device</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx</span> <span class="o">&gt;=</span> <span class="n">attenuation_device</span><span class="o">.</span><span class="n">path_count</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Attenuator index out of range!&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AttenuatorPath.set_atten"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.attenuator.AttenuatorPath.set_atten">[docs]</a>    <span class="k">def</span> <span class="nf">set_atten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This function sets the attenuation of Attenuator.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value: This is a floating point value for nominal attenuation to be</span>
+<span class="sd">                set. Unit is db.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attenuation_device</span><span class="o">.</span><span class="n">set_atten</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AttenuatorPath.get_atten"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.attenuator.AttenuatorPath.get_atten">[docs]</a>    <span class="k">def</span> <span class="nf">get_atten</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the current attenuation setting of Attenuator.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A float that is the current attenuation value. Unit is db.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attenuation_device</span><span class="o">.</span><span class="n">get_atten</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AttenuatorPath.get_max_atten"><a class="viewcode-back" href="../../../mobly.controllers.html#mobly.controllers.attenuator.AttenuatorPath.get_max_atten">[docs]</a>    <span class="k">def</span> <span class="nf">get_max_atten</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the max attenuation supported by the Attenuator.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A float that is the max attenuation value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attenuation_device</span><span class="o">.</span><span class="n">max_atten</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

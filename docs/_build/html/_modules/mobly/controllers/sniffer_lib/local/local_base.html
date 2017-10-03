@@ -1,0 +1,241 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.controllers.sniffer_lib.local.local_base &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="../../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mobly.controllers.sniffer_lib.local.local_base</h1><div class="highlight"><pre>
+<span class="c1"># Copyright 2016 Google Inc.</span>
+<span class="c1"># </span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1"># </span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1"># </span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Class for Local sniffers - i.e. running on the local machine.</span>
+
+<span class="sd">This class provides configuration for local interfaces but leaves</span>
+<span class="sd">the actual capture (sniff) to sub-classes.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span> <span class="nn">mobly</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">mobly.controllers</span> <span class="kn">import</span> <span class="n">sniffer</span>
+
+<div class="viewcode-block" id="SnifferLocalBase"><a class="viewcode-back" href="../../../../../mobly.controllers.sniffer_lib.local.html#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase">[docs]</a><span class="k">class</span> <span class="nc">SnifferLocalBase</span><span class="p">(</span><span class="n">sniffer</span><span class="o">.</span><span class="n">Sniffer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class defines the common behaviors of WLAN sniffers running on</span>
+<span class="sd">    WLAN interfaces of the local machine.</span>
+
+<span class="sd">    Specific mechanisms to capture packets over the local WLAN interfaces are</span>
+<span class="sd">    implemented by sub-classes of this class - i.e. it is not a final class.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">base_configs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;See base class documentation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_configs</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_capture_file_path</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interface</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_temp_capture_file_path</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">interface</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">InvalidDataError</span><span class="p">(</span><span class="s2">&quot;Empty interface provided&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interface</span> <span class="o">=</span> <span class="n">interface</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_configs</span> <span class="o">=</span> <span class="n">base_configs</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">([</span><span class="s1">&#39;ifconfig&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interface</span><span class="p">,</span> <span class="s1">&#39;down&#39;</span><span class="p">])</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">(</span>
+                <span class="p">[</span><span class="s1">&#39;iwconfig&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interface</span><span class="p">,</span> <span class="s1">&#39;mode&#39;</span><span class="p">,</span> <span class="s1">&#39;monitor&#39;</span><span class="p">])</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">([</span><span class="s1">&#39;ifconfig&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interface</span><span class="p">,</span> <span class="s1">&#39;up&#39;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">ExecutionError</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SnifferLocalBase.get_interface"><a class="viewcode-back" href="../../../../../mobly.controllers.sniffer_lib.local.html#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.get_interface">[docs]</a>    <span class="k">def</span> <span class="nf">get_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;See base class documentation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interface</span></div>
+
+<div class="viewcode-block" id="SnifferLocalBase.get_type"><a class="viewcode-back" href="../../../../../mobly.controllers.sniffer_lib.local.html#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.get_type">[docs]</a>    <span class="k">def</span> <span class="nf">get_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;See base class documentation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;local&quot;</span></div>
+
+<div class="viewcode-block" id="SnifferLocalBase.get_capture_file"><a class="viewcode-back" href="../../../../../mobly.controllers.sniffer_lib.local.html#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.get_capture_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_capture_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_capture_file_path</span></div>
+
+    <span class="k">def</span> <span class="nf">_pre_capture_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">override_configs</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Utility function which configures the wireless interface per the</span>
+<span class="sd">        specified configurations. Operation is performed before every capture</span>
+<span class="sd">        start using baseline configurations (specified when sniffer initialized)</span>
+<span class="sd">        and override configurations specified here.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">final_configs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_configs</span><span class="p">:</span>
+            <span class="n">final_configs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_configs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">override_configs</span><span class="p">:</span>
+            <span class="n">final_configs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">override_configs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">Sniffer</span><span class="o">.</span><span class="n">CONFIG_KEY_CHANNEL</span> <span class="ow">in</span> <span class="n">final_configs</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">([</span>
+                    <span class="s1">&#39;iwconfig&#39;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_interface</span><span class="p">,</span>
+                    <span class="s1">&#39;channel&#39;</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">final_configs</span><span class="p">[</span><span class="n">sniffer</span><span class="o">.</span><span class="n">Sniffer</span><span class="o">.</span><span class="n">CONFIG_KEY_CHANNEL</span><span class="p">])])</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">ExecutionError</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_command_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">additional_args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                          <span class="n">packet_count</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Utility function to be implemented by every child class - which</span>
+<span class="sd">        are the concrete sniffer classes. Each sniffer-specific class should</span>
+<span class="sd">        derive the command line to execute its sniffer based on the specified</span>
+<span class="sd">        arguments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Base class should not be called directly!&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_post_process</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Utility function which is executed after a capture is done. It</span>
+<span class="sd">        moves the capture file to the requested location.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_temp_capture_file_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_capture_file_path</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SnifferLocalBase.start_capture"><a class="viewcode-back" href="../../../../../mobly.controllers.sniffer_lib.local.html#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.start_capture">[docs]</a>    <span class="k">def</span> <span class="nf">start_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">override_configs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                      <span class="n">additional_args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                      <span class="n">packet_count</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;See base class documentation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">InvalidOperationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Trying to start a sniff while another is still running!&quot;</span><span class="p">)</span>
+        <span class="n">capture_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">log_path</span><span class="p">,</span>
+                                   <span class="s2">&quot;Sniffer-{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_interface</span><span class="p">))</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">capture_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_capture_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">capture_dir</span><span class="p">,</span>
+                      <span class="s2">&quot;capture_{}.pcap&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">get_log_file_timestamp</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pre_capture_config</span><span class="p">(</span><span class="n">override_configs</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_temp_capture_file_path</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.pcap&quot;</span><span class="p">)</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_command_line</span><span class="p">(</span><span class="n">additional_args</span><span class="o">=</span><span class="n">additional_args</span><span class="p">,</span>
+                                <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span> <span class="n">packet_count</span><span class="o">=</span><span class="n">packet_count</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">start_standing_subprocess</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">ActiveCaptureContext</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SnifferLocalBase.stop_capture"><a class="viewcode-back" href="../../../../../mobly.controllers.sniffer_lib.local.html#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.stop_capture">[docs]</a>    <span class="k">def</span> <span class="nf">stop_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;See base class documentation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">InvalidOperationError</span><span class="p">(</span>
+                                      <span class="s2">&quot;Trying to stop a non-started process&quot;</span><span class="p">)</span>
+        <span class="n">utils</span><span class="o">.</span><span class="n">stop_standing_subprocess</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_process</span><span class="p">,</span> <span class="n">kill_signal</span><span class="o">=</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_post_process</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SnifferLocalBase.wait_for_capture"><a class="viewcode-back" href="../../../../../mobly.controllers.sniffer_lib.local.html#mobly.controllers.sniffer_lib.local.local_base.SnifferLocalBase.wait_for_capture">[docs]</a>    <span class="k">def</span> <span class="nf">wait_for_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;See base class documentation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">sniffer</span><span class="o">.</span><span class="n">InvalidOperationError</span><span class="p">(</span>
+                                  <span class="s2">&quot;Trying to wait on a non-started process&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">wait_for_standing_subprocess</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_process</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_post_process</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop_capture</span><span class="p">()</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mobly.utils &mdash; Mobly  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Mobly  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for mobly.utils</h1><div class="highlight"><pre>
+<span class="c1"># Copyright 2016 Google Inc.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">concurrent.futures</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">platform</span>
+<span class="kn">import</span> <span class="nn">portpicker</span>
+<span class="kn">import</span> <span class="nn">psutil</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+
+<span class="kn">from</span> <span class="nn">mobly.controllers.android_device_lib</span> <span class="kn">import</span> <span class="n">adb</span>
+<span class="c1"># File name length is limited to 255 chars on some OS, so we need to make sure</span>
+<span class="c1"># the file names we output fits within the limit.</span>
+<span class="n">MAX_FILENAME_LEN</span> <span class="o">=</span> <span class="mi">255</span>
+<span class="c1"># Number of times to retry to get available port</span>
+<span class="n">MAX_PORT_ALLOCATION_RETRY</span> <span class="o">=</span> <span class="mi">50</span>
+
+<span class="n">ascii_letters_and_digits</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">digits</span>
+<span class="n">valid_filename_chars</span> <span class="o">=</span> <span class="s2">&quot;-_.&quot;</span> <span class="o">+</span> <span class="n">ascii_letters_and_digits</span>
+
+<span class="n">GMT_to_olson</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;GMT-9&quot;</span><span class="p">:</span> <span class="s2">&quot;America/Anchorage&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-8&quot;</span><span class="p">:</span> <span class="s2">&quot;US/Pacific&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-7&quot;</span><span class="p">:</span> <span class="s2">&quot;US/Mountain&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-6&quot;</span><span class="p">:</span> <span class="s2">&quot;US/Central&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-5&quot;</span><span class="p">:</span> <span class="s2">&quot;US/Eastern&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-4&quot;</span><span class="p">:</span> <span class="s2">&quot;America/Barbados&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-3&quot;</span><span class="p">:</span> <span class="s2">&quot;America/Buenos_Aires&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-2&quot;</span><span class="p">:</span> <span class="s2">&quot;Atlantic/South_Georgia&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-1&quot;</span><span class="p">:</span> <span class="s2">&quot;Atlantic/Azores&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+0&quot;</span><span class="p">:</span> <span class="s2">&quot;Africa/Casablanca&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+1&quot;</span><span class="p">:</span> <span class="s2">&quot;Europe/Amsterdam&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+2&quot;</span><span class="p">:</span> <span class="s2">&quot;Europe/Athens&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+3&quot;</span><span class="p">:</span> <span class="s2">&quot;Europe/Moscow&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+4&quot;</span><span class="p">:</span> <span class="s2">&quot;Asia/Baku&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+5&quot;</span><span class="p">:</span> <span class="s2">&quot;Asia/Oral&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+6&quot;</span><span class="p">:</span> <span class="s2">&quot;Asia/Almaty&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+7&quot;</span><span class="p">:</span> <span class="s2">&quot;Asia/Bangkok&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+8&quot;</span><span class="p">:</span> <span class="s2">&quot;Asia/Hong_Kong&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+9&quot;</span><span class="p">:</span> <span class="s2">&quot;Asia/Tokyo&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+10&quot;</span><span class="p">:</span> <span class="s2">&quot;Pacific/Guam&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+11&quot;</span><span class="p">:</span> <span class="s2">&quot;Pacific/Noumea&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+12&quot;</span><span class="p">:</span> <span class="s2">&quot;Pacific/Fiji&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT+13&quot;</span><span class="p">:</span> <span class="s2">&quot;Pacific/Tongatapu&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-11&quot;</span><span class="p">:</span> <span class="s2">&quot;Pacific/Midway&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GMT-10&quot;</span><span class="p">:</span> <span class="s2">&quot;Pacific/Honolulu&quot;</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="Error"><a class="viewcode-back" href="../../mobly.html#mobly.utils.Error">[docs]</a><span class="k">class</span> <span class="nc">Error</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when an error occurs in a util&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="abs_path"><a class="viewcode-back" href="../../mobly.html#mobly.utils.abs_path">[docs]</a><span class="k">def</span> <span class="nf">abs_path</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Resolve the &#39;.&#39; and &#39;~&#39; in a path to get the absolute path.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: The path to expand.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The absolute path of the input path.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">path</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="create_dir"><a class="viewcode-back" href="../../mobly.html#mobly.utils.create_dir">[docs]</a><span class="k">def</span> <span class="nf">create_dir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates a directory if it does not exist already.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: The path of the directory to create.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">full_path</span> <span class="o">=</span> <span class="n">abs_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">full_path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_alias"><a class="viewcode-back" href="../../mobly.html#mobly.utils.create_alias">[docs]</a><span class="k">def</span> <span class="nf">create_alias</span><span class="p">(</span><span class="n">target_path</span><span class="p">,</span> <span class="n">alias_path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Creates an alias at &#39;alias_path&#39; pointing to the file &#39;target_path&#39;.</span>
+
+<span class="sd">    On Unix, this is implemented via symlink. On Windows, this is done by</span>
+<span class="sd">    creating a Windows shortcut file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        target_path: Destination path that the alias should point to.</span>
+<span class="sd">        alias_path: Path at which to create the new alias.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Windows&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">alias_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.lnk&#39;</span><span class="p">):</span>
+        <span class="n">alias_path</span> <span class="o">+=</span> <span class="s1">&#39;.lnk&#39;</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">lexists</span><span class="p">(</span><span class="n">alias_path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">alias_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Windows&#39;</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">win32com</span> <span class="kn">import</span> <span class="n">client</span>
+        <span class="n">shell</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">Dispatch</span><span class="p">(</span><span class="s1">&#39;WScript.Shell&#39;</span><span class="p">)</span>
+        <span class="n">shortcut</span> <span class="o">=</span> <span class="n">shell</span><span class="o">.</span><span class="n">CreateShortCut</span><span class="p">(</span><span class="n">alias_path</span><span class="p">)</span>
+        <span class="n">shortcut</span><span class="o">.</span><span class="n">Targetpath</span> <span class="o">=</span> <span class="n">target_path</span>
+        <span class="n">shortcut</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">symlink</span><span class="p">(</span><span class="n">target_path</span><span class="p">,</span> <span class="n">alias_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_current_epoch_time"><a class="viewcode-back" href="../../mobly.html#mobly.utils.get_current_epoch_time">[docs]</a><span class="k">def</span> <span class="nf">get_current_epoch_time</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Current epoch time in milliseconds.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        An integer representing the current epoch time in milliseconds.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="get_current_human_time"><a class="viewcode-back" href="../../mobly.html#mobly.utils.get_current_human_time">[docs]</a><span class="k">def</span> <span class="nf">get_current_human_time</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Returns the current time in human readable format.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The current time stamp in Month-Day-Year Hour:Min:Sec format.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%m-</span><span class="si">%d</span><span class="s2">-%Y %H:%M:%S &quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="epoch_to_human_time"><a class="viewcode-back" href="../../mobly.html#mobly.utils.epoch_to_human_time">[docs]</a><span class="k">def</span> <span class="nf">epoch_to_human_time</span><span class="p">(</span><span class="n">epoch_time</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Converts an epoch timestamp to human readable time.</span>
+
+<span class="sd">    This essentially converts an output of get_current_epoch_time to an output</span>
+<span class="sd">    of get_current_human_time</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        epoch_time: An integer representing an epoch timestamp in milliseconds.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A time string representing the input time.</span>
+<span class="sd">        None if input param is invalid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">epoch_time</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">epoch_time</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%m-</span><span class="si">%d</span><span class="s2">-%Y %H:%M:%S &quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span></div>
+
+
+<div class="viewcode-block" id="get_timezone_olson_id"><a class="viewcode-back" href="../../mobly.html#mobly.utils.get_timezone_olson_id">[docs]</a><span class="k">def</span> <span class="nf">get_timezone_olson_id</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Return the Olson ID of the local (non-DST) timezone.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A string representing one of the Olson IDs of the local (non-DST)</span>
+<span class="sd">        timezone.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tzoffset</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">timezone</span> <span class="o">/</span> <span class="mi">3600</span><span class="p">)</span>
+    <span class="n">gmt</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">tzoffset</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">gmt</span> <span class="o">=</span> <span class="s2">&quot;GMT+{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">-</span><span class="n">tzoffset</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">gmt</span> <span class="o">=</span> <span class="s2">&quot;GMT-{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tzoffset</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">GMT_to_olson</span><span class="p">[</span><span class="n">gmt</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="find_files"><a class="viewcode-back" href="../../mobly.html#mobly.utils.find_files">[docs]</a><span class="k">def</span> <span class="nf">find_files</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="n">file_predicate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Locate files whose names and extensions match the given predicate in</span>
+<span class="sd">    the specified directories.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        paths: A list of directory paths where to find the files.</span>
+<span class="sd">        file_predicate: A function that returns True if the file name and</span>
+<span class="sd">            extension are desired.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of files that match the predicate.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">file_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">abs_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dirPath</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">fileList</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">fileList</span><span class="p">:</span>
+                <span class="n">name</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">file_predicate</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ext</span><span class="p">):</span>
+                    <span class="n">file_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dirPath</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ext</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">file_list</span></div>
+
+
+<div class="viewcode-block" id="load_file_to_base64_str"><a class="viewcode-back" href="../../mobly.html#mobly.utils.load_file_to_base64_str">[docs]</a><span class="k">def</span> <span class="nf">load_file_to_base64_str</span><span class="p">(</span><span class="n">f_path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Loads the content of a file into a base64 string.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        f_path: full path to the file including the file name.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A base64 string representing the content of the file in utf-8 encoding.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">abs_path</span><span class="p">(</span><span class="n">f_path</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f_bytes</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">base64_str</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">f_bytes</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">base64_str</span></div>
+
+
+<div class="viewcode-block" id="find_field"><a class="viewcode-back" href="../../mobly.html#mobly.utils.find_field">[docs]</a><span class="k">def</span> <span class="nf">find_field</span><span class="p">(</span><span class="n">item_list</span><span class="p">,</span> <span class="n">cond</span><span class="p">,</span> <span class="n">comparator</span><span class="p">,</span> <span class="n">target_field</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Finds the value of a field in a dict object that satisfies certain</span>
+<span class="sd">    conditions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        item_list: A list of dict objects.</span>
+<span class="sd">        cond: A param that defines the condition.</span>
+<span class="sd">        comparator: A function that checks if an dict satisfies the condition.</span>
+<span class="sd">        target_field: Name of the field whose value to be returned if an item</span>
+<span class="sd">            satisfies the condition.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Target value or None if no item satisfies the condition.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">item_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">comparator</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">cond</span><span class="p">)</span> <span class="ow">and</span> <span class="n">target_field</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">item</span><span class="p">[</span><span class="n">target_field</span><span class="p">]</span>
+    <span class="k">return</span> <span class="bp">None</span></div>
+
+
+<div class="viewcode-block" id="rand_ascii_str"><a class="viewcode-back" href="../../mobly.html#mobly.utils.rand_ascii_str">[docs]</a><span class="k">def</span> <span class="nf">rand_ascii_str</span><span class="p">(</span><span class="n">length</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generates a random string of specified length, composed of ascii letters</span>
+<span class="sd">    and digits.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        length: The number of characters in the string.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The random string generated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">letters</span> <span class="o">=</span> <span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">ascii_letters_and_digits</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">letters</span><span class="p">)</span></div>
+
+
+<span class="c1"># Thead/Process related functions.</span>
+<div class="viewcode-block" id="concurrent_exec"><a class="viewcode-back" href="../../mobly.html#mobly.utils.concurrent_exec">[docs]</a><span class="k">def</span> <span class="nf">concurrent_exec</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">param_list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Executes a function with different parameters pseudo-concurrently.</span>
+
+<span class="sd">    This is basically a map function. Each element (should be an iterable) in</span>
+<span class="sd">    the param_list is unpacked and passed into the function. Due to Python&#39;s</span>
+<span class="sd">    GIL, there&#39;s no true concurrency. This is suited for IO-bound tasks.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        func: The function that parforms a task.</span>
+<span class="sd">        param_list: A list of iterables, each being a set of params to be</span>
+<span class="sd">            passed into the function.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of return values from each function execution. If an execution</span>
+<span class="sd">        caused an exception, the exception object will be the corresponding</span>
+<span class="sd">        result.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="c1"># Start the load operations and mark each future with its params</span>
+        <span class="n">future_to_params</span> <span class="o">=</span> <span class="p">{</span><span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">p</span><span class="p">):</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">param_list</span><span class="p">}</span>
+        <span class="n">return_vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">as_completed</span><span class="p">(</span><span class="n">future_to_params</span><span class="p">):</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">future_to_params</span><span class="p">[</span><span class="n">future</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">return_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;{} generated an exception: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">params</span><span class="p">,</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()))</span>
+                <span class="n">return_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">return_vals</span></div>
+
+
+<div class="viewcode-block" id="start_standing_subprocess"><a class="viewcode-back" href="../../mobly.html#mobly.utils.start_standing_subprocess">[docs]</a><span class="k">def</span> <span class="nf">start_standing_subprocess</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Starts a long-running subprocess.</span>
+
+<span class="sd">    This is not a blocking call and the subprocess started by it should be</span>
+<span class="sd">    explicitly terminated with stop_standing_subprocess.</span>
+
+<span class="sd">    For short-running commands, you should use subprocess.check_call, which</span>
+<span class="sd">    blocks.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cmd: string, the command to start the subprocess with.</span>
+<span class="sd">        shell: bool, True to run this command through the system shell,</span>
+<span class="sd">            False to invoke it directly. See subprocess.Proc() docs.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The subprocess that was started.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Starting standing subprocess with: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">cmd</span><span class="p">)</span>
+    <span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+        <span class="n">cmd</span><span class="p">,</span>
+        <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+        <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+        <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+        <span class="n">shell</span><span class="o">=</span><span class="n">shell</span><span class="p">)</span>
+    <span class="c1"># Leaving stdin open causes problems for input, e.g. breaking the</span>
+    <span class="c1"># code.inspect() shell (http://stackoverflow.com/a/25512460/1612937), so</span>
+    <span class="c1"># explicitly close it assuming it is not needed for standing subprocesses.</span>
+    <span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Started standing subprocess </span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">proc</span></div>
+
+
+<div class="viewcode-block" id="stop_standing_subprocess"><a class="viewcode-back" href="../../mobly.html#mobly.utils.stop_standing_subprocess">[docs]</a><span class="k">def</span> <span class="nf">stop_standing_subprocess</span><span class="p">(</span><span class="n">proc</span><span class="p">,</span> <span class="n">kill_signal</span><span class="o">=</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGTERM</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Stops a subprocess started by start_standing_subprocess.</span>
+
+<span class="sd">    Before killing the process, we check if the process is running, if it has</span>
+<span class="sd">    terminated, Error is raised.</span>
+
+<span class="sd">    Catches and ignores the PermissionError which only happens on Macs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        proc: Subprocess to terminate.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Error: if the subprocess could not be stopped.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pid</span> <span class="o">=</span> <span class="n">proc</span><span class="o">.</span><span class="n">pid</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Stopping standing subprocess </span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+    <span class="n">process</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+    <span class="n">failed</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">children</span><span class="p">(</span><span class="n">recursive</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="c1"># Handle versions &lt;3.0.0 of psutil.</span>
+        <span class="n">children</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">get_children</span><span class="p">(</span><span class="n">recursive</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">children</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">psutil</span><span class="o">.</span><span class="n">NoSuchProcess</span><span class="p">:</span>
+            <span class="c1"># Ignore if the child process has already terminated.</span>
+            <span class="k">pass</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">failed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;Failed to kill standing subprocess </span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">,</span>
+                              <span class="n">child</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">psutil</span><span class="o">.</span><span class="n">NoSuchProcess</span><span class="p">:</span>
+        <span class="c1"># Ignore if the process has already terminated.</span>
+        <span class="k">pass</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">failed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;Failed to kill standing subprocess </span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s1">&#39;Failed to kill standing subprocesses: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">failed</span><span class="p">)</span>
+    <span class="c1"># Call wait and close pipes on the original Python object so we don&#39;t get</span>
+    <span class="c1"># runtime warnings.</span>
+    <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">proc</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Stopped standing subprocess </span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="wait_for_standing_subprocess"><a class="viewcode-back" href="../../mobly.html#mobly.utils.wait_for_standing_subprocess">[docs]</a><span class="k">def</span> <span class="nf">wait_for_standing_subprocess</span><span class="p">(</span><span class="n">proc</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Waits for a subprocess started by start_standing_subprocess to finish</span>
+<span class="sd">    or times out.</span>
+
+<span class="sd">    Propagates the exception raised by the subprocess.wait(.) function.</span>
+<span class="sd">    The subprocess.TimeoutExpired exception is raised if the process timed-out</span>
+<span class="sd">    rather then terminating.</span>
+
+<span class="sd">    If no exception is raised: the subprocess terminated on its own. No need</span>
+<span class="sd">    to call stop_standing_subprocess() to kill it.</span>
+
+<span class="sd">    If an exception is raised: the subprocess is still alive - it did not</span>
+<span class="sd">    terminate. Either call stop_standing_subprocess() to kill it, or call</span>
+<span class="sd">    wait_for_standing_subprocess() to keep waiting for it to terminate on its</span>
+<span class="sd">    own.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        p: Subprocess to wait for.</span>
+<span class="sd">        timeout: An integer number of seconds to wait before timing out.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_available_host_port"><a class="viewcode-back" href="../../mobly.html#mobly.utils.get_available_host_port">[docs]</a><span class="k">def</span> <span class="nf">get_available_host_port</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Gets a host port number available for adb forward.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        An integer representing a port number on the host available for adb</span>
+<span class="sd">        forward.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Error: when no port is found after MAX_PORT_ALLOCATION_RETRY times.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">MAX_PORT_ALLOCATION_RETRY</span><span class="p">):</span>
+        <span class="n">port</span> <span class="o">=</span> <span class="n">portpicker</span><span class="o">.</span><span class="n">PickUnusedPort</span><span class="p">()</span>
+        <span class="c1"># Make sure adb is not using this port so we don&#39;t accidentally</span>
+        <span class="c1"># interrupt ongoing runs by trying to bind to the port.</span>
+        <span class="k">if</span> <span class="n">port</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">adb</span><span class="o">.</span><span class="n">list_occupied_adb_ports</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">port</span>
+    <span class="k">raise</span> <span class="n">Error</span><span class="p">(</span><span class="s1">&#39;Failed to find available port after {} retries&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">MAX_PORT_ALLOCATION_RETRY</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="grep"><a class="viewcode-back" href="../../mobly.html#mobly.utils.grep">[docs]</a><span class="k">def</span> <span class="nf">grep</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Similar to linux&#39;s `grep`, this returns the line in an output stream</span>
+<span class="sd">    that matches a given regex pattern.</span>
+
+<span class="sd">    It does not rely on the `grep` binary and is not sensitive to line endings,</span>
+<span class="sd">    so it can be used cross-platform.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        regex: string, a regex that matches the expected pattern.</span>
+<span class="sd">        output: byte string, the raw output of the adb cmd.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of strings, all of which are output lines that matches the</span>
+<span class="sd">        regex pattern.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">results</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;Copyright 2016 Google Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
