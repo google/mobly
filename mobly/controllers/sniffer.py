@@ -22,17 +22,15 @@ def create(configs):
     """Initializes the sniffer structures based on the JSON configuration. The
     expected keys are:
 
-        Type: A first-level type of sniffer. Planned to be 'local' for sniffers
-            running on the local machine, or 'remote' for sniffers running
-            remotely.
-
-        SubType: The specific sniffer type to be used.
-
-        Interface: The WLAN interface used to configure the sniffer.
-
-        BaseConfigs: A dictionary specifying baseline configurations of the
-            sniffer. Configurations can be overridden when starting a capture.
-            The keys must be one of the Sniffer.CONFIG_KEY_* values.
+        * Type: A first-level type of sniffer. Planned to be 'local' for
+            sniffers running on the local machine, or 'remote' for sniffers
+            running remotely.
+        * SubType: The specific sniffer type to be used.
+        * Interface: The WLAN interface used to configure the sniffer.
+        * BaseConfigs: A dictionary specifying baseline configurations of
+            the sniffer. Configurations can be overridden when starting a
+            capture. The keys must be one of the Sniffer.CONFIG_KEY_*
+            values.
     """
     objs = []
     for c in configs:
