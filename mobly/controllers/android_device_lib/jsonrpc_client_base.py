@@ -42,6 +42,7 @@ import socket
 import threading
 
 from mobly.controllers.android_device_lib import callback_handler
+from mobly.controllers.android_device_lib import errors
 
 # UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
 UNKNOWN_UID = -1
@@ -53,7 +54,7 @@ _SOCKET_CONNECTION_TIMEOUT = 60
 _SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
 
 
-class Error(Exception):
+class Error(errors.DeviceError):
     pass
 
 
@@ -102,17 +103,18 @@ class JsonRpcClientBase(object):
         uid: (int) The uid of this session.
     """
 
-    def __init__(self, app_name, log=logging.getLogger()):
+    def __init__(self, app_name, ad):
         """
         Args:
             app_name: (str) The user-visible name of the app being communicated
                 with.
-            log: (logging.Logger) logger to which to send log messages.
+            ad: (AndroidDevice) The device object associated with a client.
         """
         self.host_port = None
         self.device_port = None
         self.app_name = app_name
-        self.log = log
+        self._ad = ad
+        self.log = self._ad.log
         self.uid = None
         self._client = None  # prevent close errors on connect failure
         self._conn = None
@@ -207,7 +209,8 @@ class JsonRpcClientBase(object):
 
         resp = self._cmd(cmd, uid)
         if not resp:
-            raise ProtocolError(ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+            raise ProtocolError(
+                self._ad, ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
         result = json.loads(str(resp, encoding='utf8'))
         if result['status']:
             self.uid = result['uid']
@@ -262,12 +265,13 @@ class JsonRpcClientBase(object):
             self._client.flush()
             response = self._client.readline()
         if not response:
-            raise ProtocolError(ProtocolError.NO_RESPONSE_FROM_SERVER)
+            raise ProtocolError(self._ad,
+                                ProtocolError.NO_RESPONSE_FROM_SERVER)
         result = json.loads(str(response, encoding="utf8"))
         if result['error']:
-            raise ApiError(result['error'])
+            raise ApiError(self._ad, result['error'])
         if result['id'] != apiid:
-            raise ProtocolError(ProtocolError.MISMATCHED_API_ID)
+            raise ProtocolError(self._ad, ProtocolError.MISMATCHED_API_ID)
         if result.get('callback') is not None:
             if self._event_client is None:
                 self._event_client = self._start_event_client()
@@ -275,7 +279,8 @@ class JsonRpcClientBase(object):
                 callback_id=result['callback'],
                 event_client=self._event_client,
                 ret_value=result['result'],
-                method_name=method)
+                method_name=method,
+                ad=self._ad)
         return result['result']
 
     def __getattr__(self, name):

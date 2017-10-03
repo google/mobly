@@ -77,14 +77,14 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     def test_check_app_installed_fail_app_not_installed(self):
         sc = self._make_client(MockAdbProxy(apk_not_installed=True))
-        expected_msg = '%s is not installed on .*' % MOCK_PACKAGE_NAME
+        expected_msg = '.* %s is not installed.' % MOCK_PACKAGE_NAME
         with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                     expected_msg):
             sc._check_app_installed()
 
     def test_check_app_installed_fail_not_instrumented(self):
         sc = self._make_client(MockAdbProxy(apk_not_instrumented=True))
-        expected_msg = ('%s is installed on .*, but it is not instrumented.' %
+        expected_msg = ('.* %s is installed, but it is not instrumented.' %
                         MOCK_PACKAGE_NAME)
         with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                     expected_msg):
@@ -92,7 +92,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     def test_check_app_installed_fail_target_not_installed(self):
         sc = self._make_client(MockAdbProxy(target_not_installed=True))
-        expected_msg = ('Instrumentation target %s is not installed on .*' %
+        expected_msg = ('.* Instrumentation target %s is not installed.' %
                         MOCK_MISSING_PACKAGE_NAME)
         with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                     expected_msg):
@@ -321,8 +321,10 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     def _make_client(self, adb_proxy=None):
         adb_proxy = adb_proxy or MockAdbProxy()
+        ad = mock.Mock()
+        ad.adb = adb_proxy
         return snippet_client.SnippetClient(
-            package=MOCK_PACKAGE_NAME, adb_proxy=adb_proxy)
+            package=MOCK_PACKAGE_NAME, ad=ad)
 
     def _setup_mock_instrumentation_cmd(self, mock_start_standing_subprocess,
                                         resp_lines):
