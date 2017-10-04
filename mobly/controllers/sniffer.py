@@ -22,14 +22,15 @@ def create(configs):
     """Initializes the sniffer structures based on the JSON configuration. The
     expected keys are:
 
-    Type: A first-level type of sniffer. Planned to be 'local' for sniffers
-        running on the local machine, or 'remote' for sniffers running
-        remotely.
-    SubType: The specific sniffer type to be used.
-    Interface: The WLAN interface used to configure the sniffer.
-    BaseConfigs: A dictionary specifying baseline configurations of the
-        sniffer. Configurations can be overridden when starting a capture.
-        The keys must be one of the Sniffer.CONFIG_KEY_* values.
+        * Type: A first-level type of sniffer. Planned to be 'local' for
+            sniffers running on the local machine, or 'remote' for sniffers
+            running remotely.
+        * SubType: The specific sniffer type to be used.
+        * Interface: The WLAN interface used to configure the sniffer.
+        * BaseConfigs: A dictionary specifying baseline configurations of
+            the sniffer. Configurations can be overridden when starting a
+            capture. The keys must be one of the Sniffer.CONFIG_KEY_*
+            values.
     """
     objs = []
     for c in configs:
@@ -180,11 +181,12 @@ class Sniffer(object):
         stop_capture() function.
 
         This is a non-blocking function so a terminating function must be
-        called - either explicitly or implicitly:
-        - Explicitly: call either stop_capture() or wait_for_capture()
-        - Implicitly: use with a with clause. The wait_for_capture() function
-                      will be called if a duration is specified (i.e. is not
-                      None), otherwise a stop_capture() will be called.
+        called either explicitly or implicitly:
+
+            * Explicitly: call either stop_capture() or wait_for_capture()
+            * Implicitly: use with a with clause. The wait_for_capture()
+                function will be called if a duration is specified (i.e.
+                is not None), otherwise a stop_capture() will be called.
 
         The capture is saved to a file in the log path of the logger. Use
         the get_capture_file() to get the full path to the current or most

@@ -43,6 +43,8 @@ def main(argv=None):
 
     To make your test script executable, add the following to your file:
 
+    .. code-block:: python
+
         from mobly import test_runner
         ...
         if __name__ == '__main__':
@@ -170,6 +172,7 @@ def verify_controller_module(module):
 
         def create(configs):
             [Required] Creates controller objects from configurations.
+
             Args:
                 configs: A list of serialized data like string/dict. Each
                     element of the list is a configuration for a controller
@@ -182,6 +185,7 @@ def verify_controller_module(module):
             function. Each controller object shall be properly cleaned up
             and all the resources held should be released, e.g. memory
             allocation, sockets, file handlers etc.
+
             Args:
                 A list of controller objects created by the create function.
 
@@ -191,6 +195,7 @@ def verify_controller_module(module):
             the key 'ControllerInfo'. Such information could include unique
             ID, version, or anything that could be useful for describing the
             test bed and debugging.
+
             Args:
                 objects: A list of controller objects created by the create
                     function.
@@ -385,13 +390,12 @@ class TestRunner(object):
             required controller.
 
         Raises:
-            When required is True, ControllerError is raised if no corresponding
-            config can be found.
-            Regardless of the value of 'required', ControllerError is raised if
-            the controller module has already been registered or any other error
-            occurred in the registration process.
-            If the actual number of objects instantiated is less than the
-            min_number, ControllerError is raised.
+            ControllerError:
+                * The controller module has already been registered.
+                * The actual number of objects instantiated is less than the `min_number`.
+                * `required` is True and no corresponding config can be found.
+                * Any other error occurred in the registration process.
+
         """
         verify_controller_module(module)
         # Use the module's name as the ref name

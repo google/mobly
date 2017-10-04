@@ -27,7 +27,7 @@ import timeout_decorator
 import collections
 
 # http://pyserial.sourceforge.net/
-# On ubuntu, apt-get install python3-pyserial
+# On ubuntu, apt-get install python3-serial
 import serial
 
 import mobly.signals
@@ -60,13 +60,16 @@ class MonsoonProxy(object):
     """Class that directly talks to monsoon over serial.
 
     Provides a simple class to use the power meter, e.g.
-    mon = monsoon.Monsoon()
-    mon.SetVoltage(3.7)
-    mon.StartDataCollection()
-    mydata = []
-    while len(mydata) < 1000:
-        mydata.extend(mon.CollectData())
-    mon.StopDataCollection()
+
+    .. code-block:: python
+
+        mon = monsoon.Monsoon()
+        mon.SetVoltage(3.7)
+        mon.StartDataCollection()
+        mydata = []
+        while len(mydata) < 1000:
+            mydata.extend(mon.CollectData())
+        mon.StopDataCollection()
     """
 
     def __init__(self, device=None, serialno=None, wait=1):

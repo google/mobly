@@ -51,7 +51,7 @@ def _validate_testbed_name(name):
         name: The test bed's name specified in config file.
 
     Raises:
-        If the name does not meet any criteria, MoblyConfigError is raised.
+        MoblyConfigError: The name does not meet any criteria.
     """
     if not name:
         raise MoblyConfigError("Test bed names can't be empty.")
@@ -69,7 +69,7 @@ def _validate_testbed_configs(testbed_configs):
         testbed_configs: A list of testbed configuration dicts.
 
     Raises:
-        If any part of the configuration is invalid, MoblyConfigError is raised.
+        MoblyConfigError: Some parts of the configuration is invalid.
     """
     seen_names = set()
     # Cross checks testbed configs for resource conflicts.

@@ -51,7 +51,7 @@ class AttenuatorDevice(object):
         """Opens a telnet connection to the desired AttenuatorDevice and
         queries basic information.
 
-        Args::
+        Args:
             host: A valid hostname (IP address or DNS-resolvable name) to an
                 MC-DAT attenuator instrument.
             port: An optional port number (defaults to telnet default 23)
@@ -83,12 +83,12 @@ class AttenuatorDevice(object):
             value: A float that is the attenuation value to set.
 
         Raises:
-            Error is raised if the underlying telnet connection to the
-            instrument is not open.
-            IndexError is raised if the index of the attenuator is greater than
-            the maximum index of the underlying instrument.
-            ValueError is raised if the requested set value is greater than the
-            maximum attenuation value.
+            Error: The underlying telnet connection to the instrument is not
+                open.
+            IndexError: The index of the attenuator is greater than the maximum
+                index of the underlying instrument.
+            ValueError: The requested set value is greater than the maximum
+                attenuation value.
         """
         if not self.is_open:
             raise attenuator.Error(
@@ -112,8 +112,8 @@ class AttenuatorDevice(object):
                 attenuator in an instrument.
 
         Raises:
-            Error is raised if the underlying telnet connection to the
-            instrument is not open.
+            Error: The underlying telnet connection to the instrument is not
+                open.
 
         Returns:
             A float that is the current attenuation value.

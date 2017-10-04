@@ -14,20 +14,23 @@
 """Controller module for attenuators.
 
 Sample Config:
-"Attenuator": [
-    {
-        "address": "192.168.1.12",
-        "port": 23,
-        "model": "minicircuits",
-        "paths": ["AP1-2G", "AP1-5G", "AP2-2G", "AP2-5G"]
-    },
-    {
-        "address": "192.168.1.14",
-        "port": 23,
-        "model": "minicircuits",
-        "paths": ["AP-DUT"]
-    }
-]
+
+.. code-block:: python
+
+    "Attenuator": [
+        {
+            "address": "192.168.1.12",
+            "port": 23,
+            "model": "minicircuits",
+            "paths": ["AP1-2G", "AP1-5G", "AP2-2G", "AP2-5G"]
+        },
+        {
+            "address": "192.168.1.14",
+            "port": 23,
+            "model": "minicircuits",
+            "paths": ["AP-DUT"]
+        }
+    ]
 """
 import importlib
 import logging
@@ -87,7 +90,7 @@ def _validate_config(config):
         config: A dict that is the configuration for an attenuator device.
 
     Raises:
-        attenuator.Error is raised if a config is not valid.
+        attenuator.Error: A config is not valid.
     """
     required_keys = [KEY_ADDRESS, KEY_MODEL, KEY_PORT, KEY_PATHS]
     for key in required_keys:
@@ -106,9 +109,16 @@ class AttenuatorPath(object):
 
     For example, if a test needs to attenuate four signal paths, this allows the
     test to do:
+
+    .. code-block:: python
+
         self.attenuation_paths[0].set_atten(50)
         self.attenuation_paths[1].set_atten(40)
+
     instead of:
+
+    .. code-block:: python
+
         self.attenuators[0].set_atten(0, 50)
         self.attenuators[0].set_atten(1, 40)
 
