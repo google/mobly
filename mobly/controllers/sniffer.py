@@ -184,10 +184,9 @@ class Sniffer(object):
         called either explicitly or implicitly:
 
             * Explicitly: call either stop_capture() or wait_for_capture()
-
-            * Implicitly: use with a with clause. The wait_for_capture() function
-                will be called if a duration is specified (i.e. is not
-                None), otherwise a stop_capture() will be called.
+            * Implicitly: use with a with clause. The wait_for_capture()
+                function will be called if a duration is specified (i.e.
+                is not None), otherwise a stop_capture() will be called.
 
         The capture is saved to a file in the log path of the logger. Use
         the get_capture_file() to get the full path to the current or most
