@@ -21,7 +21,6 @@ import sys
 
 from mobly import records
 from mobly import signals
-from mobly import utils
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = '[Test]'
@@ -428,14 +427,13 @@ class BaseTestClass(object):
                 tests.
             name_func: function, generate a test name according to a set of
                 test arguments. This function should take the same arguments as
-                the test logic function. The test name should be shorter than
-                utils.MAX_FILENAME_LEN. Names over the limit will be truncated.
+                the test logic function.
             arg_sets: a list of tuples, each tuple is a set of arguments to be
                 passed to the test logic function and name function.
         """
         self._assert_function_name_in_stack('setup_generated_tests')
         for args in arg_sets:
-            test_name = name_func(*args)[:utils.MAX_FILENAME_LEN]
+            test_name = name_func(*args)
             if test_name in self.get_existing_test_names():
                 raise Error(
                     'Test name "%s" already exists, cannot be duplicated!' %

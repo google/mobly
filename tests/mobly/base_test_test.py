@@ -1192,26 +1192,6 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(bt_cls.results.passed[0].test_name, 'test_1_2')
         self.assertEqual(bt_cls.results.passed[1].test_name, 'test_3_4')
 
-    def test_generate_tests_truncate_name(self):
-        class MockBaseTest(base_test.BaseTestClass):
-            def setup_generated_tests(self):
-                self.generate_tests(
-                    test_logic=self.logic,
-                    name_func=self.name_gen,
-                    arg_sets=[(1, )])
-
-            def name_gen(self, a):
-                return 'test_' + 'x' * mobly_utils.MAX_FILENAME_LEN
-
-            def logic(self, a):
-                pass
-
-        bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run()
-        expected_test_name = 'test_' + 'x' * (mobly_utils.MAX_FILENAME_LEN - 5)
-        self.assertEqual(bt_cls.results.passed[0].test_name,
-                         expected_test_name)
-
     def test_generate_tests_selected_run(self):
         class MockBaseTest(base_test.BaseTestClass):
             def setup_generated_tests(self):
