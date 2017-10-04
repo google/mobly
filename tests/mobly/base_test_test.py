@@ -19,7 +19,6 @@ from mobly import asserts
 from mobly import base_test
 from mobly import config_parser
 from mobly import signals
-from mobly import utils as mobly_utils
 
 from tests.lib import utils
 
