@@ -19,10 +19,8 @@ import inspect
 import logging
 import sys
 
-from mobly import logger
 from mobly import records
 from mobly import signals
-from mobly import utils
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = '[Test]'
@@ -429,8 +427,7 @@ class BaseTestClass(object):
                 tests.
             name_func: function, generate a test name according to a set of
                 test arguments. This function should take the same arguments as
-                the test logic function. The test name should be shorter than
-                utils.MAX_FILENAME_LEN. Names over the limit will be truncated.
+                the test logic function.
             arg_sets: a list of tuples, each tuple is a set of arguments to be
                 passed to the test logic function and name function.
         """
