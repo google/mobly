@@ -59,7 +59,8 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         out = self._adb.shell('pm list package')
         if not utils.grep('com.googlecode.android_scripting', out):
             raise jsonrpc_client_base.AppStartError(
-                '%s is not installed on %s' % (_APP_NAME, self._adb.serial))
+                self._ad, '%s is not installed on %s' % (_APP_NAME,
+                                                         self._adb.serial))
 
         # sl4a has problems connecting after disconnection, so kill the apk and
         # try connecting again.
@@ -132,8 +133,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _retry_connect(self):
         self._adb.forward(
-            ['tcp:%d' % self.host_port,
-             'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
         start_time = time.time()
         expiration_time = start_time + _APP_START_WAIT_TIME
         started = False
@@ -151,10 +151,9 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             time.sleep(1)
         if not started:
             raise jsonrpc_client_base.AppRestoreConnectionError(
-                '%s failed to connect for %s at host port %s, '
-                'device port %s' %
-                (self.app_name, self._adb.serial, self.host_port,
-                 self.device_port))
+                self._ad, '%s failed to connect for %s at host port %s, '
+                'device port %s' % (self.app_name, self._adb.serial,
+                                    self.host_port, self.device_port))
 
     def _start_event_client(self):
         # Start an EventDispatcher for the current sl4a session
