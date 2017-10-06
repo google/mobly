@@ -21,7 +21,7 @@ import sys
 
 from mobly import records
 from mobly import signals
-from mobly import test_info
+from mobly import runtime_test_info
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = '[Test]'
@@ -91,7 +91,7 @@ class BaseTestClass(object):
         self.register_controller = configs.register_controller
         self.results = records.TestResult()
         self.summary_writer = configs.summary_writer
-        # Deprecated, use `self.current_test_info.test_name`.
+        # Deprecated, use `self.current_test_info.name`.
         self.current_test_name = None
         self._generated_test_table = collections.OrderedDict()
 
@@ -343,8 +343,8 @@ class BaseTestClass(object):
         """
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
-        self.current_test_info = test_info.TestInfo(test_name, self.log_path,
-                                                    tr_record)
+        self.current_test_info = runtime_test_info.RuntimeTestInfo(
+            test_name, self.log_path, tr_record)
         logging.info('%s %s', TEST_CASE_TOKEN, test_name)
         teardown_test_failed = False
         try:

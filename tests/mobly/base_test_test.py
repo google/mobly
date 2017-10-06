@@ -72,11 +72,10 @@ class BaseTestTest(unittest.TestCase):
     def test_current_test_info(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
-                asserts.assert_true(
-                    self.current_test_info.test_name == 'test_func',
-                    'Got unexpected test name %s.' %
-                    self.current_test_info.test_name)
-                output_path = self.current_test_info.test_output_path
+                asserts.assert_true(self.current_test_info.name == 'test_func',
+                                    'Got unexpected test name %s.' %
+                                    self.current_test_info.name)
+                output_path = self.current_test_info.output_path
                 asserts.assert_true(
                     os.path.exists(output_path), 'test output path missing')
 

@@ -18,19 +18,19 @@ import os
 from mobly import utils
 
 
-class TestInfo(object):
+class RuntimeTestInfo(object):
     """Container class for runtime information of a test.
 
-    One object corresponds to one test.
+    One object corresponds to one test. This is meant to be a read-only class.
 
     Attributes:
-        test_name: string, name of the test.
-        test_signature: string, an identifier of the test, a combination of
-            test name and begin time.
-        test_record: TestResultRecord, the current test result record. This
-            changes as the test's execution progresses.
-        test_output_path: string, path to the test's output directory. It's
-            created upon accessing.
+        name: string, name of the test.
+        signature: string, an identifier of the test, a combination of test
+            name and begin time.
+        record: TestResultRecord, the current test result record. This changes
+            as the test's execution progresses.
+        output_path: string, path to the test's output directory. It's created
+            upon accessing.
     """
 
     def __init__(self, test_name, log_path, record):
@@ -41,18 +41,18 @@ class TestInfo(object):
             os.path.join(log_path, self._signature))
 
     @property
-    def test_name(self):
+    def name(self):
         return self._name
 
     @property
-    def test_signature(self):
+    def signature(self):
         return self._signature
 
     @property
-    def test_record(self):
+    def record(self):
         return copy.deepcopy(self._record)
 
     @property
-    def test_output_path(self):
+    def output_path(self):
         utils.create_dir(self._output_dir_path)
         return self._output_dir_path
