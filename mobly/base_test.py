@@ -51,11 +51,11 @@ class BaseTestClass(object):
             name.
         results: A records.TestResult object for aggregating test results from
             the execution of tests.
-        current_test_name: [Deprecated, use `self.current_test_info.test_name`]
+        current_test_name: [Deprecated, use `self.current_test_info.name`]
             A string that's the name of the test method currently being
             executed. If no test is executing, this should be None.
-        current_test_info: TestInfo, runtime information on the test currently
-            being executed.
+        current_test_info: RuntimeTestInfo, runtime information on the test
+            currently being executed.
         log_path: string, specifies the root directory for all logs written
             by a test run.
         test_bed_name: string, the name of the test bed used by a test run.
