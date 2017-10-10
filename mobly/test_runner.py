@@ -167,12 +167,11 @@ def _compute_selected_tests(selected_tests):
     """Computes tests to run for each class from selector strings.
 
     This function transforms a list of selector strings (such as FooTest or
-    FooTest.test_method_a) to a dict where keys are test classes (strings), and
+    FooTest.test_method_a) to an ordered dict where keys are test classes (strings), and
     values are lists of selected test methods (strings) in those classes. 
     None means all methods in that class are selected.
 
     Args:
-        test_classes: (list of class) all classes that are part of this suite.
         selected_tests: (list of string) list of tests to execute, eg:
             [
                 'FooTest',
@@ -183,8 +182,8 @@ def _compute_selected_tests(selected_tests):
             May be empty, in which case all tests in the class are selected.
 
     Returns:
-        dict: str class -> list(str method):
-        identifiers for TestRunner. For the above example:
+        dict: str class -> list(str method).
+        For above example: 
         {
             'FooTest': None,
             'BarTest': None,
@@ -210,7 +209,7 @@ def _compute_selected_tests(selected_tests):
 
 
 def _get_all_tests(test_class, config):
-    """Returns all test methods (including generated ones) belonging to test_class(config)."""
+    """Returns all test methods (including generated ones) belonging to  test_class(config)."""
     config_copy = config.copy()  # just in case.
     test_instance = test_class(config_copy)
     test_instance.setup_generated_tests
@@ -402,6 +401,7 @@ class TestRunner(object):
                             'Trying to selected nonexistent test methods %s from test class %s'
                             % (nonexistent_methods, test_class_name))
 
+                # class and method selections are valid. Add new test_run_info to plan.
                 test_run_info.tests = selected_test_methods
                 new_test_run_infos.append(test_run_info)
         if test_selector:
@@ -417,8 +417,6 @@ class TestRunner(object):
             FooTest.test_method_a
             FooTest.test_method_b
             BarTest.test_method_a
-        Note that this function will instantiate test classes in order to generate tests. 
-
         """
         test_names_to_print = []
         for test_run_info in self._test_run_infos:
