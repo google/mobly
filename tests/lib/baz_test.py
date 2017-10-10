@@ -19,12 +19,13 @@ from mobly import test_runner
 
 class BazTest(base_test.BaseTestClass):
     """Adding some additional test methods for test selection tests. """
-    
+
     def test_baz_a(self):
         asserts.explicit_pass("baz")
 
     def test_baz_b(self):
         asserts.explicit_pass("baz")
+
 
 if __name__ == "__main__":
     test_runner.main()

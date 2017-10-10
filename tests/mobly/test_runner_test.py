@@ -304,15 +304,16 @@ class TestRunnerTest(unittest.TestCase):
             tr.add_test_class(self.base_mock_test_config,
                               integration_test.IntegrationTest)
 
-    def test_add_test_class_not_subclass_basetest(self): 
+    def test_add_test_class_not_subclass_basetest(self):
         mock_test_config = self.base_mock_test_config.copy()
-        class BadTest(object): 
+
+        class BadTest(object):
             pass
+
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with self.assertRaisesRegex(
-                test_runner.Error,
-                'Test class BadTest does not extend '
-                'mobly.base_test.BaseTestClass'):
+        with self.assertRaisesRegex(test_runner.Error,
+                                    'Test class BadTest does not extend '
+                                    'mobly.base_test.BaseTestClass'):
             tr.add_test_class(mock_test_config, BadTest)
 
     def test_run_no_tests(self):
@@ -355,7 +356,7 @@ class TestRunnerTest(unittest.TestCase):
         test_runner.main(['-c', 'some/path/foo.yaml', '-b', 'hello'])
         mock_config.assert_called_with('some/path/foo.yaml', None)
 
-    def test_select_test_methods_valid_selection(self): 
+    def test_select_test_methods_valid_selection(self):
         mock_test_config = self.base_mock_test_config.copy()
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, foo_test.FooTest)
@@ -366,7 +367,7 @@ class TestRunnerTest(unittest.TestCase):
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 3)
 
-    def test_select_test_methods_invalid_class(self): 
+    def test_select_test_methods_invalid_class(self):
         mock_test_config = self.base_mock_test_config.copy()
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, foo_test.FooTest)
@@ -377,7 +378,7 @@ class TestRunnerTest(unittest.TestCase):
                 'that have not been added to TestRunner.'):
             tr.select_test_methods(['FooTest', 'BarTest.test_bar'])
 
-    def test_select_test_methods_invalid_method(self): 
+    def test_select_test_methods_invalid_method(self):
         mock_test_config = self.base_mock_test_config.copy()
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, foo_test.FooTest)
@@ -387,12 +388,12 @@ class TestRunnerTest(unittest.TestCase):
                 r'from test class FooTest'):
             tr.select_test_methods(['FooTest.test_nonexistent_method'])
 
-    def test_print_all_test_methods(self): 
+    def test_print_all_test_methods(self):
         mock_test_config = self.base_mock_test_config.copy()
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, foo_test.FooTest)
         tr.add_test_class(mock_test_config, bar_test.BarTest)
-        # python 2/3 compatibility. 
+        # python 2/3 compatibility.
         try:
             from StringIO import StringIO
         except ImportError:
@@ -402,7 +403,7 @@ class TestRunnerTest(unittest.TestCase):
         tr.print_all_test_methods()
         expected = 'FooTest.test_foo_a\nFooTest.test_foo_b\nBarTest.test_bar_a\nBarTest.test_bar_b'
         self.assertTrue(re.search(expected, capturedOutput.getvalue()))
-        sys.stdout = sys.__stdout__ 
+        sys.stdout = sys.__stdout__
 
 
 if __name__ == "__main__":
