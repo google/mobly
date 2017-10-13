@@ -148,6 +148,25 @@ class AndroidDeviceTest(unittest.TestCase):
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             android_device.create([1])
 
+    def test_get_devices_success_with_extra_field(self):
+        ads = mock_android_device.get_mock_ads(5)
+        expected_label = 'selected'
+        expected_count = 2
+        for ad in ads[:expected_count]:
+            ad.label = expected_label
+        selected_ads = android_device.get_devices(
+            ads, label=expected_label)
+        self.assertEqual(expected_count, len(selected_ads))
+        for ad in selected_ads:
+            self.assertEqual(ad.label, expected_label)
+
+    def test_get_devices_no_match(self):
+        ads = mock_android_device.get_mock_ads(5)
+        expected_msg = ("Could not find a target device that matches condition"
+                        ": {'label': 'selected'}.")
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
+            selected_ads = android_device.get_devices(ads, label='selected')
+
     def test_get_device_success_with_serial(self):
         ads = mock_android_device.get_mock_ads(5)
         expected_serial = '0'

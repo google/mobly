@@ -300,6 +300,42 @@ def filter_devices(ads, func):
     return results
 
 
+def get_devices(ads, **kwargs):
+    """Finds a list of AndroidDevice instance from a list that has specific
+    attributes of certain values.
+
+    Example:
+        get_devices(android_devices, label='foo', phone_number='1234567890')
+        get_devices(android_devices, model='angler')
+
+    Args:
+        ads: A list of AndroidDevice instances.
+        kwargs: keyword arguments used to filter AndroidDevice instances.
+
+    Returns:
+        A list of target AndroidDevice instances.
+
+    Raises:
+        Error: No devices are matched.
+    """
+
+    def _get_device_filter(ad):
+        for k, v in kwargs.items():
+            if not hasattr(ad, k):
+                return False
+            elif getattr(ad, k) != v:
+                return False
+        return True
+
+    filtered = filter_devices(ads, _get_device_filter)
+    if not filtered:
+        raise Error(
+            'Could not find a target device that matches condition: %s.' %
+            kwargs)
+    else:
+        return filtered
+
+
 def get_device(ads, **kwargs):
     """Finds a unique AndroidDevice instance from a list that has specific
     attributes of certain values.
@@ -319,20 +355,8 @@ def get_device(ads, **kwargs):
         Error: None or more than one device is matched.
     """
 
-    def _get_device_filter(ad):
-        for k, v in kwargs.items():
-            if not hasattr(ad, k):
-                return False
-            elif getattr(ad, k) != v:
-                return False
-        return True
-
-    filtered = filter_devices(ads, _get_device_filter)
-    if not filtered:
-        raise Error(
-            'Could not find a target device that matches condition: %s.' %
-            kwargs)
-    elif len(filtered) == 1:
+    filtered = get_devices(ads, **kwargs)
+    if len(filtered) == 1:
         return filtered[0]
     else:
         serials = [ad.serial for ad in filtered]
