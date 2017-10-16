@@ -47,7 +47,7 @@ class MockAdbProxy(object):
 
 
 class Sl4aClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
-    """Unit tests for mobly.controllers.android_device_lib.snippet_client.
+    """Unit tests for mobly.controllers.android_device_lib.sl4a_client.
     """
 
     @mock.patch('socket.create_connection')
@@ -76,9 +76,8 @@ class Sl4aClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.setup_mock_socket_file(mock_create_connection)
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess, resp_lines=[b'\n'])
-        ad = mock.Mock()
-        ad.adb = MockAdbProxy(apk_not_installed=True)
-        client = sl4a_client.Sl4aClient(ad=ad)
+        client = self._make_client(adb_proxy=MockAdbProxy(
+            apk_not_installed=True))
         with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                     '.* SL4A is not installed on .*'):
             client.start_app_and_connect()
