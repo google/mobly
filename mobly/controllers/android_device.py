@@ -1069,7 +1069,7 @@ class AndroidDevice(object):
             options = {}
 
         options_list = []
-        for option_key, option_value in options.iteritems():
+        for option_key, option_value in options.items():
             options_list.append('-e %s %s' % (option_key, option_value))
         options_string = ' '.join(options_list)
 
