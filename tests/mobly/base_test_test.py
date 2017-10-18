@@ -1250,7 +1250,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, 'test_func')
         self.assertEqual(
             actual_record.details,
-            'Got unexpected exception: %s' % MSG_EXPECTED_EXCEPTION)
+            'Got an unexpected exception: %s' % MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
 
     def test_expect_no_raises_custom_msg(self):

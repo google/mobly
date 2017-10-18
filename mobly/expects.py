@@ -14,6 +14,7 @@
 
 import collections
 import contextlib
+import logging
 import time
 
 from mobly import asserts
@@ -33,13 +34,13 @@ class _ExpectErrorRecorder(object):
 
     def _reset_internal_states(self):
         """Resets the internal state of the recorder."""
-        self._has_error = False
+        self._record = None
         self._count = 0
 
     @property
     def has_error(self):
         """If any error has been recorded since the last reset."""
-        return self._has_error
+        return self._count > 0
 
     @property
     def error_count(self):
@@ -52,7 +53,6 @@ class _ExpectErrorRecorder(object):
         Args:
             error: Exception or signals.ExceptionRecord, the error to add.
         """
-        self._has_error = True
         self._count += 1
         self._record.add_error('expect@%s' % time.time(), error)
 
@@ -81,6 +81,7 @@ def expect_true(condition, msg, extras=None):
     try:
         asserts.assert_true(condition, msg, extras)
     except signals.TestSignal as e:
+        logging.exception('Expected a `True` value, got `False`.')
         recorder.add_error(e)
 
 
@@ -99,6 +100,7 @@ def expect_false(condition, msg, extras=None):
     try:
         asserts.assert_false(condition, msg, extras)
     except signals.TestSignal as e:
+        logging.exception('Expected a `False` value, got `True`.')
         recorder.add_error(e)
 
 
@@ -121,6 +123,8 @@ def expect_equal(first, second, msg=None, extras=None):
     try:
         asserts.assert_equal(first, second, msg, extras)
     except signals.TestSignal as e:
+        logging.exception('Expected %s equals to %s, but they are not.', first,
+                          second)
         recorder.add_error(e)
 
 
@@ -144,8 +148,10 @@ def expect_no_raises(message=None, extras=None):
         e_record = records.ExceptionRecord(e)
         if extras:
             e_record.extras = extras
-        msg = message or 'Got unexpected exception'
-        e_record.details = '%s: %s' % (msg, e_record.details)
+        msg = message or 'Got an unexpected exception'
+        details = '%s: %s' % (msg, e_record.details)
+        logging.exception(details)
+        e_record.details = details
         recorder.add_error(e_record)
 
 
