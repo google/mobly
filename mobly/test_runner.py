@@ -395,7 +395,8 @@ class TestRunner(object):
         Raises:
             ControllerError:
                 * The controller module has already been registered.
-                * The actual number of objects instantiated is less than the `min_number`.
+                * The actual number of objects instantiated is less than the
+                * `min_number`.
                 * `required` is True and no corresponding config can be found.
                 * Any other error occurred in the registration process.
 
