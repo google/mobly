@@ -408,6 +408,8 @@ class AndroidDevice(object):
             via fastboot.
     """
 
+    DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
+
     def __init__(self, serial=''):
         self.serial = serial
         # logging.log_path only exists when this is used in an Mobly test run.
@@ -1034,6 +1036,48 @@ class AndroidDevice(object):
             return
         with self.handle_reboot():
             self.adb.reboot()
+
+    def instrument(self, package, options=None, runner=None):
+        """Runs an instrumentation command on the device.
+
+            This is a convenience wrapper to avoid parameter formatting.
+
+            Example:
+                device.instrument(
+                    'com.my.package.test',
+                    options = {
+                        'class': 'com.my.package.test.TestSuite',
+                    },
+                )
+
+            Args:
+                package: The package of the instrumentation tests.
+                options: A dictionary of instrumentation options including
+                    the test class.
+                runner: The test runner name, defaults to
+                    DEFAULT_INSTRUMENTATION_RUNNER.
+
+            Returns:
+                The output of instrumentation command.
+        """
+        if runner is None:
+            runner = self.DEFAULT_INSTRUMENTATION_RUNNER
+        if options is None:
+            options = {}
+
+        options_list = []
+        for option_key, option_value in options.iteritems():
+            options_list.append('-e %s %s' % (option_key, option_value))
+        options_string = ' '.join(options_list)
+
+        instrumentation_command = 'am instrument -r -w %s %s/%s' % (
+            options_string,
+            package,
+            runner,
+        )
+        logging.info('%s: Executing adb shell %s', self,
+                     instrumentation_command)
+        return self.adb.shell(instrumentation_command)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):

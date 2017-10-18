@@ -17,6 +17,7 @@ import mock
 import os
 import shutil
 import tempfile
+from collections import OrderedDict
 from future.tests.base import unittest
 
 from mobly.controllers import android_device
@@ -39,6 +40,26 @@ MOCK_ADB_LOGCAT = ('02-29 14:02:19.123  4454  Nothing\n'
 MOCK_ADB_LOGCAT_BEGIN_TIME = '02-29 14:02:20.123'
 MOCK_ADB_LOGCAT_END_TIME = '02-29 14:02:22.000'
 MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
+# Mock parameters for instrumentation.
+MOCK_INSTRUMENTATION_PACKAGE = 'com.my.instrumentation.tests'
+MOCK_INSTRUMENTATION_RUNNER = 'com.my.instrumentation.runner'
+MOCK_INSTRUMENTATION_OPTIONS = OrderedDict([
+    ('option1', 'value1'),
+    ('option2', 'value2'),
+])
+# Mock android instrumentation commands.
+MOCK_BASIC_INSTRUMENTATION_COMMAND = ('am instrument -r -w  com.my'
+                                      '.instrumentation.tests/com.android'
+                                      '.common.support.test.runner'
+                                      '.AndroidJUnitRunner')
+MOCK_RUNNER_INSTRUMENTATION_COMMAND = ('am instrument -r -w  com.my'
+                                       '.instrumentation.tests/com.my'
+                                       '.instrumentation.runner')
+MOCK_OPTIONS_INSTRUMENTATION_COMMAND = ('am instrument -r -w -e option1 value1'
+                                        ' -e option2 value2 com.my'
+                                        '.instrumentation.tests/com.android'
+                                        '.common.support.test.runner'
+                                        '.AndroidJUnitRunner')
 
 # A mock SnippetClient used for testing snippet management logic.
 MockSnippetClient = mock.MagicMock()
@@ -549,6 +570,59 @@ class AndroidDeviceTest(unittest.TestCase):
             raise Exception(ad, 'Something')
         except Exception as e:
             self.assertEqual("(<AndroidDevice|Mememe>, 'Something')", str(e))
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    def test_AndroidDevice_instrument_without_parameters(
+            self, MockFastboot, MockAdbProxy):
+        """Verifies the AndroidDevice object's instrument command is correct in
+        the basic case.
+        """
+        mock_adb = MockAdbProxy(1)
+        mock_adb.shell = mock.MagicMock()
+        ad = android_device.AndroidDevice(serial=1)
+        ad.instrument(MOCK_INSTRUMENTATION_PACKAGE)
+        mock_adb.shell.assert_called_with(MOCK_BASIC_INSTRUMENTATION_COMMAND)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    def test_AndroidDevice_instrument_with_runner(self, MockFastboot,
+                                                  MockAdbProxy):
+        """Verifies the AndroidDevice object's instrument command is correct
+        with a runner specified.
+        """
+        mock_adb = MockAdbProxy(1)
+        mock_adb.shell = mock.MagicMock()
+        ad = android_device.AndroidDevice(serial=1)
+        ad.instrument(
+            MOCK_INSTRUMENTATION_PACKAGE, runner=MOCK_INSTRUMENTATION_RUNNER)
+        mock_adb.shell.assert_called_with(MOCK_RUNNER_INSTRUMENTATION_COMMAND)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    def test_AndroidDevice_instrument_with_options(self, MockFastboot,
+                                                   MockAdbProxy):
+        """Verifies the AndroidDevice object's instrument command is correct
+        with options.
+        """
+        mock_adb = MockAdbProxy(1)
+        mock_adb.shell = mock.MagicMock()
+        ad = android_device.AndroidDevice(serial=1)
+        ad.instrument(
+            MOCK_INSTRUMENTATION_PACKAGE, options=MOCK_INSTRUMENTATION_OPTIONS)
+        mock_adb.shell.assert_called_with(MOCK_OPTIONS_INSTRUMENTATION_COMMAND)
 
 
 if __name__ == '__main__':
