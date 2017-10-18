@@ -17,6 +17,7 @@ import mock
 import os
 import shutil
 import tempfile
+from collections import OrderedDict
 from future.tests.base import unittest
 
 from mobly.controllers import android_device
@@ -24,21 +25,41 @@ from mobly.controllers import android_device
 from tests.lib import mock_android_device
 
 # Mock log path for a test run.
-MOCK_LOG_PATH = "/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/"
+MOCK_LOG_PATH = '/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/'
 # The expected result of the cat adb operation.
 MOCK_ADB_LOGCAT_CAT_RESULT = [
-    "02-29 14:02:21.456  4454  Something\n",
-    "02-29 14:02:21.789  4454  Something again\n"
+    '02-29 14:02:21.456  4454  Something\n',
+    '02-29 14:02:21.789  4454  Something again\n'
 ]
 # A mockd piece of adb logcat output.
-MOCK_ADB_LOGCAT = ("02-29 14:02:19.123  4454  Nothing\n"
-                   "%s"
-                   "02-29 14:02:22.123  4454  Something again and again\n"
+MOCK_ADB_LOGCAT = ('02-29 14:02:19.123  4454  Nothing\n'
+                   '%s'
+                   '02-29 14:02:22.123  4454  Something again and again\n'
                    ) % ''.join(MOCK_ADB_LOGCAT_CAT_RESULT)
 # Mock start and end time of the adb cat.
-MOCK_ADB_LOGCAT_BEGIN_TIME = "02-29 14:02:20.123"
-MOCK_ADB_LOGCAT_END_TIME = "02-29 14:02:22.000"
-MOCK_SNIPPET_PACKAGE_NAME = "com.my.snippet"
+MOCK_ADB_LOGCAT_BEGIN_TIME = '02-29 14:02:20.123'
+MOCK_ADB_LOGCAT_END_TIME = '02-29 14:02:22.000'
+MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
+# Mock parameters for instrumentation
+MOCK_INSTRUMENTATION_PACKAGE = 'com.my.instrumentation.tests'
+MOCK_INSTRUMENTATION_RUNNER = 'com.my.instrumentation.runner'
+MOCK_INSTRUMENTATION_OPTIONS = OrderedDict([
+    ('option1', 'value1'),
+    ('option2', 'value2'),
+])
+# Mock instrumentation commands
+MOCK_BASIC_INSTRUMENTATION_COMMAND = ('am instrument -r -w  com.my'
+                                      '.instrumentation.tests/com.android'
+                                      '.common.support.test.runner'
+                                      '.AndroidJUnitRunner')
+MOCK_RUNNER_INSTRUMENTATION_COMMAND = ('am instrument -r -w  com.my'
+                                       '.instrumentation.tests/com.my'
+                                       '.instrumentation.runner')
+MOCK_OPTIONS_INSTRUMENTATION_COMMAND = ('am instrument -r -w -e option1 value1'
+                                        ' -e option2 value2 com.my'
+                                        '.instrumentation.tests/com.android'
+                                        '.common.support.test.runner'
+                                        '.AndroidJUnitRunner')
 
 # A mock SnippetClient used for testing snippet management logic.
 MockSnippetClient = mock.MagicMock()
@@ -49,10 +70,11 @@ class AndroidDeviceTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.controllers.android_device.
     """
+
     def setUp(self):
         # Set log_path to logging since mobly logger setup is not called.
-        if not hasattr(logging, "log_path"):
-            setattr(logging, "log_path", "/tmp/logs")
+        if not hasattr(logging, 'log_path'):
+            setattr(logging, 'log_path', '/tmp/logs')
         # Creates a temp dir to be used by tests in this test class.
         self.tmp_dir = tempfile.mkdtemp()
 
@@ -66,15 +88,15 @@ class AndroidDeviceTest(unittest.TestCase):
 
     @mock.patch.object(
         android_device,
-        "get_all_instances",
+        'get_all_instances',
         new=mock_android_device.get_all_instances)
     @mock.patch.object(
         android_device,
-        "list_adb_devices",
+        'list_adb_devices',
         new=mock_android_device.list_adb_devices)
     @mock.patch.object(
         android_device,
-        "list_adb_devices_by_usb_id",
+        'list_adb_devices_by_usb_id',
         new=mock_android_device.list_adb_devices)
     def test_create_with_pickup_all(self):
         pick_all_token = android_device.ANDROID_DEVICE_PICK_ALL_TOKEN
@@ -84,14 +106,14 @@ class AndroidDeviceTest(unittest.TestCase):
             self.assertEqual(actual.serial, expected.serial)
 
     @mock.patch.object(
-        android_device, "get_instances", new=mock_android_device.get_instances)
+        android_device, 'get_instances', new=mock_android_device.get_instances)
     @mock.patch.object(
         android_device,
-        "list_adb_devices",
+        'list_adb_devices',
         new=mock_android_device.list_adb_devices)
     @mock.patch.object(
         android_device,
-        "list_adb_devices_by_usb_id",
+        'list_adb_devices_by_usb_id',
         new=mock_android_device.list_adb_devices)
     def test_create_with_string_list(self):
         string_list = [u'1', '2']
@@ -101,15 +123,15 @@ class AndroidDeviceTest(unittest.TestCase):
 
     @mock.patch.object(
         android_device,
-        "get_instances_with_configs",
+        'get_instances_with_configs',
         new=mock_android_device.get_instances_with_configs)
     @mock.patch.object(
         android_device,
-        "list_adb_devices",
+        'list_adb_devices',
         new=mock_android_device.list_adb_devices)
     @mock.patch.object(
         android_device,
-        "list_adb_devices_by_usb_id",
+        'list_adb_devices_by_usb_id',
         new=mock_android_device.list_adb_devices)
     def test_create_with_dict_list(self):
         string_list = [{'serial': '1'}, {'serial': '2'}]
@@ -119,14 +141,14 @@ class AndroidDeviceTest(unittest.TestCase):
 
     @mock.patch.object(
         android_device,
-        "get_instances_with_configs",
+        'get_instances_with_configs',
         new=mock_android_device.get_instances_with_configs)
     @mock.patch.object(
         android_device,
-        "list_adb_devices",
+        'list_adb_devices',
         new=mock_android_device.list_adb_devices)
     @mock.patch.object(
-        android_device, "list_adb_devices_by_usb_id", return_value=['usb:1'])
+        android_device, 'list_adb_devices_by_usb_id', return_value=['usb:1'])
     def test_create_with_usb_id(self, mock_list_adb_devices_by_usb_id):
         string_list = [{'serial': '1'}, {'serial': '2'}, {'serial': 'usb:1'}]
         actual_ads = android_device.create(string_list)
@@ -141,10 +163,10 @@ class AndroidDeviceTest(unittest.TestCase):
     def test_create_with_not_list_config(self):
         expected_msg = android_device.ANDROID_DEVICE_NOT_LIST_CONFIG_MSG
         with self.assertRaisesRegex(android_device.Error, expected_msg):
-            android_device.create("HAHA")
+            android_device.create('HAHA')
 
     def test_create_with_no_valid_config(self):
-        expected_msg = "No valid config found in: .*"
+        expected_msg = 'No valid config found in: .*'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             android_device.create([1])
 
@@ -154,15 +176,14 @@ class AndroidDeviceTest(unittest.TestCase):
         expected_count = 2
         for ad in ads[:expected_count]:
             ad.label = expected_label
-        selected_ads = android_device.get_devices(
-            ads, label=expected_label)
+        selected_ads = android_device.get_devices(ads, label=expected_label)
         self.assertEqual(expected_count, len(selected_ads))
         for ad in selected_ads:
             self.assertEqual(ad.label, expected_label)
 
     def test_get_devices_no_match(self):
         ads = mock_android_device.get_mock_ads(5)
-        expected_msg = ("Could not find a target device that matches condition"
+        expected_msg = ('Could not find a target device that matches condition'
                         ": {'label': 'selected'}.")
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             selected_ads = android_device.get_devices(ads, label='selected')
@@ -185,7 +206,7 @@ class AndroidDeviceTest(unittest.TestCase):
 
     def test_get_device_no_match(self):
         ads = mock_android_device.get_mock_ads(5)
-        expected_msg = ("Could not find a target device that matches condition"
+        expected_msg = ('Could not find a target device that matches condition'
                         ": {'serial': 5}.")
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad = android_device.get_device(ads, serial=len(ads))
@@ -201,7 +222,7 @@ class AndroidDeviceTest(unittest.TestCase):
         """Makes sure when an AndroidDevice fails to start some services, all
         AndroidDevice objects get cleaned up.
         """
-        msg = "Some error happened."
+        msg = 'Some error happened.'
         ads = mock_android_device.get_mock_ads(3)
         ads[0].start_services = mock.MagicMock()
         ads[0].stop_services = mock.MagicMock()
@@ -233,11 +254,11 @@ class AndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         self.assertEqual(ad.serial, 1)
-        self.assertEqual(ad.model, "fakemodel")
+        self.assertEqual(ad.model, 'fakemodel')
         self.assertIsNone(ad._adb_logcat_process)
         self.assertIsNone(ad.adb_logcat_file_path)
         expected_lp = os.path.join(logging.log_path,
-                                   "AndroidDevice%s" % mock_serial)
+                                   'AndroidDevice%s' % mock_serial)
         self.assertEqual(ad.log_path, expected_lp)
 
     @mock.patch(
@@ -252,8 +273,8 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         ad = android_device.AndroidDevice(serial=1)
         build_info = ad.build_info
-        self.assertEqual(build_info["build_id"], "AB42")
-        self.assertEqual(build_info["build_type"], "userdebug")
+        self.assertEqual(build_info['build_id'], 'AB42')
+        self.assertEqual(build_info['build_type'], 'userdebug')
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -269,15 +290,14 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
-        ad.take_bug_report("test_something", "sometime")
-        expected_path = os.path.join(logging.log_path, "AndroidDevice%s" %
-                                     ad.serial, "BugReports")
+        ad.take_bug_report('test_something', 'sometime')
+        expected_path = os.path.join(
+            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
         create_dir_mock.assert_called_with(expected_path)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy(
-            1, fail_br=True))
+        return_value=mock_android_device.MockAdbProxy(1, fail_br=True))
     @mock.patch(
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
         return_value=mock_android_device.MockFastbootProxy(1))
@@ -289,9 +309,9 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
-        expected_msg = ".* Failed to take bugreport."
+        expected_msg = '.* Failed to take bugreport.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
-            ad.take_bug_report("test_something", "sometime")
+            ad.take_bug_report('test_something', 'sometime')
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -308,9 +328,9 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
-        ad.take_bug_report("test_something", "sometime")
-        expected_path = os.path.join(logging.log_path, "AndroidDevice%s" %
-                                     ad.serial, "BugReports")
+        ad.take_bug_report('test_something', 'sometime')
+        expected_path = os.path.join(
+            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
         create_dir_mock.assert_called_with(expected_path)
 
     @mock.patch(
@@ -321,7 +341,7 @@ class AndroidDeviceTest(unittest.TestCase):
         return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.utils.create_dir')
     @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value="process")
+        'mobly.utils.start_standing_subprocess', return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_take_logcat(self, stop_proc_mock, start_proc_mock,
                                        creat_dir_mock, FastbootProxy,
@@ -332,7 +352,7 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
-        expected_msg = ".* No ongoing adb logcat collection found."
+        expected_msg = '.* No ongoing adb logcat collection found.'
         # Expect error if stop is called before start.
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.stop_adb_logcat()
@@ -340,8 +360,8 @@ class AndroidDeviceTest(unittest.TestCase):
         # Verify start did the correct operations.
         self.assertTrue(ad._adb_logcat_process)
         expected_log_path = os.path.join(logging.log_path,
-                                         "AndroidDevice%s" % ad.serial,
-                                         "adblog,fakemodel,%s.txt" % ad.serial)
+                                         'AndroidDevice%s' % ad.serial,
+                                         'adblog,fakemodel,%s.txt' % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = '"adb" -s %s logcat -v threadtime  >> %s'
         start_proc_mock.assert_called_with(
@@ -355,7 +375,7 @@ class AndroidDeviceTest(unittest.TestCase):
             ad.start_adb_logcat()
         # Verify stop did the correct operations.
         ad.stop_adb_logcat()
-        stop_proc_mock.assert_called_with("process")
+        stop_proc_mock.assert_called_with('process')
         self.assertIsNone(ad._adb_logcat_process)
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
 
@@ -367,7 +387,7 @@ class AndroidDeviceTest(unittest.TestCase):
         return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.utils.create_dir')
     @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value="process")
+        'mobly.utils.start_standing_subprocess', return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_take_logcat_with_user_param(
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
@@ -378,7 +398,7 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
-        ad.adb_logcat_param = "-b radio"
+        ad.adb_logcat_param = '-b radio'
         expected_msg = '.* No ongoing adb logcat collection found.'
         # Expect error if stop is called before start.
         with self.assertRaisesRegex(android_device.Error, expected_msg):
@@ -387,8 +407,8 @@ class AndroidDeviceTest(unittest.TestCase):
         # Verify start did the correct operations.
         self.assertTrue(ad._adb_logcat_process)
         expected_log_path = os.path.join(logging.log_path,
-                                         "AndroidDevice%s" % ad.serial,
-                                         "adblog,fakemodel,%s.txt" % ad.serial)
+                                         'AndroidDevice%s' % ad.serial,
+                                         'adblog,fakemodel,%s.txt' % ad.serial)
         creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = '"adb" -s %s logcat -v threadtime -b radio >> %s'
         start_proc_mock.assert_called_with(
@@ -402,7 +422,7 @@ class AndroidDeviceTest(unittest.TestCase):
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
         return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value="process")
+        'mobly.utils.start_standing_subprocess', return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     @mock.patch(
         'mobly.logger.get_log_line_timestamp',
@@ -417,20 +437,21 @@ class AndroidDeviceTest(unittest.TestCase):
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
         # Expect error if attempted to cat adb log before starting adb logcat.
-        expected_msg = (".* Attempting to cat adb log when none"
-                        " has been collected.")
+        expected_msg = ('.* Attempting to cat adb log when none'
+                        ' has been collected.')
         with self.assertRaisesRegex(android_device.Error, expected_msg):
-            ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
+            ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
         ad.start_adb_logcat()
         # Direct the log path of the ad to a temp dir to avoid racing.
         ad.log_path = os.path.join(self.tmp_dir, ad.log_path)
-        mock_adb_log_path = os.path.join(ad.log_path, "adblog,%s,%s.txt" %
+        mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
                                          (ad.model, ad.serial))
         with open(mock_adb_log_path, 'w') as f:
             f.write(MOCK_ADB_LOGCAT)
-        ad.cat_adb_log("some_test", MOCK_ADB_LOGCAT_BEGIN_TIME)
-        cat_file_path = os.path.join(ad.log_path, "AdbLogExcerpts", (
-            "some_test,02-29 14:02:20.123,%s,%s.txt") % (ad.model, ad.serial))
+        ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
+        cat_file_path = os.path.join(
+            ad.log_path, 'AdbLogExcerpts',
+            ('some_test,02-29 14:02:20.123,%s,%s.txt') % (ad.model, ad.serial))
         with open(cat_file_path, 'r') as f:
             actual_cat = f.read()
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
@@ -550,6 +571,59 @@ class AndroidDeviceTest(unittest.TestCase):
         except Exception as e:
             self.assertEqual("(<AndroidDevice|Mememe>, 'Something')", str(e))
 
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    def test_AndroidDevice_instrument_without_parameters(
+            self, MockFastboot, MockAdbProxy):
+        """Verifies the AndroidDevice object's instrument command is correct in
+        the basic case.
+        """
+        mock_adb = MockAdbProxy(1)
+        mock_adb.shell = mock.MagicMock()
+        ad = android_device.AndroidDevice(serial=1)
+        ad.instrument(MOCK_INSTRUMENTATION_PACKAGE)
+        mock_adb.shell.assert_called_with(MOCK_BASIC_INSTRUMENTATION_COMMAND)
 
-if __name__ == "__main__":
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    def test_AndroidDevice_instrument_with_runner(self, MockFastboot,
+                                                  MockAdbProxy):
+        """Verifies the AndroidDevice object's instrument command is correct
+        with a runner specified.
+        """
+        mock_adb = MockAdbProxy(1)
+        mock_adb.shell = mock.MagicMock()
+        ad = android_device.AndroidDevice(serial=1)
+        ad.instrument(
+            MOCK_INSTRUMENTATION_PACKAGE, runner=MOCK_INSTRUMENTATION_RUNNER)
+        mock_adb.shell.assert_called_with(MOCK_RUNNER_INSTRUMENTATION_COMMAND)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    def test_AndroidDevice_instrument_with_options(self, MockFastboot,
+                                                   MockAdbProxy):
+        """Verifies the AndroidDevice object's instrument command is correct
+        with options.
+        """
+        mock_adb = MockAdbProxy(1)
+        mock_adb.shell = mock.MagicMock()
+        ad = android_device.AndroidDevice(serial=1)
+        ad.instrument(
+            MOCK_INSTRUMENTATION_PACKAGE, options=MOCK_INSTRUMENTATION_OPTIONS)
+        mock_adb.shell.assert_called_with(MOCK_OPTIONS_INSTRUMENTATION_COMMAND)
+
+
+if __name__ == '__main__':
     unittest.main()

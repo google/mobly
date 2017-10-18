@@ -89,7 +89,7 @@ def create(configs):
         # Configs is a list of strings representing serials.
         ads = get_instances(configs)
     else:
-        raise Error("No valid config found in: %s" % configs)
+        raise Error('No valid config found in: %s' % configs)
     valid_ad_identifiers = list_adb_devices() + list_adb_devices_by_usb_id()
 
     for ad in ads:
@@ -408,14 +408,17 @@ class AndroidDevice(object):
             via fastboot.
     """
 
+    DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
+
     def __init__(self, serial=''):
         self.serial = serial
         # logging.log_path only exists when this is used in an Mobly test run.
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
         self._debug_tag = self.serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                              {'tag': self.debug_tag})
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
+            'tag': self.debug_tag
+        })
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -429,7 +432,7 @@ class AndroidDevice(object):
         self._snippet_clients = {}
 
     def __repr__(self):
-        return "<AndroidDevice|%s>" % self.debug_tag
+        return '<AndroidDevice|%s>' % self.debug_tag
 
     @property
     def debug_tag(self):
@@ -532,8 +535,10 @@ class AndroidDevice(object):
         * Unplug USB so device loses connection.
         * ADB connection over WiFi and WiFi got disconnected.
         * Any other type of USB disconnection, as long as snippet session can be
-            kept alive while USB disconnected (reboot caused USB disconnection is
-            not one of these cases because snippet session cannot survive reboot.
+            kept alive while USB disconnected (reboot caused USB disconnection
+            is
+            not one of these cases because snippet session cannot survive
+            reboot.
             Use handle_reboot() instead).
 
         Use this function to make sure the services started by Mobly are
@@ -756,7 +761,8 @@ class AndroidDevice(object):
                 client.stop_app()
             except:
                 self.log.exception(
-                    'Failed to stop app after failure to start app and connect.')
+                    'Failed to stop app after failure to start app and connect.'
+                )
             # Raise the error from start app failure.
             raise e
         self._snippet_clients[name] = client
@@ -1031,6 +1037,48 @@ class AndroidDevice(object):
             return
         with self.handle_reboot():
             self.adb.reboot()
+
+    def instrument(self, package, options=None, runner=None):
+        """Runs an instrumentation command on the device.
+
+            This is a convenience wrapper to avoid parameter formatting.
+
+            Example:
+                device.instrument(
+                    'com.my.package.test',
+                    options = {
+                        'class': 'com.my.package.test.TestSuite',
+                    },
+                )
+
+            Args:
+                package: The package of the instrumentation tests.
+                options: A dictionary of instrumentation options including
+                    the test class.
+                runner: The test runner name, defaults to
+                    DEFAULT_INSTRUMENTATION_RUNNER.
+
+            Returns:
+                The output of instrumentation command.
+        """
+        if runner is None:
+            runner = self.DEFAULT_INSTRUMENTATION_RUNNER
+        if options is None:
+            options = {}
+
+        options_list = []
+        for option_key, option_value in options.iteritems():
+            options_list.append('-e %s %s' % (option_key, option_value))
+        options_string = ' '.join(options_list)
+
+        instrumentation_command = 'am instrument -r -w %s %s/%s' % (
+            options_string,
+            package,
+            runner,
+        )
+        logging.info('%s: Executing adb shell %s', self,
+                     instrumentation_command)
+        return self.adb.shell(instrumentation_command)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
