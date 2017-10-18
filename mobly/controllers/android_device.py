@@ -535,10 +535,10 @@ class AndroidDevice(object):
             would potentially disconnect USB.
         * Unplug USB so device loses connection.
         * ADB connection over WiFi and WiFi got disconnected.
-        * Any other type of USB disconnection, as long as snippet session can be
-            kept alive while USB disconnected (reboot caused USB disconnection
-            is not one of these cases because snippet session cannot survive
-            reboot.
+        * Any other type of USB disconnection, as long as snippet session can
+            be kept alive while USB disconnected (reboot caused USB
+            disconnection is not one of these cases because snippet session
+            cannot survive reboot.
             Use handle_reboot() instead).
 
         Use this function to make sure the services started by Mobly are
