@@ -447,7 +447,7 @@ class BaseInstrumentationTestClass(BaseTestClass):
             TestError if the instrumentation run crashed or if parsing the
                 output failed.
         """
-        instrumentation_output = device.instrument(
+        instrumentation_output = device.adb.instrument(
             package=package,
             options=options,
             runner=runner,

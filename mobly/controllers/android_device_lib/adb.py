@@ -97,6 +97,8 @@ class AdbProxy(object):
     >> adb.shell('cat /foo > /tmp/file', shell=True)
     """
 
+    DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
+
     def __init__(self, serial=''):
         self.serial = serial
 
@@ -129,7 +131,7 @@ class AdbProxy(object):
                 raise AdbTimeoutError('Timed out Adb cmd "%s". timeout: %s' %
                                       (args, timeout))
         elif timeout and timeout < 0:
-            raise AdbTimeoutError("Timeout is a negative value: %s" % timeout)
+            raise AdbTimeoutError('Timeout is a negative value: %s' % timeout)
 
         (out, err) = proc.communicate()
         ret = proc.returncode
@@ -177,6 +179,48 @@ class AdbProxy(object):
     def forward(self, args=None, shell=False):
         with ADB_PORT_LOCK:
             return self._exec_adb_cmd('forward', args, shell, timeout=None)
+
+    def instrument(self, package, options=None, runner=None):
+        """Runs an instrumentation command on the device.
+
+        This is a convenience wrapper to avoid parameter formatting.
+
+        Example:
+            device.instrument(
+                'com.my.package.test',
+                options = {
+                    'class': 'com.my.package.test.TestSuite',
+                },
+            )
+
+        Args:
+            package: The package of the instrumentation tests.
+            options: A dictionary of instrumentation options including
+                the test class.
+            runner: The test runner name, defaults to
+                DEFAULT_INSTRUMENTATION_RUNNER.
+
+        Returns:
+            The output of instrumentation command.
+        """
+        if runner is None:
+            runner = self.DEFAULT_INSTRUMENTATION_RUNNER
+        if options is None:
+            options = {}
+
+        options_list = []
+        for option_key, option_value in options.items():
+            options_list.append('-e %s %s' % (option_key, option_value))
+        options_string = ' '.join(options_list)
+
+        instrumentation_command = 'am instrument -r -w %s %s/%s' % (
+            options_string,
+            package,
+            runner,
+        )
+        logging.info('AndroidDevice|%s: Executing adb shell %s', self.serial,
+                     instrumentation_command)
+        return self.shell(instrumentation_command)
 
     def __getattr__(self, name):
         def adb_call(args=None, shell=False, timeout=None):
