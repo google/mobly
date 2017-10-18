@@ -340,6 +340,9 @@ def get_device(ads, **kwargs):
     """Finds a unique AndroidDevice instance from a list that has specific
     attributes of certain values.
 
+    Deprecated, use `get_devices(ads, **kwargs)[0]` instead.
+    This method will be removed in 1.8.
+
     Example:
         get_device(android_devices, label='foo', phone_number='1234567890')
         get_device(android_devices, model='angler')
