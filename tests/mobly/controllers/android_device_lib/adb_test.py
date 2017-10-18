@@ -132,7 +132,7 @@ class AdbTest(unittest.TestCase):
             mock_exec_cmd.assert_called_once_with(
                 '"adb" -s "12345" shell arg1 arg2', shell=True, timeout=None)
 
-    def test_AndroidDevice_instrument_without_parameters(self):
+    def test_instrument_without_parameters(self):
         """Verifies the AndroidDevice object's instrument command is correct in
         the basic case.
         """
@@ -143,7 +143,7 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 timeout=None)
 
-    def test_AndroidDevice_instrument_with_runner(self):
+    def test_instrument_with_runner(self):
         """Verifies the AndroidDevice object's instrument command is correct
         with a runner specified.
         """
@@ -156,7 +156,7 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 timeout=None)
 
-    def test_AndroidDevice_instrument_with_options(self):
+    def test_instrument_with_options(self):
         """Verifies the AndroidDevice object's instrument command is correct
         with options.
         """
