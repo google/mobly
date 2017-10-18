@@ -100,7 +100,8 @@ class BaseInstrumentationTestTest(unittest.TestCase):
 
     def run_instrumentation_test(self, instrumentation_output, prefix=None):
         mock_device = mock.Mock()
-        mock_device.instrument = mock.MagicMock(
+        mock_device.adb = mock.Mock()
+        mock_device.adb.instrument = mock.MagicMock(
             return_value=instrumentation_output)
         mock_test_run_configs = self.create_test_run_configs_with_user_params(
             {})
