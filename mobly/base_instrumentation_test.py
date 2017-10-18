@@ -167,10 +167,10 @@ class _InstrumentationBlockFormatter(object):
         self.error_message = instrumentation_block.error_message
         self.known_keys = {}
         self.unknown_keys = {}
-        for key, value in instrumentation_block.known_keys.iteritems():
+        for key, value in instrumentation_block.known_keys.items():
             self.known_keys[key] = "\n".join(
                 instrumentation_block.known_keys[key])
-        for key, value in instrumentation_block.unknown_keys.iteritems():
+        for key, value in instrumentation_block.unknown_keys.items():
             self.unknown_keys[key] = "\n".join(
                 instrumentation_block.unknown_keys[key])
 
@@ -414,7 +414,7 @@ class BaseInstrumentationTestClass(BaseTestClass):
             return {}
 
         filtered_parameters = {}
-        for parameter_key, parameter_value in parameters.iteritems():
+        for parameter_key, parameter_value in parameters.items():
             if parameter_key.startswith(
                     self.DEFAULT_INSTRUMENTATION_OPTION_PREFIX):
                 option_key = parameter_key[len(
