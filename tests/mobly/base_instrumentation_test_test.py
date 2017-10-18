@@ -24,9 +24,9 @@ from mobly import config_parser
 from mobly import signals
 
 # A mock test package for instrumentation.
-MOCK_TEST_PACKAGE = "com.my.package.test"
+MOCK_TEST_PACKAGE = 'com.my.package.test'
 # A random prefix to test that prefixes are added properly.
-MOCK_PREFIX = "my_prefix"
+MOCK_PREFIX = 'my_prefix'
 
 
 class InstrumentationResult(object):
@@ -69,8 +69,8 @@ class BaseInstrumentationTestTest(unittest.TestCase):
             self):
         self.assert_parse_instrumentation_options(
             {
-                "param1": "val1",
-                "param2": "val2",
+                'param1': 'val1',
+                'param2': 'val2',
             },
             {},
         )
@@ -79,23 +79,23 @@ class BaseInstrumentationTestTest(unittest.TestCase):
             self):
         self.assert_parse_instrumentation_options(
             {
-                "instrumentation_option_key1": "value1",
-                "instrumentation_option_key2": "value2",
+                'instrumentation_option_key1': 'value1',
+                'instrumentation_option_key2': 'value2',
             },
-            {"key1": "value1",
-             "key2": "value2"},
+            {'key1': 'value1',
+             'key2': 'value2'},
         )
 
     def test_parse_instrumentation_options_with_mixed_user_params(self):
         self.assert_parse_instrumentation_options(
             {
-                "param1": "val1",
-                "param2": "val2",
-                "instrumentation_option_key1": "value1",
-                "instrumentation_option_key2": "value2",
+                'param1': 'val1',
+                'param2': 'val2',
+                'instrumentation_option_key1': 'value1',
+                'instrumentation_option_key2': 'value2',
             },
-            {"key1": "value1",
-             "key2": "value2"},
+            {'key1': 'value1',
+             'key2': 'value2'},
         )
 
     def run_instrumentation_test(self, instrumentation_output, prefix=None):
@@ -248,7 +248,7 @@ OK (1 test)
 INSTRUMENTATION_CODE: -1
 """
         expected_executed = [
-            ("com.my.package.test.BasicTests", "basicTest", signals.TestPass),
+            ('com.my.package.test.BasicTests', 'basicTest', signals.TestPass),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,
@@ -282,7 +282,7 @@ OK (1 test)
 INSTRUMENTATION_CODE: -1
 """
         expected_executed = [
-            ("%s.com.my.package.test.BasicTests" % MOCK_PREFIX, "basicTest",
+            ('%s.com.my.package.test.BasicTests' % MOCK_PREFIX, 'basicTest',
              signals.TestPass),
         ]
         self.assert_run_instrumentation_test(
@@ -473,7 +473,7 @@ Tests run: 1,  Failures: 1
 
 INSTRUMENTATION_CODE: -1"""
         expected_executed = [
-            ("com.my.package.test.BasicTests", "failingTest",
+            ('com.my.package.test.BasicTests', 'failingTest',
              signals.TestFailure),
         ]
         self.assert_run_instrumentation_test(
@@ -559,7 +559,7 @@ OK (1 test)
 
 INSTRUMENTATION_CODE: -1"""
         expected_skipped = [
-            ("com.my.package.test.BasicTests", "assumptionFailureTest",
+            ('com.my.package.test.BasicTests', 'assumptionFailureTest',
              signals.TestSkip),
         ]
         self.assert_run_instrumentation_test(
@@ -594,7 +594,7 @@ OK (0 tests)
 
 INSTRUMENTATION_CODE: -1"""
         expected_skipped = [
-            ("com.my.package.test.BasicTest", "ignoredTest", signals.TestSkip),
+            ('com.my.package.test.BasicTest', 'ignoredTest', signals.TestSkip),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,
@@ -614,7 +614,7 @@ INSTRUMENTATION_STATUS_CODE: 1
 INSTRUMENTATION_RESULT: shortMsg=Process crashed.
 INSTRUMENTATION_CODE: 0"""
         expected_executed = [
-            ("com.my.package.test.BasicTest", "crashTest", signals.TestError),
+            ('com.my.package.test.BasicTest', 'crashTest', signals.TestError),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,
@@ -648,9 +648,9 @@ OK (2 tests)
 
 INSTRUMENTATION_CODE: -1"""
         expected_executed = [
-            ("com.my.package.test.BasicTest", "crashAndRecover1Test",
+            ('com.my.package.test.BasicTest', 'crashAndRecover1Test',
              signals.TestError),
-            ("com.my.package.test.BasicTest", "crashAndRecover2Test",
+            ('com.my.package.test.BasicTest', 'crashAndRecover2Test',
              signals.TestError),
         ]
         self.assert_run_instrumentation_test(
@@ -686,7 +686,7 @@ INSTRUMENTATION_RESULT: shortMsg=Process crashed.
 INSTRUMENTATION_CODE: 0
 """
         expected_executed = [
-            ("com.my.package.test.BasicTests", "basicTest", signals.TestPass),
+            ('com.my.package.test.BasicTests', 'basicTest', signals.TestPass),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,
@@ -969,14 +969,14 @@ Tests run: 3,  Failures: 1
 
 INSTRUMENTATION_CODE: -1"""
         expected_executed = [
-            ("com.my.package.test.BasicTest", "failingTest",
+            ('com.my.package.test.BasicTest', 'failingTest',
              signals.TestFailure),
-            ("com.my.package.test.BasicTest", "passingTest", signals.TestPass),
+            ('com.my.package.test.BasicTest', 'passingTest', signals.TestPass),
         ]
         expected_skipped = [
-            ("com.my.package.test.BasicTest", "assumptionFailureTest",
+            ('com.my.package.test.BasicTest', 'assumptionFailureTest',
              signals.TestSkip),
-            ("com.my.package.test.BasicTest", "ignoredTest", signals.TestSkip),
+            ('com.my.package.test.BasicTest', 'ignoredTest', signals.TestSkip),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,
@@ -984,5 +984,5 @@ INSTRUMENTATION_CODE: -1"""
             expected_skipped=expected_skipped)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

@@ -23,30 +23,30 @@ from mobly.base_test import BaseTestClass
 
 
 class _InstrumentationStructurePrefixes(object):
-    STATUS = "INSTRUMENTATION_STATUS:"
-    STATUS_CODE = "INSTRUMENTATION_STATUS_CODE:"
-    RESULT = "INSTRUMENTATION_RESULT:"
-    CODE = "INSTRUMENTATION_CODE:"
-    FAILED = "INSTRUMENTATION_FAILED:"
+    STATUS = 'INSTRUMENTATION_STATUS:'
+    STATUS_CODE = 'INSTRUMENTATION_STATUS_CODE:'
+    RESULT = 'INSTRUMENTATION_RESULT:'
+    CODE = 'INSTRUMENTATION_CODE:'
+    FAILED = 'INSTRUMENTATION_FAILED:'
 
 
 class _InstrumentationKnownStatusKeys(object):
-    CLASS = "class"
-    ERROR = "Error"
-    STACK = "stack"
-    TEST = "test"
-    STREAM = "stream"
+    CLASS = 'class'
+    ERROR = 'Error'
+    STACK = 'stack'
+    TEST = 'test'
+    STREAM = 'stream'
 
 
 class _InstrumentationStatusCodes(object):
     UNKNOWN = None
-    OK = "0"
-    START = "1"
-    IN_PROGRESS = "2"
-    ERROR = "-1"
-    FAILURE = "-2"
-    IGNORED = "-3"
-    ASSUMPTION_FAILURE = "-4"
+    OK = '0'
+    START = '1'
+    IN_PROGRESS = '2'
+    ERROR = '-1'
+    FAILURE = '-2'
+    IGNORED = '-3'
+    ASSUMPTION_FAILURE = '-4'
 
 
 class _InstrumentationStatusCodeCategories(object):
@@ -68,13 +68,13 @@ class _InstrumentationStatusCodeCategories(object):
 
 
 class _InstrumentationKnownResultKeys(object):
-    LONGMSG = "longMsg"
-    SHORTMSG = "shortMsg"
+    LONGMSG = 'longMsg'
+    SHORTMSG = 'shortMsg'
 
 
 class _InstrumentationResultSignals(object):
-    FAIL = "FAILURES!!!"
-    PASS = "OK ("
+    FAIL = 'FAILURES!!!'
+    PASS = 'OK ('
 
 
 class _InstrumentationBlockStates(Enum):
@@ -93,7 +93,7 @@ class _InstrumentationBlock(object):
         self.previous_instrumentation_block = previous_instrumentation_block
 
         self.empty = True
-        self.error_message = ""
+        self.error_message = ''
         self.status_code = _InstrumentationStatusCodes.UNKNOWN
 
         self.current_key = _InstrumentationKnownStatusKeys.STREAM
@@ -131,8 +131,8 @@ class _InstrumentationBlock(object):
             structure_prefix,
             key_line,
         )
-        if "=" in key_value:
-            (key, value) = key_value.split("=")
+        if '=' in key_value:
+            (key, value) = key_value.split('=')
             self.current_key = key
             if key in self.known_keys:
                 self.known_keys[key].append(value)
@@ -159,7 +159,7 @@ class _InstrumentationBlock(object):
 
 
 class _InstrumentationBlockFormatter(object):
-    DEFAULT_INSTRUMENTATION_METHOD_NAME = "instrumentation_method"
+    DEFAULT_INSTRUMENTATION_METHOD_NAME = 'instrumentation_method'
 
     def __init__(self, instrumentation_block):
         self.prefix = instrumentation_block.prefix
@@ -168,10 +168,10 @@ class _InstrumentationBlockFormatter(object):
         self.known_keys = {}
         self.unknown_keys = {}
         for key, value in instrumentation_block.known_keys.items():
-            self.known_keys[key] = "\n".join(
+            self.known_keys[key] = '\n'.join(
                 instrumentation_block.known_keys[key])
         for key, value in instrumentation_block.unknown_keys.items():
-            self.unknown_keys[key] = "\n".join(
+            self.unknown_keys[key] = '\n'.join(
                 instrumentation_block.unknown_keys[key])
 
     def _add_part(self, parts, part):
@@ -189,23 +189,23 @@ class _InstrumentationBlockFormatter(object):
         self._add_part(class_parts, self.prefix)
         self._add_part(class_parts,
                        self.known_keys[_InstrumentationKnownStatusKeys.CLASS])
-        return ".".join(class_parts)
+        return '.'.join(class_parts)
 
     def _get_full_name(self, ):
         full_name_parts = []
         self._add_part(full_name_parts, self._get_class())
         self._add_part(full_name_parts, self._get_name())
-        return ".".join(full_name_parts)
+        return '.'.join(full_name_parts)
 
     def _get_details(self):
         detail_parts = []
         self._add_part(detail_parts, self._get_full_name())
         self._add_part(detail_parts, self.error_message)
-        return "\n".join(detail_parts)
+        return '\n'.join(detail_parts)
 
     def _get_extras(self):
         # Add empty line to start key-value pairs on new line.
-        extra_parts = [""]
+        extra_parts = ['']
 
         for value in self.unknown_keys.values():
             self._add_part(extra_parts, value)
@@ -228,7 +228,7 @@ class _InstrumentationBlockFormatter(object):
                 extra_parts,
                 self.known_keys[_InstrumentationKnownStatusKeys.STACK])
 
-        return "\n".join(extra_parts)
+        return '\n'.join(extra_parts)
 
     def _is_failed(self):
         if self.status_code in _InstrumentationStatusCodeCategories.FAIL:
@@ -290,9 +290,9 @@ class BaseInstrumentationTestClass(BaseTestClass):
     the output of instrumentation runs.
     """
 
-    DEFAULT_INSTRUMENTATION_OPTION_PREFIX = "instrumentation_option_"
-    DEFAULT_INSTRUMENTATION_ERROR_MESSAGE = ("instrumentation run exited "
-                                             "unexpectedly")
+    DEFAULT_INSTRUMENTATION_OPTION_PREFIX = 'instrumentation_option_'
+    DEFAULT_INSTRUMENTATION_ERROR_MESSAGE = ('instrumentation run exited '
+                                             'unexpectedly')
 
     def _create_formatters(self, instrumentation_block, new_state):
         formatters = []
@@ -452,7 +452,7 @@ class BaseInstrumentationTestClass(BaseTestClass):
             options=options,
             runner=runner,
         )
-        logging.info("Outputting instrumentation test log...")
+        logging.info('Outputting instrumentation test log...')
         logging.info(instrumentation_output)
 
         instrumentation_block = _InstrumentationBlock(prefix=prefix)
