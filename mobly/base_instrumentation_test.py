@@ -23,6 +23,30 @@ from mobly.base_test import BaseTestClass
 
 
 class _InstrumentationStructurePrefixes(object):
+    """Class containing prefixes that structure insturmentation output.
+
+    Android instrumentation generally follows the following format:
+
+        INSTRUMENTATION_STATUS: ...
+        ...
+        INSTRUMENTATION_STATUS: ...
+        INSTRUMENTATION_STATUS_CODE: ...
+        INSTRUMENTATION_STATUS: ...
+        ...
+        INSTRUMENTATION_STATUS: ...
+        INSTRUMENTATION_STATUS_CODE: ...
+        ...
+        INSTRUMENTATION_RESULT: ...
+        ...
+        INSTRUMENTATION_RESULT: ...
+        ...
+        INSTRUMENTATION_CODE: ...
+
+    This means that these prefixes can be used to guide parsing
+    the output of the instrumentation command into the different
+    instrumetnation test methods.
+    """
+
     STATUS = 'INSTRUMENTATION_STATUS:'
     STATUS_CODE = 'INSTRUMENTATION_STATUS_CODE:'
     RESULT = 'INSTRUMENTATION_RESULT:'
@@ -31,6 +55,19 @@ class _InstrumentationStructurePrefixes(object):
 
 
 class _InstrumentationKnownStatusKeys(object):
+    """Commonly used keys used in instrumentation output for listing
+    instrumentation test method result properties.
+
+    An instrumenation status line usually contains a key-value pair such as
+    the follwoing:
+
+        INSTRUMENTATION_STATUS: key=value
+
+    Some of hese key-value pairs are very common and represent common test
+    case properties. This mapping is used to handle each of the corresponding
+    key-value pairs different than less important key-value pairs.
+    """
+
     CLASS = 'class'
     ERROR = 'Error'
     STACK = 'stack'
@@ -39,6 +76,23 @@ class _InstrumentationKnownStatusKeys(object):
 
 
 class _InstrumentationStatusCodes(object):
+    """A mapping of instrumentation status codes to test method results.
+
+    When instrumentation runs, at various points ouput is created in a serias
+    of blocks that terminate as follows:
+
+        INSTRUMENTATION_STATUS_CODE: 1
+
+    These blocks typically have several status keys in them, and they indicate
+    the progression of a particular instrumentation test method. When the
+    corresponding instrumentation test method finishes, there is generally a
+    line which includes a status code that gives thes the test result.
+
+    The UNKNOWN status code is not an actual status code and is only used to
+    represent that a status code has not yet been read for an instrumentation
+    block.
+    """
+
     UNKNOWN = None
     OK = '0'
     START = '1'
@@ -50,6 +104,13 @@ class _InstrumentationStatusCodes(object):
 
 
 class _InstrumentationStatusCodeCategories(object):
+    """A mapping of instrumentation test method results to categories.
+
+    Aside from the TIMING category, these categories roughly map to Mobly
+    signals and are used for determining how a particular instrumentation test
+    method gets recorded.
+    """
+
     TIMING = [
         _InstrumentationStatusCodes.START,
         _InstrumentationStatusCodes.IN_PROGRESS,
@@ -68,22 +129,104 @@ class _InstrumentationStatusCodeCategories(object):
 
 
 class _InstrumentationKnownResultKeys(object):
+    """Commonly used keys for outputting instrumentation errors.
+
+    When instrumentation finishes running all of the instrumentation test
+    methods, a result line will appear as follows:
+
+        INSTRUMENTATION_RESULT:
+
+    If something wrong happened during the instrumentation run such as an
+    application under test crash, the the line will appear similarly as thus:
+
+        INSTRUMENTATION_RESULT: shortMsg=Process crashed.
+
+    Since these keys indicate that something wrong has happened to the
+    instrumentation run, they should be checked for explicitly.
+    """
+
     LONGMSG = 'longMsg'
     SHORTMSG = 'shortMsg'
 
 
 class _InstrumentationResultSignals(object):
+    """Instrumenttion result block strings for signalling run completion.
+
+    The final section of the instrumentation output generally follows this
+    format:
+
+        INSTRUMENTATION_RESULT: stream=
+        ...
+        INSTRUMENTATION_CODE -1
+
+    Inside of the ellipsed section, one of these signaling strings should be
+    present. If they are not present, this usually means that the
+    instrumentation run has failed in someway such as a crash. Because the
+    final instrumentation block simply summarizes information, simply roughly
+    checking for a particilar string should be sufficient to check to a proper
+    run completion as the contents of the instrumentation result block don't
+    really matter.
+    """
+
     FAIL = 'FAILURES!!!'
     PASS = 'OK ('
 
 
 class _InstrumentationBlockStates(Enum):
+    """States used for determing what the parser is currently parsing.
+
+    The parse always starts and ends a block in the UKNOWN state, which is
+    used to indicate that either a method or a result block (matching the
+    METHOD and RESULT states respectively) are valid follow ups, which means
+    that parser should be checking for a structure prefix that indicates which
+    of those two states it should transition to. If the parser is in the
+    METHOD state, then the parser will be parsing input into test methods.
+    Otherwise, the parse can simply concatenate all the input to check for
+    some final run completion signals.
+    """
+
     UNKNOWN = 0
     METHOD = 1
     RESULT = 2
 
 
 class _InstrumentationBlock(object):
+    """Container class for parsed instrumentation output for instrumentation
+    test methods.
+
+    Instrumentation test methods typically follow the follwoing format:
+
+        INSTRUMENTATION_STATUS: <key>=<value>
+        ...
+        INSTRUMENTATION_STATUS: <key>=<value>
+        INSTRUMENTATION_STATUS_CODE: <status code #>
+
+    The main issue with parsing this however is that the key-value pairs can
+    span multiple lines such as this:
+
+      INSTRUMENTATION_STATUS: stream=
+      Error in ...
+      ...
+
+    Or, such as this:
+
+      INSTRUMENTATION_STATUS: stack=...
+      ...
+
+    Because these keys are poentially very long, constant string contatention
+    is potentially inefficent. Instead, this class builds up a buffer to store
+    the raw ouput until it is processed into an actual test result by the
+    _InstrumentationBlockFormatter class.
+
+    Additionally, this class also serves to store the parser state, which
+    means that the BaseInstrumentationTestClass does not need to keep any
+    potentially volatile instrumentation related state, so multiple
+    instrumentation runs should have completely separate parsing states.
+
+    This class is also used for storing result blocks although very little
+    needs to be done for those.
+    """
+
     def __init__(self,
                  state=_InstrumentationBlockStates.UNKNOWN,
                  prefix=None,
@@ -110,16 +253,50 @@ class _InstrumentationBlock(object):
 
     @property
     def is_empty(self):
+        """Deteremines whether or not anything has been parsed with this
+        instrumentation block.
+
+        Returns:
+            A boolean indicating whether or not the this instrumentation block
+            has parsed and contains any output.
+        """
         return self._empty
 
     def set_error_message(self, error_message):
+        """Sets an error message on an instrumentation block.
+
+        This method is used exclusively to indicate that a test method failed
+        to complete, which is usually cause by a crash of some sort such that
+        the test method is marked as error instead of ignored.
+
+        Args:
+            error_meessage: A string to add to the TestResultRecord to explain
+                the error.
+        """
         self._empty = False
         self.error_message = error_message
 
     def _remove_structure_prefix(self, prefix, line):
+        """Helper function for removing the structure prefix for parsing.
+
+        Args:
+            prefix: A string representing the structure prefix to remove.
+            line: The raw line from the instrumentation output.
+
+        Returns:
+            A string containing a key value pair descripting some property
+            of the current instrumentation test method.
+        """
         return line[len(prefix):].strip()
 
     def set_status_code(self, status_code_line):
+        """Sets the status code for the instrumentation test method, used in
+        determining the test result.
+
+        Args:
+            status_code_line: The raw instrumentation output line that
+                contains the status code of the instrumentation block.
+        """
         self._empty = False
         self.status_code = self._remove_structure_prefix(
             _InstrumentationStructurePrefixes.STATUS_CODE,
@@ -127,6 +304,17 @@ class _InstrumentationBlock(object):
         )
 
     def set_key(self, structure_prefix, key_line):
+        """Sets the current key for the instrumentation block.
+
+        For unknown keys, the key is added to the value list in order to
+        better contextualize the value in the output.
+
+        Args:
+            structure_prefix: The structure prefix that was matched and that
+                needs to be removed.
+            key_line: The raw instrumentation ouput line that contains the
+                key-value pair.
+        """
         self._empty = False
         key_value = self._remove_structure_prefix(
             structure_prefix,
@@ -141,6 +329,18 @@ class _InstrumentationBlock(object):
                 self.unknown_keys[key].append(key_value)
 
     def add_value(self, line):
+        """Adds unstructured or multi-line value output to the current parsed
+        instrumentation block for outputting later.
+
+        Usually, this will add extra lines to the value list for the current
+        key-value pair. However, sometimes, such as when instrumentation
+        failed to start, output does not follow the structured prefix format.
+        In this case, adding all of the output is still useful so that a user
+        can debug the issue.
+
+        Args:
+            line: The raw instrumentation line to append to the value list.
+        """
         self._empty = False
         if self.current_key in self.known_keys:
             self.known_keys[self.current_key].append(line)
@@ -148,6 +348,21 @@ class _InstrumentationBlock(object):
             self.unknown_keys[self.current_key].append(line)
 
     def transition_state(self, new_state):
+        """Transitions or sets the current instrumentation block to the new
+        parser state.
+
+        Args:
+            new_state: The _InstrumentationBlockStates state that the parser
+                should transition to.
+
+        Returns:
+            A new instrumentation block set to the new state, representing
+            the start of parsing a new instrumentation test method.
+            Alternatively, if the current instrumentation block represents the
+            start of parsing a new instrumentation block (state UKNOWN), then
+            this returns the current instrumentation block set to the now
+            known parsing state.
+        """
         if self.state == _InstrumentationBlockStates.UNKNOWN:
             self.state = new_state
             return self
@@ -160,6 +375,10 @@ class _InstrumentationBlock(object):
 
 
 class _InstrumentationBlockFormatter(object):
+    """Takes an instrumentation block and converts it into a Mobly test
+    result.
+    """
+
     DEFAULT_INSTRUMENTATION_METHOD_NAME = 'instrumentation_method'
 
     def __init__(self, instrumentation_block):
@@ -176,36 +395,76 @@ class _InstrumentationBlockFormatter(object):
                 instrumentation_block.unknown_keys[key])
 
     def _add_part(self, parts, part):
+        """Helper function for conditionally adding strings to the output.
+
+        Args:
+            parts: A list representing the unconcatenated output.
+            part: A string to potentially add to the output.
+        """
         if part:
             parts.append(part)
 
     def _get_name(self):
+        """Gets the method name of the test method for the instrumentation
+        method block.
+
+        Returns:
+            A string containing the name of the instrumentation test method's
+            test or a default name if no name was parsed.
+        """
         if self.known_keys[_InstrumentationKnownStatusKeys.TEST]:
             return self.known_keys[_InstrumentationKnownStatusKeys.TEST]
         else:
             return self.DEFAULT_INSTRUMENTATION_METHOD_NAME
 
     def _get_class(self):
+        """Gets the class name of the test method for the instrumentation
+        method block.
+
+        Returns:
+            A string containing the class name of the instrumentation test
+            mtethod's test or empty string if no name was parsed. If a prefix
+            was specified, then the prefix will be prepended to the class
+            name.
+        """
         class_parts = []
         self._add_part(class_parts, self.prefix)
         self._add_part(class_parts,
                        self.known_keys[_InstrumentationKnownStatusKeys.CLASS])
         return '.'.join(class_parts)
 
-    def _get_full_name(self, ):
+    def _get_full_name(self):
+        """Gets the qualified name of the test method corresponding to the
+        instrumentation block.
+
+        Returns:
+            A string containing the fully qualified name of the
+            instrumentation test method. If parts are missing, then degrades
+            steadily.
+        """
         full_name_parts = []
         self._add_part(full_name_parts, self._get_class())
         self._add_part(full_name_parts, self._get_name())
         return '.'.join(full_name_parts)
 
     def _get_details(self):
+        """Gets the ouput for the detail section of the TestResultRecord.
+
+        Returns:
+            A string to set for a TestResultRecord's details.
+        """
         detail_parts = []
         self._add_part(detail_parts, self._get_full_name())
         self._add_part(detail_parts, self.error_message)
         return '\n'.join(detail_parts)
 
     def _get_extras(self):
-        # Add empty line to start key-value pairs on new line.
+        """Gets the output for the extras section of the TestResultRecord.
+
+        Returns:
+            A string to set for a TestResultRecord's extras.
+        """
+        # Add empty line to start key-value pairs on a new line.
         extra_parts = ['']
 
         for value in self.unknown_keys.values():
@@ -232,6 +491,15 @@ class _InstrumentationBlockFormatter(object):
         return '\n'.join(extra_parts)
 
     def _is_failed(self):
+        """Determines if the test corresponding to the instrumentation block
+        failed.
+
+        This method can not be used to tell if a test method passed and
+        should not be used for such a purpose.
+
+        Returns:
+            A boolean indicating if the test method failed.
+        """
         if self.status_code in _InstrumentationStatusCodeCategories.FAIL:
             return True
         elif (self.known_keys[_InstrumentationKnownStatusKeys.STACK]
@@ -248,6 +516,12 @@ class _InstrumentationBlockFormatter(object):
             return False
 
     def create_test_record(self):
+        """Creates a TestResultRecord for the instrumentation block.
+
+        Returns:
+            A TestResultRecord with an appropriate signals exception
+            representing the instrumentation test method's result status.
+        """
         details = self._get_details()
         extras = self._get_extras()
 
@@ -276,6 +550,21 @@ class _InstrumentationBlockFormatter(object):
         return tr_record
 
     def has_completed_result_block_format(self, error_message):
+        """Checks the instrumentation result block for a signal indicating
+        normal completion.
+
+        Args:
+            error_message: A string representing the error message to give if
+                the instrumentation run did not complete successfully.
+
+        Returns:
+            A boolean indicating whether or not the instrumentation run passed
+            or failed overall.
+
+        Raises:
+            signals.TestError: Error raised if the instrumentation run did not
+                complete because of a crash or some other issue.
+        """
         extras = self._get_extras()
         if _InstrumentationResultSignals.PASS in extras:
             return True
@@ -298,6 +587,19 @@ class BaseInstrumentationTestClass(BaseTestClass):
 
     def _previous_block_never_completed(self, current_block, previous_block,
                                         new_state):
+        """Checks if the previous instrumentation method block completed.
+
+        Args:
+            current_block: The current instrumentation block to check for
+                being a different instrumentation test method.
+            previous_block: The previou instrumentation block to check for
+                an incomplete status.
+            new_state: The next state for the parser, used to check for the
+                instrumentation run ending with an incomplete test.
+        Returns:
+            A boolean indicating whether the previous instrumentation block
+            completed executing.
+        """
         if previous_block:
             previously_timing_block = (
                 previous_block.status_code in
@@ -310,6 +612,18 @@ class BaseInstrumentationTestClass(BaseTestClass):
             return False
 
     def _create_formatters(self, instrumentation_block, new_state):
+        """Creates the _InstrumentationBlockFormatters for outputting the
+        instrumentation method block that have finished parsing.
+
+        Args:
+            instrumentation_block: The current instrumentation method block
+                to create formatters based upon.
+            new_state: The next state that the parser will transition to.
+
+        Returns:
+            A list of the formatters tha need to create and add
+            TestResultRecords to the test results.
+        """
         formatters = []
         if self._previous_block_never_completed(
                 current_block=instrumentation_block,
@@ -331,6 +645,16 @@ class BaseInstrumentationTestClass(BaseTestClass):
             self,
             instrumentation_block,
             new_state=_InstrumentationBlockStates.UNKNOWN):
+        """Transitions and finishes the current instrumentation block.
+
+        Args:
+            instrumentation_block: The current instrumentation block to finish.
+            new_state: The next state for the parser to transition to.
+
+        Returns:
+            The new instrumentation block to use for storing parsed
+            instrumentation ouput.
+        """
         formatters = self._create_formatters(instrumentation_block, new_state)
         for formatter in formatters:
             test_record = formatter.create_test_record()
@@ -341,6 +665,16 @@ class BaseInstrumentationTestClass(BaseTestClass):
         return instrumentation_block.transition_state(new_state=new_state)
 
     def _parse_method_block_line(self, instrumentation_block, line):
+        """Parses the instrumnetation method block's line.
+
+        Args:
+            instrumentation_block: The current instrumentation method block.
+            line: The raw instrumentation output line to parse.
+
+        Returns:
+            The next instrumentation block, which should be used to continue
+            parsing instrumentation output.
+        """
         if line.startswith(_InstrumentationStructurePrefixes.STATUS):
             instrumentation_block.set_key(
                 _InstrumentationStructurePrefixes.STATUS, line)
@@ -365,10 +699,35 @@ class BaseInstrumentationTestClass(BaseTestClass):
             return instrumentation_block
 
     def _parse_result_block_line(self, instrumentation_block, line):
+        """Parses the instrumentation result block's line.
+
+        Args:
+            instrumentation_block: The instrumentation result block for the
+                instrumentation run.
+            line: The raw instrumentation output to add to the instrumenation
+                result block's _InstrumentationResultBlock object.
+
+        Returns:
+            The instrumentation result block for the instrumentation run.
+        """
         instrumentation_block.add_value(line)
         return instrumentation_block
 
     def _parse_unknown_block_line(self, instrumentation_block, line):
+        """Parses a line from the instrumentation output from the UNKNOWN
+        parser state.
+
+        Args:
+            instrumentation_block: The current instrumenation block, where the
+                correct categorization it not yet known.
+            line: The raw instrumenation output line to be used to deteremin
+                the correct categorization.
+
+        Returns:
+            The next instrumentation block to continue parsing with. Usually,
+            this is the same instrumentation block but with the state
+            transitioned appropriately.
+        """
         if line.startswith(_InstrumentationStructurePrefixes.STATUS):
             return self._parse_method_block_line(
                 self._transition_instrumentation_block(
@@ -392,6 +751,17 @@ class BaseInstrumentationTestClass(BaseTestClass):
             return instrumentation_block
 
     def _parse_line(self, instrumentation_block, line):
+        """Parses an arbitary line from the instrumentation output based upon
+        the current parser state.
+
+        Args:
+            instrumentation_block: An instrumentation block with any of the
+                possible parser states.
+            line: The raw instrumentation output line to parse appropriately.
+
+        Returns:
+            The next instrumenation block to continue parsing with.
+        """
         if instrumentation_block.state == _InstrumentationBlockStates.METHOD:
             return self._parse_method_block_line(instrumentation_block, line)
         elif instrumentation_block.state == _InstrumentationBlockStates.RESULT:
@@ -400,9 +770,25 @@ class BaseInstrumentationTestClass(BaseTestClass):
             return self._parse_unknown_block_line(instrumentation_block, line)
 
     def _finish_parsing(self, instrumentation_block):
+        """Finishes parsing the instrumentation result block for the final
+        instrumentation run status.
+
+        Args:
+            instrumentation_block: The instrumentation result block for the
+                instrumenation run. Potentially, this could actually be
+                method block if the instrumentation output is malformed.
+
+        Returns:
+            A boolean indicating whether the instrumentation run completed
+                with all the tests passing.
+
+        Raises:
+            signals.TestError: Error raised if the instrumentation failed to
+                complete with either a pass or fail status.
+        """
         formatter = _InstrumentationBlockFormatter(instrumentation_block)
         return formatter.has_completed_result_block_format(
-            self.DEFAULT_INSTRUMENTATION_ERROR_MESSAGE, )
+            self.DEFAULT_INSTRUMENTATION_ERROR_MESSAGE)
 
     def parse_instrumentation_options(self, parameters=None):
         """Returns the options for the instrumentation test from user_params.
