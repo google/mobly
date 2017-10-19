@@ -89,7 +89,7 @@ def create(configs):
         # Configs is a list of strings representing serials.
         ads = get_instances(configs)
     else:
-        raise Error("No valid config found in: %s" % configs)
+        raise Error('No valid config found in: %s' % configs)
     valid_ad_identifiers = list_adb_devices() + list_adb_devices_by_usb_id()
 
     for ad in ads:
@@ -300,9 +300,48 @@ def filter_devices(ads, func):
     return results
 
 
+def get_devices(ads, **kwargs):
+    """Finds a list of AndroidDevice instance from a list that has specific
+    attributes of certain values.
+
+    Example:
+        get_devices(android_devices, label='foo', phone_number='1234567890')
+        get_devices(android_devices, model='angler')
+
+    Args:
+        ads: A list of AndroidDevice instances.
+        kwargs: keyword arguments used to filter AndroidDevice instances.
+
+    Returns:
+        A list of target AndroidDevice instances.
+
+    Raises:
+        Error: No devices are matched.
+    """
+
+    def _get_device_filter(ad):
+        for k, v in kwargs.items():
+            if not hasattr(ad, k):
+                return False
+            elif getattr(ad, k) != v:
+                return False
+        return True
+
+    filtered = filter_devices(ads, _get_device_filter)
+    if not filtered:
+        raise Error(
+            'Could not find a target device that matches condition: %s.' %
+            kwargs)
+    else:
+        return filtered
+
+
 def get_device(ads, **kwargs):
     """Finds a unique AndroidDevice instance from a list that has specific
     attributes of certain values.
+
+    Deprecated, use `get_devices(ads, **kwargs)[0]` instead.
+    This method will be removed in 1.8.
 
     Example:
         get_device(android_devices, label='foo', phone_number='1234567890')
@@ -319,20 +358,8 @@ def get_device(ads, **kwargs):
         Error: None or more than one device is matched.
     """
 
-    def _get_device_filter(ad):
-        for k, v in kwargs.items():
-            if not hasattr(ad, k):
-                return False
-            elif getattr(ad, k) != v:
-                return False
-        return True
-
-    filtered = filter_devices(ads, _get_device_filter)
-    if not filtered:
-        raise Error(
-            'Could not find a target device that matches condition: %s.' %
-            kwargs)
-    elif len(filtered) == 1:
+    filtered = get_devices(ads, **kwargs)
+    if len(filtered) == 1:
         return filtered[0]
     else:
         serials = [ad.serial for ad in filtered]
@@ -390,8 +417,9 @@ class AndroidDevice(object):
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
         self._debug_tag = self.serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                              {'tag': self.debug_tag})
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
+            'tag': self.debug_tag
+        })
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -405,7 +433,7 @@ class AndroidDevice(object):
         self._snippet_clients = {}
 
     def __repr__(self):
-        return "<AndroidDevice|%s>" % self.debug_tag
+        return '<AndroidDevice|%s>' % self.debug_tag
 
     @property
     def debug_tag(self):
@@ -507,9 +535,10 @@ class AndroidDevice(object):
             would potentially disconnect USB.
         * Unplug USB so device loses connection.
         * ADB connection over WiFi and WiFi got disconnected.
-        * Any other type of USB disconnection, as long as snippet session can be
-            kept alive while USB disconnected (reboot caused USB disconnection is
-            not one of these cases because snippet session cannot survive reboot.
+        * Any other type of USB disconnection, as long as snippet session can
+            be kept alive while USB disconnected (reboot caused USB
+            disconnection is not one of these cases because snippet session
+            cannot survive reboot.
             Use handle_reboot() instead).
 
         Use this function to make sure the services started by Mobly are
@@ -732,7 +761,8 @@ class AndroidDevice(object):
                 client.stop_app()
             except:
                 self.log.exception(
-                    'Failed to stop app after failure to start app and connect.')
+                    'Failed to stop app after failure to start app and connect.'
+                )
             # Raise the error from start app failure.
             raise e
         self._snippet_clients[name] = client
