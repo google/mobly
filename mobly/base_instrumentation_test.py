@@ -596,6 +596,7 @@ class BaseInstrumentationTestClass(BaseTestClass):
                 an incomplete status.
             new_state: The next state for the parser, used to check for the
                 instrumentation run ending with an incomplete test.
+
         Returns:
             A boolean indicating whether the previous instrumentation block
             completed executing.
