@@ -92,7 +92,7 @@ class _InstrumentationBlock(object):
         self.prefix = prefix
         self.previous_instrumentation_block = previous_instrumentation_block
 
-        self.empty = True
+        self._empty = True
         self.error_message = ''
         self.status_code = _InstrumentationStatusCodes.UNKNOWN
 
@@ -108,25 +108,26 @@ class _InstrumentationBlock(object):
         }
         self.unknown_keys = defaultdict(list)
 
+    @property
     def is_empty(self):
-        return self.empty
+        return self._empty
 
     def set_error_message(self, error_message):
-        self.empty = False
+        self._empty = False
         self.error_message = error_message
 
     def _remove_structure_prefix(self, prefix, line):
         return line[len(prefix):].strip()
 
     def set_status_code(self, status_code_line):
-        self.empty = False
+        self._empty = False
         self.status_code = self._remove_structure_prefix(
             _InstrumentationStructurePrefixes.STATUS_CODE,
             status_code_line,
         )
 
     def set_key(self, structure_prefix, key_line):
-        self.empty = False
+        self._empty = False
         key_value = self._remove_structure_prefix(
             structure_prefix,
             key_line,
@@ -140,7 +141,7 @@ class _InstrumentationBlock(object):
                 self.unknown_keys[key].append(key_value)
 
     def add_value(self, line):
-        self.empty = False
+        self._empty = False
         if self.current_key in self.known_keys:
             self.known_keys[self.current_key].append(line)
         else:
@@ -233,8 +234,9 @@ class _InstrumentationBlockFormatter(object):
     def _is_failed(self):
         if self.status_code in _InstrumentationStatusCodeCategories.FAIL:
             return True
-        elif self.known_keys[_InstrumentationKnownStatusKeys.
-                             STACK] and self.status_code != _InstrumentationStatusCodes.ASSUMPTION_FAILURE:
+        elif (self.known_keys[_InstrumentationKnownStatusKeys.STACK]
+              and self.status_code !=
+              _InstrumentationStatusCodes.ASSUMPTION_FAILURE):
             return True
         elif self.known_keys[_InstrumentationKnownStatusKeys.ERROR]:
             return True
@@ -294,27 +296,33 @@ class BaseInstrumentationTestClass(BaseTestClass):
     DEFAULT_INSTRUMENTATION_ERROR_MESSAGE = ('instrumentation run exited '
                                              'unexpectedly')
 
+    def _previous_block_never_completed(self, current_block, previous_block,
+                                        new_state):
+        if previous_block:
+            previously_timing_block = (
+                previous_block.status_code in
+                _InstrumentationStatusCodeCategories.TIMING)
+            currently_new_block = (
+                current_block.status_code == _InstrumentationStatusCodes.START
+                or new_state == _InstrumentationBlockStates.RESULT)
+            return all([previously_timing_block, currently_new_block])
+        else:
+            return False
+
     def _create_formatters(self, instrumentation_block, new_state):
         formatters = []
-        # If starting a new block and yet the previous block never completed, error the last block.
-        if instrumentation_block.previous_instrumentation_block:
-            if instrumentation_block.previous_instrumentation_block.status_code in _InstrumentationStatusCodeCategories.TIMING:
-                if instrumentation_block.status_code == _InstrumentationStatusCodes.START:
-                    instrumentation_block.previous_instrumentation_block.set_error_message(
-                        self.DEFAULT_INSTRUMENTATION_ERROR_MESSAGE)
-                    formatters.append(
-                        _InstrumentationBlockFormatter(
-                            instrumentation_block.
-                            previous_instrumentation_block))
-            if new_state == _InstrumentationBlockStates.RESULT:
-                if instrumentation_block.previous_instrumentation_block.status_code in _InstrumentationStatusCodeCategories.TIMING:
-                    instrumentation_block.previous_instrumentation_block.set_error_message(
-                        self.DEFAULT_INSTRUMENTATION_ERROR_MESSAGE)
-                    formatters.append(
-                        _InstrumentationBlockFormatter(
-                            instrumentation_block.
-                            previous_instrumentation_block))
-        if not instrumentation_block.is_empty():
+        if self._previous_block_never_completed(
+                current_block=instrumentation_block,
+                previous_block=instrumentation_block.
+                previous_instrumentation_block,
+                new_state=new_state):
+            instrumentation_block.previous_instrumentation_block.set_error_message(
+                self.DEFAULT_INSTRUMENTATION_ERROR_MESSAGE)
+            formatters.append(
+                _InstrumentationBlockFormatter(
+                    instrumentation_block.previous_instrumentation_block))
+
+        if not instrumentation_block.is_empty:
             formatters.append(
                 _InstrumentationBlockFormatter(instrumentation_block))
         return formatters
