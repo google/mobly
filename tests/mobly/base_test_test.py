@@ -1129,6 +1129,29 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
 
+    def test_expect_multiple_fails(self):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                expects.expect_true(False, 'msg 1', extras='1')
+                expects.expect_true(False, 'msg 2', extras='2')
+                must_call('ha')
+
+            def on_fail(self, record):
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details, 'msg 1')
+        self.assertEqual(actual_record.extras, '1')
+        self.assertEqual(len(actual_record.extra_errors), 1)
+
     def test_expect_two_tests(self):
         """Errors in `expect` should not leak across tests.
         """

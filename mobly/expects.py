@@ -50,11 +50,15 @@ class _ExpectErrorRecorder(object):
     def add_error(self, error):
         """Record an error from expect APIs.
 
+        This method generates a position stamp for the expect. The stamp is
+        composed of a timestamp and the number of errors recorded so far.
+
         Args:
             error: Exception or signals.ExceptionRecord, the error to add.
         """
         self._count += 1
-        self._record.add_error('expect@%s' % time.time(), error)
+        self._record.add_error('expect@%s+%s' % (time.time(), self._count),
+                               error)
 
     def reset_with_record(self, record):
         """Resets the state of the cache.

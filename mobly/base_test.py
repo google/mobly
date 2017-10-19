@@ -384,10 +384,6 @@ class BaseTestClass(object):
                     # Check if anything failed by `expects`.
                     if before_count < expects.recorder.error_count:
                         teardown_test_failed = True
-            # No exception is thrown from test and teardown, if `expects` has
-            # error, the test should fail with the first error in `expects`.
-            if expects.recorder.has_error and not teardown_test_failed:
-                fail_by_expect = True
         except (signals.TestFailure, AssertionError) as e:
             tr_record.test_fail(e)
         except signals.TestSkip as e:
@@ -404,8 +400,11 @@ class BaseTestClass(object):
             # Exception happened during test.
             tr_record.test_error(e)
         else:
-            if fail_by_expect:
+            # No exception is thrown from test and teardown, if `expects` has
+            # error, the test should fail with the first error in `expects`.
+            if expects.recorder.has_error and not teardown_test_failed:
                 tr_record.test_fail()
+            # Otherwise the test passed.
             elif not teardown_test_failed:
                 tr_record.test_pass()
         finally:
