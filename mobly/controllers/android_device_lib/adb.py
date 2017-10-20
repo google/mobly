@@ -27,6 +27,9 @@ ADB = 'adb'
 # do with port forwarding must happen under this lock.
 ADB_PORT_LOCK = threading.Lock()
 
+# Qualified class name of the default instrumentation test runner.
+DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
+
 
 class AdbError(Exception):
     """Raised when there is an error in adb operations."""
@@ -96,8 +99,6 @@ class AdbProxy(object):
     possible by supplying shell=True, but try to avoid this if possible:
     >> adb.shell('cat /foo > /tmp/file', shell=True)
     """
-
-    DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
 
     def __init__(self, serial=''):
         self.serial = serial
@@ -204,7 +205,7 @@ class AdbProxy(object):
             The output of instrumentation command.
         """
         if runner is None:
-            runner = self.DEFAULT_INSTRUMENTATION_RUNNER
+            runner = DEFAULT_INSTRUMENTATION_RUNNER
         if options is None:
             options = {}
 
