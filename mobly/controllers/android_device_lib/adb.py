@@ -195,10 +195,10 @@ class AdbProxy(object):
             )
 
         Args:
-            package: The package of the instrumentation tests.
-            options: A dictionary of instrumentation options including
-                the test class.
-            runner: The test runner name, defaults to
+            package: string, the package of the instrumentation tests.
+            options: dict, the instrumentation options including the test
+                class.
+            runner: string, the test runner name, which defaults to
                 DEFAULT_INSTRUMENTATION_RUNNER.
 
         Returns:
