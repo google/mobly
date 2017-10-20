@@ -1151,7 +1151,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.details, 'msg 1')
         self.assertEqual(actual_record.extras, '1')
         self.assertEqual(len(actual_record.extra_errors), 1)
-        second_error = actual_record.extra_errors.values()[0]
+        second_error = list(actual_record.extra_errors.values())[0]
         self.assertEqual(second_error.details, 'msg 2')
         self.assertEqual(second_error.extras, '2')
 
