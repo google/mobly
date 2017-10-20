@@ -384,10 +384,10 @@ def take_bug_reports(ads, test_name, begin_time, destination=None):
     """
     begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
 
-    def take_br(test_name, begin_time, ad):
+    def take_br(test_name, begin_time, ad, destination):
         ad.take_bug_report(test_name, begin_time, destination)
 
-    args = [(test_name, begin_time, ad) for ad in ads]
+    args = [(test_name, begin_time, ad, destination) for ad in ads]
     utils.concurrent_exec(take_br, args)
 
 
@@ -419,9 +419,8 @@ class AndroidDevice(object):
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
         self._debug_tag = self.serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            'tag': self.debug_tag
-        })
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                              {'tag': self.debug_tag})
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -889,7 +888,7 @@ class AndroidDevice(object):
     def take_bug_report(self,
                         test_name,
                         begin_time,
-                        timetout=300,
+                        timeout=300,
                         destination=None):
         """Takes a bug report on the device and stores it in a file.
 
@@ -925,8 +924,7 @@ class AndroidDevice(object):
         self.wait_for_boot_completion()
         self.log.info('Taking bugreport for %s.', test_name)
         if new_br:
-            out = self.adb.shell(
-                'bugreportz', timeout=timetout).decode('utf-8')
+            out = self.adb.shell('bugreportz', timeout=timeout).decode('utf-8')
             if not out.startswith('OK'):
                 raise DeviceError(self, 'Failed to take bugreport: %s' % out)
             br_out_path = out.split(':')[1].strip()
@@ -935,7 +933,7 @@ class AndroidDevice(object):
             # shell=True as this command redirects the stdout to a local file
             # using shell redirection.
             self.adb.bugreport(
-                ' > %s' % full_out_path, shell=True, timeout=timetout)
+                ' > %s' % full_out_path, shell=True, timeout=timeout)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
 
