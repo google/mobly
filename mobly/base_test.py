@@ -346,12 +346,10 @@ class BaseTestClass(object):
         tr_record.test_begin()
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
             test_name, self.log_path, tr_record)
-        expects.recorder.reset_with_record(tr_record)
+        expects.recorder.reset_internal_states(tr_record)
         logging.info('%s %s', TEST_CASE_TOKEN, test_name)
         # Did teardown_test throw an error.
         teardown_test_failed = False
-        # Should the test fail solely because of errors recorded by `expects`.
-        fail_by_expect = False
         try:
             try:
                 try:

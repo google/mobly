@@ -30,12 +30,17 @@ class _ExpectErrorRecorder(object):
     """
 
     def __init__(self):
-        self._reset_internal_states()
+        self.reset_internal_states()
 
-    def _reset_internal_states(self):
-        """Resets the internal state of the recorder."""
+    def reset_internal_states(self, record=None):
+        """Resets the internal state of the recorder.
+
+        Args:
+            record: records.TestResultRecord, the test record for a test.
+        """
         self._record = None
         self._count = 0
+        self._record = record
 
     @property
     def has_error(self):
@@ -59,15 +64,6 @@ class _ExpectErrorRecorder(object):
         self._count += 1
         self._record.add_error('expect@%s+%s' % (time.time(), self._count),
                                error)
-
-    def reset_with_record(self, record):
-        """Resets the state of the cache.
-
-        Args:
-            record: records.TestResultRecord, the test record for a test.
-        """
-        self._reset_internal_states()
-        self._record = record
 
 
 def expect_true(condition, msg, extras=None):
