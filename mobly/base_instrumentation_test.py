@@ -61,7 +61,9 @@ class _InstrumentationKnownStatusKeys(object):
     instrumentation test method result properties.
 
     An instrumenation status line usually contains a key-value pair such as
-    the follwoing:
+    the following:
+
+    .. code-block:: none
 
         INSTRUMENTATION_STATUS: key=value
 
@@ -82,6 +84,8 @@ class _InstrumentationStatusCodes(object):
 
     When instrumentation runs, at various points ouput is created in a serias
     of blocks that terminate as follows:
+
+    .. code-block:: none
 
         INSTRUMENTATION_STATUS_CODE: 1
 
