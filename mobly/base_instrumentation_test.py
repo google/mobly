@@ -425,16 +425,6 @@ class _InstrumentationBlockFormatter(object):
             self._unknown_keys[key] = '\n'.join(
                 instrumentation_block.unknown_keys[key])
 
-    def _add_part(self, parts, part):
-        """Helper function for conditionally adding strings to the output.
-
-        Args:
-            parts: list, the unconcatentated output.
-            part: string, a part to conditionally add to the output.
-        """
-        if part:
-            parts.append(part)
-
     def _get_name(self):
         """Gets the method name of the test method for the instrumentation
         method block.
@@ -458,11 +448,11 @@ class _InstrumentationBlockFormatter(object):
             was specified, then the prefix will be prepended to the class
             name.
         """
-        class_parts = []
-        self._add_part(class_parts, self._prefix)
-        self._add_part(class_parts,
-                       self._known_keys[_InstrumentationKnownStatusKeys.CLASS])
-        return '.'.join(class_parts)
+        class_parts = [
+            self._prefix,
+            self._known_keys[_InstrumentationKnownStatusKeys.CLASS]
+        ]
+        return '.'.join(filter(None, class_parts))
 
     def _get_full_name(self):
         """Gets the qualified name of the test method corresponding to the
@@ -473,10 +463,8 @@ class _InstrumentationBlockFormatter(object):
             instrumentation test method. If parts are missing, then degrades
             steadily.
         """
-        full_name_parts = []
-        self._add_part(full_name_parts, self._get_class())
-        self._add_part(full_name_parts, self._get_name())
-        return '#'.join(full_name_parts)
+        full_name_parts = [self._get_class(), self._get_name()]
+        return '#'.join(filter(None, full_name_parts))
 
     def _get_details(self):
         """Gets the ouput for the detail section of the TestResultRecord.
@@ -484,10 +472,8 @@ class _InstrumentationBlockFormatter(object):
         Returns:
             A string to set for a TestResultRecord's details.
         """
-        detail_parts = []
-        self._add_part(detail_parts, self._get_full_name())
-        self._add_part(detail_parts, self._error_message)
-        return '\n'.join(detail_parts)
+        detail_parts = [self._get_full_name(), self._error_message]
+        return '\n'.join(filter(None, detail_parts))
 
     def _get_extras(self):
         """Gets the output for the extras section of the TestResultRecord.
@@ -499,28 +485,24 @@ class _InstrumentationBlockFormatter(object):
         extra_parts = ['']
 
         for value in self._unknown_keys.values():
-            self._add_part(extra_parts, value)
+            extra_parts.append(value)
 
-        self._add_part(
-            extra_parts,
+        extra_parts.append(
             self._known_keys[_InstrumentationKnownStatusKeys.STREAM])
-        self._add_part(
-            extra_parts,
+        extra_parts.append(
             self._known_keys[_InstrumentationKnownResultKeys.SHORTMSG])
-        self._add_part(
-            extra_parts,
+        extra_parts.append(
             self._known_keys[_InstrumentationKnownResultKeys.LONGMSG])
-        self._add_part(extra_parts,
-                       self._known_keys[_InstrumentationKnownStatusKeys.ERROR])
+        extra_parts.append(
+            self._known_keys[_InstrumentationKnownStatusKeys.ERROR])
 
         if self._known_keys[
                 _InstrumentationKnownStatusKeys.STACK] not in self._known_keys[
                     _InstrumentationKnownStatusKeys.STREAM]:
-            self._add_part(
-                extra_parts,
+            extra_parts.append(
                 self._known_keys[_InstrumentationKnownStatusKeys.STACK])
 
-        return '\n'.join(extra_parts)
+        return '\n'.join(filter(None, extra_parts))
 
     def _is_failed(self):
         """Determines if the test corresponding to the instrumentation block
