@@ -27,6 +27,27 @@ from mobly import signals
 MOCK_TEST_PACKAGE = 'com.my.package.test'
 # A random prefix to test that prefixes are added properly.
 MOCK_PREFIX = 'my_prefix'
+# A mock name for the instrumentation test subclass.
+MOCK_INSTRUMENTATION_TEST_CLASS_NAME = 'MockInstrumentationTest'
+
+
+class MockInstrumentationTest(BaseInstrumentationTestClass):
+    def __init__(self, tmp_dir, user_params={}):
+        mock_test_run_configs = config_parser.TestRunConfig()
+        mock_test_run_configs.summary_writer = mock.Mock()
+        mock_test_run_configs.log_path = tmp_dir
+        mock_test_run_configs.user_params = user_params
+        mock_test_run_configs.reporter = mock.MagicMock()
+        super(BaseInstrumentationTestClass,
+              self).__init__(mock_test_run_configs)
+
+    def run_mock_instrumentation_test(self, instrumentation_output, prefix):
+        mock_device = mock.Mock()
+        mock_device.adb = mock.Mock()
+        mock_device.adb.instrument = mock.MagicMock(
+            return_value=instrumentation_output)
+        return self.run_instrumentation_test(
+            mock_device, MOCK_TEST_PACKAGE, prefix=prefix)
 
 
 class InstrumentationResult(object):
@@ -44,21 +65,11 @@ class BaseInstrumentationTestTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
-    def create_test_run_configs_with_user_params(self, user_params):
-        mock_test_run_configs = config_parser.TestRunConfig()
-        mock_test_run_configs.summary_writer = mock.Mock()
-        mock_test_run_configs.log_path = self.tmp_dir
-        mock_test_run_configs.user_params = user_params
-        mock_test_run_configs.reporter = mock.MagicMock()
-        return mock_test_run_configs
-
     def assert_parse_instrumentation_options(self, user_params,
                                              expected_instrumentation_options):
-        mock_test_run_configs = self.create_test_run_configs_with_user_params(
-            user_params)
-        bit = BaseInstrumentationTestClass(mock_test_run_configs)
-        instrumentation_options = bit.parse_instrumentation_options(
-            bit.user_params)
+        mit = MockInstrumentationTest(self.tmp_dir, user_params)
+        instrumentation_options = mit.parse_instrumentation_options(
+            mit.user_params)
         self.assertEqual(instrumentation_options,
                          expected_instrumentation_options)
 
@@ -99,27 +110,21 @@ class BaseInstrumentationTestTest(unittest.TestCase):
         )
 
     def run_instrumentation_test(self, instrumentation_output, prefix=None):
-        mock_device = mock.Mock()
-        mock_device.adb = mock.Mock()
-        mock_device.adb.instrument = mock.MagicMock(
-            return_value=instrumentation_output)
-        mock_test_run_configs = self.create_test_run_configs_with_user_params(
-            {})
-        bit = BaseInstrumentationTestClass(mock_test_run_configs)
+        mit = MockInstrumentationTest(self.tmp_dir)
         result = InstrumentationResult()
         try:
-            result.completed_and_passed = bit.run_instrumentation_test(
-                mock_device, MOCK_TEST_PACKAGE, prefix=prefix)
+            result.completed_and_passed = mit.run_mock_instrumentation_test(
+                instrumentation_output, prefix=prefix)
         except signals.TestError as e:
             result.error = e
-        result.executed = bit.results.executed
-        result.skipped = bit.results.skipped
+        result.executed = mit.results.executed
+        result.skipped = mit.results.skipped
         return result
 
     def assert_equal_test(self, actual_test, expected_test):
-        (expected_test_class, expected_test_name,
-         expected_signal) = expected_test
-        self.assertEqual(actual_test.test_class, expected_test_class)
+        (expected_test_name, expected_signal) = expected_test
+        self.assertEqual(actual_test.test_class,
+                         MOCK_INSTRUMENTATION_TEST_CLASS_NAME)
         self.assertEqual(actual_test.test_name, expected_test_name)
         self.assertIsInstance(actual_test.termination_signal.exception,
                               expected_signal)
@@ -226,17 +231,17 @@ INSTRUMENTATION_CODE: -1
         instrumentation_output = """\
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stream=
-com.my.package.test.BasicTests:
+com.my.package.test.BasicTest:
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: test=basicTest
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS_CODE: 1
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stream=.
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: test=basicTest
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS_CODE: 0
 INSTRUMENTATION_RESULT: stream=
@@ -249,7 +254,7 @@ OK (1 test)
 INSTRUMENTATION_CODE: -1
 """
         expected_executed = [
-            ('com.my.package.test.BasicTests', 'basicTest', signals.TestPass),
+            ('com.my.package.test.BasicTest#basicTest', signals.TestPass),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,
@@ -260,17 +265,17 @@ INSTRUMENTATION_CODE: -1
         instrumentation_output = """\
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stream=
-com.my.package.test.BasicTests:
+com.my.package.test.BasicTest:
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: test=basicTest
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS_CODE: 1
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stream=.
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: test=basicTest
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS_CODE: 0
 INSTRUMENTATION_RESULT: stream=
@@ -283,7 +288,7 @@ OK (1 test)
 INSTRUMENTATION_CODE: -1
 """
         expected_executed = [
-            ('%s.com.my.package.test.BasicTests' % MOCK_PREFIX, 'basicTest',
+            ('%s.com.my.package.test.BasicTest#basicTest' % MOCK_PREFIX,
              signals.TestPass),
         ]
         self.assert_run_instrumentation_test(
@@ -294,20 +299,20 @@ INSTRUMENTATION_CODE: -1
 
     def test_run_instrumentation_test_with_failing_test(self):
         instrumentation_output = """\
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stream=
-com.my.package.test.BasicTests:
+com.my.package.test.BasicTest:
 INSTRUMENTATION_STATUS: test=failingTest
 INSTRUMENTATION_STATUS_CODE: 1
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stack=java.lang.UnsupportedOperationException: dummy failing test
-	at com.my.package.test.BasicTests.failingTest(BasicTest.java:38)
+	at com.my.package.test.BasicTest.failingTest(BasicTest.java:38)
 	at java.lang.reflect.Method.invoke(Native Method)
 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:57)
 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
@@ -358,9 +363,9 @@ INSTRUMENTATION_STATUS: stack=java.lang.UnsupportedOperationException: dummy fai
 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2074)
 
 INSTRUMENTATION_STATUS: stream=
-Error in failingTest(com.my.package.test.BasicTests):
+Error in failingTest(com.my.package.test.BasicTest):
 java.lang.UnsupportedOperationException: dummy failing test
-	at com.my.package.test.BasicTests.failingTest(BasicTest.java:38)
+	at com.my.package.test.BasicTest.failingTest(BasicTest.java:38)
 	at java.lang.reflect.Method.invoke(Native Method)
 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:57)
 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
@@ -416,9 +421,9 @@ INSTRUMENTATION_RESULT: stream=
 
 Time: 1.92
 There was 1 failure:
-1) failingTest(com.my.package.test.BasicTests)
+1) failingTest(com.my.package.test.BasicTest)
 java.lang.UnsupportedOperationException: dummy failing test
-	at com.my.package.test.BasicTests.failingTest(BasicTest.java:38)
+	at com.my.package.test.BasicTest.failingTest(BasicTest.java:38)
 	at java.lang.reflect.Method.invoke(Native Method)
 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:57)
 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
@@ -474,30 +479,29 @@ Tests run: 1,  Failures: 1
 
 INSTRUMENTATION_CODE: -1"""
         expected_executed = [
-            ('com.my.package.test.BasicTests', 'failingTest',
-             signals.TestFailure),
+            ('com.my.package.test.BasicTest#failingTest', signals.TestFailure),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output, expected_executed=expected_executed)
 
     def test_run_instrumentation_test_with_assumption_failure_test(self):
         instrumentation_output = """\
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stream=
-com.my.package.test.BasicTests:
+com.my.package.test.BasicTest:
 INSTRUMENTATION_STATUS: test=assumptionFailureTest
 INSTRUMENTATION_STATUS_CODE: 1
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: Assumption failure reason
 	at org.junit.Assume.assumeTrue(Assume.java:59)
 	at org.junit.Assume.assumeFalse(Assume.java:66)
-	at com.my.package.test.BasicTests.assumptionFailureTest(BasicTests.java:63)
+	at com.my.package.test.BasicTest.assumptionFailureTest(BasicTest.java:63)
 	at java.lang.reflect.Method.invoke(Native Method)
 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:57)
 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
@@ -548,7 +552,7 @@ INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: Assumption 
 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2074)
 
 INSTRUMENTATION_STATUS: stream=
-com.my.package.test.BasicTests:
+com.my.package.test.BasicTest:
 INSTRUMENTATION_STATUS: test=assumptionFailureTest
 INSTRUMENTATION_STATUS_CODE: -4
 INSTRUMENTATION_RESULT: stream=
@@ -560,7 +564,7 @@ OK (1 test)
 
 INSTRUMENTATION_CODE: -1"""
         expected_skipped = [
-            ('com.my.package.test.BasicTests', 'assumptionFailureTest',
+            ('com.my.package.test.BasicTest#assumptionFailureTest',
              signals.TestSkip),
         ]
         self.assert_run_instrumentation_test(
@@ -595,7 +599,7 @@ OK (0 tests)
 
 INSTRUMENTATION_CODE: -1"""
         expected_skipped = [
-            ('com.my.package.test.BasicTest', 'ignoredTest', signals.TestSkip),
+            ('com.my.package.test.BasicTest#ignoredTest', signals.TestSkip),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,
@@ -615,7 +619,7 @@ INSTRUMENTATION_STATUS_CODE: 1
 INSTRUMENTATION_RESULT: shortMsg=Process crashed.
 INSTRUMENTATION_CODE: 0"""
         expected_executed = [
-            ('com.my.package.test.BasicTest', 'crashTest', signals.TestError),
+            ('com.my.package.test.BasicTest#crashTest', signals.TestError),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,
@@ -649,9 +653,9 @@ OK (2 tests)
 
 INSTRUMENTATION_CODE: -1"""
         expected_executed = [
-            ('com.my.package.test.BasicTest', 'crashAndRecover1Test',
+            ('com.my.package.test.BasicTest#crashAndRecover1Test',
              signals.TestError),
-            ('com.my.package.test.BasicTest', 'crashAndRecover2Test',
+            ('com.my.package.test.BasicTest#crashAndRecover2Test',
              signals.TestError),
         ]
         self.assert_run_instrumentation_test(
@@ -670,24 +674,24 @@ INSTRUMENTATION_CODE: 0"""
         instrumentation_output = """\
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stream=
-com.my.package.test.BasicTests:
+com.my.package.test.BasicTest:
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: test=basicTest
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS_CODE: 1
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stream=.
 INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
 INSTRUMENTATION_STATUS: test=basicTest
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTests
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
 INSTRUMENTATION_STATUS_CODE: 0
 INSTRUMENTATION_RESULT: shortMsg=Process crashed.
 INSTRUMENTATION_CODE: 0
 """
         expected_executed = [
-            ('com.my.package.test.BasicTests', 'basicTest', signals.TestPass),
+            ('com.my.package.test.BasicTest#basicTest', signals.TestPass),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,
@@ -970,14 +974,13 @@ Tests run: 3,  Failures: 1
 
 INSTRUMENTATION_CODE: -1"""
         expected_executed = [
-            ('com.my.package.test.BasicTest', 'failingTest',
-             signals.TestFailure),
-            ('com.my.package.test.BasicTest', 'passingTest', signals.TestPass),
+            ('com.my.package.test.BasicTest#failingTest', signals.TestFailure),
+            ('com.my.package.test.BasicTest#passingTest', signals.TestPass),
         ]
         expected_skipped = [
-            ('com.my.package.test.BasicTest', 'assumptionFailureTest',
+            ('com.my.package.test.BasicTest#assumptionFailureTest',
              signals.TestSkip),
-            ('com.my.package.test.BasicTest', 'ignoredTest', signals.TestSkip),
+            ('com.my.package.test.BasicTest#ignoredTest', signals.TestSkip),
         ]
         self.assert_run_instrumentation_test(
             instrumentation_output,

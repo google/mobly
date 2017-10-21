@@ -476,7 +476,7 @@ class _InstrumentationBlockFormatter(object):
         full_name_parts = []
         self._add_part(full_name_parts, self._get_class())
         self._add_part(full_name_parts, self._get_name())
-        return '.'.join(full_name_parts)
+        return '#'.join(full_name_parts)
 
     def _get_details(self):
         """Gets the ouput for the detail section of the TestResultRecord.
@@ -547,8 +547,12 @@ class _InstrumentationBlockFormatter(object):
         else:
             return False
 
-    def create_test_record(self):
+    def create_test_record(self, mobly_test_class):
         """Creates a TestResultRecord for the instrumentation block.
+
+        Args:
+            mobly_test_class: string, the name of the Mobly test case
+                executing the instrumentation run.
 
         Returns:
             A TestResultRecord with an appropriate signals exception
@@ -558,8 +562,8 @@ class _InstrumentationBlockFormatter(object):
         extras = self._get_extras()
 
         tr_record = records.TestResultRecord(
-            t_name=self._get_name(),
-            t_class=self._get_class(),
+            t_name=self._get_full_name(),
+            t_class=mobly_test_class,
         )
         if self._is_failed():
             tr_record.test_fail(
@@ -702,7 +706,7 @@ class BaseInstrumentationTestClass(BaseTestClass):
         """
         formatters = self._create_formatters(instrumentation_block, new_state)
         for formatter in formatters:
-            test_record = formatter.create_test_record()
+            test_record = formatter.create_test_record(self.TAG)
             if test_record:
                 self.results.add_record(test_record)
                 self.summary_writer.dump(test_record.to_dict(),
