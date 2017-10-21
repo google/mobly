@@ -385,7 +385,7 @@ def take_bug_reports(ads, test_name, begin_time, destination=None):
     begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
 
     def take_br(test_name, begin_time, ad, destination):
-        ad.take_bug_report(test_name, begin_time, destination)
+        ad.take_bug_report(test_name, begin_time, destination=destination)
 
     args = [(test_name, begin_time, ad, destination) for ad in ads]
     utils.concurrent_exec(take_br, args)
