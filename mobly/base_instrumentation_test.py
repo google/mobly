@@ -65,7 +65,7 @@ class _InstrumentationKnownStatusKeys(object):
 
     .. code-block:: none
 
-        INSTRUMENTATION_STATUS: key=value
+        INSTRUMENTATION_STATUS: <key>=<value>
 
     Some of these key-value pairs are very common and represent test case
     properties. This mapping is used to handle each of the corresponding
