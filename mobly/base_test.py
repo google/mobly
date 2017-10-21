@@ -19,6 +19,7 @@ import inspect
 import logging
 import sys
 
+from mobly import expects
 from mobly import records
 from mobly import signals
 from mobly import runtime_test_info
@@ -345,7 +346,9 @@ class BaseTestClass(object):
         tr_record.test_begin()
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
             test_name, self.log_path, tr_record)
+        expects.recorder.reset_internal_states(tr_record)
         logging.info('%s %s', TEST_CASE_TOKEN, test_name)
+        # Did teardown_test throw an error.
         teardown_test_failed = False
         try:
             try:
@@ -366,6 +369,7 @@ class BaseTestClass(object):
                                   self.current_test_name)
                 raise
             finally:
+                before_count = expects.recorder.error_count
                 try:
                     self._teardown_test(test_name)
                 except signals.TestAbortSignal:
@@ -374,6 +378,10 @@ class BaseTestClass(object):
                     logging.exception(e)
                     tr_record.add_error('teardown_test', e)
                     teardown_test_failed = True
+                else:
+                    # Check if anything failed by `expects`.
+                    if before_count < expects.recorder.error_count:
+                        teardown_test_failed = True
         except (signals.TestFailure, AssertionError) as e:
             tr_record.test_fail(e)
         except signals.TestSkip as e:
@@ -390,7 +398,12 @@ class BaseTestClass(object):
             # Exception happened during test.
             tr_record.test_error(e)
         else:
-            if not teardown_test_failed:
+            # No exception is thrown from test and teardown, if `expects` has
+            # error, the test should fail with the first error in `expects`.
+            if expects.recorder.has_error and not teardown_test_failed:
+                tr_record.test_fail()
+            # Otherwise the test passed.
+            elif not teardown_test_failed:
                 tr_record.test_pass()
         finally:
             tr_record.update_record()

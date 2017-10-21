@@ -22,6 +22,7 @@ from future.tests.base import unittest
 from mobly import asserts
 from mobly import base_test
 from mobly import config_parser
+from mobly import expects
 from mobly import signals
 
 from tests.lib import utils
@@ -1105,6 +1106,217 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, "test_func")
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_true(self):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def on_fail(self, record):
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_multiple_fails(self):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                expects.expect_true(False, 'msg 1', extras='1')
+                expects.expect_true(False, 'msg 2', extras='2')
+                must_call('ha')
+
+            def on_fail(self, record):
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details, 'msg 1')
+        self.assertEqual(actual_record.extras, '1')
+        self.assertEqual(len(actual_record.extra_errors), 1)
+        second_error = list(actual_record.extra_errors.values())[0]
+        self.assertEqual(second_error.details, 'msg 2')
+        self.assertEqual(second_error.extras, '2')
+
+    def test_expect_two_tests(self):
+        """Errors in `expect` should not leak across tests.
+        """
+        must_call = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_1(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def test_2(self):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_1', 'test_2'])
+        must_call.assert_called_once_with('ha')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_1')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+        another_record = bt_cls.results.passed[0]
+        self.assertEqual(another_record.test_name, 'test_2')
+
+    def test_expect_no_op(self):
+        """Tests don't fail when expect is not triggered.
+        """
+        must_call = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_1(self):
+                expects.expect_true(
+                    True, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def test_2(self):
+                expects.expect_false(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_1', 'test_2'])
+        must_call.assert_called_with('ha')
+        self.assertEqual(len(bt_cls.results.passed), 2)
+
+    def test_expect_in_teardown_test(self):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                pass
+
+            def teardown_test(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def on_fail(self, record):
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_false(self):
+        must_call = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                expects.expect_false(
+                    True, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        must_call.assert_called_once_with('ha')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_equal(self):
+        must_call = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                expects.expect_equal(
+                    1, 2, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        must_call.assert_called_once_with('ha')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details,
+                         '1 != 2 ' + MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_no_raises_default_msg(self):
+        must_call = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                with expects.expect_no_raises(extras=MOCK_EXTRA):
+                    raise Exception(MSG_EXPECTED_EXCEPTION)
+                must_call('ha')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        must_call.assert_called_once_with('ha')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(
+            actual_record.details,
+            'Got an unexpected exception: %s' % MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_no_raises_custom_msg(self):
+        must_call = mock.Mock()
+        msg = 'Some step unexpected failed'
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                with expects.expect_no_raises(message=msg, extras=MOCK_EXTRA):
+                    raise Exception(MSG_EXPECTED_EXCEPTION)
+                must_call('ha')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        must_call.assert_called_once_with('ha')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details,
+                         '%s: %s' % (msg, MSG_EXPECTED_EXCEPTION))
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_true_and_assert_true(self):
+        """Error thrown by assert_true should be considered the termination.
+        """
+        must_call = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+                asserts.assert_true(False, 'failed from assert_true')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=['test_func'])
+        must_call.assert_called_once_with('ha')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details, 'failed from assert_true')
+        self.assertIsNone(actual_record.extras)
 
     def test_unpack_userparams_required(self):
         """Missing a required param should raise an error."""
