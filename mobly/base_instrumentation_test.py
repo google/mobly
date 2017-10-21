@@ -611,6 +611,13 @@ class BaseInstrumentationTestClass(BaseTestClass):
 
     This class extends the BaseTestClass to add functionality to run and parse
     the output of instrumentation runs.
+
+    Attributes:
+        DEFAULT_INSTRUMENTATION_OPTION_PREFIX: string, the default prefix for
+            instrumentation params contained within user params.
+        DEFAULT_INSTRUMENTATION_ERROR_MESSAGE: string, the default error
+            message to set if something has prevented something in the
+            instrumentation test run from completing properly.
     """
 
     DEFAULT_INSTRUMENTATION_OPTION_PREFIX = 'instrumentation_option_'
