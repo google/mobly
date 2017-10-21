@@ -27,6 +27,8 @@ class _InstrumentationStructurePrefixes(object):
 
     Android instrumentation generally follows the following format:
 
+    .. code-block:: none
+
         INSTRUMENTATION_STATUS: ...
         ...
         INSTRUMENTATION_STATUS: ...
@@ -63,8 +65,8 @@ class _InstrumentationKnownStatusKeys(object):
 
         INSTRUMENTATION_STATUS: key=value
 
-    Some of hese key-value pairs are very common and represent common test
-    case properties. This mapping is used to handle each of the corresponding
+    Some of these key-value pairs are very common and represent test case
+    properties. This mapping is used to handle each of the corresponding
     key-value pairs different than less important key-value pairs.
     """
 
@@ -134,10 +136,14 @@ class _InstrumentationKnownResultKeys(object):
     When instrumentation finishes running all of the instrumentation test
     methods, a result line will appear as follows:
 
+    .. code-block:: none
+
         INSTRUMENTATION_RESULT:
 
     If something wrong happened during the instrumentation run such as an
     application under test crash, the the line will appear similarly as thus:
+
+    .. code-block:: none
 
         INSTRUMENTATION_RESULT: shortMsg=Process crashed.
 
@@ -154,6 +160,8 @@ class _InstrumentationResultSignals(object):
 
     The final section of the instrumentation output generally follows this
     format:
+
+    .. code-block:: none
 
         INSTRUMENTATION_RESULT: stream=
         ...
@@ -196,6 +204,8 @@ class _InstrumentationBlock(object):
 
     Instrumentation test methods typically follow the follwoing format:
 
+    .. code-block:: none
+
         INSTRUMENTATION_STATUS: <key>=<value>
         ...
         INSTRUMENTATION_STATUS: <key>=<value>
@@ -204,11 +214,15 @@ class _InstrumentationBlock(object):
     The main issue with parsing this however is that the key-value pairs can
     span multiple lines such as this:
 
+    .. code-block:: none
+
       INSTRUMENTATION_STATUS: stream=
       Error in ...
       ...
 
     Or, such as this:
+
+    .. code-block:: none
 
       INSTRUMENTATION_STATUS: stack=...
       ...
