@@ -366,7 +366,7 @@ def get_device(ads, **kwargs):
         raise Error('More than one device matched: %s' % serials)
 
 
-def take_bug_reports(ads, test_name, begin_time):
+def take_bug_reports(ads, test_name, begin_time, destination=None):
     """Takes bug reports on a list of android devices.
 
     If you want to take a bug report, call this function with a list of
@@ -379,13 +379,15 @@ def take_bug_reports(ads, test_name, begin_time):
         test_name: Name of the test method that triggered this bug report.
         begin_time: timestamp taken when the test started, can be either
             string or int.
+        destination: string, path to the directory where the bugreport
+            should be saved.
     """
     begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
 
-    def take_br(test_name, begin_time, ad):
-        ad.take_bug_report(test_name, begin_time)
+    def take_br(test_name, begin_time, ad, destination):
+        ad.take_bug_report(test_name, begin_time, destination=destination)
 
-    args = [(test_name, begin_time, ad) for ad in ads]
+    args = [(test_name, begin_time, ad, destination) for ad in ads]
     utils.concurrent_exec(take_br, args)
 
 
@@ -417,9 +419,8 @@ class AndroidDevice(object):
         log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
         self._debug_tag = self.serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            'tag': self.debug_tag
-        })
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                              {'tag': self.debug_tag})
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -884,7 +885,11 @@ class AndroidDevice(object):
         utils.stop_standing_subprocess(self._adb_logcat_process)
         self._adb_logcat_process = None
 
-    def take_bug_report(self, test_name, begin_time, timetout=300):
+    def take_bug_report(self,
+                        test_name,
+                        begin_time,
+                        timeout=300,
+                        destination=None):
         """Takes a bug report on the device and stores it in a file.
 
         Args:
@@ -892,6 +897,8 @@ class AndroidDevice(object):
             begin_time: Timestamp of when the test started.
             timeout: float, the number of seconds to wait for bugreport to
                 complete, default is 5min.
+            destination: string, path to the directory where the bugreport
+                should be saved.
         """
         new_br = True
         try:
@@ -902,7 +909,10 @@ class AndroidDevice(object):
                 new_br = False
         except adb.AdbError:
             new_br = False
-        br_path = os.path.join(self.log_path, 'BugReports')
+        if destination:
+            br_path = utils.abs_path(destination)
+        else:
+            br_path = os.path.join(self.log_path, 'BugReports')
         utils.create_dir(br_path)
         base_name = ',%s,%s.txt' % (begin_time, self.serial)
         if new_br:
@@ -914,8 +924,7 @@ class AndroidDevice(object):
         self.wait_for_boot_completion()
         self.log.info('Taking bugreport for %s.', test_name)
         if new_br:
-            out = self.adb.shell(
-                'bugreportz', timeout=timetout).decode('utf-8')
+            out = self.adb.shell('bugreportz', timeout=timeout).decode('utf-8')
             if not out.startswith('OK'):
                 raise DeviceError(self, 'Failed to take bugreport: %s' % out)
             br_out_path = out.split(':')[1].strip()
@@ -924,7 +933,7 @@ class AndroidDevice(object):
             # shell=True as this command redirects the stdout to a local file
             # using shell redirection.
             self.adb.bugreport(
-                ' > %s' % full_out_path, shell=True, timeout=timetout)
+                ' > %s' % full_out_path, shell=True, timeout=timeout)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
 
