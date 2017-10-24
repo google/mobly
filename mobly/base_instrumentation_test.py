@@ -605,6 +605,9 @@ class _InstrumentationBlockFormatter(object):
         else:
             tr_record.test_error(
                 e=signals.TestError(details=details, extras=extras))
+        if self._known_keys[_InstrumentationKnownStatusKeys.STACK]:
+            tr_record.termination_signal.stacktrace = self._known_keys[
+                _InstrumentationKnownStatusKeys.STACK]
         return tr_record
 
     def has_completed_result_block_format(self, error_message):
