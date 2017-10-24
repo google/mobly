@@ -47,6 +47,13 @@ class _InstrumentationStructurePrefixes(object):
     This means that these prefixes can be used to guide parsing
     the output of the instrumentation command into the different
     instrumetnation test methods.
+
+    Refer to the following Android Framework package for more details:
+
+    .. code-block:: none
+
+        com.android.commands.am.AM
+
     """
 
     STATUS = 'INSTRUMENTATION_STATUS:'
@@ -70,6 +77,14 @@ class _InstrumentationKnownStatusKeys(object):
     Some of these key-value pairs are very common and represent test case
     properties. This mapping is used to handle each of the corresponding
     key-value pairs different than less important key-value pairs.
+
+    Refer to the following Android Framework packages for more details:
+
+    .. code-block:: none
+
+        android.app.Instrumentation
+        android.support.test.internal.runner.listener.InstrumentationResultPrinter
+
     """
 
     CLASS = 'class'
@@ -97,6 +112,13 @@ class _InstrumentationStatusCodes(object):
     The UNKNOWN status code is not an actual status code and is only used to
     represent that a status code has not yet been read for an instrumentation
     block.
+
+    Refer to the following Android Framework package for more details:
+
+    .. code-block:: none
+
+        android.support.test.internal.runner.listener.InstrumentationResultPrinter
+
     """
 
     UNKNOWN = None
@@ -153,6 +175,13 @@ class _InstrumentationKnownResultKeys(object):
 
     Since these keys indicate that something wrong has happened to the
     instrumentation run, they should be checked for explicitly.
+
+    Refer to the following documentation page for more information:
+
+    .. code-block:: none
+
+        https://developer.android.com/reference/android/app/ActivityManager.ProcessErrorStateInfo.html
+
     """
 
     LONGMSG = 'longMsg'
@@ -178,6 +207,13 @@ class _InstrumentationResultSignals(object):
     checking for a particilar string should be sufficient to check to a proper
     run completion as the contents of the instrumentation result block don't
     really matter.
+
+    Refer to the following JUnit package for more details:
+
+    .. code-block:: none
+
+        junit.textui.ResultPrinter
+
     """
 
     FAIL = 'FAILURES!!!'
