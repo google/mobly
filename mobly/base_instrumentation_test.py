@@ -929,6 +929,7 @@ class BaseInstrumentationTestClass(BaseTestClass):
         logging.info('Outputting instrumentation test log...')
         logging.info(instrumentation_output)
 
+        # TODO(winterfrosts): Implement online output generation and parsing.
         instrumentation_block = _InstrumentationBlock(prefix=prefix)
         for line in instrumentation_output.splitlines():
             instrumentation_block = self._parse_line(instrumentation_block,
