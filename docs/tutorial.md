@@ -379,3 +379,87 @@ if __name__ == '__main__':
 
 Three test cases will be executed even though we did not "physically" define
 any "test_xx" function in the test class.
+
+# Example 7: Instrumentation Tests
+
+Usually, you will want to use Mobly Snippets to write your tests in Python;
+however, sometimes this isn't an option, and you need to use Android
+instrumentation instead (for more details about instrumentation:
+https://developer.android.com/studio/test/index.html). For this use case,
+Mobly supports running and collecting the results of instrumentation tests.
+
+For the sake of simplicity, this example will assume that all of your
+source code and apks are in the same directory and that you have an
+instrumentation and application apk named as follows:
+
+***application.apk***
+
+***instrumentation.apk***
+
+Additionally, this example assumes that your test package is named as follows:
+
+***com.example.package.tests***
+
+If necessary, you can specify options for your instrumentation commands in
+your configuration file such as the android.support.test.filters.LargeTest
+annotation.
+
+***sample_instrumentation_test_config.yml***
+
+```yaml
+TestBeds:
+  - Name: TwoDeviceTestBed
+    Controllers:
+        AndroidDevice:
+          - serial: xyz
+            label: dut
+          - serial: abc
+            label: dut
+     TestParams:
+        instrumentation_option_annotation: android.support.test.filters.LargeTest
+```
+
+With those apks and that configuration file, you can write a simple test case
+to install your apks and then run the instrumentation tests against all relevant
+devices from your configuration file:
+
+***instrumentation_test.py***
+
+```python
+from mobly import base_instrumentation_test
+from mobly import test_runner
+from mobly.controllers import android_device
+
+class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass):
+    def setup_class(self):
+        self.ads = self.register_controller(android_device)
+        # Get all of the dut devices to run instrumentation tests against.
+        self.duts = android_device.get_devices(self.ads, label='dut')
+        for dut in self.duts:
+            dut.adb.install(['-r', 'application.apk'])
+            dut.adb.install(['-r', 'instrumentation_test.apk'])
+        # Get the options for the instrumentation tests out of user params.
+        self.options = self.parse_instrumentation_options(self.user_params)
+
+    def test_instrumentation(self):
+        for dut in self.duts:
+            self.run_instrumentation_test(dut, 'com.example.package.tests',
+                options=self.options)
+
+
+if __name__ == '__main__':
+  test_runner.main()
+```
+
+*To execute:*
+
+```
+$ python instrumentation_test.py -c sample_instrumentation_test_config.yml
+```
+
+*Expect*:
+
+The output you would normally expect to see from running instrumnetation
+commands along with a summary of all the instrumnetation test methods.
+
+
