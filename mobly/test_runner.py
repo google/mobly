@@ -25,7 +25,6 @@ import os
 import sys
 
 from mobly import base_test
-from mobly import base_instrumentation_test
 from mobly import config_parser
 from mobly import logger
 from mobly import records
@@ -135,8 +134,6 @@ def _find_test_class():
     main_module_members = sys.modules['__main__']
     for _, module_member in main_module_members.__dict__.items():
         if inspect.isclass(module_member):
-            if module_member is base_instrumentation_test.BaseInstrumentationTestClass:
-                continue
             if issubclass(module_member, base_test.BaseTestClass):
                 test_classes.append(module_member)
     if len(test_classes) != 1:

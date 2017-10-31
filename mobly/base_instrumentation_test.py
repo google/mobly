@@ -17,9 +17,9 @@ import mobly.controllers.android_device
 
 from collections import defaultdict
 from enum import Enum
+from mobly import base_test
 from mobly import records
 from mobly import signals
-from mobly.base_test import BaseTestClass
 
 
 class _InstrumentationStructurePrefixes(object):
@@ -635,7 +635,7 @@ class _InstrumentationBlockFormatter(object):
             raise signals.TestError(details=error_message, extras=extras)
 
 
-class BaseInstrumentationTestClass(BaseTestClass):
+class BaseInstrumentationTestClass(base_test.BaseTestClass):
     """Base class for all instrumentation test claseses to inherit from.
 
     This class extends the BaseTestClass to add functionality to run and parse
