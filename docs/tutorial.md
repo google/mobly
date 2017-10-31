@@ -394,7 +394,7 @@ instrumentation and application apk named as follows:
 
 ***application.apk***
 
-***instrumentation.apk***
+***instrumentation_tests.apk***
 
 Additionally, this example assumes that your test package is named as follows:
 
@@ -437,7 +437,7 @@ class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass
         self.duts = android_device.get_devices(self.ads, label='dut')
         for dut in self.duts:
             dut.adb.install(['-r', 'application.apk'])
-            dut.adb.install(['-r', 'instrumentation_test.apk'])
+            dut.adb.install(['-r', 'instrumentation_tests.apk'])
         # Get the options for the instrumentation tests out of user params.
         self.options = self.parse_instrumentation_options(self.user_params)
 
