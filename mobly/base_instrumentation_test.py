@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import logging
-import mobly.controllers.android_device
 
 from collections import defaultdict
 from enum import Enum
