@@ -1,22 +1,22 @@
-Getting started with instrumentation tests using Mobly
+Running Android instrumentation tests with Mobly
 ======
 
-This tutorial shows how to write and execute Android intrumentation tests with
-Mobly. For more details about instrumentation tests, please refer to
+This tutorial shows how to write and execute Mobly tests for running Android
+instrumentation tests. For more details about instrumentation tests, please refer to
 https://developer.android.com/studio/test/index.html.
 
 # Setup Requirements
 
-*   A computer with at least 2 USB ports.
+*   A computer with at least 1 USB ports.
 *   Mobly package and its system dependencies installed on the computer.
-*   One or two Android devices that are compatible with your instrumentatation
-    and application apks.
+*   One  Android device that is compatible with your instrumentatation and
+    application apks.
 *   Your instrumentation and applications apks for installing.
 *   A working adb setup. To check, connect one Android device to the computer
     and make sure it has "USB debugging" enabled. Make sure the device shows up
     in the list printed by `adb devices`.
 
-# Conventions
+# Example Naming Assumptions
 
 Because your application and instrumentation apks will probably not have a
 standard name, these examples will assume the following:
@@ -40,7 +40,7 @@ You will need a configuration file for Mobly to find your devices.
 
 ```yaml
 TestBeds:
-  - Name: BasicTes
+  - Name: BasicTestBed
     Controllers:
         AndroidDevice: '*'
 ```
@@ -99,7 +99,7 @@ fetch them when you run your instrumentatation tests.
 
 ```yaml
 TestBeds:
-  - Name: BasicTes
+  - Name: BasicTestBed
     Controllers:
         AndroidDevice: '*'
     TestParams:
@@ -153,9 +153,10 @@ def test_instrumentation(self):
 
 # Example 5: Multiple Instrumentation Runs
 
-If you have devices that you want to run instrumentation tests against, then you
-can simply call the *run_instrumentation_test* method multiple times. If you
-need to distinguish between runs, then you can specify a prefix.
+If you have multiple devices that you want to run instrumentation tests
+against, then you can simply call the *run_instrumentation_test* method
+multiple times. If you need to distinguish between runs, then you can specify
+a prefix.
 
 ***sample_config.yml***
 
