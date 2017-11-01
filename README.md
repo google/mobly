@@ -58,6 +58,9 @@ restrictions.
 ## Tutorials
 To get started with some simple tests, see the [Mobly tutorial](docs/tutorial.md).
 
+To get start using Android instrumentation tests with Mobly, see the
+[Mobly instrumentation tutorial](docs/instrumentation_tutorial.md).
+
 ## Mobly Snippet
 The Mobly Snippet projects let users better control Android devices.
 

@@ -1,0 +1,207 @@
+Getting started with Mobly
+======
+
+This tutorial shows how to write and execute Android intrumentation tests with
+Mobly. For more details about instrumentation tests, please refer to
+https://developer.android.com/studio/test/index.html.
+
+# Setup Requirements
+
+*   A computer with at least 2 USB ports.
+*   Mobly package and its system dependencies installed on the computer.
+*   One or two Android devices that are compatible with your instrumentatation
+    and application apks.
+*   Your instrumentation and applications apks for installing.
+*   A working adb setup. To check, connect one Android device to the computer
+    and make sure it has "USB debugging" enabled. Make sure the device shows up
+    in the list printed by `adb devices`.
+
+# Conventions
+
+Because your application and instrumentation apks will probably not have a
+standard name, these examples will assume the following:
+
+*   Your apks are in the same directory as your source code files.
+*   Your instrumentation apk file is named *instrumentation_test.apk*.
+*   Your application apk file is named *application.apk*.
+*   Your instrumentation test package is *com.example.package.test*.
+*   Your instrumentation apk is compatible with the AndroidJUnitRunner.
+*   If you have a custom instrumentation runner, the custom runner is named
+    *CustomRunner* and lives directly inside your instrumentation package.
+
+# Example 1: Running Instrumentation Tests
+
+Assuming your apks are already installed on devices. You can just subclass the
+instrumentation test class and run against your package.
+
+You will need a configuration file for Mobly to find your devices.
+
+***sample_config.yml***
+
+```yaml
+TestBeds:
+  - Name: BasicTes
+    Controllers:
+        AndroidDevice: '*'
+```
+
+***instrumentation_test.py***
+
+```python
+from mobly import base_instrumentation_test
+from mobly import test_runner
+from mobly.controllers import android_device
+
+class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass):
+    def setup_class(self):
+        self.ads = self.register_controller(android_device)
+        self.dut = self.ads[0]
+
+    def test_instrumentation(self):
+        self.run_instrumentation_test(dut, 'com.example.package.test')
+
+
+if __name__ == '__main__':
+  test_runner.main()
+```
+
+*To execute:*
+
+```
+$ python instrumentation_test.py -c sample_config.yml
+```
+
+*Expect*:
+
+The output you would normally expect to see from running instrumentation
+commands along with a summary of all the instrumentation test methods.
+
+# Example 2: Installing Apks
+
+If your apks are not installed on your devices, then you can add logic into the
+*setup_class* method for installing your devices.
+
+```python
+def setup_class(self):
+    self.ads = self.register_controller(android_device)
+    self.dut = self.ads[0]
+    self.dut.adb.install(['-r', 'application.apk'])
+    self.dut.adb.install(['-r', 'instrumentation_test.apk'])
+```
+
+# Example 3: Specifying Instrumentation Options
+
+If your instrumentation tests use instrumentation options for controlling
+behaviour, then you can put these options into your configuration file and then
+fetch them when you run your instrumentatation tests.
+
+***sample_config.yml***
+
+```yaml
+TestBeds:
+  - Name: BasicTes
+    Controllers:
+        AndroidDevice: '*'
+    TestParams:
+        instrumentation_option_annotation: android.support.test.filters.LargeTest
+        instrumentation_option_nonAnnotation: android.support.test.filters.SmallTest
+```
+
+***instrumentation_test.py***
+
+```python
+from mobly import base_instrumentation_test
+from mobly import test_runner
+from mobly.controllers import android_device
+
+class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass):
+    def setup_class(self):
+        self.ads = self.register_controller(android_device)
+        self.dut = self.ads[0]
+        self.options = self.parse_instrumentation_options(self.user_params)
+
+    def test_instrumentation(self):
+        self.run_instrumentation_test(dut, 'com.example.package.test',
+            options=self.options)
+
+
+if __name__ == '__main__':
+  test_runner.main()
+```
+
+*To execute:*
+
+```
+$ python instrumentation_test.py -c sample_config.yml
+```
+
+*Expect*:
+
+The output you would normally expect to see from running instrumentation
+commands along with a summary of all the instrumentation test methods.
+
+# Example 4 Using a Custom Runner
+
+If you have a custom runner that you use for instrumentation tests, then you can
+specify it in the *run_instrumentation_test* method call.
+
+```python
+def test_instrumentation(self):
+  self.run_instrumentation_test(self.dut, 'com.example.package.test',
+      runner='com.example.package.test.CustomRunner')
+```
+
+# Example 5: Multiple Instrumentation Runs
+
+If you have devices that you want to run instrumentation tests against, then you
+can simply call the *run_instrumentation_test* method multiple times. If you
+need to distinguish between runs, then you can specify a prefix.
+
+***sample_config.yml***
+
+```yaml
+TestBeds:
+  - Name: TwoDeviceTestBed
+    Controllers:
+        AndroidDevice:
+          - serial: xyz
+            label: dut
+          - serial: abc
+            label: dut
+```
+
+***instrumentation_test.py***
+
+```python
+from mobly import base_instrumentation_test
+from mobly import test_runner
+from mobly.controllers import android_device
+
+class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass):
+    def setup_class(self):
+        self.ads = self.register_controller(android_device)
+        # Get all of the dut devices to run instrumentation tests against.
+        self.duts = android_device.get_devices(self.ads, label='dut')
+
+    def test_instrumentation(self):
+        # Iterate over the dut devices with a corresponding index.
+        for index, dut in zip(range(len(self.duts)), self.duts):
+            # Specify a prefix to help disambiguate the runs.
+            self.run_instrumentation_test(dut, 'com.example.package.tests',
+                prefix='test_run_%s' % index)
+
+
+if __name__ == '__main__':
+  test_runner.main()
+```
+
+*To execute:*
+
+```
+$ python instrumentation_test.py -c sample_config.yml
+```
+
+*Expect*:
+
+The output you would normally expect to see from running instrumentation
+commands along with a summary of all the instrumentation test methods.
