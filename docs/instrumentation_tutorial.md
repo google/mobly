@@ -1,4 +1,4 @@
-Getting started with Mobly
+Getting started with instrumentation tests using Mobly
 ======
 
 This tutorial shows how to write and execute Android intrumentation tests with
@@ -73,8 +73,8 @@ $ python instrumentation_test.py -c sample_config.yml
 
 *Expect*:
 
-The output you would normally expect to see from running instrumentation
-commands along with a summary of all the instrumentation test methods.
+The output from normally running your instrumentation tests along with a summary
+of the test results.
 
 # Example 2: Installing Apks
 
@@ -137,8 +137,8 @@ $ python instrumentation_test.py -c sample_config.yml
 
 *Expect*:
 
-The output you would normally expect to see from running instrumentation
-commands along with a summary of all the instrumentation test methods.
+The output of your *LargeTest* instrumentation tests with no *SmallTest*
+instrumentation test being run.
 
 # Example 4 Using a Custom Runner
 
@@ -203,5 +203,5 @@ $ python instrumentation_test.py -c sample_config.yml
 
 *Expect*:
 
-The output you would normally expect to see from running instrumentation
-commands along with a summary of all the instrumentation test methods.
+The output from both instrumentation runs along with an aggregated summary of
+the results from both runs.
