@@ -17,15 +17,12 @@ https://developer.android.com/studio/test/index.html.
 
 ## Example Name Substitutions
 
-Because your application and instrumentation apks will probably not have a
-standard name, these examples use the following name substitutions for your apks
-and packages:
+Here are the names that we use in this tutorial, substitute these names with
+your actual apk package and file names when using your real files:
 
-*   Your instrumentation apk file is named *instrumentation_test.apk*.
-*   Your application apk file is named *application.apk*.
-*   Your instrumentation test package is *com.example.package.test*.
-*   If you have a custom instrumentation runner, the custom runner has the fully
-    qualified name *com.example.package.test.CustomRunner*.
+*   The application apk : `application.apk`
+*   The instrumentation apk : `instrumentation_test.apk`
+*   The instrumentation test package : `com.example.package.test`
 
 ## Example 1: Running Instrumentation Tests
 
@@ -126,7 +123,9 @@ instrumentation test being run.
 ## Example 3 Using a Custom Runner
 
 If you have a custom runner that you use for instrumentation tests, then you can
-specify it in the *run_instrumentation_test* method call.
+specify it in the *run_instrumentation_test* method call. Replace
+`com.example.package.test.CustomRunner` with the fully quailied package name of
+your real instrumentation runner.
 
 ```python
 def test_instrumentation(self):
