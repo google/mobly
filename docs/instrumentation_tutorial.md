@@ -52,8 +52,7 @@ from mobly.controllers import android_device
 
 class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass):
     def setup_class(self):
-        self.ads = self.register_controller(android_device)
-        self.dut = self.ads[0]
+        self.dut = self.register_controller(android_device)[0]
 
     def test_instrumentation(self):
         self.run_instrumentation_test(dut, 'com.example.package.test')
@@ -101,8 +100,7 @@ from mobly.controllers import android_device
 
 class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass):
     def setup_class(self):
-        self.ads = self.register_controller(android_device)
-        self.dut = self.ads[0]
+        self.dut = self.register_controller(android_device)[0]
         self.options = self.parse_instrumentation_options(self.user_params)
 
     def test_instrumentation(self):
