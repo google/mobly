@@ -55,7 +55,7 @@ class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass
         self.dut = self.register_controller(android_device)[0]
 
     def test_instrumentation(self):
-        self.run_instrumentation_test(dut, 'com.example.package.test')
+        self.run_instrumentation_test(self.dut, 'com.example.package.test')
 
 
 if __name__ == '__main__':
@@ -104,7 +104,7 @@ class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass
         self.options = self.parse_instrumentation_options(self.user_params)
 
     def test_instrumentation(self):
-        self.run_instrumentation_test(dut, 'com.example.package.test',
+        self.run_instrumentation_test(self.dut, 'com.example.package.test',
             options=self.options)
 
 
