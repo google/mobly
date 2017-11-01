@@ -1,35 +1,33 @@
-Running Android instrumentation tests with Mobly
-======
+# Running Android instrumentation tests with Mobly
 
 This tutorial shows how to write and execute Mobly tests for running Android
 instrumentation tests. For more details about instrumentation tests, please refer to
 https://developer.android.com/studio/test/index.html.
 
-# Setup Requirements
+## Setup Requirements
 
 *   A computer with at least 1 USB ports.
 *   Mobly package and its system dependencies installed on the computer.
-*   One  Android device that is compatible with your instrumentatation and
+*   One Android device that is compatible with your instrumentatation and
     application apks.
 *   Your instrumentation and applications apks for installing.
 *   A working adb setup. To check, connect one Android device to the computer
     and make sure it has "USB debugging" enabled. Make sure the device shows up
     in the list printed by `adb devices`.
 
-# Example Naming Assumptions
+## Example Name Substitutions
 
 Because your application and instrumentation apks will probably not have a
-standard name, these examples will assume the following:
+standard name, these examples use the following name substitutions for your apks
+and packages:
 
-*   Your apks are in the same directory as your source code files.
 *   Your instrumentation apk file is named *instrumentation_test.apk*.
 *   Your application apk file is named *application.apk*.
 *   Your instrumentation test package is *com.example.package.test*.
-*   Your instrumentation apk is compatible with the AndroidJUnitRunner.
-*   If you have a custom instrumentation runner, the custom runner is named
-    *CustomRunner* and lives directly inside your instrumentation package.
+*   If you have a custom instrumentation runner, the custom runner has the fully
+    qualified name *com.example.package.test.CustomRunner*.
 
-# Example 1: Running Instrumentation Tests
+## Example 1: Running Instrumentation Tests
 
 Assuming your apks are already installed on devices. You can just subclass the
 instrumentation test class and run against your package.
@@ -76,20 +74,7 @@ $ python instrumentation_test.py -c sample_config.yml
 The output from normally running your instrumentation tests along with a summary
 of the test results.
 
-# Example 2: Installing Apks
-
-If your apks are not installed on your devices, then you can add logic into the
-*setup_class* method for installing your devices.
-
-```python
-def setup_class(self):
-    self.ads = self.register_controller(android_device)
-    self.dut = self.ads[0]
-    self.dut.adb.install(['-r', 'application.apk'])
-    self.dut.adb.install(['-r', 'instrumentation_test.apk'])
-```
-
-# Example 3: Specifying Instrumentation Options
+## Example 2: Specifying Instrumentation Options
 
 If your instrumentation tests use instrumentation options for controlling
 behaviour, then you can put these options into your configuration file and then
@@ -140,7 +125,7 @@ $ python instrumentation_test.py -c sample_config.yml
 The output of your *LargeTest* instrumentation tests with no *SmallTest*
 instrumentation test being run.
 
-# Example 4 Using a Custom Runner
+## Example 3 Using a Custom Runner
 
 If you have a custom runner that you use for instrumentation tests, then you can
 specify it in the *run_instrumentation_test* method call.
@@ -151,7 +136,7 @@ def test_instrumentation(self):
       runner='com.example.package.test.CustomRunner')
 ```
 
-# Example 5: Multiple Instrumentation Runs
+## Example 4: Multiple Instrumentation Runs
 
 If you have multiple devices that you want to run instrumentation tests
 against, then you can simply call the *run_instrumentation_test* method
