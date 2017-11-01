@@ -124,7 +124,7 @@ def main(argv=None):
 def _find_test_class():
     """Finds the test class in a test script.
 
-    Walk through module memebers and find the subclass of BaseTestClass. Only
+    Walk through module members and find the subclass of BaseTestClass. Only
     one subclass is allowed in a test script.
 
     Returns:
@@ -392,7 +392,8 @@ class TestRunner(object):
         Raises:
             ControllerError:
                 * The controller module has already been registered.
-                * The actual number of objects instantiated is less than the `min_number`.
+                * The actual number of objects instantiated is less than the
+                * `min_number`.
                 * `required` is True and no corresponding config can be found.
                 * Any other error occurred in the registration process.
 
