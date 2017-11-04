@@ -419,8 +419,9 @@ class AndroidDevice(object):
     def __init__(self, serial=''):
         self.serial = serial
         # logging.log_path only exists when this is used in an Mobly test run.
-        log_path_base = getattr(logging, 'log_path', '/tmp/logs')
-        self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
+        self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
+        self._log_path = os.path.join(self._log_path_base,
+                                      'AndroidDevice%s' % serial)
         self._debug_tag = self.serial
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
                                               {'tag': self.debug_tag})
@@ -468,6 +469,31 @@ class AndroidDevice(object):
         self.log.info('Logging debug tag set to "%s"', tag)
         self._debug_tag = tag
         self.log.extra['tag'] = tag
+        
+    @property
+    def log_path(self):
+        """A string that is the path where all logs collected on this android
+        device should be stored.
+        """
+        return self._log_path
+
+    @log_path.setter
+    def log_path(self, log_path_tag):
+        """Setter for log_path.
+
+        By default, all the logs collected on this android device are stored in
+        folder name AndroidDevice|<serial>.
+
+        Changing log_path changes the folder where logs are collected.
+
+        Example:
+            By default, the device's logs are stored in folder named
+                'AndroidDeviceabcdefg12345' where abcdefg12345 is device serial.
+            After changing log_path as ad.log_path = 'Caller'. The device's logs
+                are stored in folder named 'Caller'.
+        """
+        self.log.info('Setting log_path folder as %s', log_path_tag)
+        self._log_path = os.path.join(self._log_path_base, log_path_tag)
 
     def start_services(self, clear_log=True):
         """Starts long running services on the android device, like adb logcat
