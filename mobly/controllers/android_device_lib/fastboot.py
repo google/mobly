@@ -48,6 +48,10 @@ class FastbootProxy():
     """
 
     def __init__(self, serial=""):
+        self.set_serial(serial)
+
+    def set_serial(self, serial):
+        """Update serial of android device."""
         self.serial = serial
         if serial:
             self.fastboot_str = "fastboot -s {}".format(serial)
