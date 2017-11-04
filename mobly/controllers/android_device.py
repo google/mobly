@@ -46,6 +46,9 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 # Keys for attributes in configs that alternate the controller module behavior.
 KEY_DEVICE_REQUIRED = 'required'
 
+# Keys for attributes in configs that alternate the controller module behavior to start logcat service.
+KEY_START_LOGCAT = 'start_logcat'
+
 # Default Timeout to wait for boot completion
 DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
 
@@ -847,6 +850,9 @@ class AndroidDevice(object):
         Args:
             clear: If True, clear device log before starting logcat.
         """
+        if hasattr(self, KEY_START_LOGCAT) and not self.start_logcat:
+            self.log.info('Not starting logcat for Device %s.', self.debug_tag)
+            return
         if self._adb_logcat_process:
             raise DeviceError(
                 self,
