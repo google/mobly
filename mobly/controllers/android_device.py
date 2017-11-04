@@ -495,6 +495,12 @@ class AndroidDevice(object):
         self.log.info('Setting log_path folder as %s', log_path_tag)
         self._log_path = os.path.join(self._log_path_base, log_path_tag)
 
+    def set_serial(self, serial):
+        """Update serial of android device."""
+        self.serial = serial
+        self.adb.serial = serial
+        self.fastboot.set_serial(serial)
+
     def start_services(self, clear_log=True):
         """Starts long running services on the android device, like adb logcat
         capture.
