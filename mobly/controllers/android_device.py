@@ -891,7 +891,7 @@ class AndroidDevice(object):
         if self.is_rootable:
             self.adb.shell('logpersist.stop --clear')
             self.adb.shell('logpersist.start')
-        f_name = 'adblog,%s,%s.txt' % (self.model, self.serial)
+        f_name = 'adblog,%s,%s.txt' % (self.model, self.debug_tag)
         utils.create_dir(self.log_path)
         logcat_file_path = os.path.join(self.log_path, f_name)
         try:
