@@ -144,9 +144,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             self.connect()
         except:
             # Failed to connect to app, something went wrong.
-            raise jsonrpc_client_base.AppRestoreConnectionError(self._ad
-                ('Failed to restore app connection for %s at host port %s, '
-                 'device port %s'), self.package, self.host_port,
+            raise jsonrpc_client_base.AppRestoreConnectionError(
+                self._ad(
+                    'Failed to restore app connection for %s at host port %s, '
+                    'device port %s'), self.package, self.host_port,
                 self.device_port)
 
         # Because the previous connection was lost, update self._proc
@@ -167,7 +168,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                 utils.stop_standing_subprocess(self._proc)
             out = self._adb.shell(_STOP_CMD % self.package).decode('utf-8')
             if 'OK (0 tests)' not in out:
-                raise errors.DeviceError(self._ad,
+                raise errors.DeviceError(
+                    self._ad,
                     'Failed to stop existing apk. Unexpected output: %s' % out)
         finally:
             # Always clean up the adb port
@@ -176,7 +178,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _start_event_client(self):
         """Overrides superclass."""
-        event_client = SnippetClient(package=self.package, ad=self)
+        event_client = SnippetClient(package=self.package, ad=self._ad)
         event_client.host_port = self.host_port
         event_client.device_port = self.device_port
         event_client.connect(self.uid,
@@ -204,7 +206,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                                  (self.package,
                                   _INSTRUMENTATION_RUNNER_PACKAGE), out)
         if not matched_out:
-            raise jsonrpc_client_base.AppStartError(self._ad,
+            raise jsonrpc_client_base.AppStartError(
+                self._ad,
                 '%s is installed, but it is not instrumented.' % self.package)
         match = re.search('^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
                           matched_out[0])
@@ -214,8 +217,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         if target_name != self.package:
             out = self._adb.shell('pm list package')
             if not utils.grep('^package:%s$' % target_name, out):
-                raise jsonrpc_client_base.AppStartError(self._ad,
-                    'Instrumentation target %s is not installed.' %
+                raise jsonrpc_client_base.AppStartError(
+                    self._ad, 'Instrumentation target %s is not installed.' %
                     target_name)
 
     def _do_start_app(self, launch_cmd):
@@ -241,8 +244,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         while True:
             line = self._proc.stdout.readline().decode('utf-8')
             if not line:
-                raise jsonrpc_client_base.AppStartError(self._ad,
-                    'Unexpected EOF waiting for app to start')
+                raise jsonrpc_client_base.AppStartError(
+                    self._ad, 'Unexpected EOF waiting for app to start')
             # readline() uses an empty string to mark EOF, and a single newline
             # to mark regular empty lines in the output. Don't move the strip()
             # call above the truthiness check, or this method will start
