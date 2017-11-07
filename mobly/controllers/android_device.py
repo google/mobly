@@ -416,8 +416,7 @@ class AndroidDevice(object):
     def __init__(self, serial=''):
         self.serial = serial
         # logging.log_path only exists when this is used in an Mobly test run.
-        log_path_base = getattr(logging, 'log_path', '/tmp/logs')
-        self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
+        self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self._debug_tag = self.serial
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
                                               {'tag': self.debug_tag})
@@ -465,6 +464,12 @@ class AndroidDevice(object):
         self.log.info('Logging debug tag set to "%s"', tag)
         self._debug_tag = tag
         self.log.extra['tag'] = tag
+
+    @property
+    def log_path(self):
+        """A string that is the path for all logs collected from this device.
+        """
+        return os.path.join(self._log_path_base, 'AndroidDevice%s' % self.debug_tag)
 
     def start_services(self, clear_log=True):
         """Starts long running services on the android device, like adb logcat

@@ -20,6 +20,7 @@ import tempfile
 
 from future.tests.base import unittest
 
+from mobly import utils
 from mobly.controllers import android_device
 
 from tests.lib import mock_android_device
@@ -432,14 +433,15 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = 1
         ad = android_device.AndroidDevice(serial=mock_serial)
+        # Direct the log path of the ad to a temp dir to avoid racing.
+        ad._log_path_base = self.tmp_dir
         # Expect error if attempted to cat adb log before starting adb logcat.
         expected_msg = ('.* Attempting to cat adb log when none'
                         ' has been collected.')
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
         ad.start_adb_logcat()
-        # Direct the log path of the ad to a temp dir to avoid racing.
-        ad.log_path = os.path.join(self.tmp_dir, ad.log_path)
+        utils.create_dir(ad.log_path)
         mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
                                          (ad.model, ad.serial))
         with open(mock_adb_log_path, 'w') as f:
