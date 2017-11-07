@@ -36,6 +36,7 @@ def get_mock_ads(num):
     ads = []
     for i in range(num):
         ad = mock.MagicMock(name="AndroidDevice", serial=str(i), h_port=None)
+        ad.skip_logcat = False
         ads.append(ad)
     return ads
 

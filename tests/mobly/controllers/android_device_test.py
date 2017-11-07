@@ -218,6 +218,15 @@ class AndroidDeviceTest(unittest.TestCase):
         ads[1].stop_services.assert_called_once_with()
         ads[2].stop_services.assert_called_once_with()
 
+    def test_start_services_on_ads_skip_logcat(self):
+        ads = mock_android_device.get_mock_ads(3)
+        ads[0].start_services = mock.MagicMock()
+        ads[1].start_services = mock.MagicMock()
+        ads[2].start_services = mock.MagicMock(
+            side_effect=Exception('Should not have called this.'))
+        ads[2].skip_logcat = True
+        android_device._start_services_on_ads(ads)
+
     # Tests for android_device.AndroidDevice class.
     # These tests mock out any interaction with the OS and real android device
     # in AndroidDeivce.
@@ -411,6 +420,84 @@ class AndroidDeviceTest(unittest.TestCase):
         start_proc_mock.assert_called_with(
             adb_cmd % (ad.serial, '"%s"' % expected_log_path), shell=True)
         self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_change_log_path(self, stop_proc_mock,
+                                           start_proc_mock, FastbootProxy,
+                                           MockAdbProxy):
+        ad = android_device.AndroidDevice(serial=1)
+        ad.start_adb_logcat()
+        ad.stop_adb_logcat()
+        old_path = ad.log_path
+        new_log_path = tempfile.mkdtemp()
+        ad.log_path = new_log_path
+        self.assertTrue(os.path.exists(new_log_path))
+        self.assertFalse(os.path.exists(old_path))
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.utils.create_dir')
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_change_log_path_with_service(
+            self, stop_proc_mock, start_proc_mock, creat_dir_mock,
+            FastbootProxy, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial=1)
+        ad.start_adb_logcat()
+        new_log_path = tempfile.mkdtemp()
+        expected_msg = '.* Cannot change `log_path` when there is service running.'
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
+            ad.log_path = new_log_path
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.utils.create_dir')
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_update_serial(self, stop_proc_mock, start_proc_mock,
+                                         creat_dir_mock, FastbootProxy,
+                                         MockAdbProxy):
+        ad = android_device.AndroidDevice(serial=1)
+        ad.update_serial(2)
+        self.assertEqual(ad.serial, 2)
+        self.assertEqual(ad.debug_tag, ad.serial)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.utils.create_dir')
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_update_serial_with_service_running(
+            self, stop_proc_mock, start_proc_mock, creat_dir_mock,
+            FastbootProxy, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial=1)
+        ad.start_adb_logcat()
+        expected_msg = '.* Cannot change device serial number when there is service running.'
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
+            ad.update_serial(2)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
