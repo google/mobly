@@ -150,7 +150,6 @@ def _start_services_on_ads(ads):
     for ad in ads:
         running_ads.append(ad)
         skip_logcat = getattr(ad, KEY_SKIP_LOGCAT, False)
-        print('#######$$$$$$$', ad.serial, skip_logcat)
         if skip_logcat:
             continue
         try:
@@ -503,8 +502,9 @@ class AndroidDevice(object):
                 'Cannot change `log_path` when there is service running.')
         old_path = self._log_path
         utils.create_dir(new_path)
-        distutils.dir_util.copy_tree(self._log_path, new_path)
-        shutil.rmtree(self._log_path, ignore_errors=True)
+        if os.path.exists(old_path):
+            distutils.dir_util.copy_tree(self._log_path, new_path)
+            shutil.rmtree(self._log_path, ignore_errors=True)
         self._log_path = new_path
 
     @property
