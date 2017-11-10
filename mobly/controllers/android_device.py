@@ -49,9 +49,11 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 # If this is False for a device, errors from that device will be ignored
 # during `create`. Default is True.
 KEY_DEVICE_REQUIRED = 'required'
+DEFAULT_VALUE_DEVICE_REQUIRED = True
 # If True, logcat collection will not be started during `create`.
 # Default is False.
 KEY_SKIP_LOGCAT = 'skip_logcat'
+DEFAULT_VALUE_SKIP_LOGCAT = False
 
 # Default Timeout to wait for boot completion
 DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
@@ -149,13 +151,14 @@ def _start_services_on_ads(ads):
     running_ads = []
     for ad in ads:
         running_ads.append(ad)
-        skip_logcat = getattr(ad, KEY_SKIP_LOGCAT, False)
+        skip_logcat = getattr(ad, KEY_SKIP_LOGCAT, DEFAULT_VALUE_SKIP_LOGCAT)
         if skip_logcat:
             continue
         try:
             ad.start_services()
         except Exception:
-            is_required = getattr(ad, KEY_DEVICE_REQUIRED, True)
+            is_required = getattr(ad, KEY_DEVICE_REQUIRED,
+                                  DEFAULT_VALUE_DEVICE_REQUIRED)
             if is_required:
                 ad.log.exception('Failed to start some services, abort!')
                 destroy(running_ads)
@@ -489,13 +492,15 @@ class AndroidDevice(object):
     @property
     def log_path(self):
         """A string that is the path for all logs collected from this device.
-
-        This by design should not be changed during the test.
         """
         return self._log_path
 
     @log_path.setter
     def log_path(self, new_path):
+        """Setter for `log_path`, use with caution.
+
+
+        """
         if self.has_active_service:
             raise DeviceError(
                 self,
@@ -536,6 +541,10 @@ class AndroidDevice(object):
         Args:
             new_serial: string, the new serial number for the same device.
         """
+        if new_serial == self._serial:
+            raise DeviceError(
+                self, 'Serial is already %s, cannot set to the same value.' %
+                self._serial)
         if self.has_active_service:
             raise DeviceError(
                 self,
