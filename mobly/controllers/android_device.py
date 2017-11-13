@@ -508,8 +508,8 @@ class AndroidDevice(object):
         old_path = self._log_path
         utils.create_dir(new_path)
         if os.path.exists(old_path):
-            distutils.dir_util.copy_tree(self._log_path, new_path)
-            shutil.rmtree(self._log_path, ignore_errors=True)
+            distutils.dir_util.copy_tree(old_path, new_path)
+            shutil.rmtree(old_path, ignore_errors=True)
         self._log_path = new_path
 
     @property
