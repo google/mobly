@@ -540,11 +540,10 @@ class AndroidDevice(object):
 
         Args:
             new_serial: string, the new serial number for the same device.
+
+        Raises:
+            DeviceError: tries to update serial when any service is running.
         """
-        if new_serial == self._serial:
-            raise DeviceError(
-                self, 'Serial is already %s, cannot set to the same value.' %
-                self._serial)
         if self.has_active_service:
             raise DeviceError(
                 self,
