@@ -17,8 +17,10 @@ from builtins import open
 from past.builtins import basestring
 
 import contextlib
+import distutils
 import logging
 import os
+import shutil
 import time
 
 from mobly import logger as mobly_logger
@@ -44,7 +46,14 @@ ANDROID_DEVICE_EMPTY_CONFIG_MSG = 'Configuration is empty, abort!'
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 
 # Keys for attributes in configs that alternate the controller module behavior.
+# If this is False for a device, errors from that device will be ignored
+# during `create`. Default is True.
 KEY_DEVICE_REQUIRED = 'required'
+DEFAULT_VALUE_DEVICE_REQUIRED = True
+# If True, logcat collection will not be started during `create`.
+# Default is False.
+KEY_SKIP_LOGCAT = 'skip_logcat'
+DEFAULT_VALUE_SKIP_LOGCAT = False
 
 # Default Timeout to wait for boot completion
 DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
@@ -142,10 +151,14 @@ def _start_services_on_ads(ads):
     running_ads = []
     for ad in ads:
         running_ads.append(ad)
+        skip_logcat = getattr(ad, KEY_SKIP_LOGCAT, DEFAULT_VALUE_SKIP_LOGCAT)
+        if skip_logcat:
+            continue
         try:
             ad.start_services()
         except Exception:
-            is_required = getattr(ad, KEY_DEVICE_REQUIRED, True)
+            is_required = getattr(ad, KEY_DEVICE_REQUIRED,
+                                  DEFAULT_VALUE_DEVICE_REQUIRED)
             if is_required:
                 ad.log.exception('Failed to start some services, abort!')
                 destroy(running_ads)
@@ -414,11 +427,12 @@ class AndroidDevice(object):
     """
 
     def __init__(self, serial=''):
-        self.serial = serial
+        self._serial = serial
         # logging.log_path only exists when this is used in an Mobly test run.
-        log_path_base = getattr(logging, 'log_path', '/tmp/logs')
-        self.log_path = os.path.join(log_path_base, 'AndroidDevice%s' % serial)
-        self._debug_tag = self.serial
+        self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
+        self._log_path = os.path.join(self._log_path_base,
+                                      'AndroidDevice%s' % self._serial)
+        self._debug_tag = self._serial
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
                                               {'tag': self.debug_tag})
         self.sl4a = None
@@ -465,6 +479,79 @@ class AndroidDevice(object):
         self.log.info('Logging debug tag set to "%s"', tag)
         self._debug_tag = tag
         self.log.extra['tag'] = tag
+
+    @property
+    def has_active_service(self):
+        """True if any service is running on the device.
+
+        A service can be a snippet or logcat collection.
+        """
+        return any(
+            [self._snippet_clients, self._adb_logcat_process, self.sl4a])
+
+    @property
+    def log_path(self):
+        """A string that is the path for all logs collected from this device.
+        """
+        return self._log_path
+
+    @log_path.setter
+    def log_path(self, new_path):
+        """Setter for `log_path`, use with caution.
+
+
+        """
+        if self.has_active_service:
+            raise DeviceError(
+                self,
+                'Cannot change `log_path` when there is service running.')
+        old_path = self._log_path
+        utils.create_dir(new_path)
+        if os.path.exists(old_path):
+            distutils.dir_util.copy_tree(old_path, new_path)
+            shutil.rmtree(old_path, ignore_errors=True)
+        self._log_path = new_path
+
+    @property
+    def serial(self):
+        """The serial number used to identify a device.
+
+        This is essentially the value used for adb's `-s` arg, which means it
+        can be a network address or USB bus number.
+        """
+        return self._serial
+
+    def update_serial(self, new_serial):
+        """Updates the serial number of a device.
+
+        The "serial number" used with adb's `-s` arg is not necessarily the
+        actual serial number. For remote devices, it could be a combination of
+        host names and port numbers.
+
+        This is used for when such identifier of remote devices changes during
+        a test. For example, when a remote device reboots, it may come back
+        with a different serial number.
+
+        This is NOT meant for switching the object to represent another device.
+
+        We intentionally did not make it a regular setter of the serial
+        property so people don't accidentally call this without understanding
+        the consequences.
+
+        Args:
+            new_serial: string, the new serial number for the same device.
+
+        Raises:
+            DeviceError: tries to update serial when any service is running.
+        """
+        if self.has_active_service:
+            raise DeviceError(
+                self,
+                'Cannot change device serial number when there is service running.'
+            )
+        if self._debug_tag == self.serial:
+            self._debug_tag = new_serial
+        self._serial = new_serial
 
     def start_services(self, clear_log=True):
         """Starts long running services on the android device, like adb logcat
