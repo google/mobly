@@ -501,12 +501,12 @@ class AndroidDevice(object):
             raise DeviceError(
                 self,
                 'Cannot change `log_path` when there is service running.')
-        if os.listdir(new_path):
-            raise DeviceError(
-                self, 'Logs already exist at %s, cannot override.' % new_path)
         old_path = self._log_path
         if new_path == old_path:
             return
+        if os.listdir(new_path):
+            raise DeviceError(
+                self, 'Logs already exist at %s, cannot override.' % new_path)
         if os.path.exists(old_path):
             # Remove new path so copytree doesn't complain.
             shutil.rmtree(new_path, ignore_errors=True)
