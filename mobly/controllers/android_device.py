@@ -17,7 +17,6 @@ from builtins import open
 from past.builtins import basestring
 
 import contextlib
-import distutils
 import logging
 import os
 import shutil
@@ -497,18 +496,21 @@ class AndroidDevice(object):
 
     @log_path.setter
     def log_path(self, new_path):
-        """Setter for `log_path`, use with caution.
-
-
-        """
+        """Setter for `log_path`, use with caution."""
         if self.has_active_service:
             raise DeviceError(
                 self,
                 'Cannot change `log_path` when there is service running.')
         old_path = self._log_path
-        utils.create_dir(new_path)
+        if new_path == old_path:
+            return
+        if os.listdir(new_path):
+            raise DeviceError(
+                self, 'Logs already exist at %s, cannot override.' % new_path)
         if os.path.exists(old_path):
-            distutils.dir_util.copy_tree(old_path, new_path)
+            # Remove new path so copytree doesn't complain.
+            shutil.rmtree(new_path, ignore_errors=True)
+            shutil.copytree(old_path, new_path)
             shutil.rmtree(old_path, ignore_errors=True)
         self._log_path = new_path
 

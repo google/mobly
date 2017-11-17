@@ -451,9 +451,9 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.utils.start_standing_subprocess', return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
-    def test_AndroidDevice_change_log_path_no_log_exists(self, stop_proc_mock,
-                                           start_proc_mock, FastbootProxy,
-                                           MockAdbProxy):
+    def test_AndroidDevice_change_log_path_no_log_exists(
+            self, stop_proc_mock, start_proc_mock, FastbootProxy,
+            MockAdbProxy):
         ad = android_device.AndroidDevice(serial=1)
         old_path = ad.log_path
         new_log_path = tempfile.mkdtemp()
@@ -478,6 +478,27 @@ class AndroidDeviceTest(unittest.TestCase):
         ad.start_adb_logcat()
         new_log_path = tempfile.mkdtemp()
         expected_msg = '.* Cannot change `log_path` when there is service running.'
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
+            ad.log_path = new_log_path
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.utils.create_dir')
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_change_log_path_with_existing_file(
+            self, stop_proc_mock, start_proc_mock, creat_dir_mock,
+            FastbootProxy, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial=1)
+        new_log_path = tempfile.mkdtemp()
+        with open(os.path.join(new_log_path, 'file.txt'), 'w') as f:
+            f.write('hahah.')
+        expected_msg = '.* Logs already exist .*'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.log_path = new_log_path
 
