@@ -554,6 +554,8 @@ class AndroidDevice(object):
         if self._debug_tag == self.serial:
             self._debug_tag = new_serial
         self._serial = new_serial
+        self.adb.serial = new_serial
+        self.fastboot.serial = new_serial
 
     def start_services(self, clear_log=True):
         """Starts long running services on the android device, like adb logcat
