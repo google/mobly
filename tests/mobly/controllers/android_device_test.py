@@ -519,6 +519,8 @@ class AndroidDeviceTest(unittest.TestCase):
         ad.update_serial(2)
         self.assertEqual(ad.serial, 2)
         self.assertEqual(ad.debug_tag, ad.serial)
+        self.assertEqual(ad.adb.serial, ad.serial)
+        self.assertEqual(ad.fastboot.serial, ad.serial)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
