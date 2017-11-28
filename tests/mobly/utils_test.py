@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import mock
+import os
 import platform
 import socket
+import tempfile
 import time
 from future.tests.base import unittest
 
@@ -49,6 +51,17 @@ class UtilsTest(unittest.TestCase):
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
+
+    def test_create_dir(self):
+        tmp_dir = tempfile.mkdtemp()
+        new_path = os.path.join(tmp_dir, 'haha')
+        utils.create_dir(new_path)
+        self.assertTrue(os.path.exists(new_path))
+
+    def test_create_dir_already_exists(self):
+        tmp_dir = tempfile.mkdtemp()
+        utils.create_dir(tmp_dir)
+        self.assertTrue(os.path.exists(tmp_dir))
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')

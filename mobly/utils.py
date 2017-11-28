@@ -91,7 +91,12 @@ def create_dir(path):
     """
     full_path = abs_path(path)
     if not os.path.exists(full_path):
-        os.makedirs(full_path)
+        try:
+            os.makedirs(full_path)
+        except OSError as e:
+            # ignore the error for dir already exist.
+            if e.errno != os.errno.EEXIST:
+                raise
 
 
 def create_alias(target_path, alias_path):
