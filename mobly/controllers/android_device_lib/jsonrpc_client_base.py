@@ -214,8 +214,8 @@ class JsonRpcClientBase(object):
 
         resp = self._cmd(cmd, uid)
         if not resp:
-            raise ProtocolError(
-                self._ad, ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+            raise ProtocolError(self._ad,
+                                ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
         result = json.loads(str(resp, encoding='utf8'))
         if result['status']:
             self.uid = result['uid']
@@ -227,6 +227,22 @@ class JsonRpcClientBase(object):
         if self._conn:
             self._conn.close()
             self._conn = None
+
+    def _read_response(self):
+        """Reads response from client.
+
+        Returns:
+            The raw response byte string of the responges.
+
+        Raises:
+            DeviceError: a socket error occured during the read.
+        """
+        try:
+            return self._client.readline()
+        except socket.error as e:
+            raise DeviceError(
+                self._ad,
+                'Encountered socket error reading RPC response: %s' % e)
 
     def _cmd(self, command, uid=None):
         """Send a command to the server.
@@ -246,7 +262,7 @@ class JsonRpcClientBase(object):
                 'uid': uid
             }).encode("utf8") + b'\n')
         self._client.flush()
-        return self._client.readline()
+        return self._read_response()
 
     def _rpc(self, method, *args):
         """Sends an rpc to the app.
@@ -268,7 +284,7 @@ class JsonRpcClientBase(object):
             request = json.dumps(data)
             self._client.write(request.encode("utf8") + b'\n')
             self._client.flush()
-            response = self._client.readline()
+            response = self._read_response()
         if not response:
             raise ProtocolError(self._ad,
                                 ProtocolError.NO_RESPONSE_FROM_SERVER)
