@@ -240,7 +240,7 @@ class JsonRpcClientBase(object):
         try:
             return self._client.readline()
         except socket.error as e:
-            raise DeviceError(
+            raise Error(
                 self._ad,
                 'Encountered socket error reading RPC response: %s' % e)
 
