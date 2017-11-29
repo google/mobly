@@ -235,7 +235,7 @@ class JsonRpcClientBase(object):
             The raw response byte string of the responges.
 
         Raises:
-            DeviceError: a socket error occured during the read.
+            Error: a socket error occured during the read.
         """
         try:
             return self._client.readline()
