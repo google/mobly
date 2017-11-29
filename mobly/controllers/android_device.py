@@ -845,7 +845,7 @@ class AndroidDevice(object):
         client = snippet_client.SnippetClient(package=package, ad=self)
         try:
             client.start_app_and_connect()
-        except Exception:
+        except:
             # Log the stacktrace of `e` as re-raising doesn't preserve trace.
             self.log.exception('Failed to start app and connect.')
             # If errors happen, make sure we clean up before raising.
