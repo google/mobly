@@ -55,11 +55,13 @@ class UtilsTest(unittest.TestCase):
     def test_create_dir(self):
         tmp_dir = tempfile.mkdtemp()
         new_path = os.path.join(tmp_dir, 'haha')
+        self.assertFalse(os.path.exists(new_path))
         utils.create_dir(new_path)
         self.assertTrue(os.path.exists(new_path))
 
     def test_create_dir_already_exists(self):
         tmp_dir = tempfile.mkdtemp()
+        self.assertTrue(os.path.exists(tmp_dir))
         utils.create_dir(tmp_dir)
         self.assertTrue(os.path.exists(tmp_dir))
 
