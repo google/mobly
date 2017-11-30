@@ -228,21 +228,39 @@ class JsonRpcClientBase(object):
             self._conn.close()
             self._conn = None
 
-    def _read_response(self):
-        """Reads response from client.
+    def _client_send(self, msg):
+        """Sends an Rpc message through the connection.
 
-        Returns:
-            The raw response byte string of the responges.
+        Args:
+            msg: byte string, the message to send.
 
         Raises:
-            Error: a socket error occured during the read.
+            Error: a socket error occurred during the send.
+        """
+        try:
+            self._client.write(msg)
+            self._client.flush()
+        except socket.error as e:
+            raise Error(
+                self._ad,
+                'Encountered socket error "%s" sending RPC message "%s"' %
+                (e, msg))
+
+    def _client_receive(self):
+        """Receives the server's response of an Rpc message.
+
+        Returns:
+            Raw byte string of the response.
+
+        Raises:
+            Error: a socket error occurred during the read.
         """
         try:
             return self._client.readline()
         except socket.error as e:
             raise Error(
                 self._ad,
-                'Encountered socket error reading RPC response: %s' % e)
+                'Encountered socket error reading RPC response "%s"' % e)
 
     def _cmd(self, command, uid=None):
         """Send a command to the server.
@@ -256,13 +274,12 @@ class JsonRpcClientBase(object):
         """
         if not uid:
             uid = self.uid
-        self._client.write(
+        self._client_send(
             json.dumps({
                 'cmd': command,
                 'uid': uid
             }).encode("utf8") + b'\n')
-        self._client.flush()
-        return self._read_response()
+        return self._client_receive()
 
     def _rpc(self, method, *args):
         """Sends an rpc to the app.
@@ -282,9 +299,8 @@ class JsonRpcClientBase(object):
             apiid = next(self._counter)
             data = {'id': apiid, 'method': method, 'params': args}
             request = json.dumps(data)
-            self._client.write(request.encode("utf8") + b'\n')
-            self._client.flush()
-            response = self._read_response()
+            self._client_send(request.encode("utf8") + b'\n')
+            response = self._client_receive()
         if not response:
             raise ProtocolError(self._ad,
                                 ProtocolError.NO_RESPONSE_FROM_SERVER)
