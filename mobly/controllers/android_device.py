@@ -851,7 +851,9 @@ class AndroidDevice(object):
             # If errors happen, make sure we clean up before raising.
             try:
                 client.stop_app()
-            except:
+            except Exception as e:  # Catch the `stop_app` exception obj so the
+                # subsequent `raise` raises the exception from
+                # `start_app_and_connect`.
                 self.log.exception(
                     'Failed to stop app after failure to start app and connect.'
                 )
