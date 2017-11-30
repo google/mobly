@@ -330,6 +330,9 @@ def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
     Raises:
         Error: if the subprocess could not be stopped.
     """
+    # Only import psutil when actually needed.
+    # psutil may cause import error in certain env. This way the utils module
+    # doesn't crash upon import.
     import psutil
     pid = proc.pid
     logging.debug('Stopping standing subprocess %d', pid)
