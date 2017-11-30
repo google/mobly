@@ -665,6 +665,34 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
+    def test_AndroidDevice_load_snippet_start_app_fails(
+            self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
+        """Verifies that the correct exception is raised if start app failed.
+
+        It's possible that the `stop_app` call as part of the start app failure
+        teardown also fails. So we want the exception from the start app
+        failure.
+        """
+        expected_e = Exception('start failed.')
+        MockSnippetClient.start_app_and_connect = mock.Mock(
+            side_effect=expected_e)
+        MockSnippetClient.stop_app = mock.Mock(
+            side_effect=Exception('stop failed.'))
+        ad = android_device.AndroidDevice(serial=1)
+        try:
+            ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
+        except Exception as e:
+            assertIs(e, expected_e)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
+    @mock.patch('mobly.utils.get_available_host_port')
     def test_AndroidDevice_snippet_cleanup(
             self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial=1)
