@@ -232,13 +232,13 @@ class JsonRpcClientBase(object):
         """Sends an Rpc message through the connection.
 
         Args:
-            msg: byte string, the message to send.
+            msg: string, the message to send.
 
         Raises:
             Error: a socket error occurred during the send.
         """
         try:
-            self._client.write(msg)
+            self._client.write(msg.encode("utf8") + b'\n')
             self._client.flush()
         except socket.error as e:
             raise Error(
@@ -274,11 +274,7 @@ class JsonRpcClientBase(object):
         """
         if not uid:
             uid = self.uid
-        self._client_send(
-            json.dumps({
-                'cmd': command,
-                'uid': uid
-            }).encode("utf8") + b'\n')
+        self._client_send(json.dumps({'cmd': command, 'uid': uid}))
         return self._client_receive()
 
     def _rpc(self, method, *args):
@@ -299,7 +295,7 @@ class JsonRpcClientBase(object):
             apiid = next(self._counter)
             data = {'id': apiid, 'method': method, 'params': args}
             request = json.dumps(data)
-            self._client_send(request.encode("utf8") + b'\n')
+            self._client_send(request)
             response = self._client_receive()
         if not response:
             raise ProtocolError(self._ad,
