@@ -39,7 +39,7 @@ class AdbError(Error):
     """Raised when an adb command encounters an error.
 
     Args:
-        cmd: string, the adb command that timed out
+        cmd: list of strings, the adb command executed.
         stdout: byte string, the raw stdout of the command.
         stderr: byte string, the raw stderr of the command.
         ret_code: int, the return code of the command.
@@ -53,14 +53,15 @@ class AdbError(Error):
 
     def __str__(self):
         return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
-                ) % (self.cmd, self.ret_code, self.stdout, self.stderr)
+                ) % (' '.join(self.cmd), self.ret_code, self.stdout,
+                     self.stderr)
 
 
 class AdbTimeoutError(Error):
     """Raised when an command did not complete within expected time.
 
     Args:
-        cmd: string, the adb command that timed out
+        cmd: list of strings, the adb command that timed out
         timeout: float, the number of seconds passed before timing out.
     """
 
@@ -69,8 +70,8 @@ class AdbTimeoutError(Error):
         self.timeout = timeout
 
     def __str__(self):
-        return 'Timed out executing command "%s" after %ss.' % (self.cmd,
-                                                                self.timeout)
+        return 'Timed out executing command "%s" after %ss.' % (
+            ' '.join(self.cmd), self.timeout)
 
 
 def list_occupied_adb_ports():
@@ -139,7 +140,6 @@ class AdbProxy(object):
             AdbError: The adb command exit code is not 0.
             AdbTimeoutError: The adb command timed out.
         """
-        cmd_str = ' '.join(args)
         proc = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
         process = psutil.Process(proc.pid)
@@ -150,16 +150,16 @@ class AdbProxy(object):
                 process.wait(timeout=timeout)
             except psutil.TimeoutExpired:
                 process.terminate()
-                raise AdbTimeoutError(cmd=cmd_str, timeout=timeout)
+                raise AdbTimeoutError(cmd=args, timeout=timeout)
 
         (out, err) = proc.communicate()
         ret = proc.returncode
-        logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s', cmd_str, out,
-                      err, ret)
+        logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
+                      ' '.join(args), out, err, ret)
         if ret == 0:
             return out
         else:
-            raise AdbError(cmd=cmd_str, stdout=out, stderr=err, ret_code=ret)
+            raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
     def _exec_adb_cmd(self, name, args, shell, timeout):
         if shell:
@@ -233,7 +233,7 @@ class AdbProxy(object):
         options_string = ' '.join(options_list)
 
         instrumentation_command = 'am instrument -r -w %s %s/%s' % (
-            options_string, package, runner, )
+            options_string, package, runner)
         logging.info('AndroidDevice|%s: Executing adb shell %s', self.serial,
                      instrumentation_command)
         return self.shell(instrumentation_command)
