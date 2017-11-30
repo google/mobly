@@ -16,6 +16,7 @@ from builtins import str
 from past.builtins import basestring
 
 import logging
+import pipes
 import psutil
 import subprocess
 import threading
@@ -53,7 +54,7 @@ class AdbError(Error):
 
     def __str__(self):
         return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
-                ) % (' '.join(self.cmd), self.ret_code, self.stdout,
+                ) % (cli_cmd_to_string(self.cmd), self.ret_code, self.stdout,
                      self.stderr)
 
 
@@ -71,7 +72,7 @@ class AdbTimeoutError(Error):
 
     def __str__(self):
         return 'Timed out executing command "%s" after %ss.' % (
-            ' '.join(self.cmd), self.timeout)
+            cli_cmd_to_string(self.cmd), self.timeout)
 
 
 def list_occupied_adb_ports():
@@ -94,6 +95,18 @@ def list_occupied_adb_ports():
             continue
         used_ports.append(int(tokens[1]))
     return used_ports
+
+
+def cli_cmd_to_string(args):
+    """Converts a cmd arg list to string.
+
+    Args:
+        args: list of strings, the arguments of a command.
+
+    Returns:
+        String representation of the command.
+    """
+    return ' '.join([pipes.quote(arg) for arg in args])
 
 
 class AdbProxy(object):
@@ -155,7 +168,7 @@ class AdbProxy(object):
         (out, err) = proc.communicate()
         ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
-                      ' '.join(args), out, err, ret)
+                      cli_cmd_to_string(args), out, err, ret)
         if ret == 0:
             return out
         else:
