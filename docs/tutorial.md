@@ -9,8 +9,7 @@ various devices and you can also use your own custom hardware/equipment.
 
 *   A computer with at least 2 USB ports.
 *   Mobly package and its system dependencies installed on the computer.
-*   One or two Android devices with the [Mobly Bundled Snippets]
-    (https://github.com/google/mobly-bundled-snippets) (MBS) installed. We will
+*   One or two Android devices with the [Mobly Bundled Snippets](https://github.com/google/mobly-bundled-snippets) (MBS) installed. We will
     use MBS to trigger actions on the Android devices.
 *   A working adb setup. To check, connect one Android device to the computer
     and make sure it has "USB debugging" enabled. Make sure the device shows up
@@ -294,13 +293,11 @@ if __name__ == '__main__':
 There's potentially a lot more we could do in this test, e.g. check
 the hardware address, see whether we can pair devices, transfer files, etc.
 
-To learn more about the features included in MBS, go to [MBS repo]
-(https://github.com/google/mobly-bundled-snippets) to see how to check its help
+To learn more about the features included in MBS, go to [MBS repo](https://github.com/google/mobly-bundled-snippets) to see how to check its help
 menu.
 
 To learn more about Mobly Snippet Lib, including features like Espresso support
-and asynchronous calls, see the [snippet lib examples]
-(https://github.com/google/mobly-snippet-lib/tree/master/examples).
+and asynchronous calls, see the [snippet lib examples](https://github.com/google/mobly-snippet-lib/tree/master/examples).
 
 
 # Example 6: Generated Tests
