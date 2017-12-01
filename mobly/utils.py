@@ -27,7 +27,6 @@ import subprocess
 import time
 import traceback
 
-from mobly.controllers.android_device_lib import adb
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
 MAX_FILENAME_LEN = 255
@@ -406,6 +405,8 @@ def get_available_host_port():
     Raises:
         Error: when no port is found after MAX_PORT_ALLOCATION_RETRY times.
     """
+    # Only import adb module if needed.
+    from mobly.controllers.android_device_lib import adb
     for _ in range(MAX_PORT_ALLOCATION_RETRY):
         port = portpicker.PickUnusedPort()
         # Make sure adb is not using this port so we don't accidentally
