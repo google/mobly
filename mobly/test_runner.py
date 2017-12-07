@@ -57,7 +57,54 @@ def main(argv=None):
         argv: A list that is then parsed as cli args. If None, defaults to cli
             input.
     """
-    # Parse cli args.
+    args = parse_mobly_cli_args(argv)
+    # Find the test class in the test script.
+    test_class = _find_test_class()
+    if args.list_tests:
+        _print_test_names(test_class)
+        sys.exit(0)
+    # Load test config file.
+    test_configs = config_parser.load_test_config_file(args.config[0],
+                                                       args.test_bed)
+    # Parse test specifiers if exist.
+    tests = None
+    if args.tests:
+        tests = args.tests
+    # Execute the test class with configs.
+    ok = True
+    for config in test_configs:
+        runner = TestRunner(
+            log_dir=config.log_path, test_bed_name=config.test_bed_name)
+        runner.add_test_class(config, test_class, tests)
+        try:
+            runner.run()
+            ok = runner.results.is_all_pass and ok
+        except signals.TestAbortAll:
+            pass
+        except:
+            logging.exception('Exception when executing %s.',
+                              config.test_bed_name)
+            ok = False
+    if not ok:
+        sys.exit(1)
+
+
+def parse_mobly_cli_args(argv):
+    """Parses cli args that are consumed by Mobly.
+
+    This is the arg parsing logic for the default test_runner.main entry point.
+
+    Multiple arg parsers can be applied to the same set of cli input. So you
+    can use this logic in addition to any other args you want to parse. This
+    function ignores the args that don't apply to default `test_runner.main`.
+
+    Args:
+        argv: A list that is then parsed as cli args. If None, defaults to cli
+            input.
+
+    Returns:
+        Namespace containing the parsed args.
+    """
     parser = argparse.ArgumentParser(description='Mobly Test Executable.')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
@@ -89,36 +136,7 @@ def main(argv=None):
         help='Specify which test beds to run tests on.')
     if not argv:
         argv = sys.argv[1:]
-    args = parser.parse_known_args(argv)[0]
-    # Find the test class in the test script.
-    test_class = _find_test_class()
-    if args.list_tests:
-        _print_test_names(test_class)
-        sys.exit(0)
-    # Load test config file.
-    test_configs = config_parser.load_test_config_file(args.config[0],
-                                                       args.test_bed)
-    # Parse test specifiers if exist.
-    tests = None
-    if args.tests:
-        tests = args.tests
-    # Execute the test class with configs.
-    ok = True
-    for config in test_configs:
-        runner = TestRunner(
-            log_dir=config.log_path, test_bed_name=config.test_bed_name)
-        runner.add_test_class(config, test_class, tests)
-        try:
-            runner.run()
-            ok = runner.results.is_all_pass and ok
-        except signals.TestAbortAll:
-            pass
-        except:
-            logging.exception('Exception when executing %s.',
-                              config.test_bed_name)
-            ok = False
-    if not ok:
-        sys.exit(1)
+    return parser.parse_known_args(argv)[0]
 
 
 def _find_test_class():
@@ -454,8 +472,8 @@ class TestRunner(object):
             logging.warning('No optional debug info found for controller %s. '
                             'To provide it, implement get_info in this '
                             'controller module.', module_config_name)
-        logging.debug('Found %d objects for controller %s',
-                      len(objects), module_config_name)
+        logging.debug('Found %d objects for controller %s', len(objects),
+                      module_config_name)
         destroy_func = module.destroy
         self._controller_destructors[module_ref_name] = destroy_func
         return objects
