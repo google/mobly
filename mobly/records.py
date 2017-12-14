@@ -164,16 +164,30 @@ class ExceptionRecord(object):
                 traceback.format_exception(e.__class__, e, exc_traceback))
         # Populate fields based on the type of the termination signal.
         if self.is_test_signal:
-            try:
-                self.details = str(e.details)
-            except UnicodeEncodeError:
-                self.details = unicode(e.details)
+            self._set_details(e.details)
             self.extras = e.extras
         else:
-            try:
-                self.details = str(e)
-            except UnicodeEncodeError:
-                self.details = unicode(e)
+            self._set_details(e)
+
+    def _set_details(self, content):
+        """Sets the `details` field.
+
+        Args:
+            content: the content to extract details from.
+        """
+        try:
+            self.details = str(content)
+        except UnicodeEncodeError:
+            if sys.version_info < (3, 0):
+                # If Py2 threw encode error, convert to unicode.
+                self.details = unicode(content)
+            else:
+                # We should never hit this in Py3, if this happens, record
+                # an encoded version of the content for users to handle.
+                logging.error(
+                    'Unable to decode "%s" in Py3, encoding in utf-8.',
+                    content)
+                self.details = content.encode('utf-8')
 
     def to_dict(self):
         result = {}
@@ -507,7 +521,7 @@ class TestResult(object):
         except TypeError:
             logging.warning('Controller info for %s is not YAML serializable!'
                             ' Coercing it to string.' % name)
-            self.controller_info[name] = str(info, 'utf-8')
+            self.controller_info[name] = str(info)
             return
         self.controller_info[name] = info
 

@@ -15,6 +15,7 @@
 from builtins import str
 
 import copy
+import mock
 import os
 import shutil
 import tempfile
@@ -369,6 +370,23 @@ class RecordsTest(unittest.TestCase):
         new_er = copy.deepcopy(er)
         self.assertIsNot(er, new_er)
         self.assertDictEqual(er.to_dict(), new_er.to_dict())
+
+    def test_add_controller_info(self):
+        tr = records.TestResult()
+        self.assertFalse(tr.controller_info)
+        tr.add_controller_info('MockDevice', ['magicA', 'magicB'])
+        self.assertTrue(tr.controller_info)
+        self.assertEqual(tr.controller_info['MockDevice'],
+                         ['magicA', 'magicB'])
+
+    @mock.patch('yaml.dump', side_effect=TypeError('ha'))
+    def test_add_controller_info_not_serializable(self, mock_yaml_dump):
+        tr = records.TestResult()
+        self.assertFalse(tr.controller_info)
+        tr.add_controller_info('MockDevice', ['magicA', 'magicB'])
+        self.assertTrue(tr.controller_info)
+        self.assertEqual(tr.controller_info['MockDevice'],
+                         "['magicA', 'magicB']")
 
 
 if __name__ == "__main__":
