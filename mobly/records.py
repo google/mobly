@@ -100,7 +100,12 @@ class TestSummaryWriter(object):
         new_content['Type'] = entry_type.value
         # Use safe_dump here to avoid language-specific tags in final output.
         with open(self._path, 'a') as f:
-            yaml.safe_dump(new_content, f, explicit_start=True, indent=4)
+            yaml.safe_dump(
+                new_content,
+                f,
+                explicit_start=True,
+                allow_unicode=True,
+                indent=4)
 
 
 class TestResultEnums(object):
@@ -159,10 +164,16 @@ class ExceptionRecord(object):
                 traceback.format_exception(e.__class__, e, exc_traceback))
         # Populate fields based on the type of the termination signal.
         if self.is_test_signal:
-            self.details = str(e.details)
+            try:
+                self.details = str(e.details)
+            except UnicodeEncodeError:
+                self.details = unicode(e.details)
             self.extras = e.extras
         else:
-            self.details = str(e)
+            try:
+                self.details = str(e)
+            except UnicodeEncodeError:
+                self.details = unicode(e)
 
     def to_dict(self):
         result = {}
@@ -496,7 +507,7 @@ class TestResult(object):
         except TypeError:
             logging.warning('Controller info for %s is not YAML serializable!'
                             ' Coercing it to string.' % name)
-            self.controller_info[name] = str(info)
+            self.controller_info[name] = str(info, 'utf-8')
             return
         self.controller_info[name] = info
 

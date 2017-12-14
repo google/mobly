@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from builtins import str
+
 import copy
 import os
 import shutil
@@ -161,6 +163,30 @@ class RecordsTest(unittest.TestCase):
             result=records.TestResultEnums.TEST_RESULT_FAIL,
             details=self.details,
             extras=self.float_extra)
+
+    def test_result_record_fail_with_unicode_test_signal(self):
+        record = records.TestResultRecord(self.tn)
+        record.test_begin()
+        details = u'\u2022'
+        s = signals.TestFailure(details, self.float_extra)
+        record.test_fail(s)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_FAIL,
+            details=details,
+            extras=self.float_extra)
+
+    def test_result_record_fail_with_unicode_exception(self):
+        record = records.TestResultRecord(self.tn)
+        record.test_begin()
+        details = u'\u2022'
+        s = Exception(details)
+        record.test_fail(s)
+        self.verify_record(
+            record=record,
+            result=records.TestResultEnums.TEST_RESULT_FAIL,
+            details=details,
+            extras=None)
 
     def test_result_record_fail_with_json_extra(self):
         record = records.TestResultRecord(self.tn)
