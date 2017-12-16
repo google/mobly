@@ -100,7 +100,12 @@ class TestSummaryWriter(object):
         new_content['Type'] = entry_type.value
         # Use safe_dump here to avoid language-specific tags in final output.
         with open(self._path, 'a') as f:
-            yaml.safe_dump(new_content, f, explicit_start=True, indent=4)
+            yaml.safe_dump(
+                new_content,
+                f,
+                explicit_start=True,
+                allow_unicode=True,
+                indent=4)
 
 
 class TestResultEnums(object):
@@ -159,10 +164,30 @@ class ExceptionRecord(object):
                 traceback.format_exception(e.__class__, e, exc_traceback))
         # Populate fields based on the type of the termination signal.
         if self.is_test_signal:
-            self.details = str(e.details)
+            self._set_details(e.details)
             self.extras = e.extras
         else:
-            self.details = str(e)
+            self._set_details(e)
+
+    def _set_details(self, content):
+        """Sets the `details` field.
+
+        Args:
+            content: the content to extract details from.
+        """
+        try:
+            self.details = str(content)
+        except UnicodeEncodeError:
+            if sys.version_info < (3, 0):
+                # If Py2 threw encode error, convert to unicode.
+                self.details = unicode(content)
+            else:
+                # We should never hit this in Py3, if this happens, record
+                # an encoded version of the content for users to handle.
+                logging.error(
+                    'Unable to decode "%s" in Py3, encoding in utf-8.',
+                    content)
+                self.details = content.encode('utf-8')
 
     def to_dict(self):
         result = {}
