@@ -106,6 +106,9 @@ def cli_cmd_to_string(args):
     Returns:
         String representation of the command.
     """
+    if isinstance(args, basestring):
+        # Return directly if it's already a string.
+        return args
     return ' '.join([pipes.quote(arg) for arg in args])
 
 

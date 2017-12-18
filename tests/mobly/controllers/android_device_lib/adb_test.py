@@ -53,8 +53,8 @@ class AdbTest(unittest.TestCase):
         # the created process object in adb._exec_cmd()
         mock_psutil_process.return_value = mock.Mock()
 
-        mock_proc.communicate = mock.Mock(return_value=('out'.encode('utf-8'),
-                                                        'err'.encode('utf-8')))
+        mock_proc.communicate = mock.Mock(
+            return_value=('out'.encode('utf-8'), 'err'.encode('utf-8')))
         mock_proc.returncode = 0
         return (mock_psutil_process, mock_popen)
 
@@ -169,6 +169,12 @@ class AdbTest(unittest.TestCase):
                 ['adb', 'shell', MOCK_OPTIONS_INSTRUMENTATION_COMMAND],
                 shell=False,
                 timeout=None)
+
+    def test_cli_cmd_to_string(self):
+        cmd = ['"adb"', 'a b', 'c//']
+        self.assertEqual(adb.cli_cmd_to_string(cmd), '\'"adb"\' \'a b\' c//')
+        cmd = 'adb -s meme do something ab_cd'
+        self.assertEqual(adb.cli_cmd_to_string(cmd), cmd)
 
 
 if __name__ == '__main__':
