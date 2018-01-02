@@ -46,15 +46,19 @@ class TestSummaryEntryType(enum.Enum):
     """
     # A list of all the tests requested for a test run.
     # This is dumped at the beginning of a summary file so we know what was
-    # requested in case the test is interrupted and the final summary is not.
+    # requested in case the test is interrupted and the final summary is not
     # created.
     TEST_NAME_LIST = 'TestNameList'
     # Records of test results.
     RECORD = 'Record'
-    # A summary of the test run stats, like how many test failed.
+    # A summary of the test run stats, e.g. how many test failed.
     SUMMARY = 'Summary'
     # Information on the controllers used in the test.
     CONTROLLER_INFO = 'ControllerInfo'
+    # Additional data added by users during test.
+    # This can be added at any point in the test, so do not assume the location
+    # of these entries in the summary file.
+    USER_DATA = 'UserData'
 
 
 class Error(Exception):
