@@ -22,6 +22,7 @@ import json
 import logging
 import pprint
 import sys
+import threading
 import traceback
 import yaml
 
@@ -82,6 +83,7 @@ class TestSummaryWriter(object):
 
     def __init__(self, path):
         self._path = path
+        self._lock = threading.Lock()
 
     def dump(self, content, entry_type):
         """Dumps a dictionary as a yaml document to the summary file.
@@ -100,16 +102,17 @@ class TestSummaryWriter(object):
         Raises:
             recoreds.Error: An invalid entry type is passed in.
         """
-        new_content = copy.deepcopy(content)
-        new_content['Type'] = entry_type.value
-        # Use safe_dump here to avoid language-specific tags in final output.
-        with open(self._path, 'a') as f:
-            yaml.safe_dump(
-                new_content,
-                f,
-                explicit_start=True,
-                allow_unicode=True,
-                indent=4)
+        with self._lock:
+            new_content = copy.deepcopy(content)
+            new_content['Type'] = entry_type.value
+            # Use safe_dump here to avoid language-specific tags in final output.
+            with open(self._path, 'a') as f:
+                yaml.safe_dump(
+                    new_content,
+                    f,
+                    explicit_start=True,
+                    allow_unicode=True,
+                    indent=4)
 
 
 class TestResultEnums(object):
