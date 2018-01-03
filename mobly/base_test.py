@@ -334,14 +334,17 @@ class BaseTestClass(object):
                               func.__name__, self.current_test_name)
             tr_record.add_error(func.__name__, e)
 
-    def add_to_summary(self, content):
-        """Add a USER_CONTENT entry to test summary file.
+    def record_user_data(self, content):
+        """Record a USER_DATA entry to test summary file.
 
         Sometimes additional data need to be recorded in summary file for
         debugging or post-test analysis.
 
         Each call adds a new entry to the summary file, with no guarantee of
         its position among the summary file entries.
+
+        The content should be a dict. If absent timestamp field is added for
+        ease of parsing later.
 
         Args:
             content: dict, the data to add to summary file.
