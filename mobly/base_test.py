@@ -18,6 +18,7 @@ import functools
 import inspect
 import logging
 import sys
+import time
 
 from future.utils import raise_with_traceback
 
@@ -334,8 +335,8 @@ class BaseTestClass(object):
                               func.__name__, self.current_test_name)
             tr_record.add_error(func.__name__, e)
 
-    def record_user_data(self, content):
-        """Record a USER_DATA entry to test summary file.
+    def record_data(self, content):
+        """Record an entry in test summary file.
 
         Sometimes additional data need to be recorded in summary file for
         debugging or post-test analysis.
@@ -351,7 +352,8 @@ class BaseTestClass(object):
         """
         if 'timestamp' not in content:
             content['timestamp'] = time.time()
-        self.summary_writer.dump(content)
+        self.summary_writer.dump(content,
+                                 records.TestSummaryEntryType.USER_DATA)
 
     def exec_one_test(self, test_name, test_method, args=(), **kwargs):
         """Executes one test and update test results.

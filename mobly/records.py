@@ -85,6 +85,18 @@ class TestSummaryWriter(object):
         self._path = path
         self._lock = threading.Lock()
 
+    def __copy__(self):
+        """Make a "copy" of the object.
+
+        The writer is merely a wrapper object for a path with a global lock for
+        write operation. So we simply return the object itself for copy
+        operations.
+        """
+        return self
+
+    def __deepcopy__(self, *args):
+        return self.__copy__()
+
     def dump(self, content, entry_type):
         """Dumps a dictionary as a yaml document to the summary file.
 
