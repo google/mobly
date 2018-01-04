@@ -421,7 +421,7 @@ class AndroidDevice(object):
     """
 
     def __init__(self, serial=''):
-        self._serial = serial
+        self._serial = str(serial)
         # logging.log_path only exists when this is used in an Mobly test run.
         self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self._log_path = os.path.join(self._log_path_base,
@@ -570,6 +570,7 @@ class AndroidDevice(object):
         Raises:
             DeviceError: tries to update serial when any service is running.
         """
+        new_serial = str(new_serial)
         if self.has_active_service:
             raise DeviceError(
                 self,
