@@ -130,12 +130,7 @@ def get_info(ads):
     Returns:
         A list of dict, each representing info for an AndroidDevice objects.
     """
-    device_info = []
-    for ad in ads:
-        info = {'serial': ad.serial, 'model': ad.model}
-        info.update(ad.build_info)
-        device_info.append(info)
-    return device_info
+    return [ad.device_info for ad in ads]
 
 
 def _start_services_on_ads(ads):
@@ -411,7 +406,7 @@ class AndroidDevice(object):
     Android device, whether it's a real device or an emulator instance.
 
     Attributes:
-        serial: A string that's the serial number of the Androi device.
+        serial: A string that's the serial number of the Android device.
         log_path: A string that is the path where all logs collected on this
             android device should be stored.
         log: A logger adapted from root logger with an added prefix specific
@@ -426,14 +421,15 @@ class AndroidDevice(object):
     """
 
     def __init__(self, serial=''):
-        self._serial = serial
+        self._serial = str(serial)
         # logging.log_path only exists when this is used in an Mobly test run.
         self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self._log_path = os.path.join(self._log_path_base,
                                       'AndroidDevice%s' % self._serial)
         self._debug_tag = self._serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                              {'tag': self.debug_tag})
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
+            'tag': self.debug_tag
+        })
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -445,9 +441,35 @@ class AndroidDevice(object):
         # A dict for tracking snippet clients. Keys are clients' attribute
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
+        # Device info cache.
+        self._device_info = {}
 
     def __repr__(self):
         return '<AndroidDevice|%s>' % self.debug_tag
+
+    @property
+    def device_info(self):
+        """Information specific to the device's property/state.
+
+        By default, the latest serial, model, and build_info are included.
+
+        Additional info can be added via `add_device_info`.
+        """
+        info = {'serial': self.serial, 'model': self.model}
+        info.update(self.build_info)
+        info.update(self._device_info)
+        return info
+
+    def add_device_info(self, name, info):
+        """Add information of the device to be pulled into controller info.
+
+        Adding the same info name the second time will override existing info.
+
+        Args:
+            name: string, name of this info.
+            info: serializable, content of the info.
+        """
+        self._device_info.update({name: info})
 
     @property
     def debug_tag(self):
@@ -546,6 +568,7 @@ class AndroidDevice(object):
         Raises:
             DeviceError: tries to update serial when any service is running.
         """
+        new_serial = str(new_serial)
         if self.has_active_service:
             raise DeviceError(
                 self,
