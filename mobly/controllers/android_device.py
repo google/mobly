@@ -442,22 +442,24 @@ class AndroidDevice(object):
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
         # Device info cache.
-        self._device_info = {}
+        self._user_added_device_info = {}
 
     def __repr__(self):
         return '<AndroidDevice|%s>' % self.debug_tag
 
     @property
     def device_info(self):
-        """Information specific to the device's property/state.
+        """Information to be pulled into controller info.
 
-        By default, the latest serial, model, and build_info are included.
-
-        Additional info can be added via `add_device_info`.
+        The latest serial, model, and build_info are included. Additional info
+        can be added via `add_device_info`.
         """
-        info = {'serial': self.serial, 'model': self.model}
-        info.update(self.build_info)
-        info.update(self._device_info)
+        info = {
+            'serial': self.serial,
+            'model': self.model,
+            'build_info': self.build_info,
+            'user_added_info': self._user_added_device_info
+        }
         return info
 
     def add_device_info(self, name, info):
@@ -469,7 +471,7 @@ class AndroidDevice(object):
             name: string, name of this info.
             info: serializable, content of the info.
         """
-        self._device_info.update({name: info})
+        self._user_added_device_info.update({name: info})
 
     @property
     def debug_tag(self):
