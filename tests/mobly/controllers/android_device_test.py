@@ -277,13 +277,13 @@ class AndroidDeviceTest(unittest.TestCase):
         device_info = ad.device_info
         self.assertEqual(device_info['serial'], 1)
         self.assertEqual(device_info['model'], 'fakemodel')
-        self.assertEqual(device_info['build_id'], 'AB42')
-        self.assertEqual(device_info['build_type'], 'userdebug')
+        self.assertEqual(device_info['build_info']['build_id'], 'AB42')
+        self.assertEqual(device_info['build_info']['build_type'], 'userdebug')
         ad.add_device_info('sim_type', 'Fi')
         ad.add_device_info('build_id', 'CD42')
         device_info = ad.device_info
-        self.assertEqual(device_info['sim_type'], 'Fi')
-        self.assertEqual(device_info['build_id'], 'CD42')
+        self.assertEqual(device_info['user_added_info']['sim_type'], 'Fi')
+        self.assertEqual(device_info['user_added_info']['build_id'], 'CD42')
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
