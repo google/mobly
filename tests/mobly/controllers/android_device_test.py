@@ -272,6 +272,25 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
         return_value=mock_android_device.MockFastbootProxy(1))
+    def test_AndroidDevice_device_info(self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial=1)
+        device_info = ad.device_info
+        self.assertEqual(device_info['serial'], 1)
+        self.assertEqual(device_info['model'], 'fakemodel')
+        self.assertEqual(device_info['build_info']['build_id'], 'AB42')
+        self.assertEqual(device_info['build_info']['build_type'], 'userdebug')
+        ad.add_device_info('sim_type', 'Fi')
+        ad.add_device_info('build_id', 'CD42')
+        device_info = ad.device_info
+        self.assertEqual(device_info['user_added_info']['sim_type'], 'Fi')
+        self.assertEqual(device_info['user_added_info']['build_id'], 'CD42')
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.utils.create_dir')
     def test_AndroidDevice_take_bug_report(self, create_dir_mock,
                                            FastbootProxy, MockAdbProxy):
