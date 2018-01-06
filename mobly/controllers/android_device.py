@@ -130,12 +130,7 @@ def get_info(ads):
     Returns:
         A list of dict, each representing info for an AndroidDevice objects.
     """
-    device_info = []
-    for ad in ads:
-        info = {'serial': ad.serial, 'model': ad.model}
-        info.update(ad.build_info)
-        device_info.append(info)
-    return device_info
+    return [ad.device_info for ad in ads]
 
 
 def _start_services_on_ads(ads):
@@ -432,8 +427,9 @@ class AndroidDevice(object):
         self._log_path = os.path.join(self._log_path_base,
                                       'AndroidDevice%s' % self._serial)
         self._debug_tag = self._serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                              {'tag': self.debug_tag})
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
+            'tag': self.debug_tag
+        })
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -445,9 +441,37 @@ class AndroidDevice(object):
         # A dict for tracking snippet clients. Keys are clients' attribute
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
+        # Device info cache.
+        self._user_added_device_info = {}
 
     def __repr__(self):
         return '<AndroidDevice|%s>' % self.debug_tag
+
+    @property
+    def device_info(self):
+        """Information to be pulled into controller info.
+
+        The latest serial, model, and build_info are included. Additional info
+        can be added via `add_device_info`.
+        """
+        info = {
+            'serial': self.serial,
+            'model': self.model,
+            'build_info': self.build_info,
+            'user_added_info': self._user_added_device_info
+        }
+        return info
+
+    def add_device_info(self, name, info):
+        """Add information of the device to be pulled into controller info.
+
+        Adding the same info name the second time will override existing info.
+
+        Args:
+            name: string, name of this info.
+            info: serializable, content of the info.
+        """
+        self._user_added_device_info.update({name: info})
 
     @property
     def debug_tag(self):
