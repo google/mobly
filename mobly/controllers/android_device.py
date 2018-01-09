@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str
+from builtins import str as new_str
 from builtins import open
 from past.builtins import basestring
 
@@ -175,7 +175,7 @@ def _parse_device_list(device_list_str, key):
     Returns:
         A list of android device serial numbers.
     """
-    clean_lines = str(device_list_str, 'utf-8').strip().split('\n')
+    clean_lines = new_str(device_list_str, 'utf-8').strip().split('\n')
     results = []
     for line in clean_lines:
         tokens = line.strip().split('\t')
@@ -204,7 +204,7 @@ def list_adb_devices_by_usb_id():
         none.
     """
     out = adb.AdbProxy().devices(['-l'])
-    clean_lines = str(out, 'utf-8').strip().split('\n')
+    clean_lines = new_str(out, 'utf-8').strip().split('\n')
     results = []
     for line in clean_lines:
         tokens = line.strip().split()
@@ -1086,7 +1086,7 @@ class AndroidDevice(object):
             results: results have data flow information
         """
         out = self.adb.shell('iperf3 -c %s %s' % (server_host, extra_args))
-        clean_out = str(out, 'utf-8').strip().split('\n')
+        clean_out = new_str(out, 'utf-8').strip().split('\n')
         if 'error' in clean_out[0].lower():
             return False, clean_out
         return True, clean_out

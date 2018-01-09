@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from builtins import str as new_str
+
 import logging
 import mock
 import os
 import shutil
+import sys
 import tempfile
+import yaml
 
 from future.tests.base import unittest
 
@@ -284,6 +288,25 @@ class AndroidDeviceTest(unittest.TestCase):
         device_info = ad.device_info
         self.assertEqual(device_info['user_added_info']['sim_type'], 'Fi')
         self.assertEqual(device_info['user_added_info']['build_id'], 'CD42')
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice_serial_is_valid(self, MockFastboot, MockAdbProxy):
+        """Verifies that the serial is a primitive string type and serializable.
+        """
+        ad = android_device.AndroidDevice(serial=1)
+        # In py2, checks that ad.serial is not the backported py3 str type, 
+        # which is not dumpable by yaml in py2.
+        # In py3, new_str is equivalent to str, so this check is not
+        # appropirate in py3.
+        if sys.version_info < (3, 0):
+            self.assertFalse(isinstance(ad.serial, new_str))
+        self.assertTrue(isinstance(ad.serial, str))
+        yaml.safe_dump(ad.serial)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
