@@ -18,6 +18,7 @@ import logging
 import mock
 import os
 import shutil
+import sys
 import tempfile
 import yaml
 
