@@ -298,7 +298,12 @@ class AndroidDeviceTest(unittest.TestCase):
         """Verifies that the serial is a primitive string type and serializable.
         """
         ad = android_device.AndroidDevice(serial=1)
-        self.assertFalse(isinstance(ad.serial, new_str))
+        # In py2, checks that ad.serial is not the backported py3 str type, 
+        # which is not dumpable by yaml in py2.
+        # In py3, new_str is equivalent to str, so this check is not
+        # appropirate in py3.
+        if sys.version_info < (3, 0):
+            self.assertFalse(isinstance(ad.serial, new_str))
         self.assertTrue(isinstance(ad.serial, str))
         yaml.safe_dump(ad.serial)
 
