@@ -60,16 +60,32 @@ def create(configs):
  
  
 def get_instances_with_configs(configs):
-    objs = []
-    for c in configs:
-        objs.append(Monsoon(serial=c['serial']))
-    return objs
+    """Create AndroidDevice instances from a list of dict configs.
+
+    Each config should have the required key-value pair 'serial'.
+
+    Args:
+        configs: A list of dicts each representing the configuration of one
+            Monsoon.
+
+    Returns:
+        A list of Monsoon objects.
+    """
+    return get_instances([c['serial'] for c in configs])
  
  
-def get_instances(configs):
+def get_instances(serials):
+    """Create Monsoon instances from a list of serials.
+
+    Args:
+        serials: A list of Monsoon serials.
+
+    Returns:
+        A list of Monsoon objects.
+    """
     objs = []
-    for c in configs:
-        objs.append(Monsoon(serial=c))
+    for s in serials:
+        objs.append(Monsoon(serial=s))
     return objs
 
 
