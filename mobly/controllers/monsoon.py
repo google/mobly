@@ -42,6 +42,29 @@ DEFAULT_TIMEOUT_USB_ON = 15
 
 
 def create(configs):
+    if not configs:
+        raise MonsoonError('Configuration is empty, abort!')
+    elif not isinstance(configs, list):
+        raise MonsoonError('Configuration should be a list, abort!')
+    elif isinstance(configs[0], dict):
+        # Configs is a list of dicts.
+        objs = get_instances_with_configs(configs)
+    elif isinstance(configs[0], basestring):
+        # Configs is a list of strings representing serials.
+        objs = get_instances(configs)
+    else:
+        raise Error('No valid config found in: %s' % configs)i
+    return objs
+
+
+def get_instances_with_configs(configs):
+    objs = []
+    for c in configs:
+        objs.append(Monsoon(serial=c['serial']))
+    return objs
+
+
+def get_instances(configs):def create(configs):
     objs = []
     for c in configs:
         objs.append(Monsoon(serial=c))
