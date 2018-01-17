@@ -51,7 +51,7 @@ def create(configs):
     elif isinstance(configs[0], dict):
         # Configs is a list of dicts.
         objs = get_instances_with_configs(configs)
-    elif isinstance(configs[0], basestring):
+    elif isinstance(configs[0], int):
         # Configs is a list of strings representing serials.
         objs = get_instances(configs)
     else:
@@ -62,7 +62,8 @@ def create(configs):
 def get_instances_with_configs(configs):
     """Create Monsoon instances from a list of dict configs.
 
-    Each config should have the required key-value pair 'serial'.
+    Each config should have the required key-value pair
+    'serial': <an integer id>.
 
     Args:
         configs: A list of dicts each representing the configuration of one
@@ -78,7 +79,7 @@ def get_instances(serials):
     """Create Monsoon instances from a list of serials.
 
     Args:
-        serials: A list of Monsoon serials.
+        serials: A list of Monsoon (integer) serials.
 
     Returns:
         A list of Monsoon objects.
