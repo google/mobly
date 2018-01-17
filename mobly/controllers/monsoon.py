@@ -60,7 +60,7 @@ def create(configs):
  
  
 def get_instances_with_configs(configs):
-    """Create AndroidDevice instances from a list of dict configs.
+    """Create Monsoon instances from a list of dict configs.
 
     Each config should have the required key-value pair 'serial'.
 
