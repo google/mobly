@@ -16,6 +16,8 @@
 (http://msoon.com/LabEquipment/PowerMonitor/).
 """
 
+from past.builtins import basestring
+
 import fcntl
 import logging
 import os
@@ -42,9 +44,49 @@ DEFAULT_TIMEOUT_USB_ON = 15
 
 
 def create(configs):
+    if not configs:
+        raise MonsoonError('Configuration is empty, abort!')
+    elif not isinstance(configs, list):
+        raise MonsoonError('Configuration should be a list, abort!')
+    elif isinstance(configs[0], dict):
+        # Configs is a list of dicts.
+        objs = get_instances_with_configs(configs)
+    elif isinstance(configs[0], int):
+        # Configs is a list of ints representing serials.
+        objs = get_instances(configs)
+    else:
+        raise Error('No valid config found in: %s' % configs)
+    return objs
+ 
+ 
+def get_instances_with_configs(configs):
+    """Create Monsoon instances from a list of dict configs.
+
+    Each config should have the required key-value pair
+    'serial': <an integer id>.
+
+    Args:
+        configs: A list of dicts each representing the configuration of one
+            Monsoon.
+
+    Returns:
+        A list of Monsoon objects.
+    """
+    return get_instances([c['serial'] for c in configs])
+ 
+ 
+def get_instances(serials):
+    """Create Monsoon instances from a list of serials.
+
+    Args:
+        serials: A list of Monsoon (integer) serials.
+
+    Returns:
+        A list of Monsoon objects.
+    """
     objs = []
-    for c in configs:
-        objs.append(Monsoon(serial=c))
+    for s in serials:
+        objs.append(Monsoon(serial=s))
     return objs
 
 
