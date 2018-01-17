@@ -52,7 +52,7 @@ def create(configs):
         # Configs is a list of dicts.
         objs = get_instances_with_configs(configs)
     elif isinstance(configs[0], int):
-        # Configs is a list of strings representing serials.
+        # Configs is a list of ints representing serials.
         objs = get_instances(configs)
     else:
         raise Error('No valid config found in: %s' % configs)
