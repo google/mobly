@@ -64,7 +64,7 @@ def get_instances_with_configs(configs):
     return objs
 
 
-def get_instances(configs):def create(configs):
+def get_instances(configs):
     objs = []
     for c in configs:
         objs.append(Monsoon(serial=c))
