@@ -26,7 +26,8 @@ install_requires = [
     'psutil',
     'pytz',
     'pyyaml',
-    'timeout_decorator'
+    'timeout_decorator',
+    'pyserial'
 ]
 
 if sys.version_info < (3, ):
