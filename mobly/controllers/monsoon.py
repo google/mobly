@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,8 +57,8 @@ def create(configs):
     else:
         raise Error('No valid config found in: %s' % configs)
     return objs
- 
- 
+
+
 def get_instances_with_configs(configs):
     """Create Monsoon instances from a list of dict configs.
 
@@ -73,8 +73,8 @@ def get_instances_with_configs(configs):
         A list of Monsoon objects.
     """
     return get_instances([c['serial'] for c in configs])
- 
- 
+
+
 def get_instances(serials):
     """Create Monsoon instances from a list of serials.
 
