@@ -270,6 +270,72 @@ class TestRunner(object):
             self.test_class = test_class
             self.tests = tests
 
+    class _TestRunInstanceLoggerProxy(object):
+        """A class to proxy access to the logging utility for a specific test
+        run.
+
+        Attributes:
+            self.log_path: The file path for the logs.
+            self.start_time: The start time of logging.
+            self.summary_writer: The records.TestSummaryWriter for outputing
+                test results.
+        """
+
+        def __init__(self, log_dir, test_bed_name):
+            """Constructor for the logger proxy.
+
+            Args:
+                log_dir: string, the directory to save the log files to.
+                test_bed_name: string, the name of the test bed for logging
+                    purposes.
+            """
+            self.start_time = logger.get_log_file_timestamp()
+            self.log_path = os.path.join(log_dir, test_bed_name,
+                                         self.start_time)
+            self.summary_writer = records.TestSummaryWriter(
+                os.path.join(self.log_path, records.OUTPUT_FILE_SUMMARY))
+            logger.setup_test_logger(self.log_path, test_bed_name)
+
+        def setup_test_config_logging(self, test_config):
+            """Sets up the test configuration for logging output.
+
+            Args:
+                config: config_parser.TestRunConfig, configuration that will be
+                    used to write output to the logs.
+            """
+            test_config.log_path = self.log_path
+            test_config.summary_writer = self.summary_writer
+
+        def log_results(self, test_bed_name, results):
+            """Logs the results at the end of a test run.
+
+            Args:
+                test_bed_name: string, the name of the test bed for logging
+                    purposes.
+                results: records.TestResult, the results of the test run to log.
+            """
+            # Write controller info and summary to summary file.
+            self.summary_writer.dump(
+                results.controller_info,
+                records.TestSummaryEntryType.CONTROLLER_INFO)
+            self.summary_writer.dump(results.summary_dict(),
+                                     records.TestSummaryEntryType.SUMMARY)
+            # Stop and show summary.
+            msg = '\nSummary for test run %s@%s: %s\n' % (
+                test_bed_name, self.start_time, results.summary_str())
+            self._write_results_json_str(results)
+            logging.info(msg.strip())
+            logger.kill_test_logger(logging.getLogger())
+
+        def _write_results_json_str(self, results):
+            """Writes out a json file with the test result info for easy parsing.
+
+            TODO(#270): Deprecate with old output format.
+            """
+            path = os.path.join(self.log_path, 'test_run_summary.json')
+            with open(path, 'w') as f:
+                f.write(results.json_str())
+
     def __init__(self, log_dir, test_bed_name):
         """Constructor for TestRunner.
 
@@ -286,6 +352,14 @@ class TestRunner(object):
         # Controller management. These members will be updated for each class.
         self._controller_registry = {}
         self._controller_destructors = {}
+
+        self._logger_proxy = None
+
+    def setup_logger(self):
+        """Sets up logging for the next test run."""
+        if not self._logger_proxy:
+            self._logger_proxy = TestRunner._TestRunInstanceLoggerProxy(
+                log_dir=self._log_dir, test_bed_name=self._test_bed_name)
 
     def add_test_class(self, config, test_class, tests=None):
         """Adds tests to the execution plan of this TestRunner.
@@ -348,19 +422,14 @@ class TestRunner(object):
         """
         if not self._test_run_infos:
             raise Error('No tests to execute.')
-        start_time = logger.get_log_file_timestamp()
-        log_path = os.path.join(self._log_dir, self._test_bed_name, start_time)
-        summary_writer = records.TestSummaryWriter(
-            os.path.join(log_path, records.OUTPUT_FILE_SUMMARY))
-        logger.setup_test_logger(log_path, self._test_bed_name)
+        self.setup_logger()
         try:
             for test_run_info in self._test_run_infos:
                 # Set up the test-specific config
                 test_config = test_run_info.config.copy()
-                test_config.log_path = log_path
+                self._logger_proxy.setup_test_config_logging(test_config)
                 test_config.register_controller = functools.partial(
                     self._register_controller, test_config)
-                test_config.summary_writer = summary_writer
                 try:
                     self._run_test_class(test_config, test_run_info.test_class,
                                          test_run_info.tests)
@@ -371,16 +440,8 @@ class TestRunner(object):
                 finally:
                     self._unregister_controllers()
         finally:
-            # Write controller info and summary to summary file.
-            summary_writer.dump(self.results.controller_info,
-                                records.TestSummaryEntryType.CONTROLLER_INFO)
-            summary_writer.dump(self.results.summary_dict(),
-                                records.TestSummaryEntryType.SUMMARY)
-            # Stop and show summary.
-            msg = '\nSummary for test run %s@%s: %s\n' % (
-                self._test_bed_name, start_time, self.results.summary_str())
-            logging.info(msg.strip())
-            logger.kill_test_logger(logging.getLogger())
+            self._logger_proxy.log_results(self._test_bed_name, self.results)
+            self._logger_proxy = None
 
     def _register_controller(self, config, module, required=True,
                              min_number=1):
@@ -471,8 +532,8 @@ class TestRunner(object):
             logging.warning('No optional debug info found for controller %s. '
                             'To provide it, implement get_info in this '
                             'controller module.', module_config_name)
-        logging.debug('Found %d objects for controller %s', len(objects),
-                      module_config_name)
+        logging.debug('Found %d objects for controller %s',
+                      len(objects), module_config_name)
         destroy_func = module.destroy
         self._controller_destructors[module_ref_name] = destroy_func
         return objects
