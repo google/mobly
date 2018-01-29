@@ -19,6 +19,7 @@ from enum import Enum
 from mobly import base_test
 from mobly import records
 from mobly import signals
+from mobly import utils
 
 
 class _InstrumentationStructurePrefixes(object):
@@ -280,6 +281,8 @@ class _InstrumentationBlock(object):
     needs to be done for those.
 
     Attributes:
+        begin_time: string or None, optional timestamp for when the test
+            corresponding to the instrumentation block began.
         current_key: string, the current key that is being parsed, default to
             _InstrumentationKnownStatusKeys.STREAM.
         error_message: string, an error message indicating that something
@@ -318,6 +321,8 @@ class _InstrumentationBlock(object):
             _InstrumentationKnownResultKeys.SHORTMSG: [],
         }
         self.unknown_keys = defaultdict(list)
+
+        self.begin_time = None
 
     @property
     def is_empty(self):
@@ -371,6 +376,8 @@ class _InstrumentationBlock(object):
             _InstrumentationStructurePrefixes.STATUS_CODE,
             status_code_line,
         )
+        if self.status_code == _InstrumentationStatusCodes.START:
+            self.begin_time = utils.get_current_epoch_time()
 
     def set_key(self, structure_prefix, key_line):
         """Sets the current key for the instrumentation block.
@@ -437,11 +444,14 @@ class _InstrumentationBlock(object):
             self.state = new_state
             return self
         else:
-            return _InstrumentationBlock(
+            next_block = _InstrumentationBlock(
                 state=new_state,
                 prefix=self.prefix,
                 previous_instrumentation_block=self,
             )
+            if self.status_code in _InstrumentationStatusCodeCategories.TIMING:
+                next_block.begin_time = self.begin_time
+            return next_block
 
 
 class _InstrumentationBlockFormatter(object):
@@ -463,6 +473,7 @@ class _InstrumentationBlockFormatter(object):
         for key, value in instrumentation_block.unknown_keys.items():
             self._unknown_keys[key] = '\n'.join(
                 instrumentation_block.unknown_keys[key])
+        self._begin_time = instrumentation_block.begin_time
 
     def _get_name(self):
         """Gets the method name of the test method for the instrumentation
@@ -586,6 +597,9 @@ class _InstrumentationBlockFormatter(object):
             t_name=self._get_full_name(),
             t_class=mobly_test_class,
         )
+        if self._begin_time:
+            tr_record.begin_time = self._begin_time
+
         if self._is_failed():
             tr_record.test_fail(
                 e=signals.TestFailure(details=details, extras=extras))
@@ -920,17 +934,18 @@ class BaseInstrumentationTestClass(base_test.BaseTestClass):
             TestError if the instrumentation run crashed or if parsing the
                 output failed.
         """
+        # TODO(winterfrosts): Make this safe to execute in parallel
+        self._instrumentation_block = _InstrumentationBlock(prefix=prefix)
+
+        def parse_instrumentation(line):
+            self._instrumentation_block = self._parse_line(
+                self._instrumentation_block, line)
+
         instrumentation_output = device.adb.instrument(
             package=package,
             options=options,
             runner=runner,
-        )
-        logging.info('Outputting instrumentation test log...')
-        logging.info(instrumentation_output)
+            level=logging.INFO,
+            handler=parse_instrumentation)
 
-        # TODO(winterfrosts): Implement online output generation and parsing.
-        instrumentation_block = _InstrumentationBlock(prefix=prefix)
-        for line in instrumentation_output.splitlines():
-            instrumentation_block = self._parse_line(instrumentation_block,
-                                                     line)
-        return self._finish_parsing(instrumentation_block)
+        return self._finish_parsing(self._instrumentation_block)

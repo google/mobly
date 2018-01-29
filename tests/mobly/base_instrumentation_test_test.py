@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 import mock
 import shutil
@@ -41,10 +42,18 @@ class MockInstrumentationTest(BaseInstrumentationTestClass):
         super(MockInstrumentationTest, self).__init__(mock_test_run_configs)
 
     def run_mock_instrumentation_test(self, instrumentation_output, prefix):
+        def fake_instrument(package,
+                            options=None,
+                            runner=None,
+                            level=logging.DEBUG,
+                            handler=None):
+            for line in instrumentation_output.splitlines():
+                handler(line)
+            return instrumentation_output
+
         mock_device = mock.Mock()
         mock_device.adb = mock.Mock()
-        mock_device.adb.instrument = mock.MagicMock(
-            return_value=instrumentation_output)
+        mock_device.adb.instrument = fake_instrument
         return self.run_instrumentation_test(
             mock_device, MOCK_TEST_PACKAGE, prefix=prefix)
 
@@ -134,7 +143,8 @@ class BaseInstrumentationTestTest(unittest.TestCase):
                                         expected_skipped=[],
                                         expected_completed_and_passed=False,
                                         expected_has_error=False,
-                                        prefix=None):
+                                        prefix=None,
+                                        expected_executed_times=[]):
         result = self.run_instrumentation_test(
             instrumentation_output, prefix=prefix)
         if expected_has_error:
@@ -151,6 +161,12 @@ class BaseInstrumentationTestTest(unittest.TestCase):
         for actual_test, expected_test in zip(result.skipped,
                                               expected_skipped):
             self.assert_equal_test(actual_test, expected_test)
+        if expected_executed_times:
+            for actual_test, expected_time in zip(result.executed,
+                                                  expected_executed_times):
+                (expected_begin_time, expected_end_time) = expected_time
+                self.assertEquals(actual_test.begin_time, expected_begin_time)
+                self.assertEquals(actual_test.end_time, expected_end_time)
 
     def test_run_instrumentation_test_with_invalid_syntax(self):
         instrumentation_output = """\
@@ -226,7 +242,8 @@ INSTRUMENTATION_CODE: -1
         self.assert_run_instrumentation_test(
             instrumentation_output, expected_completed_and_passed=True)
 
-    def test_run_instrumentation_test_with_passing_test(self):
+    @mock.patch('mobly.utils.get_current_epoch_time')
+    def test_run_instrumentation_test_with_passing_test(self, mock_get_time):
         instrumentation_output = """\
 INSTRUMENTATION_STATUS: numtests=1
 INSTRUMENTATION_STATUS: stream=
@@ -255,10 +272,12 @@ INSTRUMENTATION_CODE: -1
         expected_executed = [
             ('com.my.package.test.BasicTest#basicTest', signals.TestPass),
         ]
+        mock_get_time.side_effect = [13, 51]
         self.assert_run_instrumentation_test(
             instrumentation_output,
             expected_executed=expected_executed,
-            expected_completed_and_passed=True)
+            expected_completed_and_passed=True,
+            expected_executed_times=[(13, 51)])
 
     def test_run_instrumentation_test_with_prefix_test(self):
         instrumentation_output = """\
@@ -605,7 +624,8 @@ INSTRUMENTATION_CODE: -1"""
             expected_skipped=expected_skipped,
             expected_completed_and_passed=True)
 
-    def test_run_instrumentation_test_with_crashed_test(self):
+    @mock.patch('mobly.utils.get_current_epoch_time')
+    def test_run_instrumentation_test_with_crashed_test(self, mock_get_time):
         instrumentation_output = """\
 INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
@@ -620,12 +640,15 @@ INSTRUMENTATION_CODE: 0"""
         expected_executed = [
             ('com.my.package.test.BasicTest#crashTest', signals.TestError),
         ]
+        mock_get_time.side_effect = [67, 942]
         self.assert_run_instrumentation_test(
             instrumentation_output,
             expected_executed=expected_executed,
-            expected_has_error=True)
+            expected_has_error=True,
+            expected_executed_times=[(67, 942)])
 
-    def test_run_instrumentation_test_with_crashing_test(self):
+    @mock.patch('mobly.utils.get_current_epoch_time')
+    def test_run_instrumentation_test_with_crashing_test(self, mock_get_time):
         instrumentation_output = """\
 INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
@@ -657,10 +680,13 @@ INSTRUMENTATION_CODE: -1"""
             ('com.my.package.test.BasicTest#crashAndRecover2Test',
              signals.TestError),
         ]
+        mock_get_time.side_effect = [16, 412, 4143, 6547]
+        # TODO(winterfrosts): Fix this issue with overlapping timing
         self.assert_run_instrumentation_test(
             instrumentation_output,
             expected_executed=expected_executed,
-            expected_completed_and_passed=True)
+            expected_completed_and_passed=True,
+            expected_executed_times=[(16, 4143), (412, 6547)])
 
     def test_run_instrumentation_test_with_runner_setup_crash(self):
         instrumentation_output = """\
