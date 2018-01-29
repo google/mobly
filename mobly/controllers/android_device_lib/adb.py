@@ -177,24 +177,74 @@ class AdbProxy(object):
         else:
             raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, args, shell, timeout):
+    def _stream_cmd(self, args, shell, level, handler):
+        """Streams and executes adb commands.
+
+        Args:
+            args: string or list of strings, program arguments.
+                See subprocess.Popen() documentation.
+            shell: bool, True to run this command through the system shell,
+                False to invoke it directly. See subprocess.Popen() docs.
+            level: int, logging level to stream the adb command output at.
+            handler: func, a function to handle adb output line by line.
+
+        Returns:
+            The output of the adb command run if exit code is 0.
+
+        Raises:
+            AdbError: The adb command exit code is not 0.
+        """
+        proc = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=shell,
+            bufsize=1)
+        out_buffer = []
+        err = ''
+        while proc.poll() is None:
+            line = proc.stdout.readline()
+            if line:
+                logging.log(level, line.strip())
+                out_buffer.append(line)
+                if handler:
+                    handler(line)
+            else:
+                (eof_out, eof_err) = proc.communicate()
+                out_buffer.append(eof_out)
+                err = eof_err
+        out = ''.join(out_buffer)
+        ret = proc.returncode
+        if ret == 0:
+            return out
+        else:
+            raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
+
+    def _sanitize_adb_cmd(self, name, args, shell):
+        args = args or ''
+        clean_name = name.replace('_', '-')
         if shell:
             # Add quotes around "adb" in case the ADB path contains spaces. This
             # is pretty common on Windows (e.g. Program Files).
             if self.serial:
-                adb_cmd = '"%s" -s "%s" %s %s' % (ADB, self.serial, name, args)
+                adb_cmd = '"%s" -s "%s" %s %s' % (ADB, self.serial, clean_name,
+                                                  args)
             else:
-                adb_cmd = '"%s" %s %s' % (ADB, name, args)
+                adb_cmd = '"%s" %s %s' % (ADB, clean_name, args)
         else:
             adb_cmd = [ADB]
             if self.serial:
                 adb_cmd.extend(['-s', self.serial])
-            adb_cmd.append(name)
+            adb_cmd.append(clean_name)
             if args:
                 if isinstance(args, basestring):
                     adb_cmd.append(args)
                 else:
                     adb_cmd.extend(args)
+        return adb_cmd
+
+    def _exec_adb_cmd(self, name, args, shell, timeout):
+        adb_cmd = self._sanitize_adb_cmd(name, args, shell)
         return self._exec_cmd(adb_cmd, shell=shell, timeout=timeout)
 
     def getprop(self, prop_name):
@@ -233,7 +283,12 @@ class AdbProxy(object):
         with ADB_PORT_LOCK:
             return self._exec_adb_cmd('forward', args, shell, timeout=None)
 
-    def instrument(self, package, options=None, runner=None):
+    def instrument(self,
+                   package,
+                   options=None,
+                   runner=None,
+                   level=logging.DEBUG,
+                   handler=None):
         """Runs an instrumentation command on the device.
 
         This is a convenience wrapper to avoid parameter formatting.
@@ -252,6 +307,9 @@ class AdbProxy(object):
                 class.
             runner: string, the test runner name, which defaults to
                 DEFAULT_INSTRUMENTATION_RUNNER.
+            level: int, logging level to stream the instrumentation outputi at.
+            handler: func, a function to parse the instrumentation output line
+                by line.
 
         Returns:
             The output of instrumentation command.
@@ -270,7 +328,10 @@ class AdbProxy(object):
             options_string, package, runner)
         logging.info('AndroidDevice|%s: Executing adb shell %s', self.serial,
                      instrumentation_command)
-        return self.shell(instrumentation_command)
+        adb_cmd = self._sanitize_adb_cmd(
+            'shell', instrumentation_command, shell=False)
+        return self._stream_cmd(
+            adb_cmd, shell=False, level=level, handler=handler)
 
     def __getattr__(self, name):
         def adb_call(args=None, shell=False, timeout=None):
@@ -287,9 +348,6 @@ class AdbProxy(object):
             Returns:
                 The output of the adb command run if exit code is 0.
             """
-            args = args or ''
-            clean_name = name.replace('_', '-')
-            return self._exec_adb_cmd(
-                clean_name, args, shell=shell, timeout=timeout)
+            return self._exec_adb_cmd(name, args, shell=shell, timeout=timeout)
 
         return adb_call

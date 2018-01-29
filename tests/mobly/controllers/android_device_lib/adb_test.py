@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import mock
 
 from collections import OrderedDict
@@ -137,42 +138,58 @@ class AdbTest(unittest.TestCase):
             mock_exec_cmd.assert_called_once_with(
                 '"adb" -s "12345" shell arg1 arg2', shell=True, timeout=None)
 
+    def test_instrument_with_info_logging(self):
+        """Verifies the AndroidDevice object's instrument command is called
+        with the correct logging level.
+        """
+        with mock.patch.object(adb.AdbProxy, '_stream_cmd') as mock_exec_cmd:
+            adb.AdbProxy().instrument(
+                MOCK_INSTRUMENTATION_PACKAGE, level=logging.INFO)
+            mock_exec_cmd.assert_called_once_with(
+                ['adb', 'shell', MOCK_BASIC_INSTRUMENTATION_COMMAND],
+                shell=False,
+                handler=None,
+                level=logging.INFO)
+
     def test_instrument_without_parameters(self):
         """Verifies the AndroidDevice object's instrument command is correct in
         the basic case.
         """
-        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+        with mock.patch.object(adb.AdbProxy, '_stream_cmd') as mock_exec_cmd:
             adb.AdbProxy().instrument(MOCK_INSTRUMENTATION_PACKAGE)
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', MOCK_BASIC_INSTRUMENTATION_COMMAND],
                 shell=False,
-                timeout=None)
+                handler=None,
+                level=logging.DEBUG)
 
     def test_instrument_with_runner(self):
         """Verifies the AndroidDevice object's instrument command is correct
         with a runner specified.
         """
-        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+        with mock.patch.object(adb.AdbProxy, '_stream_cmd') as mock_exec_cmd:
             adb.AdbProxy().instrument(
                 MOCK_INSTRUMENTATION_PACKAGE,
                 runner=MOCK_INSTRUMENTATION_RUNNER)
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', MOCK_RUNNER_INSTRUMENTATION_COMMAND],
                 shell=False,
-                timeout=None)
+                handler=None,
+                level=logging.DEBUG)
 
     def test_instrument_with_options(self):
         """Verifies the AndroidDevice object's instrument command is correct
         with options.
         """
-        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+        with mock.patch.object(adb.AdbProxy, '_stream_cmd') as mock_exec_cmd:
             adb.AdbProxy().instrument(
                 MOCK_INSTRUMENTATION_PACKAGE,
                 options=MOCK_INSTRUMENTATION_OPTIONS)
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', MOCK_OPTIONS_INSTRUMENTATION_COMMAND],
                 shell=False,
-                timeout=None)
+                handler=None,
+                level=logging.DEBUG)
 
     def test_cli_cmd_to_string(self):
         cmd = ['"adb"', 'a b', 'c//']
