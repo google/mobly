@@ -781,7 +781,8 @@ INSTRUMENTATION_CODE: 0
             expected_executed=expected_executed,
             expected_has_error=True)
 
-    def test_run_instrumentation_test_with_multiple_tests(self):
+    @mock.patch('mobly.utils.get_current_epoch_time')
+    def test_run_instrumentation_test_with_multiple_tests(self, mock_get_time):
         instrumentation_output = """\
 INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
 INSTRUMENTATION_STATUS: current=1
@@ -1065,10 +1066,12 @@ INSTRUMENTATION_CODE: -1"""
              signals.TestSkip),
             ('com.my.package.test.BasicTest#ignoredTest', signals.TestSkip),
         ]
+        mock_get_time.side_effect = [54, 64, -1, -1, -1, -1, 89, 94]
         self.assert_run_instrumentation_test(
             instrumentation_output,
             expected_executed=expected_executed,
-            expected_skipped=expected_skipped)
+            expected_skipped=expected_skipped,
+            expected_executed_times=[(54, 64), (89, 94)])
 
     def test__Instrumentation_block_set_key_on_multiple_equals_sign(self):
         value = "blah=blah, blah2=blah2, blah=2=1=2"
