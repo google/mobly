@@ -388,9 +388,7 @@ class TestRunner(object):
                                 records.TestSummaryEntryType.SUMMARY)
             # Stop and show summary.
             msg = '\nSummary for test run %s@%s: %s\n' % (
-                self._test_bed_name, self._start_time,
-                self.results.summary_str())
-            self._write_results_json_str(self._log_path)
+                self._test_bed_name, start_time, self.results.summary_str())
             logging.info(msg.strip())
             logger.kill_test_logger(logging.getLogger())
             self._has_logger = False
@@ -503,12 +501,3 @@ class TestRunner(object):
                 logging.exception('Exception occurred destroying %s.', name)
         self._controller_registry = {}
         self._controller_destructors = {}
-
-    def _write_results_json_str(self, log_path):
-        """Writes out a json file with the test result info for easy parsing.
-
-        TODO(#270): Deprecate with old output format.
-        """
-        path = os.path.join(log_path, 'test_run_summary.json')
-        with open(path, 'w') as f:
-            f.write(self.results.json_str())
