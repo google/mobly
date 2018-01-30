@@ -88,8 +88,6 @@ class RecordsTest(unittest.TestCase):
         # results.
         self.assertTrue(str(record), "str of the record should not be empty.")
         self.assertTrue(repr(record), "the record's repr shouldn't be empty.")
-        self.assertTrue(record.json_str(), ("json str of the record should "
-                                            "not be empty."))
 
     """ Begin of Tests """
 

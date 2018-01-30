@@ -163,12 +163,6 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     if filename is None:
         filename = get_log_file_timestamp()
         utils.create_dir(log_path)
-    # TODO(#270): Deprecate `test_run_details.txt` when we remove old output
-    # format support.
-    fh = logging.FileHandler(os.path.join(log_path, 'test_run_details.txt'))
-    fh.setFormatter(f_formatter)
-    fh.setLevel(logging.DEBUG)
-    log.addHandler(fh)
     # Write logger output to files
     fh_info = logging.FileHandler(
         os.path.join(log_path, records.OUTPUT_FILE_INFO_LOG))

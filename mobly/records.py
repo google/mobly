@@ -417,27 +417,6 @@ class TestResultRecord(object):
         d[TestResultEnums.RECORD_STACKTRACE] = self.stacktrace
         return d
 
-    def json_str(self):
-        """Converts this test record to a string in json format.
-
-        TODO(#270): Deprecate with old output format.
-
-        Format of the json string is:
-
-        .. code-block:: json
-
-            {
-                'Test Name': <test name>,
-                'Begin Time': <epoch timestamp>,
-                'Details': <details>,
-                ...
-            }
-
-        Returns:
-            A json-format string representing the test record.
-        """
-        return json.dumps(self.to_dict())
-
 
 class TestResult(object):
     """A class that contains metrics of a test run.
@@ -562,35 +541,6 @@ class TestResult(object):
             return True
         return False
 
-    def json_str(self):
-        """Converts this test result to a string in json format.
-
-        TODO(#270): Deprecate with old output format.
-
-        Format of the json string is:
-
-        .. code-block:: json
-
-            {
-                'Results': [
-                    {<executed test record 1>},
-                    {<executed test record 2>},
-                    ...
-                ],
-                'Summary': <summary dict>
-            }
-
-        Returns:
-            A json-format string representing the test results.
-        """
-        d = {}
-        d['ControllerInfo'] = self.controller_info
-        records_to_write = itertools.chain(self.passed, self.failed,
-                                           self.skipped, self.error)
-        d['Results'] = [record.to_dict() for record in records_to_write]
-        d['Summary'] = self.summary_dict()
-        json_str = json.dumps(d, indent=4, sort_keys=True)
-        return json_str
 
     def requested_test_names_dict(self):
         """Gets the requested test names of a test run in a dict format.
