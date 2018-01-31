@@ -205,10 +205,11 @@ class AdbProxy(object):
         while proc.poll() is None:
             line = proc.stdout.readline()
             if line:
-                logging.log(level, line.strip())
-                out_buffer.append(line)
+                stripped_line = line.rstrip()
+                logging.log(level, stripped_line)
+                out_buffer.append(stripped_line)
                 if handler:
-                    handler(line)
+                    handler(stripped_line)
             else:
                 (eof_out, eof_err) = proc.communicate()
                 out_buffer.append(eof_out)
