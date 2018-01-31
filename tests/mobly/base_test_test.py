@@ -297,6 +297,7 @@ class BaseTestTest(unittest.TestCase):
         # Make sure the full stacktrace of `setup_test` is preserved.
         self.assertTrue('self.setup_test()' in actual_record.stacktrace)
         self.assertIsNone(actual_record.extras)
+        self.assertTrue(actual_record.end_time)
         expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
@@ -314,6 +315,7 @@ class BaseTestTest(unittest.TestCase):
         actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertTrue(actual_record.end_time)
         self.assertIsNone(actual_record.extras)
         expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                             "Requested 1, Skipped 0")
@@ -355,6 +357,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
+        self.assertTrue(actual_record.end_time)
         expected_summary = ("Error 0, Executed 1, Failed 0, Passed 1, "
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
@@ -379,6 +382,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
+        self.assertTrue(actual_record.end_time)
         expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
