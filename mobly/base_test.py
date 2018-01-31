@@ -376,6 +376,7 @@ class BaseTestClass(object):
                     raise
                 except Exception as e:
                     logging.exception(e)
+                    tr_record.test_error()
                     tr_record.add_error('teardown_test', e)
                     teardown_test_failed = True
                 else:
