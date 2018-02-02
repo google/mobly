@@ -22,6 +22,7 @@
 
 [Full list of changes.](https://github.com/google/mobly/milestone/13?closed=1)
 
+
 ## 1.6.1: New Output
 
 ### New
