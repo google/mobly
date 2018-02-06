@@ -1,5 +1,27 @@
 # Mobly release history
 
+## 1.7: Expectation APIs and Instrumentation Test Runner
+
+### New
+  * APIs for specifying expectation in test for delayed test termination.
+    `mobly.expects`
+  * A runner class for easily running regular Instrumentation tests with Mobly.
+    [Tutorial](https://github.com/google/mobly/blob/master/docs/instrumentation_tutorial.md).
+  * API to get runtime test info during the test.
+  * Support specifying file location and timeout in `take_bug_report`.
+  * Support changing device serial during test. Needed for remote devices.
+  * Allow adding custom controller info for `AndroidDevice`.
+
+### Breaking Changes
+  * Monsoon config format change:
+    Old: `'Monsoon': [123, 456]` 
+    New: `'Monsoon': [{'serial': 123}, {'serial': 456'}]`
+
+### Deprecated
+  * Old output files.
+
+[Full list of changes.](https://github.com/google/mobly/milestone/13?closed=1)
+
 
 ## 1.6.1: New Output
 
