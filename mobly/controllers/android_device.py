@@ -1060,7 +1060,7 @@ class AndroidDevice(object):
             # shell=True as this command redirects the stdout to a local file
             # using shell redirection.
             self.adb.bugreport(
-                ' > %s' % full_out_path, shell=True, timeout=timeout)
+                ' > "%s"' % full_out_path, shell=True, timeout=timeout)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
 
