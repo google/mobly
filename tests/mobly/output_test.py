@@ -24,6 +24,7 @@ from mobly import test_runner
 
 from tests.lib import mock_controller
 from tests.lib import integration_test
+from tests.lib import teardown_class_failure_test
 
 
 class OutputTest(unittest.TestCase):
@@ -47,7 +48,7 @@ class OutputTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
-    def test_output(self):
+    def test_basic_output(self):
         """Verifies the expected output files from a test run.
 
         * Files are correctly created.
@@ -88,6 +89,33 @@ class OutputTest(unittest.TestCase):
             content = f.read()
             self.assertIn('INFO', content)
             self.assertNotIn('DEBUG', content)
+
+    def test_teardown_class_output(self):
+        """Verifies the summary file includes the failure record for
+        teardown_class.
+        """
+        mock_test_config = self.base_mock_test_config.copy()
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config,
+                          teardown_class_failure_test.TearDownClassFailureTest)
+        tr.run()
+        output_dir = os.path.join(self.log_dir, self.test_bed_name, 'latest')
+        summary_file_path = os.path.join(output_dir,
+                                         records.OUTPUT_FILE_SUMMARY)
+        found = False
+        with open(summary_file_path, 'r') as f:
+            raw_content = f.read()
+            f.seek(0)
+            for entry in yaml.load_all(f):
+                if (entry['Type'] == 'Record'
+                        and entry[records.TestResultEnums.RECORD_NAME] ==
+                        'teardown_class'):
+                    found = True
+                    break
+            self.assertTrue(
+                found,
+                'No record for teardown_class found in the output file:\n %s' %
+                raw_content)
 
 
 if __name__ == "__main__":

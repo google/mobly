@@ -189,9 +189,12 @@ class BaseTestClass(object):
         try:
             self.teardown_class()
         except Exception as e:
+            logging.exception('Error encountered in teardown_class.')
             record.test_error(e)
             record.update_record()
             self.results.add_class_error(record)
+            self.summary_writer.dump(record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
 
     def teardown_class(self):
         """Teardown function that will be called after all the selected tests in
