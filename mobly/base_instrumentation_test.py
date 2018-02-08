@@ -941,8 +941,9 @@ class BaseInstrumentationTestClass(base_test.BaseTestClass):
         self._instrumentation_block = _InstrumentationBlock(prefix=prefix)
 
         def parse_instrumentation(line):
+            stripped_line = line.rstrip()
             self._instrumentation_block = self._parse_line(
-                self._instrumentation_block, line)
+                self._instrumentation_block, stripped_line)
 
         instrumentation_output = device.adb.instrument(
             package=package,
