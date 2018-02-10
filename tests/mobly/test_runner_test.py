@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 import mock
 import os
 import shutil
 import tempfile
+import re
+import sys
 import yaml
 from future.tests.base import unittest
 
@@ -28,6 +31,9 @@ from tests.lib import mock_android_device
 from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import integration2_test
+from tests.lib import foo_test
+from tests.lib import bar_test
+from tests.lib import baz_test
 
 
 class TestRunnerTest(unittest.TestCase):
@@ -298,6 +304,18 @@ class TestRunnerTest(unittest.TestCase):
             tr.add_test_class(self.base_mock_test_config,
                               integration_test.IntegrationTest)
 
+    def test_add_test_class_not_subclass_basetest(self):
+        mock_test_config = self.base_mock_test_config.copy()
+
+        class BadTest(object):
+            pass
+
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        with self.assertRaisesRegex(test_runner.Error,
+                                    'Test class BadTest does not extend '
+                                    'mobly.base_test.BaseTestClass'):
+            tr.add_test_class(mock_test_config, BadTest)
+
     def test_run_no_tests(self):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         with self.assertRaisesRegex(test_runner.Error, 'No tests to execute.'):
@@ -337,6 +355,55 @@ class TestRunnerTest(unittest.TestCase):
                              mock_find_test):
         test_runner.main(['-c', 'some/path/foo.yaml', '-b', 'hello'])
         mock_config.assert_called_with('some/path/foo.yaml', None)
+
+    def test_select_test_methods_valid_selection(self):
+        mock_test_config = self.base_mock_test_config.copy()
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, foo_test.FooTest)
+        tr.add_test_class(mock_test_config, bar_test.BarTest)
+        tr.add_test_class(mock_test_config, baz_test.BazTest)
+        tr.select_test_methods(['FooTest', 'BarTest.test_bar_a'])
+        tr.run()
+        results = tr.results.summary_dict()
+        self.assertEqual(results['Requested'], 3)
+
+    def test_select_test_methods_invalid_class(self):
+        mock_test_config = self.base_mock_test_config.copy()
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, foo_test.FooTest)
+        # Note, not adding BarTest
+        with self.assertRaisesRegex(
+                test_runner.Error,
+                'Trying to select test methods from classes \[\'BarTest\'\] '
+                'that have not been added to TestRunner.'):
+            tr.select_test_methods(['FooTest', 'BarTest.test_bar'])
+
+    def test_select_test_methods_invalid_method(self):
+        mock_test_config = self.base_mock_test_config.copy()
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, foo_test.FooTest)
+        with self.assertRaisesRegex(
+                test_runner.Error,
+                'Trying to selected nonexistent test methods \[\'test_nonexistent_method\'\] '
+                r'from test class FooTest'):
+            tr.select_test_methods(['FooTest.test_nonexistent_method'])
+
+    def test_print_all_test_methods(self):
+        mock_test_config = self.base_mock_test_config.copy()
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, foo_test.FooTest)
+        tr.add_test_class(mock_test_config, bar_test.BarTest)
+        # python 2/3 compatibility.
+        try:
+            from StringIO import StringIO
+        except ImportError:
+            from io import StringIO
+        capturedOutput = StringIO()
+        sys.stdout = capturedOutput
+        tr.print_all_test_methods()
+        expected = 'FooTest.test_foo_a\nFooTest.test_foo_b\nBarTest.test_bar_a\nBarTest.test_bar_b'
+        self.assertTrue(re.search(expected, capturedOutput.getvalue()))
+        sys.stdout = sys.__stdout__
 
 
 if __name__ == "__main__":

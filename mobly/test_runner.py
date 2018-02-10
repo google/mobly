@@ -17,6 +17,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 import argparse
+import collections
 import copy
 import functools
 import inspect
@@ -180,6 +181,59 @@ def _print_test_names(test_class):
         print(name)
 
 
+def _compute_selected_tests(selected_tests):
+    """Computes tests to run for each class from selector strings.
+
+    This function transforms a list of selector strings (such as FooTest or
+    FooTest.test_method_a) to an ordered dict where keys are test classes (strings), and
+    values are lists of selected test methods (strings) in those classes. 
+    None means all methods in that class are selected.
+
+    Args:
+        selected_tests: (list of string) list of tests to execute, eg:
+            [
+                'FooTest',
+                'BarTest',
+                'BazTest.test_method_a',
+                'BazTest.test_method_b'
+            ].
+            May be empty, in which case all tests in the class are selected.
+
+    Returns:
+        dict: str class -> list(str method).
+        For above example: 
+        {
+            'FooTest': None,
+            'BarTest': None,
+            'BazTest': ['test_method_a', 'test_method_b'],
+        }
+    """
+    test_class_name_to_tests = collections.OrderedDict()
+    for test_name in selected_tests:
+        if '.' in test_name:  # Has a test method
+            (test_class_name, test_name) = test_name.split('.')
+            if test_class_name not in test_class_name_to_tests:
+                # Never seen this class before
+                test_class_name_to_tests[test_class_name] = [test_name]
+            elif test_class_name_to_tests[test_class_name] is None:
+                # Already running all tests in this class, so ignore this extra
+                # test.
+                pass
+            else:
+                test_class_name_to_tests[test_class_name].append(test_name)
+        else:  # No test method; run all tests in this class.
+            test_class_name_to_tests[test_name] = None
+    return test_class_name_to_tests
+
+
+def _get_all_tests(test_class, config):
+    """Returns all test methods (including generated ones) belonging to  test_class(config)."""
+    config_copy = config.copy()  # just in case.
+    test_instance = test_class(config_copy)
+    test_instance.setup_generated_tests
+    return test_instance.get_existing_test_names()
+
+
 def verify_controller_module(module):
     """Verifies a module object follows the required interface for
     controllers.
@@ -312,9 +366,96 @@ class TestRunner(object):
                 'TestRunner\'s test bed is "%s", but a test config with a '
                 'different test bed ("%s") was added.' %
                 (self._test_bed_name, config.test_bed_name))
+
+        if not issubclass(test_class, base_test.BaseTestClass):
+            raise Error('Test class %s does not extend '
+                        'mobly.base_test.BaseTestClass' % test_class.__name__)
+
         self._test_run_infos.append(
             TestRunner._TestRunInfo(
                 config=config, test_class=test_class, tests=tests))
+
+    def select_test_methods(self, test_selections):
+        """Edits the execution plan of this TestRunner from selector strings.
+
+        This function take a list of selector strings (such as FooTest or
+        FooTest.test_method_a) and edits the execution plan of this TestRunner to 
+        run only the selected tests. Note that all specified test classes must have 
+        been previously added to this TestRunner before this selection can be made.
+
+        Args:
+            test_selections: (list of string) list of tests to execute, eg:
+                [
+                    'FooTest',
+                    'BarTest',
+                    'BazTest.test_method_a',
+                    'BazTest.test_method_b'
+                ].
+                May be empty, in which case all tests in the class are selected.
+            }
+        """
+        if not test_selections:
+            # if not selecting tests, don't do anything.
+            return
+        test_selector = _compute_selected_tests(test_selections)
+
+        new_test_run_infos = []
+        for test_run_info in self._test_run_infos:
+            test_class_name = test_run_info.test_class.__name__
+            if test_class_name in test_selector:
+                selected_test_methods = test_selector.pop(test_class_name)
+
+                if selected_test_methods:
+                    # verify that the selected test methods exist.
+                    existing_test_methods = _get_all_tests(
+                        test_run_info.test_class, test_run_info.config)
+                    nonexistent_methods = [
+                        selected_method
+                        for selected_method in selected_test_methods
+                        if selected_method not in existing_test_methods
+                    ]
+                    if nonexistent_methods:
+                        raise Error(
+                            'Trying to selected nonexistent test methods %s from test class %s'
+                            % (nonexistent_methods, test_class_name))
+
+                # class and method selections are valid. Add new test_run_info to plan.
+                test_run_info.tests = selected_test_methods
+                new_test_run_infos.append(test_run_info)
+        if test_selector:
+            raise Error('Trying to select test methods from classes %s '
+                        'that have not been added to TestRunner.' %
+                        [item[0] for item in test_selector.items()])
+        self._test_run_infos = new_test_run_infos
+
+    def print_all_test_methods(self):
+        """Prints all test methods in this TestRunner's execution plan. 
+
+        Prints the test methods that this TestRunner will execute in the following format: 
+            FooTest.test_method_a
+            FooTest.test_method_b
+            BarTest.test_method_a
+        """
+        test_names_to_print = []
+        for test_run_info in self._test_run_infos:
+            existing_test_names = _get_all_tests(test_run_info.test_class,
+                                                 test_run_info.config)
+            prefix = test_run_info.test_class.__name__ + '.'
+            if test_run_info.tests:
+                assert all(
+                    test in existing_test_names for test in test_run_info.tests
+                ), 'No method should be specified in test_run_info.tests that is not part of the corresponding class/config\'s existing tess'
+                test_names_to_print += [
+                    prefix + test for test in test_run_info.tests
+                ]
+            else:
+                test_names_to_print += [
+                    prefix + test for test in existing_test_names
+                ]
+        header = '==========> Preview of Test Execution Plan. <=========='
+        print(header)
+        print('\n'.join(test_names_to_print))
+        print('=' * len(header))
 
     def _run_test_class(self, config, test_class, tests=None):
         """Instantiates and executes a test class.
