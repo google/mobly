@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,7 @@ import mock
 import os
 import platform
 import socket
+import subprocess
 import tempfile
 import time
 from future.tests.base import unittest
@@ -48,6 +49,13 @@ class UtilsTest(unittest.TestCase):
 
     def test_stop_standing_subproc(self):
         p = utils.start_standing_subprocess([self.sleep_cmd, '4'])
+        p1 = psutil.Process(p.pid)
+        utils.stop_standing_subprocess(p)
+        self.assertFalse(p1.is_running())
+
+    def test_stop_standing_subproc_wihtout_pipe(self):
+        p = subprocess.Popen([self.sleep_cmd, '4'])
+        self.assertIsNone(p.stdout)
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
