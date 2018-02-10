@@ -287,22 +287,21 @@ class TestRunner(object):
         self._controller_registry = {}
         self._controller_destructors = {}
 
-        self._has_logger = False
+        self._log_path = None
 
     def setup_logger(self):
         """Sets up logging for the next test run."""
-        if not self._has_logger:
+        if self._log_path is None:
             self._start_time = logger.get_log_file_timestamp()
             self._log_path = os.path.join(self._log_dir, self._test_bed_name,
                                           self._start_time)
             logger.setup_test_logger(self._log_path, self._test_bed_name)
-            self._has_logger = True
 
     def teardown_logger(self):
         """Tears down logging at the end of the test run."""
-        if self._has_logger:
+        if self._log_path is not None:
             logger.kill_test_logger(logging.getLogger())
-            self._has_logger = False
+            self._has_logger = None
 
     def add_test_class(self, config, test_class, tests=None):
         """Adds tests to the execution plan of this TestRunner.
