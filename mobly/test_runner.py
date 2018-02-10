@@ -390,7 +390,6 @@ class TestRunner(object):
             msg = '\nSummary for test run %s@%s: %s\n' % (
                 self._test_bed_name, self._start_time,
                 self.results.summary_str())
-            self._write_results_json_str(self._log_path)
             logging.info(msg.strip())
             logger.kill_test_logger(logging.getLogger())
             self._has_logger = False
