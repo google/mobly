@@ -290,7 +290,20 @@ class TestRunner(object):
         self._log_path = None
 
     def setup_logger(self):
-        """Sets up logging for the next test run."""
+        """Sets up logging for the next test run.
+
+        This is called automatically in 'run', so normally, this method doesn't
+        need to be called. This method is for starting logging before 'run' is
+        called. For example:
+
+            tr = new TestRunner(...)
+            tr.setup_logger()
+            logging.info(...)
+            tr.run()
+
+        Without calling 'setup_logger' before the 'run', the logged lines would
+        not log to the test run log path.
+        """
         if self._log_path is None:
             self._start_time = logger.get_log_file_timestamp()
             self._log_path = os.path.join(self._log_dir, self._test_bed_name,
