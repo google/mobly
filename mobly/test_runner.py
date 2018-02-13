@@ -316,10 +316,16 @@ class TestRunner(object):
         This is called automatically in 'run', so normally, this method doesn't
         need to be called. Only use this to change the logger teardown
         behaviour.
+
+        Raises:
+            Error: if this is called before the logger is setup.
         """
         if self._log_path is not None:
             logger.kill_test_logger(logging.getLogger())
             self._log_path = None
+        else:
+            raise Error(
+                'TestRunner\'s _teardown_logger called before setup_logger!')
 
     def add_test_class(self, config, test_class, tests=None):
         """Adds tests to the execution plan of this TestRunner.

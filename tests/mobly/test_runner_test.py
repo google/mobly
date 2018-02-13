@@ -298,6 +298,13 @@ class TestRunnerTest(unittest.TestCase):
             tr.add_test_class(self.base_mock_test_config,
                               integration_test.IntegrationTest)
 
+    def test_teardown_logger_before_setup_logger(self):
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        with self.assertRaisesRegex(
+                test_runner.Error,
+                'TestRunner\'s _teardown_logger called before setup_logger'):
+            tr._teardown_logger()
+
     def test_run_no_tests(self):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         with self.assertRaisesRegex(test_runner.Error, 'No tests to execute.'):
