@@ -304,11 +304,13 @@ class TestRunner(object):
             tr.run()
 
         """
-        if self._log_path is None:
-            self._start_time = logger.get_log_file_timestamp()
-            self._log_path = os.path.join(self._log_dir, self._test_bed_name,
-                                          self._start_time)
-            logger.setup_test_logger(self._log_path, self._test_bed_name)
+        if self._log_path is not None:
+            return
+
+        self._start_time = logger.get_log_file_timestamp()
+        self._log_path = os.path.join(self._log_dir, self._test_bed_name,
+                                      self._start_time)
+        logger.setup_test_logger(self._log_path, self._test_bed_name)
 
     def _teardown_logger(self):
         """Tears down logging at the end of the test run.
@@ -320,12 +322,12 @@ class TestRunner(object):
         Raises:
             Error: if this is called before the logger is setup.
         """
-        if self._log_path is not None:
-            logger.kill_test_logger(logging.getLogger())
-            self._log_path = None
-        else:
+        if self._log_path is None:
             raise Error(
                 'TestRunner\'s _teardown_logger called before setup_logger!')
+
+        logger.kill_test_logger(logging.getLogger())
+        self._log_path = None
 
     def add_test_class(self, config, test_class, tests=None):
         """Adds tests to the execution plan of this TestRunner.
