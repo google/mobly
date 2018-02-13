@@ -311,7 +311,14 @@ class TestRunner(object):
             logger.setup_test_logger(self._log_path, self._test_bed_name)
 
     def teardown_logger(self):
-        """Tears down logging at the end of the test run."""
+        """Tears down logging at the end of the test run.
+
+        This is usually called automatically at the end of 'run' and should not
+        be called directly. In a subclass, calling this can be used to control,
+        when a new set of logs should be created. For example, if two calls to
+        'run' should log to the same directory, then a subclass could call this
+        super method only on the second call to run.
+        """
         if self._log_path is not None:
             logger.kill_test_logger(logging.getLogger())
             self._has_logger = None
