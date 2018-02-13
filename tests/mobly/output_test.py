@@ -28,20 +28,6 @@ from tests.lib import integration_test
 from tests.lib import teardown_class_failure_test
 
 
-def create_mock_test_config(base_mock_test_config):
-    mock_test_config = base_mock_test_config.copy()
-    mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-    my_config = [{
-        'serial': 'xxxx',
-        'magic': 'Magic1'
-    }, {
-        'serial': 'xxxx',
-        'magic': 'Magic2'
-    }]
-    mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
-    return mock_test_config
-
-
 class OutputTest(unittest.TestCase):
     """This test class has unit tests for the implementation of Mobly's output
     files.
@@ -63,13 +49,27 @@ class OutputTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
+    def create_mock_test_config(self, base_mock_test_config):
+        mock_test_config = base_mock_test_config.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{
+            'serial': 'xxxx',
+            'magic': 'Magic1'
+        }, {
+            'serial': 'xxxx',
+            'magic': 'Magic2'
+        }]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        return mock_test_config
+
     def test_setup_logger_before_run(self):
         """Verifies the expected output files from a test run.
 
         * Files are correctly created.
         * Basic sanity checks of each output file.
         """
-        mock_test_config = create_mock_test_config(self.base_mock_test_config)
+        mock_test_config = self.create_mock_test_config(
+            self.base_mock_test_config)
         info_uuid = 'e098d4ff-4e90-4e08-b369-aa84a7ef90ec'
         debug_uuid = 'c6f1474e-960a-4df8-8305-1c5b8b905eca'
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
@@ -102,7 +102,8 @@ class OutputTest(unittest.TestCase):
         * Files are correctly created.
         * Basic sanity checks of each output file.
         """
-        mock_test_config = create_mock_test_config(self.base_mock_test_config)
+        mock_test_config = self.create_mock_test_config(
+            self.base_mock_test_config)
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run()
