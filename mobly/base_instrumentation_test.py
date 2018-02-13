@@ -411,7 +411,10 @@ class _InstrumentationBlock(object):
             line: string, the raw instrumentation line to append to the value
                 list.
         """
-        self._empty = False
+        # Don't count whitespace only lines.
+        if line.strip():
+            self._empty = False
+
         if self.current_key in self.known_keys:
             self.known_keys[self.current_key].append(line)
         else:
@@ -459,10 +462,10 @@ class _InstrumentationBlockFormatter(object):
         self._unknown_keys = {}
         for key, value in instrumentation_block.known_keys.items():
             self._known_keys[key] = '\n'.join(
-                instrumentation_block.known_keys[key])
+                instrumentation_block.known_keys[key]).rstrip()
         for key, value in instrumentation_block.unknown_keys.items():
             self._unknown_keys[key] = '\n'.join(
-                instrumentation_block.unknown_keys[key])
+                instrumentation_block.unknown_keys[key]).rstrip()
 
     def _get_name(self):
         """Gets the method name of the test method for the instrumentation
