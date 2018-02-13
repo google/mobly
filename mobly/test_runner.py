@@ -293,16 +293,16 @@ class TestRunner(object):
         """Sets up logging for the next test run.
 
         This is called automatically in 'run', so normally, this method doesn't
-        need to be called. This method is for starting logging before 'run' is
-        called. For example:
+        need to be called. Only use this method if you want to use Mobly's
+        logger before the test run starts.
 
-            tr = new TestRunner(...)
+        .. code-block:: python
+
+            tr = TestRunner(...)
             tr.setup_logger()
             logging.info(...)
             tr.run()
 
-        Without calling 'setup_logger' before the 'run', the logged lines would
-        not log to the test run log path.
         """
         if self._log_path is None:
             self._start_time = logger.get_log_file_timestamp()
