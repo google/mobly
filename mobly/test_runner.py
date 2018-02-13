@@ -310,7 +310,7 @@ class TestRunner(object):
                                           self._start_time)
             logger.setup_test_logger(self._log_path, self._test_bed_name)
 
-    def teardown_logger(self):
+    def _teardown_logger(self):
         """Tears down logging at the end of the test run.
 
         This is called automatically in 'run', so normally, this method doesn't
@@ -319,7 +319,7 @@ class TestRunner(object):
         """
         if self._log_path is not None:
             logger.kill_test_logger(logging.getLogger())
-            self._has_logger = None
+            self._log_path = None
 
     def add_test_class(self, config, test_class, tests=None):
         """Adds tests to the execution plan of this TestRunner.
@@ -414,7 +414,7 @@ class TestRunner(object):
                 self._test_bed_name, self._start_time,
                 self.results.summary_str())
             logging.info(msg.strip())
-            self.teardown_logger()
+            self._teardown_logger()
 
     def _register_controller(self, config, module, required=True,
                              min_number=1):
