@@ -323,9 +323,8 @@ class TestRunner(object):
             Error: if this is called before the logger is setup.
         """
         if self._log_path is None:
-            raise Error(
-                'TestRunner._teardown_logger() called before TestRunner.setup_logger()!'
-            )
+            raise Error('TestRunner._teardown_logger() called before '
+                        'TestRunner.setup_logger()!')
 
         logger.kill_test_logger(logging.getLogger())
         self._log_path = None
