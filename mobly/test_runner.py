@@ -287,6 +287,49 @@ class TestRunner(object):
         self._controller_registry = {}
         self._controller_destructors = {}
 
+        self._log_path = None
+
+    def setup_logger(self):
+        """Sets up logging for the next test run.
+
+        This is called automatically in 'run', so normally, this method doesn't
+        need to be called. Only use this method if you want to use Mobly's
+        logger before the test run starts.
+
+        .. code-block:: python
+
+            tr = TestRunner(...)
+            tr.setup_logger()
+            logging.info(...)
+            tr.run()
+
+        """
+        if self._log_path is not None:
+            return
+
+        self._start_time = logger.get_log_file_timestamp()
+        self._log_path = os.path.join(self._log_dir, self._test_bed_name,
+                                      self._start_time)
+        logger.setup_test_logger(self._log_path, self._test_bed_name)
+
+    def _teardown_logger(self):
+        """Tears down logging at the end of the test run.
+
+        This is called automatically in 'run', so normally, this method doesn't
+        need to be called. Only use this to change the logger teardown
+        behaviour.
+
+        Raises:
+            Error: if this is called before the logger is setup.
+        """
+        if self._log_path is None:
+            raise Error(
+                'TestRunner._teardown_logger() called before TestRunner.setup_logger()!'
+            )
+
+        logger.kill_test_logger(logging.getLogger())
+        self._log_path = None
+
     def add_test_class(self, config, test_class, tests=None):
         """Adds tests to the execution plan of this TestRunner.
 
@@ -348,16 +391,15 @@ class TestRunner(object):
         """
         if not self._test_run_infos:
             raise Error('No tests to execute.')
-        start_time = logger.get_log_file_timestamp()
-        log_path = os.path.join(self._log_dir, self._test_bed_name, start_time)
+
+        self.setup_logger()
         summary_writer = records.TestSummaryWriter(
-            os.path.join(log_path, records.OUTPUT_FILE_SUMMARY))
-        logger.setup_test_logger(log_path, self._test_bed_name)
+            os.path.join(self._log_path, records.OUTPUT_FILE_SUMMARY))
         try:
             for test_run_info in self._test_run_infos:
                 # Set up the test-specific config
                 test_config = test_run_info.config.copy()
-                test_config.log_path = log_path
+                test_config.log_path = self._log_path
                 test_config.register_controller = functools.partial(
                     self._register_controller, test_config)
                 test_config.summary_writer = summary_writer
@@ -378,9 +420,10 @@ class TestRunner(object):
                                 records.TestSummaryEntryType.SUMMARY)
             # Stop and show summary.
             msg = '\nSummary for test run %s@%s: %s\n' % (
-                self._test_bed_name, start_time, self.results.summary_str())
+                self._test_bed_name, self._start_time,
+                self.results.summary_str())
             logging.info(msg.strip())
-            logger.kill_test_logger(logging.getLogger())
+            self._teardown_logger()
 
     def _register_controller(self, config, module, required=True,
                              min_number=1):
@@ -471,8 +514,8 @@ class TestRunner(object):
             logging.warning('No optional debug info found for controller %s. '
                             'To provide it, implement get_info in this '
                             'controller module.', module_config_name)
-        logging.debug('Found %d objects for controller %s', len(objects),
-                      module_config_name)
+        logging.debug('Found %d objects for controller %s',
+                      len(objects), module_config_name)
         destroy_func = module.destroy
         self._controller_destructors[module_ref_name] = destroy_func
         return objects
