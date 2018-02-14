@@ -269,6 +269,7 @@ class AndroidDeviceTest(unittest.TestCase):
         build_info = ad.build_info
         self.assertEqual(build_info['build_id'], 'AB42')
         self.assertEqual(build_info['build_type'], 'userdebug')
+        self.assertEqual(build_info['build_version_sdk'], '26')
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -299,7 +300,7 @@ class AndroidDeviceTest(unittest.TestCase):
         """Verifies that the serial is a primitive string type and serializable.
         """
         ad = android_device.AndroidDevice(serial=1)
-        # In py2, checks that ad.serial is not the backported py3 str type, 
+        # In py2, checks that ad.serial is not the backported py3 str type,
         # which is not dumpable by yaml in py2.
         # In py3, new_str is equivalent to str, so this check is not
         # appropirate in py3.

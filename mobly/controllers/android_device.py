@@ -760,6 +760,7 @@ class AndroidDevice(object):
         info = {}
         info['build_id'] = self.adb.getprop('ro.build.id')
         info['build_type'] = self.adb.getprop('ro.build.type')
+        info['build_version_sdk'] = self.adb.getprop('ro.build.version.sdk')
         return info
 
     @property
