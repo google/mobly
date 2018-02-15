@@ -260,6 +260,61 @@ INSTRUMENTATION_CODE: -1
             expected_executed=expected_executed,
             expected_completed_and_passed=True)
 
+    def test_run_instrumentation_test_with_random_whitespace(self):
+        instrumentation_output = """\
+
+INSTRUMENTATION_STATUS: numtests=1
+
+INSTRUMENTATION_STATUS: stream=
+
+com.my.package.test.BasicTest:
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: test=basicTest
+
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
+
+INSTRUMENTATION_STATUS: current=1
+
+INSTRUMENTATION_STATUS_CODE: 1
+
+INSTRUMENTATION_STATUS: numtests=1
+
+INSTRUMENTATION_STATUS: stream=.
+
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+
+INSTRUMENTATION_STATUS: test=basicTest
+
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
+
+INSTRUMENTATION_STATUS: current=1
+
+INSTRUMENTATION_STATUS_CODE: 0
+
+INSTRUMENTATION_RESULT: stream=
+
+
+Time: 0.214
+
+
+OK (1 test)
+
+
+
+
+INSTRUMENTATION_CODE: -1
+
+"""
+        expected_executed = [
+            ('com.my.package.test.BasicTest#basicTest', signals.TestPass),
+        ]
+        self.assert_run_instrumentation_test(
+            instrumentation_output,
+            expected_executed=expected_executed,
+            expected_completed_and_passed=True)
+
     def test_run_instrumentation_test_with_prefix_test(self):
         instrumentation_output = """\
 INSTRUMENTATION_STATUS: numtests=1
