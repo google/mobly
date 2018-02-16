@@ -618,22 +618,8 @@ class BaseTestClass(object):
                 self.summary_writer.dump(class_record.to_dict(),
                                          records.TestSummaryEntryType.RECORD)
                 self._skip_remaining_tests(e)
-                self._teardown_class()
                 return self.results
-        except signals.TestAbortAll as e:
-            # Piggy-back test results on this exception object so we don't lose
-            # results from this test class.
-            setattr(e, 'results', self.results)
-            raise e
-        except signals.TestAbortSignal as e:
-            # The test class is intentionally aborted.
-            # Skip all tests peacefully.
-            e.details = 'setup_class aborted due to: %s' % e.details
-            self._skip_remaining_tests(e)
-            self._teardown_class()
-            return self.results
-        # Run tests in order.
-        try:
+            # Run tests in order.
             for test_name, test_method in tests:
                 self.exec_one_test(test_name, test_method)
             return self.results
