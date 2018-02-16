@@ -603,9 +603,9 @@ class BaseTestClass(object):
             # Setup for the class.
             try:
                 self._setup_class()
-            except signals.TestAbortSignal as e:
+            except signals.TestAbortSignal:
                 # Throw abort signals to outer try block for handling.
-                raise e
+                raise
             except Exception as e:
                 # Setup class failed for unknown reasons.
                 # Fail the class and skip all tests.
