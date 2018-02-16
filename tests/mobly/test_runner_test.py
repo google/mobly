@@ -280,10 +280,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(tr.results.failed[0].details, '10 != 42')
 
     def test_run_with_abort_all(self):
-        """Verifies that running a test that raises a signals.TestAbortAll
-        works properly.
-        """
-        mock_test_config = self.create_basic_mock_test_config()
+        mock_test_config = self.base_mock_test_config.copy()
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, integration3_test.Integration3Test)
         with self.assertRaises(signals.TestAbortAll):
@@ -293,19 +290,6 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Executed'], 0)
         self.assertEqual(results['Passed'], 0)
         self.assertEqual(results['Failed'], 0)
-
-    def create_basic_mock_test_config(self):
-        mock_test_config = self.base_mock_test_config.copy()
-        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        my_config = [{
-            'serial': 'xxxx',
-            'magic': 'Magic1'
-        }, {
-            'serial': 'xxxx',
-            'magic': 'Magic2'
-        }]
-        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
-        return mock_test_config
 
     def test_add_test_class_mismatched_log_path(self):
         tr = test_runner.TestRunner('/different/log/dir', self.test_bed_name)
