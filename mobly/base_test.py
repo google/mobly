@@ -604,11 +604,8 @@ class BaseTestClass(object):
             try:
                 self._setup_class()
             except signals.TestAbortSignal as e:
-                # The test class is intentionally aborted.
-                # Skip all tests peacefully.
-                e.details = 'setup_class aborted due to: %s' % e.details
-                self._skip_remaining_tests(e)
-                return self.results
+                # Throw abort signals to outer try block for handling.
+                raise e
             except Exception as e:
                 # Setup class failed for unknown reasons.
                 # Fail the class and skip all tests.
