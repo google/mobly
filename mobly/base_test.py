@@ -599,32 +599,31 @@ class BaseTestClass(object):
         self.summary_writer.dump(self.results.requested_test_names_dict(),
                                  records.TestSummaryEntryType.TEST_NAME_LIST)
         tests = self._get_test_methods(test_names)
-        # Setup for the class.
         try:
-            self._setup_class()
-        except signals.TestAbortSignal as e:
-            # The test class is intentionally aborted.
-            # Skip all tests peacefully.
-            e.details = 'setup_class aborted due to: %s' % e.details
-            self._skip_remaining_tests(e)
-            self._teardown_class()
-            return self.results
-        except Exception as e:
-            # Setup class failed for unknown reasons.
-            # Fail the class and skip all tests.
-            logging.exception('Error in setup_class %s.', self.TAG)
-            class_record = records.TestResultRecord('setup_class', self.TAG)
-            class_record.test_begin()
-            class_record.test_error(e)
-            self._exec_procedure_func(self._on_fail, class_record)
-            self.results.add_class_error(class_record)
-            self.summary_writer.dump(class_record.to_dict(),
-                                     records.TestSummaryEntryType.RECORD)
-            self._skip_remaining_tests(e)
-            self._teardown_class()
-            return self.results
-        # Run tests in order.
-        try:
+            # Setup for the class.
+            try:
+                self._setup_class()
+            except signals.TestAbortSignal as e:
+                # The test class is intentionally aborted.
+                # Skip all tests peacefully.
+                e.details = 'setup_class aborted due to: %s' % e.details
+                self._skip_remaining_tests(e)
+                return self.results
+            except Exception as e:
+                # Setup class failed for unknown reasons.
+                # Fail the class and skip all tests.
+                logging.exception('Error in setup_class %s.', self.TAG)
+                class_record = records.TestResultRecord(
+                    'setup_class', self.TAG)
+                class_record.test_begin()
+                class_record.test_error(e)
+                self._exec_procedure_func(self._on_fail, class_record)
+                self.results.add_class_error(class_record)
+                self.summary_writer.dump(class_record.to_dict(),
+                                         records.TestSummaryEntryType.RECORD)
+                self._skip_remaining_tests(e)
+                return self.results
+            # Run tests in order.
             for test_name, test_method in tests:
                 self.exec_one_test(test_name, test_method)
             return self.results
