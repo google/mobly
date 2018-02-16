@@ -741,7 +741,7 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
-    def test_abort_setup_class(self):
+    def test_abort_class_setup_class(self):
         """A class was intentionally aborted by the test.
 
         This is not considered an error as the abort class is used as a skip
@@ -850,6 +850,125 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(bt_cls.results.summary_str(),
                          ("Error 0, Executed 2, Failed 1, Passed 1, "
                           "Requested 3, Skipped 1"))
+
+    def test_abort_all_setup_class(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+
+            def test_1(self):
+                never_call()
+
+            def test_2(self):
+                never_call()
+
+            def test_3(self):
+                never_call()
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        with self.assertRaisesRegex(signals.TestAbortAll,
+                                    MSG_EXPECTED_EXCEPTION) as context:
+            bt_cls.run(test_names=["test_1", "test_2", "test_3"])
+        self.assertTrue(hasattr(context.exception, 'results'))
+        self.assertEqual(bt_cls.results.summary_str(),
+                         ("Error 0, Executed 0, Failed 0, Passed 0, "
+                          "Requested 3, Skipped 0"))
+
+    def test_abort_all_in_setup_test(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_test(self):
+                asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+
+            def test_1(self):
+                never_call()
+
+            def test_2(self):
+                never_call()
+
+            def test_3(self):
+                never_call()
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        with self.assertRaisesRegex(signals.TestAbortAll,
+                                    MSG_EXPECTED_EXCEPTION) as context:
+            bt_cls.run(test_names=["test_1", "test_2", "test_3"])
+        self.assertTrue(hasattr(context.exception, 'results'))
+        self.assertEqual(bt_cls.results.summary_str(),
+                         ("Error 0, Executed 1, Failed 1, Passed 0, "
+                          "Requested 3, Skipped 0"))
+
+    def test_abort_all_in_on_fail(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_1(self):
+                asserts.fail(MSG_EXPECTED_EXCEPTION)
+
+            def test_2(self):
+                never_call()
+
+            def test_3(self):
+                never_call()
+
+            def on_fail(self, record):
+                asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        with self.assertRaisesRegex(signals.TestAbortAll,
+                                    MSG_EXPECTED_EXCEPTION) as context:
+            bt_cls.run(test_names=["test_1", "test_2", "test_3"])
+        self.assertTrue(hasattr(context.exception, 'results'))
+        self.assertEqual(bt_cls.results.summary_str(),
+                         ("Error 0, Executed 1, Failed 1, Passed 0, "
+                          "Requested 3, Skipped 0"))
+
+    def test_abort_all_in_on_fail_from_setup_class(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                asserts.fail(MSG_UNEXPECTED_EXCEPTION)
+
+            def test_1(self):
+                never_call()
+
+            def test_2(self):
+                never_call()
+
+            def test_3(self):
+                never_call()
+
+            def on_fail(self, record):
+                asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        with self.assertRaisesRegex(signals.TestAbortAll,
+                                    MSG_EXPECTED_EXCEPTION) as context:
+            bt_cls.run(test_names=["test_1", "test_2", "test_3"])
+        self.assertTrue(hasattr(context.exception, 'results'))
+        self.assertEqual(bt_cls.results.summary_str(),
+                         ("Error 0, Executed 0, Failed 0, Passed 0, "
+                          "Requested 3, Skipped 0"))
+
+    def test_abort_all_in_test(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_1(self):
+                pass
+
+            def test_2(self):
+                asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+                never_call()
+
+            def test_3(self):
+                never_call()
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        with self.assertRaisesRegex(signals.TestAbortAll,
+                                    MSG_EXPECTED_EXCEPTION) as context:
+            bt_cls.run(test_names=["test_1", "test_2", "test_3"])
+        self.assertTrue(hasattr(context.exception, 'results'))
+        self.assertEqual(bt_cls.results.passed[0].test_name, "test_1")
+        self.assertEqual(bt_cls.results.failed[0].details,
+                         MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(bt_cls.results.summary_str(),
+                         ("Error 0, Executed 2, Failed 1, Passed 1, "
+                          "Requested 3, Skipped 0"))
 
     def test_uncaught_exception(self):
         class MockBaseTest(base_test.BaseTestClass):
