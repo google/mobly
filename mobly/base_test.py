@@ -599,8 +599,8 @@ class BaseTestClass(object):
         self.summary_writer.dump(self.results.requested_test_names_dict(),
                                  records.TestSummaryEntryType.TEST_NAME_LIST)
         tests = self._get_test_methods(test_names)
-        # Setup for the class.
         try:
+            # Setup for the class.
             try:
                 self._setup_class()
             except signals.TestAbortSignal as e:
