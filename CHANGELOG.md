@@ -1,5 +1,19 @@
 # Mobly release history
 
+
+## 1.7.1: Bug Fixes
+
+### New
+  * Allow setting up logger before test class execution. Useful for suites.
+
+### Fixes
+  * Fix recording of `teardown_class` failures in new output format.
+  * Properly handle calling `asserts.abort_all` in `on_fail`.
+  * Minor fixes for Windows support.
+
+[Full list of changes.](https://github.com/google/mobly/milestone/14?closed=1)
+
+
 ## 1.7: Expectation APIs and Instrumentation Test Runner
 
 ### New
