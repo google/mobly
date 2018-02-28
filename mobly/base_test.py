@@ -358,9 +358,7 @@ class BaseTestClass(object):
                 try:
                     self._setup_test(test_name)
                 except signals.TestFailure as e:
-                    new_e = signals.TestError(e.details, e.extras)
-                    _, _, new_e.__traceback__ = sys.exc_info()
-                    raise new_e
+                    raise signals.TestError, e, sys.exc_info()[2]
                 if args or kwargs:
                     test_method(*args, **kwargs)
                 else:
