@@ -984,8 +984,16 @@ class AndroidDevice(object):
         # clear settings first because 'start' doesn't support --clear option
         # before Android N.
         if self.is_rootable:
-            self.adb.shell('logpersist.stop --clear')
-            self.adb.shell('logpersist.start')
+            # Android L and older versions do not have logpersist installed,
+            # so check that the logpersist scripts exists before trying to use
+            # them.
+            if (self.adb.has_shell_command('logpersist.stop')
+                    and self.adb.has_shell_command('logpersist.start')):
+                self.adb.shell('logpersist.stop --clear')
+                self.adb.shell('logpersist.start')
+            else:
+                logging.debug('%s is missing logpersist executables, '
+                              'logs may not get saved.', self)
         f_name = 'adblog,%s,%s.txt' % (self.model, self.serial)
         utils.create_dir(self.log_path)
         logcat_file_path = os.path.join(self.log_path, f_name)

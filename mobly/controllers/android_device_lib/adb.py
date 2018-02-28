@@ -211,6 +211,24 @@ class AdbProxy(object):
         """
         return self.shell('getprop %s' % prop_name).decode('utf-8').strip()
 
+    def has_shell_command(self, command):
+        """Checks to see if a given check command exists on the device.
+
+        Args:
+            command: A string that is the name of the command to check.
+
+        Returns:
+            A boolean that is True if the command exists and False otherwise.
+        """
+        try:
+            output = self.shell(['command', '-v',
+                                 command]).decode('utf-8').strip()
+            return command in output
+        except AdbError:
+            # If the command doesn't exist, then 'command -v' can return
+            # an exit code > 1.
+            return False
+
     def forward(self, args=None, shell=False):
         with ADB_PORT_LOCK:
             return self._exec_adb_cmd('forward', args, shell, timeout=None)
