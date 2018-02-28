@@ -41,7 +41,7 @@ MOCK_OPTIONS_INSTRUMENTATION_COMMAND = ('am instrument -r -w -e option1 value1'
                                         '.AndroidJUnitRunner')
 # Mock Shell Command
 MOCK_SHELL_COMMAND = 'ls'
-MOCK_COMMAND_OUTPUT = '/system/bin/ls'
+MOCK_COMMAND_OUTPUT = '/system/bin/ls'.encode('utf-8')
 MOCK_ADB_SHELL_COMMAND_CHECK = 'adb shell command -v ls'
 
 
