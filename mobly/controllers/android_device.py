@@ -992,7 +992,7 @@ class AndroidDevice(object):
                 self.adb.shell('logpersist.stop --clear')
                 self.adb.shell('logpersist.start')
             else:
-                logging.debug('%s is missing logpersist executables, '
+                logging.error('%s is missing logpersist executables, '
                               'logs may not get saved.', self)
         f_name = 'adblog,%s,%s.txt' % (self.model, self.serial)
         utils.create_dir(self.log_path)
