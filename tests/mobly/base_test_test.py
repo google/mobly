@@ -981,6 +981,15 @@ class BaseTestTest(unittest.TestCase):
         actual_record = bt_cls.results.error[0]
         self.assertEqual(actual_record.test_name, "test_func")
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.stacktrace,
+                'Traceback (most recent call last):\n'
+                '  File "/usr/local/lib/python2.7/dist-packages/'
+                'mobly-1.7.1-py2.7.egg/mobly/base_test.py", line 367, in '
+                'exec_one_test\n'
+                '    test_method()\n'
+                '  File "base_test_test.py", line 976, in test_func\n'
+                '    raise Exception(MSG_EXPECTED_EXCEPTION)\n'
+                'Exception: This is an expected exception.\n')
         self.assertIsNone(actual_record.extras)
 
     def test_fail(self):
