@@ -987,12 +987,21 @@ class AndroidDevice(object):
             # Android L and older versions do not have logpersist installed,
             # so check that the logpersist scripts exists before trying to use
             # them.
-            if (self.adb.has_shell_command('logpersist.stop')
-                    and self.adb.has_shell_command('logpersist.start')):
+            has_logpersist_start = self.adb.has_shell_command(
+                'logpersist.start')
+            has_logpersist_stop = self.adb.has_shell_command('logpersist.stop')
+            if has_logpersist_start and has_logpersist_stop:
                 self.adb.shell('logpersist.stop --clear')
                 self.adb.shell('logpersist.start')
+            elif has_logpersist_start:
+                logging.error('%s is missing logpersist.stop executable, '
+                              'logs may not get saved.', self)
+            elif has_logpersist_stop:
+                logging.error('%s is missing logpersist.start executable, '
+                              'logs may not get saved.', self)
             else:
-                logging.error('%s is missing logpersist executables, '
+                logging.error('%s is missing the logpersist.start and '
+                              'logpersist.stop executables, '
                               'logs may not get saved.', self)
         f_name = 'adblog,%s,%s.txt' % (self.model, self.serial)
         utils.create_dir(self.log_path)
