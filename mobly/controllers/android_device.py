@@ -982,9 +982,9 @@ class AndroidDevice(object):
             return
 
         try:
-            # Disable adb log spam filter for rootable devices. Have to stop and
-            # clear settings first because 'start' doesn't support --clear option
-            # before Android N.
+            # Disable adb log spam filter for rootable devices. Have to stop
+            # and clear settings first because 'start' doesn't support --clear
+            # option before Android N.
             self.adb.shell('logpersist.stop --clear')
             self.adb.shell('logpersist.start')
         except adb.AdbError:
