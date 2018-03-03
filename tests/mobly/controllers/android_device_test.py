@@ -26,6 +26,7 @@ from future.tests.base import unittest
 
 from mobly import utils
 from mobly.controllers import android_device
+from mobly.controllers.android_device_lib import adb
 
 from tests.lib import mock_android_device
 
@@ -49,6 +50,14 @@ MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
 # A mock SnippetClient used for testing snippet management logic.
 MockSnippetClient = mock.MagicMock()
 MockSnippetClient.package = MOCK_SNIPPET_PACKAGE_NAME
+
+# Mock AdbError for missing logpersist scripts
+MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR = adb.AdbError(
+    'logpersist.stop --clear', '',
+    '/system/bin/sh: logpersist.stop: not found', 0)
+MOCK_LOGPERSIST_START_MISSING_ADB_ERROR = adb.AdbError(
+    'logpersist.start --clear', '',
+    '/system/bin/sh: logpersist.stop: not found', 0)
 
 
 class AndroidDeviceTest(unittest.TestCase):
@@ -299,7 +308,7 @@ class AndroidDeviceTest(unittest.TestCase):
         """Verifies that the serial is a primitive string type and serializable.
         """
         ad = android_device.AndroidDevice(serial=1)
-        # In py2, checks that ad.serial is not the backported py3 str type, 
+        # In py2, checks that ad.serial is not the backported py3 str type,
         # which is not dumpable by yaml in py2.
         # In py3, new_str is equivalent to str, so this check is not
         # appropirate in py3.
@@ -626,6 +635,99 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
         # Stops adb logcat.
         ad.stop_adb_logcat()
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock.MagicMock())
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice__enable_logpersist_with_logpersist(
+            self, MockFastboot, MockAdbProxy):
+        mock_serial = '1'
+        mock_adb_proxy = MockAdbProxy.return_value
+        mock_adb_proxy.getprop.return_value = 'userdebug'
+        mock_adb_proxy.has_shell_command.side_effect = lambda command: {
+            'logpersist.start': True,
+            'logpersist.stop': True, }[command]
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        ad._enable_logpersist()
+        mock_adb_proxy.shell.assert_has_calls([
+            mock.call('logpersist.stop --clear'),
+            mock.call('logpersist.start'),
+        ])
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock.MagicMock())
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice__enable_logpersist_with_missing_all_logpersist(
+            self, MockFastboot, MockAdbProxy):
+        def adb_shell_helper(command):
+            if command == 'logpersist.start':
+                raise MOCK_LOGPERSIST_START_MISSING_ADB_ERROR
+            elif command == 'logpersist.stop --clear':
+                raise MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR
+            else:
+                return ''
+
+        mock_serial = '1'
+        mock_adb_proxy = MockAdbProxy.return_value
+        mock_adb_proxy.getprop.return_value = 'userdebug'
+        mock_adb_proxy.has_shell_command.side_effect = lambda command: {
+            'logpersist.start': False,
+            'logpersist.stop': False, }[command]
+        mock_adb_proxy.shell.side_effect = adb_shell_helper
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        ad._enable_logpersist()
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock.MagicMock())
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice__enable_logpersist_with_missing_logpersist_stop(
+            self, MockFastboot, MockAdbProxy):
+        def adb_shell_helper(command):
+            if command == 'logpersist.stop --clear':
+                raise MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR
+            else:
+                return ''
+
+        mock_serial = '1'
+        mock_adb_proxy = MockAdbProxy.return_value
+        mock_adb_proxy.getprop.return_value = 'userdebug'
+        mock_adb_proxy.has_shell_command.side_effect = lambda command: {
+            'logpersist.start': True,
+            'logpersist.stop': False, }[command]
+        mock_adb_proxy.shell.side_effect = adb_shell_helper
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        ad._enable_logpersist()
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock.MagicMock())
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice__enable_logpersist_with_missing_logpersist_start(
+            self, MockFastboot, MockAdbProxy):
+        def adb_shell_helper(command):
+            if command == 'logpersist.start':
+                raise MOCK_LOGPERSIST_START_MISSING_ADB_ERROR
+            else:
+                return ''
+
+        mock_serial = '1'
+        mock_adb_proxy = MockAdbProxy.return_value
+        mock_adb_proxy.getprop.return_value = 'userdebug'
+        mock_adb_proxy.has_shell_command.side_effect = lambda command: {
+            'logpersist.start': False,
+            'logpersist.stop': True, }[command]
+        mock_adb_proxy.shell.side_effect = adb_shell_helper
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        ad._enable_logpersist()
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
