@@ -19,6 +19,9 @@ import tempfile
 
 from future.tests.base import unittest
 
+from mobly.base_instrumentation_test import _InstrumentationBlock
+from mobly.base_instrumentation_test import _InstrumentationKnownStatusKeys
+from mobly.base_instrumentation_test import _InstrumentationStructurePrefixes
 from mobly.base_instrumentation_test import BaseInstrumentationTestClass
 from mobly import config_parser
 from mobly import signals
@@ -314,181 +317,6 @@ INSTRUMENTATION_CODE: -1
             instrumentation_output,
             expected_executed=expected_executed,
             expected_completed_and_passed=True)
-
-    def test_run_instrumentation_test_with_equals_sign_key_value_pair(self):
-        instrumentation_output = """\
-INSTRUMENTATION_STATUS: numtests=1
-INSTRUMENTATION_STATUS: stream=
-com.my.package.test.BasicTest:
-INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
-INSTRUMENTATION_STATUS: test=failingTest
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
-INSTRUMENTATION_STATUS: current=1
-INSTRUMENTATION_STATUS_CODE: 1
-INSTRUMENTATION_STATUS: numtests=1
-INSTRUMENTATION_STATUS: stream=
-Error in failingTest(com.my.package.test.BasicTest):
-android.support.test.espresso.PerformException: Error performing 'single click - At Coordinates: 571, 272 and precision: 16, 16' on view 'ContactRecipientAutoCompleteView{id=2131755380, res-name=recipient_text_view, visibility=VISIBLE, width=765, height=126, has-focus=true, has-focusable=true, has-window-focus=true, is-clickable=true, is-enabled=true, is-focused=true, is-focusable=true, is-layout-requested=false, is-selected=false, layout-params=android.widget.FrameLayout$LayoutParams@2d8a3df, tag=null, root-is-layout-requested=false, has-input-connection=true, editor-info=[inputType=0xb0021 imeOptions=0xa000006 privateImeOptions=null actionLabel=null actionId=6 initialSelStart=0 initialSelEnd=0 initialCapsMode=0x0 hintText=Type a name, phone number, or email label=null packageName=null fieldId=0 fieldName=null extras=null hintLocales=null contentMimeTypes=null ], x=0.0, y=0.0, text=, hint=Type a name, phone number, or email, input-type=720929, ime-target=true, has-links=false}'.
-    at android.support.test.espresso.PerformException$Builder.build(PerformException.java:95)
-    at android.support.test.espresso.action.GeneralClickAction.perform(GeneralClickAction.java:161)
-    at android.support.test.espresso.action.TypeTextAction.perform(TypeTextAction.java:103)
-    at android.support.test.espresso.ViewInteraction$SingleExecutionViewAction.perform(ViewInteraction.java:355)
-    at android.support.test.espresso.ViewInteraction.doPerform(ViewInteraction.java:242)
-    at android.support.test.espresso.ViewInteraction.access$100(ViewInteraction.java:62)
-    at android.support.test.espresso.ViewInteraction$1.call(ViewInteraction.java:149)
-    at android.support.test.espresso.ViewInteraction$1.call(ViewInteraction.java:146)
-    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-    at android.os.Handler.handleCallback(Handler.java:789)
-    at android.os.Handler.dispatchMessage(Handler.java:98)
-    at android.os.Looper.loop(Looper.java:164)
-    at android.app.ActivityThread.main(ActivityThread.java:6541)
-    at java.lang.reflect.Method.invoke(Native Method)
-    at com.android.internal.os.Zygote$MethodAndArgsCaller.run(Zygote.java:240)
-    at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:767)
-Caused by: android.support.test.espresso.PerformException: Error performing 'Send down motion event' on view 'unknown'.
-    at android.support.test.espresso.PerformException$Builder.build(PerformException.java:95)
-    at android.support.test.espresso.action.MotionEvents.sendDown(MotionEvents.java:113)
-    at android.support.test.espresso.action.Tap.sendSingleTap(Tap.java:168)
-    at android.support.test.espresso.action.Tap.access$100(Tap.java:31)
-    at android.support.test.espresso.action.Tap$1.sendTap(Tap.java:47)
-    at android.support.test.espresso.action.GeneralClickAction.perform(GeneralClickAction.java:136)
-    ... 14 more
-Caused by: android.support.test.espresso.InjectEventSecurityException: java.lang.SecurityException: Injecting to another application requires INJECT_EVENTS permission
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:156)
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:154)
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.injectMotionEvent(InputManagerEventInjectionStrategy.java:123)
-    at android.support.test.espresso.base.EventInjector.injectMotionEvent(EventInjector.java:92)
-    at android.support.test.espresso.base.UiControllerImpl$3.call(UiControllerImpl.java:228)
-    at android.support.test.espresso.base.UiControllerImpl$3.call(UiControllerImpl.java:225)
-    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-    at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:457)
-    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
-    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
-    at java.lang.Thread.run(Thread.java:764)
-Caused by: java.lang.SecurityException: Injecting to another application requires INJECT_EVENTS permission
-    at android.os.Parcel.readException(Parcel.java:1942)
-    at android.os.Parcel.readException(Parcel.java:1888)
-    at android.hardware.input.IInputManager$Stub$Proxy.injectInputEvent(IInputManager.java:548)
-    at android.hardware.input.InputManager.injectInputEvent(InputManager.java:868)
-    at java.lang.reflect.Method.invoke(Native Method)
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:138)
-    ... 11 more
-
-INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
-INSTRUMENTATION_STATUS: test=failingTest
-INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
-INSTRUMENTATION_STATUS: stack=android.support.test.espresso.PerformException: Error performing 'single click - At Coordinates: 571, 272 and precision: 16, 16' on view 'ContactRecipientAutoCompleteView{id=2131755380, res-name=recipient_text_view, visibility=VISIBLE, width=765, height=126, has-focus=true, has-focusable=true, has-window-focus=true, is-clickable=true, is-enabled=true, is-focused=true, is-focusable=true, is-layout-requested=false, is-selected=false, layout-params=android.widget.FrameLayout$LayoutParams@2d8a3df, tag=null, root-is-layout-requested=false, has-input-connection=true, editor-info=[inputType=0xb0021 imeOptions=0xa000006 privateImeOptions=null actionLabel=null actionId=6 initialSelStart=0 initialSelEnd=0 initialCapsMode=0x0 hintText=Type a name, phone number, or email label=null packageName=null fieldId=0 fieldName=null extras=null hintLocales=null contentMimeTypes=null ], x=0.0, y=0.0, text=, hint=Type a name, phone number, or email, input-type=720929, ime-target=true, has-links=false}'.
-    at android.support.test.espresso.PerformException$Builder.build(PerformException.java:95)
-    at android.support.test.espresso.action.GeneralClickAction.perform(GeneralClickAction.java:161)
-    at android.support.test.espresso.action.TypeTextAction.perform(TypeTextAction.java:103)
-    at android.support.test.espresso.ViewInteraction$SingleExecutionViewAction.perform(ViewInteraction.java:355)
-    at android.support.test.espresso.ViewInteraction.doPerform(ViewInteraction.java:242)
-    at android.support.test.espresso.ViewInteraction.access$100(ViewInteraction.java:62)
-    at android.support.test.espresso.ViewInteraction$1.call(ViewInteraction.java:149)
-    at android.support.test.espresso.ViewInteraction$1.call(ViewInteraction.java:146)
-    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-    at android.os.Handler.handleCallback(Handler.java:789)
-    at android.os.Handler.dispatchMessage(Handler.java:98)
-    at android.os.Looper.loop(Looper.java:164)
-    at android.app.ActivityThread.main(ActivityThread.java:6541)
-    at java.lang.reflect.Method.invoke(Native Method)
-    at com.android.internal.os.Zygote$MethodAndArgsCaller.run(Zygote.java:240)
-    at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:767)
-Caused by: android.support.test.espresso.PerformException: Error performing 'Send down motion event' on view 'unknown'.
-    at android.support.test.espresso.PerformException$Builder.build(PerformException.java:95)
-    at android.support.test.espresso.action.MotionEvents.sendDown(MotionEvents.java:113)
-    at android.support.test.espresso.action.Tap.sendSingleTap(Tap.java:168)
-    at android.support.test.espresso.action.Tap.access$100(Tap.java:31)
-    at android.support.test.espresso.action.Tap$1.sendTap(Tap.java:47)
-    at android.support.test.espresso.action.GeneralClickAction.perform(GeneralClickAction.java:136)
-    ... 14 more
-Caused by: android.support.test.espresso.InjectEventSecurityException: java.lang.SecurityException: Injecting to another application requires INJECT_EVENTS permission
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:156)
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:154)
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.injectMotionEvent(InputManagerEventInjectionStrategy.java:123)
-    at android.support.test.espresso.base.EventInjector.injectMotionEvent(EventInjector.java:92)
-    at android.support.test.espresso.base.UiControllerImpl$3.call(UiControllerImpl.java:228)
-    at android.support.test.espresso.base.UiControllerImpl$3.call(UiControllerImpl.java:225)
-    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-    at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:457)
-    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
-    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
-    at java.lang.Thread.run(Thread.java:764)
-Caused by: java.lang.SecurityException: Injecting to another application requires INJECT_EVENTS permission
-    at android.os.Parcel.readException(Parcel.java:1942)
-    at android.os.Parcel.readException(Parcel.java:1888)
-    at android.hardware.input.IInputManager$Stub$Proxy.injectInputEvent(IInputManager.java:548)
-    at android.hardware.input.InputManager.injectInputEvent(InputManager.java:868)
-    at java.lang.reflect.Method.invoke(Native Method)
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:138)
-    ... 11 more
-
-INSTRUMENTATION_STATUS: current=1
-INSTRUMENTATION_STATUS_CODE: -2
-INSTRUMENTATION_RESULT: stream=
-
-Time: 151.822
-There was 1 failure:
-1) failingTest(com.my.package.test.BasicTest)
-android.support.test.espresso.PerformException: Error performing 'single click - At Coordinates: 571, 272 and precision: 16, 16' on view 'ContactRecipientAutoCompleteView{id=2131755380, res-name=recipient_text_view, visibility=VISIBLE, width=765, height=126, has-focus=true, has-focusable=true, has-window-focus=true, is-clickable=true, is-enabled=true, is-focused=true, is-focusable=true, is-layout-requested=false, is-selected=false, layout-params=android.widget.FrameLayout$LayoutParams@2d8a3df, tag=null, root-is-layout-requested=false, has-input-connection=true, editor-info=[inputType=0xb0021 imeOptions=0xa000006 privateImeOptions=null actionLabel=null actionId=6 initialSelStart=0 initialSelEnd=0 initialCapsMode=0x0 hintText=Type a name, phone number, or email label=null packageName=null fieldId=0 fieldName=null extras=null hintLocales=null contentMimeTypes=null ], x=0.0, y=0.0, text=, hint=Type a name, phone number, or email, input-type=720929, ime-target=true, has-links=false}'.
-    at android.support.test.espresso.PerformException$Builder.build(PerformException.java:95)
-    at android.support.test.espresso.action.GeneralClickAction.perform(GeneralClickAction.java:161)
-    at android.support.test.espresso.action.TypeTextAction.perform(TypeTextAction.java:103)
-    at android.support.test.espresso.ViewInteraction$SingleExecutionViewAction.perform(ViewInteraction.java:355)
-    at android.support.test.espresso.ViewInteraction.doPerform(ViewInteraction.java:242)
-    at android.support.test.espresso.ViewInteraction.access$100(ViewInteraction.java:62)
-    at android.support.test.espresso.ViewInteraction$1.call(ViewInteraction.java:149)
-    at android.support.test.espresso.ViewInteraction$1.call(ViewInteraction.java:146)
-    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-    at android.os.Handler.handleCallback(Handler.java:789)
-    at android.os.Handler.dispatchMessage(Handler.java:98)
-    at android.os.Looper.loop(Looper.java:164)
-    at android.app.ActivityThread.main(ActivityThread.java:6541)
-    at java.lang.reflect.Method.invoke(Native Method)
-    at com.android.internal.os.Zygote$MethodAndArgsCaller.run(Zygote.java:240)
-    at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:767)
-Caused by: android.support.test.espresso.PerformException: Error performing 'Send down motion event' on view 'unknown'.
-    at android.support.test.espresso.PerformException$Builder.build(PerformException.java:95)
-    at android.support.test.espresso.action.MotionEvents.sendDown(MotionEvents.java:113)
-    at android.support.test.espresso.action.Tap.sendSingleTap(Tap.java:168)
-    at android.support.test.espresso.action.Tap.access$100(Tap.java:31)
-    at android.support.test.espresso.action.Tap$1.sendTap(Tap.java:47)
-    at android.support.test.espresso.action.GeneralClickAction.perform(GeneralClickAction.java:136)
-    ... 14 more
-Caused by: android.support.test.espresso.InjectEventSecurityException: java.lang.SecurityException: Injecting to another application requires INJECT_EVENTS permission
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:156)
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:154)
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.injectMotionEvent(InputManagerEventInjectionStrategy.java:123)
-    at android.support.test.espresso.base.EventInjector.injectMotionEvent(EventInjector.java:92)
-    at android.support.test.espresso.base.UiControllerImpl$3.call(UiControllerImpl.java:228)
-    at android.support.test.espresso.base.UiControllerImpl$3.call(UiControllerImpl.java:225)
-    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-    at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:457)
-    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
-    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
-    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
-    at java.lang.Thread.run(Thread.java:764)
-Caused by: java.lang.SecurityException: Injecting to another application requires INJECT_EVENTS permission
-    at android.os.Parcel.readException(Parcel.java:1942)
-    at android.os.Parcel.readException(Parcel.java:1888)
-    at android.hardware.input.IInputManager$Stub$Proxy.injectInputEvent(IInputManager.java:548)
-    at android.hardware.input.InputManager.injectInputEvent(InputManager.java:868)
-    at java.lang.reflect.Method.invoke(Native Method)
-    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:138)
-    ... 11 more
-
-FAILURES!!!
-Tests run: 1,  Failures: 1
-
-
-INSTRUMENTATION_CODE: -1"""
-        expected_executed = [
-            ('com.my.package.test.BasicTest#failingTest', signals.TestFailure),
-        ]
-        self.assert_run_instrumentation_test(
-            instrumentation_output, expected_executed=expected_executed)
 
     def test_run_instrumentation_test_with_prefix_test(self):
         instrumentation_output = """\
@@ -1215,6 +1043,61 @@ INSTRUMENTATION_CODE: -1"""
             instrumentation_output,
             expected_executed=expected_executed,
             expected_skipped=expected_skipped)
+
+    def test__Instrumentation_block_set_key_splitting(self):
+        value = """android.support.test.espresso.PerformException: Error performing 'single click - At Coordinates: 571, 272 and precision: 16, 16' on view 'ContactRecipientAutoCompleteView{id=2131755380, res-name=recipient_text_view, visibility=VISIBLE, width=765, height=126, has-focus=true, has-focusable=true, has-window-focus=true, is-clickable=true, is-enabled=true, is-focused=true, is-focusable=true, is-layout-requested=false, is-selected=false, layout-params=android.widget.FrameLayout$LayoutParams@2d8a3df, tag=null, root-is-layout-requested=false, has-input-connection=true, editor-info=[inputType=0xb0021 imeOptions=0xa000006 privateImeOptions=null actionLabel=null actionId=6 initialSelStart=0 initialSelEnd=0 initialCapsMode=0x0 hintText=Type a name, phone number, or email label=null packageName=null fieldId=0 fieldName=null extras=null hintLocales=null contentMimeTypes=null ], x=0.0, y=0.0, text=, hint=Type a name, phone number, or email, input-type=720929, ime-target=true, has-links=false}'.
+    at android.support.test.espresso.PerformException$Builder.build(PerformException.java:95)
+    at android.support.test.espresso.action.GeneralClickAction.perform(GeneralClickAction.java:161)
+    at android.support.test.espresso.action.TypeTextAction.perform(TypeTextAction.java:103)
+    at android.support.test.espresso.ViewInteraction$SingleExecutionViewAction.perform(ViewInteraction.java:355)
+    at android.support.test.espresso.ViewInteraction.doPerform(ViewInteraction.java:242)
+    at android.support.test.espresso.ViewInteraction.access$100(ViewInteraction.java:62)
+    at android.support.test.espresso.ViewInteraction$1.call(ViewInteraction.java:149)
+    at android.support.test.espresso.ViewInteraction$1.call(ViewInteraction.java:146)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+    at android.os.Handler.handleCallback(Handler.java:789)
+    at android.os.Handler.dispatchMessage(Handler.java:98)
+    at android.os.Looper.loop(Looper.java:164)
+    at android.app.ActivityThread.main(ActivityThread.java:6541)
+    at java.lang.reflect.Method.invoke(Native Method)
+    at com.android.internal.os.Zygote$MethodAndArgsCaller.run(Zygote.java:240)
+    at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:767)
+Caused by: android.support.test.espresso.PerformException: Error performing 'Send down motion event' on view 'unknown'.
+    at android.support.test.espresso.PerformException$Builder.build(PerformException.java:95)
+    at android.support.test.espresso.action.MotionEvents.sendDown(MotionEvents.java:113)
+    at android.support.test.espresso.action.Tap.sendSingleTap(Tap.java:168)
+    at android.support.test.espresso.action.Tap.access$100(Tap.java:31)
+    at android.support.test.espresso.action.Tap$1.sendTap(Tap.java:47)
+    at android.support.test.espresso.action.GeneralClickAction.perform(GeneralClickAction.java:136)
+    ... 14 more
+Caused by: android.support.test.espresso.InjectEventSecurityException: java.lang.SecurityException: Injecting to another application requires INJECT_EVENTS permission
+    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:156)
+    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:154)
+    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.injectMotionEvent(InputManagerEventInjectionStrategy.java:123)
+    at android.support.test.espresso.base.EventInjector.injectMotionEvent(EventInjector.java:92)
+    at android.support.test.espresso.base.UiControllerImpl$3.call(UiControllerImpl.java:228)
+    at android.support.test.espresso.base.UiControllerImpl$3.call(UiControllerImpl.java:225)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+    at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:457)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+    at java.lang.Thread.run(Thread.java:764)
+Caused by: java.lang.SecurityException: Injecting to another application requires INJECT_EVENTS permission
+    at android.os.Parcel.readException(Parcel.java:1942)
+    at android.os.Parcel.readException(Parcel.java:1888)
+    at android.hardware.input.IInputManager$Stub$Proxy.injectInputEvent(IInputManager.java:548)
+    at android.hardware.input.InputManager.injectInputEvent(InputManager.java:868)
+    at java.lang.reflect.Method.invoke(Native Method)
+    at android.support.test.espresso.base.InputManagerEventInjectionStrategy.innerInjectMotionEvent(InputManagerEventInjectionStrategy.java:138)
+    ... 11 more
+
+"""
+        parsed_line = "INSTRUMENTATION_STATUS: stack=%s" % value
+        block = _InstrumentationBlock()
+        block.set_key(_InstrumentationStructurePrefixes.STATUS, parsed_line)
+        self.assertIn(value.rstrip(),
+                      block.known_keys[_InstrumentationKnownStatusKeys.STACK])
 
 
 if __name__ == '__main__':
