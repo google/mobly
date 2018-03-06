@@ -390,7 +390,7 @@ class _InstrumentationBlock(object):
             key_line,
         )
         if '=' in key_value:
-            (key, value) = key_value.split('=')
+            (key, value) = key_value.split('=', 1)
             self.current_key = key
             if key in self.known_keys:
                 self.known_keys[key].append(value)
