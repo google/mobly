@@ -1049,7 +1049,7 @@ INSTRUMENTATION_CODE: -1"""
         parsed_line = "INSTRUMENTATION_STATUS: stack=%s" % value
         block = _InstrumentationBlock()
         block.set_key(_InstrumentationStructurePrefixes.STATUS, parsed_line)
-        self.assertIn(value.rstrip(),
+        self.assertIn(value,
                       block.known_keys[_InstrumentationKnownStatusKeys.STACK])
 
 
