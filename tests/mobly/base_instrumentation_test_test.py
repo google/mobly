@@ -19,6 +19,9 @@ import tempfile
 
 from future.tests.base import unittest
 
+from mobly.base_instrumentation_test import _InstrumentationBlock
+from mobly.base_instrumentation_test import _InstrumentationKnownStatusKeys
+from mobly.base_instrumentation_test import _InstrumentationStructurePrefixes
 from mobly.base_instrumentation_test import BaseInstrumentationTestClass
 from mobly import config_parser
 from mobly import signals
@@ -1040,6 +1043,14 @@ INSTRUMENTATION_CODE: -1"""
             instrumentation_output,
             expected_executed=expected_executed,
             expected_skipped=expected_skipped)
+
+    def test__Instrumentation_block_set_key_on_multiple_equals_sign(self):
+        value = "blah=blah, blah2=blah2, blah=2=1=2"
+        parsed_line = "INSTRUMENTATION_STATUS: stack=%s" % value
+        block = _InstrumentationBlock()
+        block.set_key(_InstrumentationStructurePrefixes.STATUS, parsed_line)
+        self.assertIn(value,
+                      block.known_keys[_InstrumentationKnownStatusKeys.STACK])
 
 
 if __name__ == '__main__':
