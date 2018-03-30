@@ -70,7 +70,7 @@ def main():
         packages=setuptools.find_packages(),
         include_package_data=False,
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
-        tests_require=['pytest', 'testfixtures'],
+        tests_require=['pytest'],
         install_requires=install_requires,
         cmdclass={'test': PyTest}, )
 

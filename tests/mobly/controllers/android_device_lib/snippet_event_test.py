@@ -19,8 +19,6 @@ from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import snippet_event
 
-import testfixtures
-
 MOCK_CALLBACK_ID = 'myCallbackId'
 MOCK_EVENT_NAME = 'onXyzEvent'
 MOCK_CREATION_TIME = '12345678'
@@ -33,12 +31,10 @@ class SnippetEventTest(unittest.TestCase):
         """
         event = snippet_event.SnippetEvent(MOCK_CALLBACK_ID, MOCK_EVENT_NAME,
                                            MOCK_CREATION_TIME, MOCK_DATA)
-        with testfixtures.LogCapture() as l:
-            logger = logging.getLogger()
-            logger.info(event)
-        l.check(('root', 'INFO',
-                 "SnippetEvent(callback_id: myCallbackId, name: onXyzEvent, "
-                 "creation_time: 12345678, data: {'foo': 'bar'})"))
+        self.assertEqual(
+            repr(event),
+            "SnippetEvent(callback_id: myCallbackId, name: onXyzEvent, "
+            "creation_time: 12345678, data: {'foo': 'bar'})")
 
 
 if __name__ == "__main__":
