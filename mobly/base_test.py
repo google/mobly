@@ -19,6 +19,8 @@ import inspect
 import logging
 import sys
 
+from future.utils import raise_with_traceback
+
 from mobly import expects
 from mobly import records
 from mobly import signals
@@ -358,9 +360,7 @@ class BaseTestClass(object):
                 try:
                     self._setup_test(test_name)
                 except signals.TestFailure as e:
-                    new_e = signals.TestError(e.details, e.extras)
-                    _, _, new_e.__traceback__ = sys.exc_info()
-                    raise new_e
+                    raise_with_traceback(signals.TestError(e.details, e.extras))
                 if args or kwargs:
                     test_method(*args, **kwargs)
                 else:
