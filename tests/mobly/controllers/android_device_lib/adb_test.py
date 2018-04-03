@@ -39,6 +39,10 @@ MOCK_OPTIONS_INSTRUMENTATION_COMMAND = ('am instrument -r -w -e option1 value1'
                                         '.instrumentation.tests/com.android'
                                         '.common.support.test.runner'
                                         '.AndroidJUnitRunner')
+# Mock Shell Command
+MOCK_SHELL_COMMAND = 'ls'
+MOCK_COMMAND_OUTPUT = '/system/bin/ls'.encode('utf-8')
+MOCK_ADB_SHELL_COMMAND_CHECK = 'adb shell command -v ls'
 
 
 class AdbTest(unittest.TestCase):
@@ -175,6 +179,34 @@ class AdbTest(unittest.TestCase):
         self.assertEqual(adb.cli_cmd_to_string(cmd), '\'"adb"\' \'a b\' c//')
         cmd = 'adb -s meme do something ab_cd'
         self.assertEqual(adb.cli_cmd_to_string(cmd), cmd)
+
+    def test_has_shell_command_called_correctly(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            adb.AdbProxy().has_shell_command(MOCK_SHELL_COMMAND)
+            mock_exec_cmd.assert_called_once_with(
+                ['adb', 'shell', 'command', '-v', MOCK_SHELL_COMMAND],
+                shell=False,
+                timeout=None)
+
+    def test_has_shell_command_with_existing_command(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.return_value = MOCK_COMMAND_OUTPUT
+            self.assertTrue(
+                adb.AdbProxy().has_shell_command(MOCK_SHELL_COMMAND))
+
+    def test_has_shell_command_with_missing_command_on_older_devices(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.side_effect = adb.AdbError(
+                MOCK_ADB_SHELL_COMMAND_CHECK, '', '', 0)
+            self.assertFalse(
+                adb.AdbProxy().has_shell_command(MOCK_SHELL_COMMAND))
+
+    def test_has_shell_command_with_missing_command_on_newer_devices(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.side_effect = adb.AdbError(
+                MOCK_ADB_SHELL_COMMAND_CHECK, '', '', 1)
+            self.assertFalse(
+                adb.AdbProxy().has_shell_command(MOCK_SHELL_COMMAND))
 
 
 if __name__ == '__main__':

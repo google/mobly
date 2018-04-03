@@ -965,6 +965,31 @@ class AndroidDevice(object):
                         if in_range:
                             break
 
+    def _enable_logpersist(self):
+        """Attempts to enable logpersist daemon to persist logs."""
+        # Logpersist is only allowed on rootable devices because of excessive
+        # reads/writes for persisting logs.
+        if not self.is_rootable:
+            return
+
+        logpersist_warning = ('%s encountered an error enabling persistent'
+                              ' logs, logs may not get saved.')
+        # Android L and older versions do not have logpersist installed,
+        # so check that the logpersist scripts exists before trying to use
+        # them.
+        if not self.adb.has_shell_command('logpersist.start'):
+            logging.warning(logpersist_warning, self)
+            return
+
+        try:
+            # Disable adb log spam filter for rootable devices. Have to stop
+            # and clear settings first because 'start' doesn't support --clear
+            # option before Android N.
+            self.adb.shell('logpersist.stop --clear')
+            self.adb.shell('logpersist.start')
+        except adb.AdbError:
+            logging.warning(logpersist_warning, self)
+
     def start_adb_logcat(self, clear_log=True):
         """Starts a standing adb logcat collection in separate subprocesses and
         save the logcat in a file.
@@ -980,12 +1005,9 @@ class AndroidDevice(object):
                 'Logcat thread is already running, cannot start another one.')
         if clear_log:
             self._clear_adb_log()
-        # Disable adb log spam filter for rootable devices. Have to stop and
-        # clear settings first because 'start' doesn't support --clear option
-        # before Android N.
-        if self.is_rootable:
-            self.adb.shell('logpersist.stop --clear')
-            self.adb.shell('logpersist.start')
+
+        self._enable_logpersist()
+
         f_name = 'adblog,%s,%s.txt' % (self.model, self.serial)
         utils.create_dir(self.log_path)
         logcat_file_path = os.path.join(self.log_path, f_name)
