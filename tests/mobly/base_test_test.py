@@ -982,6 +982,13 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, "test_func")
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
+        # Stacktraces can vary. Just check for key words
+        self.assertIn('test_method()',
+                      actual_record.stacktrace)
+        self.assertIn('raise Exception(MSG_EXPECTED_EXCEPTION)',
+                      actual_record.stacktrace)
+        self.assertIn('Exception: This is an expected exception.',
+                      actual_record.stacktrace)
 
     def test_fail(self):
         class MockBaseTest(base_test.BaseTestClass):
