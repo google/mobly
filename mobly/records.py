@@ -114,6 +114,7 @@ class TestSummaryWriter(object):
         Raises:
             recoreds.Error: An invalid entry type is passed in.
         """
+        # Both user code and Mobly code can trigger this dump, hence the lock.
         with self._lock:
             new_content = copy.deepcopy(content)
             new_content['Type'] = entry_type.value
@@ -559,7 +560,6 @@ class TestResult(object):
         if num_of_failures == 0:
             return True
         return False
-
 
     def requested_test_names_dict(self):
         """Gets the requested test names of a test run in a dict format.

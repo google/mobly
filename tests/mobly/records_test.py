@@ -19,6 +19,7 @@ import mock
 import os
 import shutil
 import tempfile
+import threading
 import yaml
 
 from future.tests.base import unittest

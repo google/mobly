@@ -344,7 +344,7 @@ class BaseTestClass(object):
         Each call adds a new entry to the summary file, with no guarantee of
         its position among the summary file entries.
 
-        The content should be a dict. If absent timestamp field is added for
+        The content should be a dict. If absent, timestamp field is added for
         ease of parsing later.
 
         Args:
@@ -381,7 +381,8 @@ class BaseTestClass(object):
                 try:
                     self._setup_test(test_name)
                 except signals.TestFailure as e:
-                    raise_with_traceback(signals.TestError(e.details, e.extras))
+                    raise_with_traceback(
+                        signals.TestError(e.details, e.extras))
                 if args or kwargs:
                     test_method(*args, **kwargs)
                 else:
