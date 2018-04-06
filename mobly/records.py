@@ -22,6 +22,7 @@ import json
 import logging
 import pprint
 import sys
+import threading
 import traceback
 import yaml
 
@@ -46,15 +47,19 @@ class TestSummaryEntryType(enum.Enum):
     """
     # A list of all the tests requested for a test run.
     # This is dumped at the beginning of a summary file so we know what was
-    # requested in case the test is interrupted and the final summary is not.
+    # requested in case the test is interrupted and the final summary is not
     # created.
     TEST_NAME_LIST = 'TestNameList'
     # Records of test results.
     RECORD = 'Record'
-    # A summary of the test run stats, like how many test failed.
+    # A summary of the test run stats, e.g. how many test failed.
     SUMMARY = 'Summary'
     # Information on the controllers used in the test.
     CONTROLLER_INFO = 'ControllerInfo'
+    # Additional data added by users during test.
+    # This can be added at any point in the test, so do not assume the location
+    # of these entries in the summary file.
+    USER_DATA = 'UserData'
 
 
 class Error(Exception):
@@ -78,6 +83,19 @@ class TestSummaryWriter(object):
 
     def __init__(self, path):
         self._path = path
+        self._lock = threading.Lock()
+
+    def __copy__(self):
+        """Make a "copy" of the object.
+
+        The writer is merely a wrapper object for a path with a global lock for
+        write operation. So we simply return the object itself for copy
+        operations.
+        """
+        return self
+
+    def __deepcopy__(self, *args):
+        return self.__copy__()
 
     def dump(self, content, entry_type):
         """Dumps a dictionary as a yaml document to the summary file.
@@ -98,14 +116,16 @@ class TestSummaryWriter(object):
         """
         new_content = copy.deepcopy(content)
         new_content['Type'] = entry_type.value
-        # Use safe_dump here to avoid language-specific tags in final output.
-        with open(self._path, 'a') as f:
-            yaml.safe_dump(
-                new_content,
-                f,
-                explicit_start=True,
-                allow_unicode=True,
-                indent=4)
+        # Both user code and Mobly code can trigger this dump, hence the lock.
+        with self._lock:
+            # Use safe_dump here to avoid language-specific tags in final output.
+            with open(self._path, 'a') as f:
+                yaml.safe_dump(
+                    new_content,
+                    f,
+                    explicit_start=True,
+                    allow_unicode=True,
+                    indent=4)
 
 
 class TestResultEnums(object):
@@ -540,7 +560,6 @@ class TestResult(object):
         if num_of_failures == 0:
             return True
         return False
-
 
     def requested_test_names_dict(self):
         """Gets the requested test names of a test run in a dict format.

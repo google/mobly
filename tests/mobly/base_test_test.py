@@ -16,6 +16,7 @@ import os
 import mock
 import shutil
 import tempfile
+import yaml
 
 from future.tests.base import unittest
 
@@ -23,6 +24,7 @@ from mobly import asserts
 from mobly import base_test
 from mobly import config_parser
 from mobly import expects
+from mobly import records
 from mobly import signals
 
 from tests.lib import utils
@@ -46,7 +48,9 @@ class BaseTestTest(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.mock_test_cls_configs = config_parser.TestRunConfig()
-        self.mock_test_cls_configs.summary_writer = mock.Mock()
+        self.summary_file = os.path.join(self.tmp_dir, 'summary.yaml')
+        self.mock_test_cls_configs.summary_writer = records.TestSummaryWriter(
+            self.summary_file)
         self.mock_test_cls_configs.log_path = self.tmp_dir
         self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
         self.mock_test_cls_configs.reporter = mock.MagicMock()
@@ -983,8 +987,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         # Stacktraces can vary. Just check for key words
-        self.assertIn('test_method()',
-                      actual_record.stacktrace)
+        self.assertIn('test_method()', actual_record.stacktrace)
         self.assertIn('raise Exception(MSG_EXPECTED_EXCEPTION)',
                       actual_record.stacktrace)
         self.assertIn('Exception: This is an expected exception.',
@@ -1629,6 +1632,27 @@ class BaseTestTest(unittest.TestCase):
         expected_summary = ("Error 1, Executed 0, Failed 0, Passed 0, "
                             "Requested 0, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_write_user_data(self):
+        content = {'a': 1}
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_something(self):
+                self.record_data(content)
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_something"])
+        actual_record = bt_cls.results.passed[0]
+        self.assertEqual(actual_record.test_name, "test_something")
+        hit = False
+        with open(self.summary_file, 'r') as f:
+            for c in yaml.load_all(f):
+                if c['Type'] != records.TestSummaryEntryType.USER_DATA.value:
+                    continue
+                hit = True
+                self.assertEqual(c['a'], content['a'])
+                self.assertIsNotNone(c['timestamp'])
+        self.assertTrue(hit)
 
 
 if __name__ == "__main__":
