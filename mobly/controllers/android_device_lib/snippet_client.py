@@ -91,6 +91,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """Overrides superclass. Launches a snippet app and connects to it."""
         self._check_app_installed()
 
+        # the snippet might use hidden APIs, so disable hidden API blacklist.
+        self.adb.shell(
+            'settings put global hidden_api_blacklist_exemptions "*"')
+
         persists_shell_cmd = self._get_persist_command()
         # Use info here so people can follow along with the snippet startup
         # process. Starting snippets can be slow, especially if there are
