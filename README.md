@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/google/mobly.svg?branch=master)](https://travis-ci.org/google/mobly)
-
-# Welcome to Mobly
+# Welcome to Mobly [![Build Status](https://travis-ci.org/google/mobly.svg?branch=master)](https://travis-ci.org/google/mobly)
 
 **Mobly** is a Python-based test framework that specializes in supporting test
 cases that require multiple devices, complex environments, or custom hardware
@@ -40,16 +38,16 @@ Mobly tests could run on the following platforms:
 ## Installation
 You can install the released package from pip
 
-```
-$ pip install mobly
+```sh
+pip install mobly
 ```
 
 or download the source then run `setup.py` to use the bleeding edge:
 
-```
-$ git clone https://github.com/google/mobly.git
-$ cd mobly
-$ python setup.py install
+```sh
+git clone https://github.com/google/mobly.git
+cd mobly
+python setup.py install
 ```
 
 You may need `sudo` for the above commands if your system has certain permission
