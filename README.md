@@ -4,10 +4,6 @@
 |-----------------|---------------------|
 [![Linux Build Status](https://travis-ci.org/google/mobly.svg?branch=master)](https://travis-ci.org/google/mobly) | [![Windows Build Status](https://storage.googleapis.com/mobly-kokoro-build-badges/mobly-windows.png)](https://fusion.corp.google.com/projectanalysis/current/KOKORO/prod%3Amobly%2Fgcp_windows%2Fcontinuous)
 
-
-
-
-
 **Mobly** is a Python-based test framework that specializes in supporting test
 cases that require multiple devices, complex environments, or custom hardware
 setups.
