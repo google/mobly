@@ -987,8 +987,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
         # Stacktraces can vary. Just check for key words
-        self.assertIn('test_method()',
-                      actual_record.stacktrace)
+        self.assertIn('test_method()', actual_record.stacktrace)
         self.assertIn('raise Exception(MSG_EXPECTED_EXCEPTION)',
                       actual_record.stacktrace)
         self.assertIn('Exception: This is an expected exception.',
@@ -1652,6 +1651,7 @@ class BaseTestTest(unittest.TestCase):
                     continue
                 hit = True
                 self.assertEqual(c['a'], content['a'])
+                self.assertIsNotNone(c['timestamp'])
         self.assertTrue(hit)
 
 
