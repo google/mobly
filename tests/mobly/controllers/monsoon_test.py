@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import platform
+
 from future.tests.base import unittest
 
 
 class MonsoonTest(unittest.TestCase):
-
+    @unittest.skipIf(platform.system() == 'Windows',
+                     'fcntl does not exist on Windows')
     def test_monsoon_import(self):
         from mobly.controllers import monsoon
 

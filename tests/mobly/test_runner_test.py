@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import mock
 import os
+import platform
+import re
 import shutil
 import tempfile
 import yaml
@@ -201,8 +204,7 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run()
-        summary_path = os.path.join(mock_test_config.log_path,
-                                    mock_test_config.test_bed_name, 'latest',
+        summary_path = os.path.join(logging.log_path,
                                     records.OUTPUT_FILE_SUMMARY)
         with open(summary_path, 'r') as f:
             summary_entries = list(yaml.load_all(f))
@@ -297,7 +299,7 @@ class TestRunnerTest(unittest.TestCase):
                 test_runner.Error,
                 'TestRunner\'s log folder is "/different/log/dir", but a test '
                 r'config with a different log folder \("%s"\) was added.' %
-                self.log_dir):
+                re.escape(self.log_dir)):
             tr.add_test_class(self.base_mock_test_config,
                               integration_test.IntegrationTest)
 

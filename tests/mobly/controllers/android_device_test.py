@@ -17,6 +17,7 @@ from builtins import str as new_str
 import logging
 import mock
 import os
+import platform
 import shutil
 import sys
 import tempfile
@@ -593,6 +594,8 @@ class AndroidDeviceTest(unittest.TestCase):
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.update_serial('2')
 
+    @unittest.skipIf(platform.system() == 'Windows',
+                     'The character ":" is not valid in Windows file names')
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
         return_value=mock_android_device.MockAdbProxy('1'))
