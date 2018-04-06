@@ -60,20 +60,6 @@ class AppStartPreCheckError(jsonrpc_client_base.Error):
     """Raised when pre checks for the snippet failed."""
 
 
-class SnippetNotInstalledError(AppStartPreCheckError):
-    """Raised when the snippet apk is not installed on the device."""
-
-
-class SnippetNotInstrumentedError(AppStartPreCheckError):
-    """Raised when the snippet apk is installed but not instrumented."""
-
-
-class InstrumentationTargetNotInstalledError(AppStartPreCheckError):
-    """Raised when the instrumentation target of the snippet apk is not
-    installed on device.
-    """
-
-
 class ProtocolVersionError(jsonrpc_client_base.AppStartError):
     """Raised when the protocol reported by the snippet is unknown."""
 
@@ -219,15 +205,15 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # Check that the Mobly Snippet app is installed.
         out = self._adb.shell('pm list package')
         if not utils.grep('^package:%s$' % self.package, out):
-            raise SnippetNotInstalledError(
-                self._ad, '%s is not installed.' % self.package)
+            raise AppStartPreCheckError(self._ad,
+                                        '%s is not installed.' % self.package)
         # Check that the app is instrumented.
         out = self._adb.shell('pm list instrumentation')
         matched_out = utils.grep('^instrumentation:%s/%s' %
                                  (self.package,
                                   _INSTRUMENTATION_RUNNER_PACKAGE), out)
         if not matched_out:
-            raise SnippetNotInstrumentedError(
+            raise AppStartPreCheckError(
                 self._ad,
                 '%s is installed, but it is not instrumented.' % self.package)
         match = re.search('^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
@@ -238,7 +224,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         if target_name != self.package:
             out = self._adb.shell('pm list package')
             if not utils.grep('^package:%s$' % target_name, out):
-                raise InstrumentationTargetNotInstalledError(
+                raise AppStartPreCheckError(
                     self._ad, 'Instrumentation target %s is not installed.' %
                     target_name)
 

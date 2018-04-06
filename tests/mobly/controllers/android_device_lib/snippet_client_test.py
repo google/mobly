@@ -78,7 +78,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     def test_check_app_installed_fail_app_not_installed(self):
         sc = self._make_client(MockAdbProxy(apk_not_installed=True))
         expected_msg = '.* %s is not installed.' % MOCK_PACKAGE_NAME
-        with self.assertRaisesRegex(snippet_client.SnippetNotInstalledError,
+        with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
                                     expected_msg):
             sc._check_app_installed()
 
@@ -86,7 +86,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         sc = self._make_client(MockAdbProxy(apk_not_instrumented=True))
         expected_msg = ('.* %s is installed, but it is not instrumented.' %
                         MOCK_PACKAGE_NAME)
-        with self.assertRaisesRegex(snippet_client.SnippetNotInstrumentedError,
+        with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
                                     expected_msg):
             sc._check_app_installed()
 
@@ -94,9 +94,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         sc = self._make_client(MockAdbProxy(target_not_installed=True))
         expected_msg = ('.* Instrumentation target %s is not installed.' %
                         MOCK_MISSING_PACKAGE_NAME)
-        with self.assertRaisesRegex(
-                snippet_client.InstrumentationTargetNotInstalledError,
-                expected_msg):
+        with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
+                                    expected_msg):
             sc._check_app_installed()
 
     @mock.patch('socket.create_connection')
