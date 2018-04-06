@@ -92,7 +92,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self._check_app_installed()
 
         # the snippet might use hidden APIs, so disable hidden API blacklist.
-        self.adb.shell(
+        self._adb.shell(
             'settings put global hidden_api_blacklist_exemptions "*"')
 
         persists_shell_cmd = self._get_persist_command()
