@@ -877,6 +877,7 @@ class AndroidDevice(object):
                     'Snippet package "%s" has already been loaded under name'
                     ' "%s".' % (package, client_name))
         client = snippet_client.SnippetClient(package=package, ad=self)
+        self._maybe_disable_hidden_api_blacklist()
         try:
             client.start_app_and_connect()
         except snippet_client.AppStartPreCheckError:
@@ -907,6 +908,7 @@ class AndroidDevice(object):
         EventDispatcher obj (self.ed) with the other connection.
         """
         self.sl4a = sl4a_client.Sl4aClient(ad=self)
+        self._maybe_disable_hidden_api_blacklist()
         self.sl4a.start_app_and_connect()
         # Unpack the 'ed' attribute for compatibility.
         self.ed = self.sl4a.ed
@@ -1196,6 +1198,24 @@ class AndroidDevice(object):
             return
         with self.handle_reboot():
             self.adb.reboot()
+
+    def _is_at_least_P(self):
+        """Checks if the device is running on version at least P."""
+        version_codename = self.adb_getprop('ro.build.version.codename')
+        sdk_version = self.adb_getprop('ro.build.version.sdk')
+        if version_codename == 'REL':
+            return sdk_version >= 28
+        elif version_codename == 'P' or version_codename == 'Q':
+            return True
+        return False
+
+    def _maybe_disable_hidden_api_blacklist(self):
+        """If necessary and possible, disables hidden api blacklist
+        """
+        if self.is_rootable and self._is_at_least_P():
+            self.root_adb()
+            self._adb.shell(
+                'settings put global hidden_api_blacklist_exemptions "*"')
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):

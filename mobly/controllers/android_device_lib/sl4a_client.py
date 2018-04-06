@@ -62,10 +62,6 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
                 self._ad, '%s is not installed on %s' % (_APP_NAME,
                                                          self._adb.serial))
 
-        # sl4a uses hidden APIs, so disable hidden API blacklist.
-        self._adb.shell(
-            'settings put global hidden_api_blacklist_exemptions "*"')
-
         # sl4a has problems connecting after disconnection, so kill the apk and
         # try connecting again.
         try:
