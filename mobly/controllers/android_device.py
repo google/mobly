@@ -1201,8 +1201,8 @@ class AndroidDevice(object):
 
     def _is_at_least_P(self):
         """Checks if the device is running on version at least P."""
-        version_codename = self.adb_getprop('ro.build.version.codename')
-        sdk_version = self.adb_getprop('ro.build.version.sdk')
+        version_codename = self.adb.getprop('ro.build.version.codename')
+        sdk_version = self.adb.getprop('ro.build.version.sdk')
         if version_codename == 'REL':
             return sdk_version >= 28
         elif version_codename == 'P' or version_codename == 'Q':
