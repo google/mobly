@@ -56,6 +56,10 @@ _SETSID_COMMAND = 'setsid'
 _NOHUP_COMMAND = 'nohup'
 
 
+class AppStartPreCheckError(jsonrpc_client_base.Error):
+    """Raised when pre checks for the snippet failed."""
+
+
 class ProtocolVersionError(jsonrpc_client_base.AppStartError):
     """Raised when the protocol reported by the snippet is unknown."""
 
@@ -114,12 +118,14 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # Forward the device port to a new host port, and connect to that port
         self.host_port = utils.get_available_host_port()
         self._adb.forward(
-            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port,
+             'tcp:%d' % self.device_port])
         self.connect()
 
         # Yaaay! We're done!
         self.log.debug('Snippet %s started after %.1fs on host port %s',
-                       self.package, time.time() - start_time, self.host_port)
+                       self.package,
+                       time.time() - start_time, self.host_port)
 
     def restore_app_connection(self, port=None):
         """Restores the app after device got reconnected.
@@ -139,7 +145,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """
         self.host_port = port or utils.get_available_host_port()
         self._adb.forward(
-            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port,
+             'tcp:%d' % self.device_port])
         try:
             self.connect()
         except:
@@ -198,15 +205,15 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         # Check that the Mobly Snippet app is installed.
         out = self._adb.shell('pm list package')
         if not utils.grep('^package:%s$' % self.package, out):
-            raise jsonrpc_client_base.AppStartError(
-                self._ad, '%s is not installed.' % self.package)
+            raise AppStartPreCheckError(self._ad,
+                                        '%s is not installed.' % self.package)
         # Check that the app is instrumented.
         out = self._adb.shell('pm list instrumentation')
         matched_out = utils.grep('^instrumentation:%s/%s' %
                                  (self.package,
                                   _INSTRUMENTATION_RUNNER_PACKAGE), out)
         if not matched_out:
-            raise jsonrpc_client_base.AppStartError(
+            raise AppStartPreCheckError(
                 self._ad,
                 '%s is installed, but it is not instrumented.' % self.package)
         match = re.search('^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
@@ -217,7 +224,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         if target_name != self.package:
             out = self._adb.shell('pm list package')
             if not utils.grep('^package:%s$' % target_name, out):
-                raise jsonrpc_client_base.AppStartError(
+                raise AppStartPreCheckError(
                     self._ad, 'Instrumentation target %s is not installed.' %
                     target_name)
 
@@ -251,8 +258,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             # call above the truthiness check, or this method will start
             # considering any blank output line to be EOF.
             line = line.strip()
-            if (line.startswith('INSTRUMENTATION_RESULT:') or
-                    line.startswith('SNIPPET ')):
+            if (line.startswith('INSTRUMENTATION_RESULT:')
+                    or line.startswith('SNIPPET ')):
                 self.log.debug(
                     'Accepted line from instrumentation output: "%s"', line)
                 return line
