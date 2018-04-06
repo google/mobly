@@ -879,20 +879,21 @@ class AndroidDevice(object):
         client = snippet_client.SnippetClient(package=package, ad=self)
         try:
             client.start_app_and_connect()
-        except:
+        except snippet_client.AppStartPreCheckError:
+            # Precheck errors don't need cleanup, directly raise.
+            raise
+        except Exception as e:
             # Log the stacktrace of `e` as re-raising doesn't preserve trace.
             self.log.exception('Failed to start app and connect.')
             # If errors happen, make sure we clean up before raising.
             try:
                 client.stop_app()
-            except Exception as e:  # Catch the `stop_app` exception obj so the
-                # subsequent `raise` raises the exception from
-                # `start_app_and_connect`.
+            except:
                 self.log.exception(
                     'Failed to stop app after failure to start app and connect.'
                 )
-            # Raise the error from start app failure.
-            raise
+            # Explicitly raise the error from start app failure.
+            raise e
         self._snippet_clients[name] = client
         setattr(self, name, client)
 

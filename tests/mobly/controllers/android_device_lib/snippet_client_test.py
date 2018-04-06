@@ -78,7 +78,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     def test_check_app_installed_fail_app_not_installed(self):
         sc = self._make_client(MockAdbProxy(apk_not_installed=True))
         expected_msg = '.* %s is not installed.' % MOCK_PACKAGE_NAME
-        with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
+        with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
                                     expected_msg):
             sc._check_app_installed()
 
@@ -86,7 +86,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         sc = self._make_client(MockAdbProxy(apk_not_instrumented=True))
         expected_msg = ('.* %s is installed, but it is not instrumented.' %
                         MOCK_PACKAGE_NAME)
-        with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
+        with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
                                     expected_msg):
             sc._check_app_installed()
 
@@ -94,7 +94,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         sc = self._make_client(MockAdbProxy(target_not_installed=True))
         expected_msg = ('.* Instrumentation target %s is not installed.' %
                         MOCK_MISSING_PACKAGE_NAME)
-        with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
+        with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
                                     expected_msg):
             sc._check_app_installed()
 
@@ -225,17 +225,19 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             snippet_client._NOHUP_COMMAND, MOCK_PACKAGE_NAME,
             snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
         mock_do_start_app.assert_has_calls(
-            [mock.call(cmd_setsid), mock.call(cmd_nohup)])
+            [mock.call(cmd_setsid),
+             mock.call(cmd_nohup)])
 
         # Test both 'setsid' and 'nohup' do not exist
-        client._adb.shell = mock.Mock(side_effect=adb.AdbError(
-            'cmd', 'stdout', 'stderr', 'ret_code'))
+        client._adb.shell = mock.Mock(
+            side_effect=adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code'))
         client = self._make_client()
         client.start_app_and_connect()
         cmd_not_persist = ' am instrument -w -e action start %s/%s' % (
             MOCK_PACKAGE_NAME, snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
         mock_do_start_app.assert_has_calls([
-            mock.call(cmd_setsid), mock.call(cmd_nohup),
+            mock.call(cmd_setsid),
+            mock.call(cmd_nohup),
             mock.call(cmd_not_persist)
         ])
 
@@ -323,8 +325,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         adb_proxy = adb_proxy or MockAdbProxy()
         ad = mock.Mock()
         ad.adb = adb_proxy
-        return snippet_client.SnippetClient(
-            package=MOCK_PACKAGE_NAME, ad=ad)
+        return snippet_client.SnippetClient(package=MOCK_PACKAGE_NAME, ad=ad)
 
     def _setup_mock_instrumentation_cmd(self, mock_start_standing_subprocess,
                                         resp_lines):
