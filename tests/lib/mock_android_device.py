@@ -88,6 +88,10 @@ class MockAdbProxy(object):
             return "userdebug"
         elif params == "ro.build.product" or params == "ro.product.name":
             return "FakeModel"
+        elif params == "ro.build.version.codename":
+            return "Z"
+        elif params == "ro.build.version.sdk":
+            return "12"
         elif params == "sys.boot_completed":
             return "1"
 
