@@ -114,10 +114,10 @@ class TestSummaryWriter(object):
         Raises:
             recoreds.Error: An invalid entry type is passed in.
         """
+        new_content = copy.deepcopy(content)
+        new_content['Type'] = entry_type.value
         # Both user code and Mobly code can trigger this dump, hence the lock.
         with self._lock:
-            new_content = copy.deepcopy(content)
-            new_content['Type'] = entry_type.value
             # Use safe_dump here to avoid language-specific tags in final output.
             with open(self._path, 'a') as f:
                 yaml.safe_dump(
