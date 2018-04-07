@@ -119,6 +119,7 @@ class JsonRpcClientBase(object):
         self.device_port = None
         self.app_name = app_name
         self._ad = ad
+        self._adb = ad.adb
         self.log = self._ad.log
         self.uid = None
         self._client = None  # prevent close errors on connect failure
@@ -315,6 +316,15 @@ class JsonRpcClientBase(object):
                 method_name=method,
                 ad=self._ad)
         return result['result']
+
+    def disable_hidden_api_blacklist(self):
+        """If necessary and possible, disables hidden api blacklist."""
+        version_codename = self._adb.getprop('ro.build.version.codename')
+        sdk_version = int(self._adb.getprop('ro.build.version.sdk'))
+        if self._ad.is_rootable and (sdk_version >= 28 or
+                                     version_codename == 'P'):
+            self._adb.shell(
+                'settings put global hidden_api_blacklist_exemptions "*"')
 
     def __getattr__(self, name):
         """Wrapper for python magic to turn method calls into RPC calls."""

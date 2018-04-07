@@ -90,6 +90,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     def start_app_and_connect(self):
         """Overrides superclass. Launches a snippet app and connects to it."""
         self._check_app_installed()
+        self.disable_hidden_api_blacklist()
 
         persists_shell_cmd = self._get_persist_command()
         # Use info here so people can follow along with the snippet startup
