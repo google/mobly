@@ -56,10 +56,10 @@ class MockAdbProxy(object):
             return b''
 
     def getprop(self, params):
-        if params == "ro.build.version.codename":
-            return "Z"
-        elif params == "ro.build.version.sdk":
-            return "12"
+        if params == 'ro.build.version.codename':
+            return 'Z'
+        elif params == 'ro.build.version.sdk':
+            return '28'
 
     def __getattr__(self, name):
         """All calls to the none-existent functions in adb proxy would
