@@ -935,5 +935,5 @@ class BaseInstrumentationTestClass(base_test.BaseTestClass):
         instrumentation_block = _InstrumentationBlock(prefix=prefix)
         for line in instrumentation_output.splitlines():
             instrumentation_block = self._parse_line(instrumentation_block,
-                                                     line)
+                                                     line.decode('utf-8'))
         return self._finish_parsing(instrumentation_block)

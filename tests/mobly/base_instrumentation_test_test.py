@@ -15,6 +15,7 @@
 import os
 import mock
 import shutil
+import sys
 import tempfile
 
 from future.tests.base import unittest
@@ -131,6 +132,18 @@ class BaseInstrumentationTestTest(unittest.TestCase):
         self.assertIsInstance(actual_test.termination_signal.exception,
                               expected_signal)
 
+    def convert_to_raw_output(self, test_output):
+        """Converts code-based strings into adb output strings.
+
+        In python3, adb returns 'utf-8' encoded byte arrays, which do not work
+        correctly with code-based unicode strings, so to simulate that, the raw
+        instrumentation output should be converted accordingly.
+        """
+        if sys.version_info >= (3, 0):
+            return bytes(test_output, 'utf-8')
+        else:
+            return bytes(test_output)
+
     def assert_run_instrumentation_test(self,
                                         instrumentation_output,
                                         expected_executed=[],
@@ -139,7 +152,7 @@ class BaseInstrumentationTestTest(unittest.TestCase):
                                         expected_has_error=False,
                                         prefix=None):
         result = self.run_instrumentation_test(
-            instrumentation_output, prefix=prefix)
+            self.convert_to_raw_output(instrumentation_output), prefix=prefix)
         if expected_has_error:
             self.assertIsInstance(result.error, signals.TestError)
         else:
