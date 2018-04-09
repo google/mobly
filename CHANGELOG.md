@@ -1,4 +1,17 @@
-# Mobly release history
+# Mobly Release History
+
+
+## 1.7.2: Custom Info in Test Summary
+
+### New
+  * Support adding additional blocks in test summary file.
+  * `SnippetEvent` is now loggable.
+
+### Fixes
+  * Fix several bugs in error reporting.
+  * Fix log persist crashing Mobly on certain devices.
+
+[Full list of changes.](https://github.com/google/mobly/milestone/15?closed=1)
 
 
 ## 1.7.1: Bug Fixes
