@@ -29,6 +29,9 @@ from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import teardown_class_failure_test
 
+if platform.system() == 'Windows':
+    from win32com import client
+
 
 class OutputTest(unittest.TestCase):
     """This test class has unit tests for the implementation of Mobly's output
@@ -99,11 +102,10 @@ class OutputTest(unittest.TestCase):
         symlink = os.path.join(self.log_dir, self.test_bed_name, 'latest')
         self.assertTrue(os.readlink(symlink), logging.log_path)
 
-    @unittest.skipUnless(platform.system() == 'Windows',
-                         'Shortcuts are specific to Windows operating systems')
-    def test_symlink(self):
+    @unittest.skipIf(platform.system() != 'Windows',
+                     'Shortcuts are specific to Windows operating systems')
+    def test_shortcut(self):
         """Verifies the shortcut is created and links properly."""
-        from win32com import client
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
