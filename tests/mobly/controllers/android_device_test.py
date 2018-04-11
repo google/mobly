@@ -627,10 +627,11 @@ class AndroidDeviceTest(unittest.TestCase):
                                          (ad.model, ad.serial))
         with open(mock_adb_log_path, 'w') as f:
             f.write(MOCK_ADB_LOGCAT)
-        ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
+        ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME, 2016)
         cat_file_path = os.path.join(
             ad.log_path, 'AdbLogExcerpts',
-            ('some_test,02-29 14:02:20.123,%s,%s.txt') % (ad.model, ad.serial))
+            ('some_test,02-29-2016_14-02-20-123,%s,%s.txt') % (ad.model,
+                                                               ad.serial))
         with open(cat_file_path, 'r') as f:
             actual_cat = f.read()
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
