@@ -23,10 +23,11 @@ MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 class AssertsTest(unittest.TestCase):
     """Verifies that asserts.xxx functions raise the correct test signals.
     """
+
     def test_assert_false(self):
         asserts.assert_false(False, MSG_EXPECTED_EXCEPTION)
         with self.assertRaisesRegex(signals.TestFailure,
-                                     MSG_EXPECTED_EXCEPTION):
+                                    MSG_EXPECTED_EXCEPTION):
             asserts.assert_false(True, MSG_EXPECTED_EXCEPTION)
 
 

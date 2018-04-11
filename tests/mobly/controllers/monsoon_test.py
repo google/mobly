@@ -16,7 +16,6 @@ from future.tests.base import unittest
 
 
 class MonsoonTest(unittest.TestCase):
-
     def test_monsoon_import(self):
         from mobly.controllers import monsoon
 

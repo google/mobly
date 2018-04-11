@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +15,7 @@
 import shutil
 from mobly.controllers import sniffer
 from mobly.controllers.sniffer_lib.local import local_base
+
 
 class Sniffer(local_base.SnifferLocalBase):
     """This class defines a sniffer which uses tshark as its back-end
@@ -30,8 +31,9 @@ class Sniffer(local_base.SnifferLocalBase):
         self._executable_path = (shutil.which("tshark")
                                  or shutil.which("/usr/local/bin/tshark"))
         if self._executable_path is None:
-            raise sniffer.SnifferError("Cannot find a path to the 'tshark' "
-                                 "executable (or to '/usr/local/bin/tshark')")
+            raise sniffer.SnifferError(
+                "Cannot find a path to the 'tshark' "
+                "executable (or to '/usr/local/bin/tshark')")
 
     def get_descriptor(self):
         """See base class documentation
@@ -43,7 +45,9 @@ class Sniffer(local_base.SnifferLocalBase):
         """
         return "tshark"
 
-    def _get_command_line(self, additional_args=None, duration=None,
+    def _get_command_line(self,
+                          additional_args=None,
+                          duration=None,
                           packet_count=None):
         cmd = "{} -i {} -w {}".format(self._executable_path, self._interface,
                                       self._temp_capture_file_path)
