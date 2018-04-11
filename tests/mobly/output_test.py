@@ -107,6 +107,8 @@ class OutputTest(unittest.TestCase):
                      'Shortcuts are specific to Windows operating systems')
     def test_shortcut(self):
         """Verifies the shortcut is created and links properly."""
+        shortcut_path = os.path.join(self.log_dir, self.test_bed_name,
+                                     'latest.lnk')
         shell = client.Dispatch("WScript.Shell")
         shortcut = shell.CreateShortCut(shortcut_path)
         self.assertFalse(shortcut.Targetpath)
@@ -115,14 +117,13 @@ class OutputTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.setup_logger()
         tr._teardown_logger()
-        shortcut_path = os.path.join(self.log_dir, self.test_bed_name,
-                                     'latest.lnk')
         shortcut = shell.CreateShortCut(shortcut_path)
         # Normalize paths for case and truncation
-        shortcut_path = os.path.normcase(
+        normalized_shortcut_path = os.path.normcase(
             win32file.GetLongPathName(shortcut.Targetpath))
-        logger_path = os.path.normcase(win32file.GetLongPathName(logger))
-        self.assertEqual(shortcut_path, logger_path)
+        normalized_logger_path = os.path.normcase(
+            win32file.GetLongPathName(logger))
+        self.assertEqual(normalized_shortcut_path, normalized_logger_path)
 
     def test_setup_logger_before_run(self):
         """Verifies the expected output files from a test run.
