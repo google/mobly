@@ -30,6 +30,7 @@ from tests.lib import integration_test
 from tests.lib import teardown_class_failure_test
 
 if platform.system() == 'Windows':
+    import win32file
     from win32com import client
 
 
@@ -106,6 +107,9 @@ class OutputTest(unittest.TestCase):
                      'Shortcuts are specific to Windows operating systems')
     def test_shortcut(self):
         """Verifies the shortcut is created and links properly."""
+        shell = client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(shortcut_path)
+        self.assertFalse(shortcut.Targetpath)
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
@@ -113,9 +117,12 @@ class OutputTest(unittest.TestCase):
         tr._teardown_logger()
         shortcut_path = os.path.join(self.log_dir, self.test_bed_name,
                                      'latest.lnk')
-        shell = client.Dispatch("WScript.Shell")
         shortcut = shell.CreateShortCut(shortcut_path)
-        self.assertTrue(shortcut.Targetpath, logging.log_path)
+        # Normalize paths for case and truncation
+        shortcut_path = os.path.normcase(
+            win32file.GetLongPathName(shortcut.Targetpath))
+        logger_path = os.path.normcase(win32file.GetLongPathName(logger))
+        self.assertEqual(shortcut_path, logger_path)
 
     def test_setup_logger_before_run(self):
         """Verifies the expected output files from a test run.
