@@ -101,7 +101,7 @@ class OutputTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.setup_logger()
         symlink = os.path.join(self.log_dir, self.test_bed_name, 'latest')
-        self.assertTrue(os.readlink(symlink), logging.log_path)
+        self.assertEqual(os.readlink(symlink), logging.log_path)
 
     @unittest.skipIf(platform.system() != 'Windows',
                      'Shortcuts are specific to Windows operating systems')
