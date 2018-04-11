@@ -1,11 +1,11 @@
 # Copyright 2017 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -84,7 +84,8 @@ class CallbackHandler(object):
         """
         if timeout:
             if timeout > MAX_TIMEOUT:
-                raise Error(self._ad,
+                raise Error(
+                    self._ad,
                     'Specified timeout %s is longer than max timeout %s.' %
                     (timeout, MAX_TIMEOUT))
         # Convert to milliseconds for java side.
@@ -94,7 +95,8 @@ class CallbackHandler(object):
                 self._id, event_name, timeout_ms)
         except Exception as e:
             if 'EventSnippetException: timeout.' in str(e):
-                raise TimeoutError(self._ad,
+                raise TimeoutError(
+                    self._ad,
                     'Timed out after waiting %ss for event "%s" triggered by'
                     ' %s (%s).' % (timeout, event_name, self._method_name,
                                    self._id))
@@ -142,7 +144,8 @@ class CallbackHandler(object):
                 break
             if predicate(event):
                 return event
-        raise TimeoutError(self._ad,
+        raise TimeoutError(
+            self._ad,
             'Timed out after %ss waiting for an "%s" event that satisfies the '
             'predicate "%s".' % (timeout, event_name, predicate.__name__))
 

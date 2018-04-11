@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -112,8 +112,8 @@ class EventDispatcher:
         self.lock.acquire()
         try:
             if event_name in self.handlers:
-                raise DuplicateError('A handler for {} already exists'.format(
-                    event_name))
+                raise DuplicateError(
+                    'A handler for {} already exists'.format(event_name))
             self.handlers[event_name] = (handler, args)
         finally:
             self.lock.release()
@@ -182,8 +182,8 @@ class EventDispatcher:
         e_queue = self.get_event_q(event_name)
 
         if not e_queue:
-            raise TypeError("Failed to get an event queue for {}".format(
-                event_name))
+            raise TypeError(
+                "Failed to get an event queue for {}".format(event_name))
 
         try:
             # Block for timeout
@@ -315,8 +315,7 @@ class EventDispatcher:
                 passed.
         """
         self.lock.acquire()
-        if not event_name in self.event_dict or self.event_dict[
-                event_name] is None:
+        if not event_name in self.event_dict or self.event_dict[event_name] is None:
             self.event_dict[event_name] = queue.Queue()
         self.lock.release()
 

@@ -73,7 +73,7 @@ class CallbackHandlerTest(unittest.TestCase):
                             'EventSnippet$EventSnippetException: timeout.')
         mock_event_client.eventWaitAndGet = mock.Mock(
             side_effect=jsonrpc_client_base.ApiError(mock.Mock(),
-                java_timeout_msg))
+                                                     java_timeout_msg))
         handler = callback_handler.CallbackHandler(
             callback_id=MOCK_CALLBACK_ID,
             event_client=mock_event_client,
