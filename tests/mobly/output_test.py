@@ -122,7 +122,7 @@ class OutputTest(unittest.TestCase):
         normalized_shortcut_path = os.path.normcase(
             win32file.GetLongPathName(shortcut.Targetpath))
         normalized_logger_path = os.path.normcase(
-            win32file.GetLongPathName(logger))
+            win32file.GetLongPathName(logging.log_path))
         self.assertEqual(normalized_shortcut_path, normalized_logger_path)
 
     def test_setup_logger_before_run(self):
