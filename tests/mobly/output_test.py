@@ -113,7 +113,6 @@ class OutputTest(unittest.TestCase):
         tr._teardown_logger()
         shortcut_path = os.path.join(self.log_dir, self.test_bed_name,
                                      'latest.lnk')
-        self.assertTrue
         shell = client.Dispatch("WScript.Shell")
         shortcut = shell.CreateShortCut(shortcut_path)
         self.assertTrue(shortcut.Targetpath, logging.log_path)
