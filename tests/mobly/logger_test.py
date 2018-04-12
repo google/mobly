@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
 import unittest
 import pytz
-import mock
 
 from mobly import logger
 
