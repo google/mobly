@@ -19,10 +19,6 @@ import mock
 
 from mobly import logger
 
-MOCK_DATETIME_NOW_YEAR = 2016
-MOCK_DATETIME_NOW = datetime.datetime(MOCK_DATETIME_NOW_YEAR, 2, 29, 14, 35,
-                                      57, 888000)
-
 
 class LoggerTest(unittest.TestCase):
     """Verifies code in mobly.logger module.
@@ -32,15 +28,6 @@ class LoggerTest(unittest.TestCase):
         actual_stamp = logger.epoch_to_log_line_timestamp(
             1469134262116, time_zone=pytz.utc)
         self.assertEqual("07-21 20:51:02.116", actual_stamp)
-
-    @mock.patch(
-        'mobly.logger._get_datetime_now', return_value=MOCK_DATETIME_NOW)
-    def test_log_line_to_log_file_timestamp(self, mock_datetime_now):
-        log_line_timestamp = logger.get_log_line_timestamp()
-        log_file_timestamp = logger.get_log_file_timestamp()
-        converted_log_file_timestamp = logger.log_line_to_log_file_timestamp(
-            log_line_timestamp, MOCK_DATETIME_NOW_YEAR)
-        self.assertEqual(converted_log_file_timestamp, log_file_timestamp)
 
 
 if __name__ == "__main__":

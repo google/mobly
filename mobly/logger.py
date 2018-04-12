@@ -19,7 +19,6 @@ import logging
 import os
 import re
 import sys
-import time
 
 from mobly import records
 from mobly import utils
@@ -31,9 +30,6 @@ log_line_time_format = '%m-%d %H:%M:%S'
 log_line_timestamp_len = 18
 
 logline_timestamp_re = re.compile('\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d')
-
-log_line_timestamp_format = '%m-%d %H:%M:%S.%f'
-log_file_timestamp_format = '%m-%d-%Y_%H-%M-%S-%f'
 
 
 def _parse_logline_timestamp(t):
@@ -51,17 +47,6 @@ def _parse_logline_timestamp(t):
     h, m, s = time.split(':')
     s, ms = s.split('.')
     return (month, day, h, m, s, ms)
-
-
-def _get_datetime_now():
-    """Gets the current time as a datetime.date object.
-
-    This function primarily exists for internal use and testing purposes.
-
-    Returns:
-        The current datetime date.
-    """
-    return datetime.datetime.now()
 
 
 def is_valid_logline_timestamp(timestamp):
@@ -92,7 +77,7 @@ def logline_timestamp_comparator(t1, t2):
 
 
 def _get_timestamp(time_format, delta=None):
-    t = _get_datetime_now()
+    t = datetime.datetime.now()
     if delta:
         t = t + datetime.timedelta(seconds=delta)
     return t.strftime(time_format)[:-3]
@@ -129,7 +114,7 @@ def get_log_line_timestamp(delta=None):
     Returns:
         A timestamp in log line format with an offset.
     """
-    return _get_timestamp(log_line_timestamp_format, delta)
+    return _get_timestamp('%m-%d %H:%M:%S.%f', delta)
 
 
 def get_log_file_timestamp(delta=None):
@@ -144,28 +129,7 @@ def get_log_file_timestamp(delta=None):
     Returns:
         A timestamp in log filen name format with an offset.
     """
-    return _get_timestamp(log_file_timestamp_format, delta)
-
-
-def log_line_to_log_file_timestamp(log_line_timestamp, year=None):
-    """Converts a log line timestamp to log file timestamp format, which is
-    compatible with file systems.
-
-    Args:
-        log_line_timestamp: string, a timestamp in the log line format.
-        year: string, the year to use for the log file.
-
-    Returns:
-        A string that is the corresponding timestamp in log file timestamp
-        format.
-    """
-    if year is None:
-        year = _get_datetime_now().year
-    (month, day, h, m, s, ms) = _parse_logline_timestamp(log_line_timestamp)
-    us = ms + '000'
-    time_tuple = map(int, (year, month, day, h, m, s, us))
-    date_from_log_line = datetime.datetime(*time_tuple)
-    return date_from_log_line.strftime(log_file_timestamp_format)[:-3]
+    return _get_timestamp('%m-%d-%Y_%H-%M-%S-%f', delta)
 
 
 def _setup_test_logger(log_path, prefix=None, filename=None):

@@ -916,7 +916,7 @@ class AndroidDevice(object):
         high = mobly_logger.logline_timestamp_comparator(end_time, target) >= 0
         return low and high
 
-    def cat_adb_log(self, tag, begin_time, year=None):
+    def cat_adb_log(self, tag, begin_time):
         """Takes an excerpt of the adb logcat log from a certain time point to
         current time.
 
@@ -924,7 +924,6 @@ class AndroidDevice(object):
             tag: An identifier of the time period, usualy the name of a test.
             begin_time: Logline format timestamp of the beginning of the time
                 period.
-            year: String, the year to use in the excerpts file.
         """
         if not self.adb_logcat_file_path:
             raise DeviceError(
@@ -935,10 +934,9 @@ class AndroidDevice(object):
         adb_excerpt_path = os.path.join(self.log_path, 'AdbLogExcerpts')
         utils.create_dir(adb_excerpt_path)
         f_name = os.path.basename(self.adb_logcat_file_path)
-        begin_time_file_format = mobly_logger.log_line_to_log_file_timestamp(
-            begin_time, year=year)
         out_name = f_name.replace('adblog,', '').replace('.txt', '')
-        out_name = ',%s,%s.txt' % (begin_time_file_format, out_name)
+        out_name = ',%s,%s.txt' % (begin_time, out_name)
+        out_name = out_name.replace(':', '-')
         tag_len = utils.MAX_FILENAME_LEN - len(out_name)
         tag = tag[:tag_len]
         out_name = tag + out_name
