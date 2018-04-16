@@ -61,6 +61,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             raise jsonrpc_client_base.AppStartError(
                 self._ad, '%s is not installed on %s' % (_APP_NAME,
                                                          self._adb.serial))
+        self.disable_hidden_api_blacklist()
 
         # sl4a has problems connecting after disconnection, so kill the apk and
         # try connecting again.
