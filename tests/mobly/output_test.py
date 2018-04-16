@@ -15,6 +15,7 @@
 import logging
 import mock
 import os
+import platform
 import shutil
 import tempfile
 import unittest
@@ -27,6 +28,10 @@ from mobly import test_runner
 from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import teardown_class_failure_test
+
+if platform.system() == 'Windows':
+    import win32file
+    from win32com import client
 
 
 class OutputTest(unittest.TestCase):
@@ -87,6 +92,39 @@ class OutputTest(unittest.TestCase):
             for item in blacklist:
                 self.assertNotIn(item, content)
 
+    @unittest.skipIf(platform.system() == 'Windows',
+                     'Symlinks are usually specific to Unix operating systems')
+    def test_symlink(self):
+        """Verifies the symlink is created and links properly."""
+        mock_test_config = self.create_mock_test_config(
+            self.base_mock_test_config)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.setup_logger()
+        symlink = os.path.join(self.log_dir, self.test_bed_name, 'latest')
+        self.assertEqual(os.readlink(symlink), logging.log_path)
+
+    @unittest.skipIf(platform.system() != 'Windows',
+                     'Shortcuts are specific to Windows operating systems')
+    def test_shortcut(self):
+        """Verifies the shortcut is created and links properly."""
+        shortcut_path = os.path.join(self.log_dir, self.test_bed_name,
+                                     'latest.lnk')
+        shell = client.Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(shortcut_path)
+        self.assertFalse(shortcut.Targetpath)
+        mock_test_config = self.create_mock_test_config(
+            self.base_mock_test_config)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.setup_logger()
+        tr._teardown_logger()
+        shortcut = shell.CreateShortCut(shortcut_path)
+        # Normalize paths for case and truncation
+        normalized_shortcut_path = os.path.normcase(
+            win32file.GetLongPathName(shortcut.Targetpath))
+        normalized_logger_path = os.path.normcase(
+            win32file.GetLongPathName(logging.log_path))
+        self.assertEqual(normalized_shortcut_path, normalized_logger_path)
+
     def test_setup_logger_before_run(self):
         """Verifies the expected output files from a test run.
 
@@ -103,7 +141,7 @@ class OutputTest(unittest.TestCase):
         logging.debug(debug_uuid)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run()
-        output_dir = os.path.join(self.log_dir, self.test_bed_name, 'latest')
+        output_dir = logging.log_path
         (summary_file_path, debug_log_path,
          info_log_path) = self.assert_output_logs_exist(output_dir)
         self.assert_log_contents(
@@ -190,7 +228,7 @@ class OutputTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run()
-        output_dir = os.path.join(self.log_dir, self.test_bed_name, 'latest')
+        output_dir = logging.log_path
         (summary_file_path, debug_log_path,
          info_log_path) = self.assert_output_logs_exist(output_dir)
         summary_entries = []
@@ -211,7 +249,7 @@ class OutputTest(unittest.TestCase):
         tr.add_test_class(mock_test_config,
                           teardown_class_failure_test.TearDownClassFailureTest)
         tr.run()
-        output_dir = os.path.join(self.log_dir, self.test_bed_name, 'latest')
+        output_dir = logging.log_path
         summary_file_path = os.path.join(output_dir,
                                          records.OUTPUT_FILE_SUMMARY)
         found = False
