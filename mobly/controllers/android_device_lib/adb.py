@@ -173,11 +173,11 @@ class AdbProxy(object):
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
                       cli_cmd_to_string(args), out, err, ret)
         if ret == 0:
-            return out
+            return out, err
         else:
             raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, args, shell, timeout):
+    def _exec_adb_cmd(self, name, args, shell, timeout, return_all):
         if shell:
             # Add quotes around "adb" in case the ADB path contains spaces. This
             # is pretty common on Windows (e.g. Program Files).
@@ -195,7 +195,10 @@ class AdbProxy(object):
                     adb_cmd.append(args)
                 else:
                     adb_cmd.extend(args)
-        return self._exec_cmd(adb_cmd, shell=shell, timeout=timeout)
+        out, err = self._exec_cmd(adb_cmd, shell=shell, timeout=timeout)
+        if return_all:
+            return out, err
+        return out
 
     def getprop(self, prop_name):
         """Get a property of the device.
@@ -273,7 +276,7 @@ class AdbProxy(object):
         return self.shell(instrumentation_command)
 
     def __getattr__(self, name):
-        def adb_call(args=None, shell=False, timeout=None):
+        def adb_call(args=None, shell=False, timeout=None, return_all=False):
             """Wrapper for an ADB command.
 
             Args:
@@ -283,6 +286,8 @@ class AdbProxy(object):
                     False to invoke it directly. See subprocess.Proc() docs.
                 timeout: float, the number of seconds to wait before timing out.
                     If not specified, no timeout takes effect.
+                return_all: bool, if True, returns both stdout and stderr as
+                    two separate values. Otherwise only return stdout.
 
             Returns:
                 The output of the adb command run if exit code is 0.
@@ -290,6 +295,10 @@ class AdbProxy(object):
             args = args or ''
             clean_name = name.replace('_', '-')
             return self._exec_adb_cmd(
-                clean_name, args, shell=shell, timeout=timeout)
+                clean_name,
+                args,
+                shell=shell,
+                timeout=timeout,
+                return_all=return_all)
 
         return adb_call
