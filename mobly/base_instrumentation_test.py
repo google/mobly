@@ -927,7 +927,7 @@ class BaseInstrumentationTestClass(base_test.BaseTestClass):
             package=package,
             options=options,
             runner=runner,
-        )
+        ).decode('utf-8')
         logging.info('Outputting instrumentation test log...')
         logging.info(instrumentation_output)
 
@@ -935,5 +935,5 @@ class BaseInstrumentationTestClass(base_test.BaseTestClass):
         instrumentation_block = _InstrumentationBlock(prefix=prefix)
         for line in instrumentation_output.splitlines():
             instrumentation_block = self._parse_line(instrumentation_block,
-                                                     line.decode('utf-8'))
+                                                     line)
         return self._finish_parsing(instrumentation_block)

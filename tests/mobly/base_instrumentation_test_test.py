@@ -34,6 +34,17 @@ MOCK_PREFIX = 'my_prefix'
 # A mock name for the instrumentation test subclass.
 MOCK_INSTRUMENTATION_TEST_CLASS_NAME = 'MockInstrumentationTest'
 
+MOCK_EMPTY_INSTRUMENTATION_TEST = """\
+INSTRUMENTATION_RESULT: stream=
+
+Time: 0.001
+
+OK (0 tests)
+
+
+INSTRUMENTATION_CODE: -1
+"""
+
 
 class MockInstrumentationTest(BaseInstrumentationTestClass):
     def __init__(self, tmp_dir, user_params={}):
@@ -229,18 +240,21 @@ INSTRUMENTATION_STATUS_CODE: -1
             instrumentation_output, expected_has_error=True)
 
     def test_run_instrumentation_test_with_no_tests(self):
-        instrumentation_output = """\
-INSTRUMENTATION_RESULT: stream=
-
-Time: 0.001
-
-OK (0 tests)
-
-
-INSTRUMENTATION_CODE: -1
-"""
+        instrumentation_output = MOCK_EMPTY_INSTRUMENTATION_TEST
         self.assert_run_instrumentation_test(
             instrumentation_output, expected_completed_and_passed=True)
+
+    @unittest.skipUnless(
+        sys.version_info >= (3, 0),
+        'Only python3 displays different string types differently.')
+    @mock.patch('logging.info')
+    def test_run_instrumentation_test_logs_correctly(self, mock_info_logger):
+        instrumentation_output = MOCK_EMPTY_INSTRUMENTATION_TEST
+        self.assert_run_instrumentation_test(
+            instrumentation_output, expected_completed_and_passed=True)
+        for mock_call in mock_info_logger.mock_calls:
+            logged_format = mock_call[1][0]
+            self.assertIsInstance(logged_format, str)
 
     def test_run_instrumentation_test_with_passing_test(self):
         instrumentation_output = """\
