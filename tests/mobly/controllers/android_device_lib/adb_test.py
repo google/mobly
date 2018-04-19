@@ -74,7 +74,7 @@ class AdbTest(unittest.TestCase):
         self._mock_process(mock_psutil_process, mock_Popen)
 
         out, err = adb.AdbProxy()._exec_cmd(
-            ['fake_cmd'], shell=False, timeout=None)
+            ['fake_cmd'], shell=False, timeout=None, stderr=None)
         self.assertEqual(MOCK_DEFAULT_STDOUT, out.decode('utf-8'))
         self.assertEqual(MOCK_DEFAULT_STDERR, err.decode('utf-8'))
 
@@ -87,7 +87,8 @@ class AdbTest(unittest.TestCase):
 
         with self.assertRaisesRegex(adb.AdbError,
                                     'Error executing adb cmd .*'):
-            adb.AdbProxy()._exec_cmd(['fake_cmd'], shell=False, timeout=None)
+            adb.AdbProxy()._exec_cmd(
+                ['fake_cmd'], shell=False, timeout=None, stderr=None)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
@@ -96,7 +97,7 @@ class AdbTest(unittest.TestCase):
         self._mock_process(mock_psutil_process, mock_popen)
 
         out, err = adb.AdbProxy()._exec_cmd(
-            ['fake_cmd'], shell=False, timeout=1)
+            ['fake_cmd'], shell=False, timeout=1, stderr=None)
         self.assertEqual(MOCK_DEFAULT_STDOUT, out.decode('utf-8'))
         self.assertEqual(MOCK_DEFAULT_STDERR, err.decode('utf-8'))
 
@@ -112,7 +113,8 @@ class AdbTest(unittest.TestCase):
         with self.assertRaisesRegex(adb.AdbTimeoutError,
                                     'Timed out executing command "fake_cmd" '
                                     'after 0.1s.'):
-            adb.AdbProxy()._exec_cmd(['fake_cmd'], shell=False, timeout=0.1)
+            adb.AdbProxy()._exec_cmd(
+                ['fake_cmd'], shell=False, timeout=0.1, stderr=None)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
@@ -121,7 +123,8 @@ class AdbTest(unittest.TestCase):
         self._mock_process(mock_psutil_process, mock_popen)
         with self.assertRaisesRegex(adb.Error,
                                     'Timeout is not a positive value: -1'):
-            adb.AdbProxy()._exec_cmd(['fake_cmd'], shell=False, timeout=-1)
+            adb.AdbProxy()._exec_cmd(
+                ['fake_cmd'], shell=False, timeout=-1, stderr=None)
 
     def test_exec_adb_cmd(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:

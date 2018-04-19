@@ -138,7 +138,7 @@ class AdbProxy(object):
     def __init__(self, serial=''):
         self.serial = serial
 
-    def _exec_cmd(self, args, shell, timeout, stderr=None):
+    def _exec_cmd(self, args, shell, timeout, stderr):
         """Executes adb commands.
 
         Args:
@@ -148,6 +148,8 @@ class AdbProxy(object):
                 False to invoke it directly. See subprocess.Popen() docs.
             timeout: float, the number of seconds to wait before timing out.
                 If not specified, no timeout takes effect.
+            stderr: a Byte stream, like io.BytesIO, stderr of the command will
+                be written to this object if provided.
 
         Returns:
             The output of the adb command run if exit code is 0.
@@ -287,8 +289,8 @@ class AdbProxy(object):
                     False to invoke it directly. See subprocess.Proc() docs.
                 timeout: float, the number of seconds to wait before timing out.
                     If not specified, no timeout takes effect.
-                return_all: bool, if True, returns both stdout and stderr as
-                    two separate values. Otherwise only return stdout.
+                stderr: a Byte stream, like io.BytesIO, stderr of the command
+                    will be written to this object if provided.
 
             Returns:
                 The output of the adb command run if exit code is 0.
