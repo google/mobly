@@ -138,7 +138,7 @@ class AdbProxy(object):
     def __init__(self, serial=''):
         self.serial = serial
 
-    def _exec_cmd(self, args, shell, timeout):
+    def _exec_cmd(self, args, shell, timeout, stderr=None):
         """Executes adb commands.
 
         Args:
@@ -169,6 +169,8 @@ class AdbProxy(object):
                 raise AdbTimeoutError(cmd=args, timeout=timeout)
 
         (out, err) = proc.communicate()
+        if stderr:
+            stderr.write(err)
         ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
                       cli_cmd_to_string(args), out, err, ret)
@@ -177,7 +179,7 @@ class AdbProxy(object):
         else:
             raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, args, shell, timeout, return_all):
+    def _exec_adb_cmd(self, name, args, shell, timeout, stderr):
         if shell:
             # Add quotes around "adb" in case the ADB path contains spaces. This
             # is pretty common on Windows (e.g. Program Files).
@@ -195,9 +197,8 @@ class AdbProxy(object):
                     adb_cmd.append(args)
                 else:
                     adb_cmd.extend(args)
-        out, err = self._exec_cmd(adb_cmd, shell=shell, timeout=timeout)
-        if return_all:
-            return out, err
+        out, err = self._exec_cmd(
+            adb_cmd, shell=shell, timeout=timeout, stderr=stderr)
         return out
 
     def getprop(self, prop_name):
@@ -276,7 +277,7 @@ class AdbProxy(object):
         return self.shell(instrumentation_command)
 
     def __getattr__(self, name):
-        def adb_call(args=None, shell=False, timeout=None, return_all=False):
+        def adb_call(args=None, shell=False, timeout=None, stderr=None):
             """Wrapper for an ADB command.
 
             Args:
@@ -295,10 +296,6 @@ class AdbProxy(object):
             args = args or ''
             clean_name = name.replace('_', '-')
             return self._exec_adb_cmd(
-                clean_name,
-                args,
-                shell=shell,
-                timeout=timeout,
-                return_all=return_all)
+                clean_name, args, shell=shell, timeout=timeout, stderr=stderr)
 
         return adb_call

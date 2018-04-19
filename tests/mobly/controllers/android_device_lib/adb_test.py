@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 import mock
+import subprocess
 
 from collections import OrderedDict
 from future.tests.base import unittest
-
 from mobly.controllers.android_device_lib import adb
 
 # Mock parameters for instrumentation.
@@ -127,7 +128,10 @@ class AdbTest(unittest.TestCase):
             mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
             adb.AdbProxy().shell(['arg1', 'arg2'])
             mock_exec_cmd.assert_called_once_with(
-                ['adb', 'shell', 'arg1', 'arg2'], shell=False, timeout=None)
+                ['adb', 'shell', 'arg1', 'arg2'],
+                shell=False,
+                timeout=None,
+                stderr=None)
 
     def test_exec_adb_cmd_with_serial(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
@@ -136,31 +140,37 @@ class AdbTest(unittest.TestCase):
             mock_exec_cmd.assert_called_once_with(
                 ['adb', '-s', '12345', 'shell', 'arg1', 'arg2'],
                 shell=False,
-                timeout=None)
+                timeout=None,
+                stderr=None)
 
     def test_exec_adb_cmd_with_shell_true(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
             adb.AdbProxy().shell('arg1 arg2', shell=True)
             mock_exec_cmd.assert_called_once_with(
-                '"adb" shell arg1 arg2', shell=True, timeout=None)
+                '"adb" shell arg1 arg2', shell=True, timeout=None, stderr=None)
 
     def test_exec_adb_cmd_with_shell_true_with_serial(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
             adb.AdbProxy('12345').shell('arg1 arg2', shell=True)
             mock_exec_cmd.assert_called_once_with(
-                '"adb" -s "12345" shell arg1 arg2', shell=True, timeout=None)
+                '"adb" -s "12345" shell arg1 arg2',
+                shell=True,
+                timeout=None,
+                stderr=None)
 
-    def test_exec_adb_cmd_with_return_all(self):
-        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
-            out, err = adb.AdbProxy().shell(
-                'arg1 arg2', shell=True, return_all=True)
-            mock_exec_cmd.assert_called_once_with(
-                '"adb" shell arg1 arg2', shell=True, timeout=None)
-            self.assertEqual(MOCK_DEFAULT_STDOUT, out.decode('utf-8'))
-            self.assertEqual(MOCK_DEFAULT_STDERR, err.decode('utf-8'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
+    def test_exec_adb_cmd_with_stderr_pipe(self, mock_psutil_process,
+                                           mock_popen):
+        self._mock_process(mock_psutil_process, mock_popen)
+        stderr_redirect = io.BytesIO()
+        out = adb.AdbProxy().shell(
+            'arg1 arg2', shell=True, stderr=stderr_redirect)
+        self.assertEqual(MOCK_DEFAULT_STDOUT, out.decode('utf-8'))
+        self.assertEqual(MOCK_DEFAULT_STDERR,
+                         stderr_redirect.getvalue().decode('utf-8'))
 
     def test_instrument_without_parameters(self):
         """Verifies the AndroidDevice object's instrument command is correct in
@@ -172,7 +182,8 @@ class AdbTest(unittest.TestCase):
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', MOCK_BASIC_INSTRUMENTATION_COMMAND],
                 shell=False,
-                timeout=None)
+                timeout=None,
+                stderr=None)
 
     def test_instrument_with_runner(self):
         """Verifies the AndroidDevice object's instrument command is correct
@@ -186,7 +197,8 @@ class AdbTest(unittest.TestCase):
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', MOCK_RUNNER_INSTRUMENTATION_COMMAND],
                 shell=False,
-                timeout=None)
+                timeout=None,
+                stderr=None)
 
     def test_instrument_with_options(self):
         """Verifies the AndroidDevice object's instrument command is correct
@@ -200,7 +212,8 @@ class AdbTest(unittest.TestCase):
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', MOCK_OPTIONS_INSTRUMENTATION_COMMAND],
                 shell=False,
-                timeout=None)
+                timeout=None,
+                stderr=None)
 
     def test_cli_cmd_to_string(self):
         cmd = ['"adb"', 'a b', 'c//']
@@ -215,7 +228,8 @@ class AdbTest(unittest.TestCase):
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', 'command', '-v', MOCK_SHELL_COMMAND],
                 shell=False,
-                timeout=None)
+                timeout=None,
+                stderr=None)
 
     def test_has_shell_command_with_existing_command(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
