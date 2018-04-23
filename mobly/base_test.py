@@ -26,6 +26,7 @@ from mobly import expects
 from mobly import records
 from mobly import signals
 from mobly import runtime_test_info
+from mobly import utils
 
 # Macro strings for test result reporting
 TEST_CASE_TOKEN = '[Test]'
@@ -351,7 +352,7 @@ class BaseTestClass(object):
             content: dict, the data to add to summary file.
         """
         if 'timestamp' not in content:
-            content['timestamp'] = time.time()
+            content['timestamp'] = utils.get_current_epoch_time()
         self.summary_writer.dump(content,
                                  records.TestSummaryEntryType.USER_DATA)
 
