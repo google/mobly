@@ -42,11 +42,10 @@ MOCK_OPTIONS_INSTRUMENTATION_COMMAND = ('am instrument -r -w -e option1 value1'
                                         '.AndroidJUnitRunner')
 # Mock Shell Command
 MOCK_SHELL_COMMAND = 'ls'
-MOCK_COMMAND_OUTPUT = ('/system/bin/ls'.encode('utf-8'), ''.encode('utf-8'))
+MOCK_COMMAND_OUTPUT = '/system/bin/ls'.encode('utf-8')
 MOCK_DEFAULT_STDOUT = 'out'
 MOCK_DEFAULT_STDERR = 'err'
-MOCK_DEFAULT_COMMAND_OUTPUT = (MOCK_DEFAULT_STDOUT.encode('utf-8'),
-                               MOCK_DEFAULT_STDERR.encode('utf-8'))
+MOCK_DEFAULT_COMMAND_OUTPUT = MOCK_DEFAULT_STDOUT.encode('utf-8')
 MOCK_ADB_SHELL_COMMAND_CHECK = 'adb shell command -v ls'
 
 
@@ -63,7 +62,8 @@ class AdbTest(unittest.TestCase):
         mock_psutil_process.return_value = mock.Mock()
 
         mock_proc.communicate = mock.Mock(
-            return_value=MOCK_DEFAULT_COMMAND_OUTPUT)
+            return_value=(MOCK_DEFAULT_STDOUT.encode('utf-8'),
+                          MOCK_DEFAULT_STDERR.encode('utf-8')))
         mock_proc.returncode = 0
         return (mock_psutil_process, mock_popen)
 
@@ -73,10 +73,9 @@ class AdbTest(unittest.TestCase):
                                          mock_Popen):
         self._mock_process(mock_psutil_process, mock_Popen)
 
-        out, err = adb.AdbProxy()._exec_cmd(
+        out = adb.AdbProxy()._exec_cmd(
             ['fake_cmd'], shell=False, timeout=None, stderr=None)
         self.assertEqual(MOCK_DEFAULT_STDOUT, out.decode('utf-8'))
-        self.assertEqual(MOCK_DEFAULT_STDERR, err.decode('utf-8'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
@@ -96,10 +95,9 @@ class AdbTest(unittest.TestCase):
                                            mock_popen):
         self._mock_process(mock_psutil_process, mock_popen)
 
-        out, err = adb.AdbProxy()._exec_cmd(
+        out = adb.AdbProxy()._exec_cmd(
             ['fake_cmd'], shell=False, timeout=1, stderr=None)
         self.assertEqual(MOCK_DEFAULT_STDOUT, out.decode('utf-8'))
-        self.assertEqual(MOCK_DEFAULT_STDERR, err.decode('utf-8'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')

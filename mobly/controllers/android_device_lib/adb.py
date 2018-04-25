@@ -177,7 +177,7 @@ class AdbProxy(object):
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
                       cli_cmd_to_string(args), out, err, ret)
         if ret == 0:
-            return out, err
+            return out
         else:
             raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
@@ -199,7 +199,7 @@ class AdbProxy(object):
                     adb_cmd.append(args)
                 else:
                     adb_cmd.extend(args)
-        out, err = self._exec_cmd(
+        out = self._exec_cmd(
             adb_cmd, shell=shell, timeout=timeout, stderr=stderr)
         return out
 
