@@ -138,7 +138,7 @@ class AdbProxy(object):
     def __init__(self, serial=''):
         self.serial = serial
 
-    def _exec_cmd(self, args, shell, timeout):
+    def _exec_cmd(self, args, shell, timeout, stderr):
         """Executes adb commands.
 
         Args:
@@ -148,6 +148,8 @@ class AdbProxy(object):
                 False to invoke it directly. See subprocess.Popen() docs.
             timeout: float, the number of seconds to wait before timing out.
                 If not specified, no timeout takes effect.
+            stderr: a Byte stream, like io.BytesIO, stderr of the command will
+                be written to this object if provided.
 
         Returns:
             The output of the adb command run if exit code is 0.
@@ -169,6 +171,8 @@ class AdbProxy(object):
                 raise AdbTimeoutError(cmd=args, timeout=timeout)
 
         (out, err) = proc.communicate()
+        if stderr:
+            stderr.write(err)
         ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
                       cli_cmd_to_string(args), out, err, ret)
@@ -177,7 +181,7 @@ class AdbProxy(object):
         else:
             raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, args, shell, timeout):
+    def _exec_adb_cmd(self, name, args, shell, timeout, stderr):
         if shell:
             # Add quotes around "adb" in case the ADB path contains spaces. This
             # is pretty common on Windows (e.g. Program Files).
@@ -195,7 +199,9 @@ class AdbProxy(object):
                     adb_cmd.append(args)
                 else:
                     adb_cmd.extend(args)
-        return self._exec_cmd(adb_cmd, shell=shell, timeout=timeout)
+        out = self._exec_cmd(
+            adb_cmd, shell=shell, timeout=timeout, stderr=stderr)
+        return out
 
     def getprop(self, prop_name):
         """Get a property of the device.
@@ -273,7 +279,7 @@ class AdbProxy(object):
         return self.shell(instrumentation_command)
 
     def __getattr__(self, name):
-        def adb_call(args=None, shell=False, timeout=None):
+        def adb_call(args=None, shell=False, timeout=None, stderr=None):
             """Wrapper for an ADB command.
 
             Args:
@@ -283,6 +289,8 @@ class AdbProxy(object):
                     False to invoke it directly. See subprocess.Proc() docs.
                 timeout: float, the number of seconds to wait before timing out.
                     If not specified, no timeout takes effect.
+                stderr: a Byte stream, like io.BytesIO, stderr of the command
+                    will be written to this object if provided.
 
             Returns:
                 The output of the adb command run if exit code is 0.
@@ -290,6 +298,6 @@ class AdbProxy(object):
             args = args or ''
             clean_name = name.replace('_', '-')
             return self._exec_adb_cmd(
-                clean_name, args, shell=shell, timeout=timeout)
+                clean_name, args, shell=shell, timeout=timeout, stderr=stderr)
 
         return adb_call
