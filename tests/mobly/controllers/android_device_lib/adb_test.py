@@ -173,6 +173,10 @@ class AdbTest(unittest.TestCase):
         self.assertEqual(MOCK_DEFAULT_STDERR,
                          stderr_redirect.getvalue().decode('utf-8'))
 
+    def test_forward(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            adb.AdbProxy().forward(MOCK_SHELL_COMMAND)
+
     def test_instrument_without_parameters(self):
         """Verifies the AndroidDevice object's instrument command is correct in
         the basic case.
