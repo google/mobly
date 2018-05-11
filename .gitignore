@@ -8,5 +8,6 @@ dist/
 Gemfile.lock
 .jekyll-metadata
 *.pyc
+.pytest_cache/
 .sass-cache
 _site
