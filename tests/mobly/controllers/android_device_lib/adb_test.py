@@ -124,22 +124,43 @@ class AdbTest(unittest.TestCase):
             adb.AdbProxy()._exec_cmd(
                 ['fake_cmd'], shell=False, timeout=-1, stderr=None)
 
+    def test_format_adb_command(self):
+        adb_cmd = adb.AdbProxy()._format_adb_command(
+            'shell', ['arg1', 'arg2'], shell=False)
+        self.assertEqual(adb_cmd, ['adb', 'shell', 'arg1', 'arg2'])
+
+    def test_format_adb_command_with_serial(self):
+        adb_cmd = adb.AdbProxy('12345')._format_adb_command(
+            'shell', ['arg1', 'arg2'], shell=False)
+        self.assertEqual(adb_cmd,
+                         ['adb', '-s', '12345', 'shell', 'arg1', 'arg2'])
+
+    def test_format_adb_command_with_shell_true(self):
+        adb_cmd = adb.AdbProxy()._format_adb_command(
+            'shell', 'arg1 arg2', shell=True)
+        self.assertEqual(adb_cmd, '"adb" shell arg1 arg2')
+
+    def test_format_adb_command_with_shell_true_with_serial(self):
+        adb_cmd = adb.AdbProxy('12345')._format_adb_command(
+            'shell', 'arg1 arg2', shell=True)
+        self.assertEqual(adb_cmd, '"adb" -s "12345" shell arg1 arg2')
+
+    def test_format_adb_command_with_shell_true_with_list(self):
+        adb_cmd = adb.AdbProxy()._format_adb_command(
+            'shell', ['arg1', 'arg2'], shell=True)
+        self.assertEqual(adb_cmd, '"adb" shell arg1 arg2')
+
+    def test_format_adb_command_with_shell_true_with_serial_with_list(self):
+        adb_cmd = adb.AdbProxy('12345')._format_adb_command(
+            'shell', ['arg1', 'arg2'], shell=True)
+        self.assertEqual(adb_cmd, '"adb" -s "12345" shell arg1 arg2')
+
     def test_exec_adb_cmd(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
             adb.AdbProxy().shell(['arg1', 'arg2'])
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', 'arg1', 'arg2'],
-                shell=False,
-                timeout=None,
-                stderr=None)
-
-    def test_exec_adb_cmd_with_serial(self):
-        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
-            adb.AdbProxy('12345').shell(['arg1', 'arg2'])
-            mock_exec_cmd.assert_called_once_with(
-                ['adb', '-s', '12345', 'shell', 'arg1', 'arg2'],
                 shell=False,
                 timeout=None,
                 stderr=None)
@@ -151,15 +172,36 @@ class AdbTest(unittest.TestCase):
             mock_exec_cmd.assert_called_once_with(
                 '"adb" shell arg1 arg2', shell=True, timeout=None, stderr=None)
 
-    def test_exec_adb_cmd_with_shell_true_with_serial(self):
+    def test_exec_adb_cmd_formats_command(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
-            adb.AdbProxy('12345').shell('arg1 arg2', shell=True)
-            mock_exec_cmd.assert_called_once_with(
-                '"adb" -s "12345" shell arg1 arg2',
-                shell=True,
-                timeout=None,
-                stderr=None)
+            with mock.patch.object(
+                    adb.AdbProxy,
+                    '_format_adb_command') as mock_format_adb_command:
+                mock_adb_cmd = mock.MagicMock()
+                mock_adb_args = mock.MagicMock()
+                mock_format_adb_command.return_value = mock_adb_cmd
+                mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
+
+                adb.AdbProxy().shell(mock_adb_args)
+                mock_format_adb_command.assert_called_once_with(
+                    'shell', mock_adb_args, shell=False)
+                mock_exec_cmd.assert_called_once_with(
+                    mock_adb_cmd, shell=False, timeout=None, stderr=None)
+
+    def test_exec_adb_cmd_formats_command_with_shell_true(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            with mock.patch.object(
+                    adb.AdbProxy,
+                    '_format_adb_command') as mock_format_adb_command:
+                mock_adb_cmd = mock.MagicMock()
+                mock_adb_args = mock.MagicMock()
+                mock_format_adb_command.return_value = mock_adb_cmd
+
+                adb.AdbProxy().shell(mock_adb_args, shell=True)
+                mock_format_adb_command.assert_called_once_with(
+                    'shell', mock_adb_args, shell=True)
+                mock_exec_cmd.assert_called_once_with(
+                    mock_adb_cmd, shell=True, timeout=None, stderr=None)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
