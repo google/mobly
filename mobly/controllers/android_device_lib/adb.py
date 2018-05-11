@@ -237,7 +237,8 @@ class AdbProxy(object):
 
     def forward(self, args=None, shell=False):
         with ADB_PORT_LOCK:
-            return self._exec_adb_cmd('forward', args, shell, timeout=None)
+            return self._exec_adb_cmd(
+                'forward', args, shell, timeout=None, stderr=None)
 
     def instrument(self, package, options=None, runner=None):
         """Runs an instrumentation command on the device.
