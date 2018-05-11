@@ -181,8 +181,25 @@ class AdbProxy(object):
         else:
             raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
-    def _exec_adb_cmd(self, name, args, shell, timeout, stderr):
+    def _format_adb_command(self, raw_name, args, shell):
+        """Formats an adb command with arguments for a subprocess call.
+
+        Args:
+            raw_name: string, the raw unsanitized name of the adb command to
+                format.
+            args: string or list of strings, arguments to the adb command.
+                See subprocess.Proc() documentation.
+            shell: bool, True to run this command through the system shell,
+                False to invoke it directly. See subprocess.Proc() docs.
+
+        Returns:
+            The adb command in a format appropriate for subprocess.
+        """
+        args = args or ''
+        name = raw_name.replace('_', '-')
         if shell:
+            if not isinstance(args, basestring):
+                args = ' '.join(args)
             # Add quotes around "adb" in case the ADB path contains spaces. This
             # is pretty common on Windows (e.g. Program Files).
             if self.serial:
@@ -199,6 +216,10 @@ class AdbProxy(object):
                     adb_cmd.append(args)
                 else:
                     adb_cmd.extend(args)
+        return adb_cmd
+
+    def _exec_adb_cmd(self, name, args, shell, timeout, stderr):
+        adb_cmd = self._format_adb_command(name, args, shell=shell)
         out = self._exec_cmd(
             adb_cmd, shell=shell, timeout=timeout, stderr=stderr)
         return out
@@ -299,9 +320,7 @@ class AdbProxy(object):
             Returns:
                 The output of the adb command run if exit code is 0.
             """
-            args = args or ''
-            clean_name = name.replace('_', '-')
             return self._exec_adb_cmd(
-                clean_name, args, shell=shell, timeout=timeout, stderr=stderr)
+                name, args, shell=shell, timeout=timeout, stderr=stderr)
 
         return adb_call
