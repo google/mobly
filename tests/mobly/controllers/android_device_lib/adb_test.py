@@ -126,10 +126,20 @@ class AdbTest(unittest.TestCase):
 
     def test_format_adb_command(self):
         adb_cmd = adb.AdbProxy()._format_adb_command(
+            'shell', 'arg1', shell=False)
+        self.assertEqual(adb_cmd, ['adb', 'shell', 'arg1'])
+
+    def test_format_adb_command_with_serial(self):
+        adb_cmd = adb.AdbProxy('12345')._format_adb_command(
+            'shell', 'arg1', shell=False)
+        self.assertEqual(adb_cmd, ['adb', '-s', '12345', 'shell', 'arg1'])
+
+    def test_format_adb_command_with_list(self):
+        adb_cmd = adb.AdbProxy()._format_adb_command(
             'shell', ['arg1', 'arg2'], shell=False)
         self.assertEqual(adb_cmd, ['adb', 'shell', 'arg1', 'arg2'])
 
-    def test_format_adb_command_with_serial(self):
+    def test_format_adb_command_with_serial_with_list(self):
         adb_cmd = adb.AdbProxy('12345')._format_adb_command(
             'shell', ['arg1', 'arg2'], shell=False)
         self.assertEqual(adb_cmd,
