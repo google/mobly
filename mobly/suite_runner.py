@@ -105,7 +105,7 @@ def run_suite(test_classes, argv=None):
         sys.exit(1)
 
 
-def _compute_selected_tests(test_classes, selected_tests):
+def compute_selected_tests(test_classes, selected_tests):
     """Computes tests to run for each class from selector strings.
 
     This function transforms a list of selector strings (such as FooTest or
@@ -114,30 +114,34 @@ def _compute_selected_tests(test_classes, selected_tests):
     that class are selected.
 
     Args:
-        test_classes: (list of class) all classes that are part of this suite.
-        selected_tests: (list of string) list of tests to execute, e.g.
+        test_classes: list of strings, names of all the classes that are part
+            of a suite.
+        selected_tests: list of strings, list of tests to execute. If empty,
+            all classes `test_classes` are selected. E.g.
 
-        .. code-block:: python
+            .. code-block:: python
 
-            [
-                'FooTest',
-                'BarTest',
-                'BazTest.test_method_a',
-                'BazTest.test_method_b'
-            ].
-            May be empty, in which case all tests in the class are selected.
+                [
+                    'FooTest',
+                    'BarTest',
+                    'BazTest.test_method_a',
+                    'BazTest.test_method_b'
+                ]
 
     Returns:
-        dict: test_name class -> list(test_name name):
-        identifiers for TestRunner. For the above example:
+        dict: Identifiers for TestRunner. Keys are test class names; valures
+            are lists of test names within class. E.g. the example in
+            `selected_tests` would translate to:
 
-        .. code-block:: python
+            .. code-block:: python
 
-        {
-            FooTest: None,
-            BarTest: None,
-            BazTest: ['test_method_a', 'test_method_b'],
-        }
+                {
+                    FooTest: None,
+                    BarTest: None,
+                    BazTest: ['test_method_a', 'test_method_b']
+                }
+
+            This dict is easy to consume for `TestRunner`.
     """
     class_to_tests = collections.OrderedDict()
     if not selected_tests:
