@@ -91,6 +91,25 @@ class BaseTestTest(unittest.TestCase):
         self.assertIsNone(actual_record.details)
         self.assertIsNone(actual_record.extras)
 
+    def test_current_test_info_in_setup_class(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                asserts.assert_true(
+                    self.current_test_info.name == 'setup_class',
+                    'Got unexpected test name %s.' %
+                    self.current_test_info.name)
+                output_path = self.current_test_info.output_path
+                asserts.assert_true(
+                    os.path.exists(output_path), 'test output path missing')
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, 'setup_class')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
+
     def test_self_tests_list(self):
         class MockBaseTest(base_test.BaseTestClass):
             def __init__(self, controllers):

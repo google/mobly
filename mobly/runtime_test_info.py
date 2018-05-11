@@ -19,9 +19,12 @@ from mobly import utils
 
 
 class RuntimeTestInfo(object):
-    """Container class for runtime information of a test.
+    """Container class for runtime information of a test or test stage.
 
     One object corresponds to one test. This is meant to be a read-only class.
+
+    This also applies to test stages like `setup_class`, which has its own
+    runtime info but is not part of any single test.
 
     Attributes:
         name: string, name of the test.
