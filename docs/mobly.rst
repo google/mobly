@@ -35,6 +35,14 @@ mobly.config_parser module
     :undoc-members:
     :show-inheritance:
 
+mobly.expects module
+--------------------------
+
+.. automodule:: mobly.expects
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 mobly.keys module
 -----------------
 
@@ -59,10 +67,26 @@ mobly.records module
     :undoc-members:
     :show-inheritance:
 
+mobly.runtime_test_info module
+------------------------------
+
+.. automodule:: mobly.runtime_test_info
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 mobly.signals module
 --------------------
 
 .. automodule:: mobly.signals
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+mobly.suite_runner module
+-------------------------
+
+.. automodule:: mobly.suite_runner
     :members:
     :undoc-members:
     :show-inheritance:
