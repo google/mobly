@@ -436,8 +436,9 @@ class AndroidDevice(object):
         self._log_path = os.path.join(self._log_path_base,
                                       'AndroidDevice%s' % self._serial)
         self._debug_tag = self._serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                              {'tag': self.debug_tag})
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
+            'tag': self.debug_tag
+        })
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -680,6 +681,9 @@ class AndroidDevice(object):
         execution result after device got reconnected.
 
         Example Usage:
+
+        .. code-block:: python
+
             with ad.handle_usb_disconnect():
                 try:
                   # User action that triggers USB disconnect, could throw
@@ -842,9 +846,12 @@ class AndroidDevice(object):
         """Starts the snippet apk with the given package name and connects.
 
         Examples:
-            >>> ad.load_snippet(
+
+        .. code-block:: python
+
+            ad.load_snippet(
                     name='maps', package='com.google.maps.snippets')
-            >>> ad.maps.activateZoom('3')
+            ad.maps.activateZoom('3')
 
         Args:
             name: The attribute name to which to attach the snippet server.
