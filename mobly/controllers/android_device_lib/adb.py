@@ -245,6 +245,9 @@ class AdbProxy(object):
         This is a convenience wrapper to avoid parameter formatting.
 
         Example:
+
+        .. code-block:: python
+
             device.instrument(
                 'com.my.package.test',
                 options = {

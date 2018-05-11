@@ -16,6 +16,8 @@
 To create a test suite, call suite_runner.run_suite() with one or more
 individual test classes. For example:
 
+.. code-block:: python
+
     from mobly import suite_runner
 
     from my.test.lib import foo_test
@@ -113,7 +115,10 @@ def _compute_selected_tests(test_classes, selected_tests):
 
     Args:
         test_classes: (list of class) all classes that are part of this suite.
-        selected_tests: (list of string) list of tests to execute, eg:
+        selected_tests: (list of string) list of tests to execute, e.g.
+
+        .. code-block:: python
+
             [
                 'FooTest',
                 'BarTest',
@@ -125,6 +130,9 @@ def _compute_selected_tests(test_classes, selected_tests):
     Returns:
         dict: test_name class -> list(test_name name):
         identifiers for TestRunner. For the above example:
+
+        .. code-block:: python
+
         {
             FooTest: None,
             BarTest: None,
