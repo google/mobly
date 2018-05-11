@@ -1,9 +1,5 @@
 # Welcome to Mobly
 
-| **`Linux`** | **`Windows`** |
-|-----------------|---------------------|
-[![Linux Build Status](https://travis-ci.org/google/mobly.svg?branch=master)](https://travis-ci.org/google/mobly) | [![Windows Build Status](https://storage.googleapis.com/mobly-kokoro-build-badges/mobly-windows.svg)](https://fusion.corp.google.com/projectanalysis/current/KOKORO/prod%3Amobly%2Fgcp_windows%2Fcontinuous)
-
 **Mobly** is a Python-based test framework that specializes in supporting test
 cases that require multiple devices, complex environments, or custom hardware
 setups.
@@ -31,6 +27,10 @@ Mobly tests could run on the following platforms:
   - Ubuntu 14.04+
   - MacOS 10.6+
   - Windows 7+
+
+| Linux | Windows |
+|-------|---------|
+[![Linux Build Status](https://travis-ci.org/google/mobly.svg?branch=master)](https://travis-ci.org/google/mobly) | [![Windows Build Status](https://storage.googleapis.com/mobly-kokoro-build-badges/mobly-windows.svg)](https://fusion.corp.google.com/projectanalysis/current/KOKORO/prod%3Amobly%2Fgcp_windows%2Fcontinuous)
 
 ## System dependencies
   - adb (1.0.36+ recommended)
