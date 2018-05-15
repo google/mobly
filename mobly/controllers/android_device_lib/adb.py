@@ -203,7 +203,6 @@ class AdbProxy(object):
             stderr=subprocess.PIPE,
             shell=shell,
             bufsize=1)
-        err = ''
         try:
             while proc.poll() is None:
                 line = proc.stdout.readline()
