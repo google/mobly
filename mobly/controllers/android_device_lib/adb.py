@@ -181,8 +181,8 @@ class AdbProxy(object):
         else:
             raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
-    def _format_adb_command(self, raw_name, args, shell):
-        """Formats an adb command with arguments for a subprocess call.
+    def _construct_adb_cmd(self, raw_name, args, shell):
+        """Constructs an adb command with arguments for a subprocess call.
 
         Args:
             raw_name: string, the raw unsanitized name of the adb command to
@@ -193,13 +193,14 @@ class AdbProxy(object):
                 False to invoke it directly. See subprocess.Proc() docs.
 
         Returns:
-            The adb command in a format appropriate for subprocess.
+            The adb command in a format appropriate for subprocess. If shell is
+                True, then this is a string; otherwise, this is a list of
+                strings.
         """
         args = args or ''
         name = raw_name.replace('_', '-')
         if shell:
-            if not isinstance(args, basestring):
-                args = ' '.join(args)
+            args = cli_cmd_to_string(args)
             # Add quotes around "adb" in case the ADB path contains spaces. This
             # is pretty common on Windows (e.g. Program Files).
             if self.serial:
@@ -219,7 +220,7 @@ class AdbProxy(object):
         return adb_cmd
 
     def _exec_adb_cmd(self, name, args, shell, timeout, stderr):
-        adb_cmd = self._format_adb_command(name, args, shell=shell)
+        adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
         out = self._exec_cmd(
             adb_cmd, shell=shell, timeout=timeout, stderr=stderr)
         return out

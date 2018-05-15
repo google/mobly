@@ -124,44 +124,86 @@ class AdbTest(unittest.TestCase):
             adb.AdbProxy()._exec_cmd(
                 ['fake_cmd'], shell=False, timeout=-1, stderr=None)
 
-    def test_format_adb_command(self):
-        adb_cmd = adb.AdbProxy()._format_adb_command(
+    def test_construct_adb_cmd(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
             'shell', 'arg1', shell=False)
         self.assertEqual(adb_cmd, ['adb', 'shell', 'arg1'])
 
-    def test_format_adb_command_with_serial(self):
-        adb_cmd = adb.AdbProxy('12345')._format_adb_command(
+    def test_construct_adb_cmd_with_one_command(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
+            'shell ls /asdafsfd/asdf-asfd/asa', [], shell=False)
+        self.assertEqual(adb_cmd, ['adb', 'shell ls /asdafsfd/asdf-asfd/asa'])
+
+    def test_construct_adb_cmd_with_one_arg_command(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
+            'shell', 'ls /asdafsfd/asdf-asfd/asa', shell=False)
+        self.assertEqual(adb_cmd,
+                         ['adb', 'shell', 'ls /asdafsfd/asdf-asfd/asa'])
+
+    def test_construct_adb_cmd_with_one_arg_command_list(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
+            'shell', ['ls /asdafsfd/asdf-asfd/asa'], shell=False)
+        self.assertEqual(adb_cmd,
+                         ['adb', 'shell', 'ls /asdafsfd/asdf-asfd/asa'])
+
+    def test_construct_adb_cmd_with_special_characters(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
+            'shell', ['a b', '"blah"', '\/\/'], shell=False)
+        self.assertEqual(adb_cmd, ['adb', 'shell', 'a b', '"blah"', "\/\/"])
+
+    def test_construct_adb_cmd_with_serial(self):
+        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
             'shell', 'arg1', shell=False)
         self.assertEqual(adb_cmd, ['adb', '-s', '12345', 'shell', 'arg1'])
 
-    def test_format_adb_command_with_list(self):
-        adb_cmd = adb.AdbProxy()._format_adb_command(
+    def test_construct_adb_cmd_with_list(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
             'shell', ['arg1', 'arg2'], shell=False)
         self.assertEqual(adb_cmd, ['adb', 'shell', 'arg1', 'arg2'])
 
-    def test_format_adb_command_with_serial_with_list(self):
-        adb_cmd = adb.AdbProxy('12345')._format_adb_command(
+    def test_construct_adb_cmd_with_serial_with_list(self):
+        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
             'shell', ['arg1', 'arg2'], shell=False)
         self.assertEqual(adb_cmd,
                          ['adb', '-s', '12345', 'shell', 'arg1', 'arg2'])
 
-    def test_format_adb_command_with_shell_true(self):
-        adb_cmd = adb.AdbProxy()._format_adb_command(
+    def test_construct_adb_cmd_with_shell_true(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
             'shell', 'arg1 arg2', shell=True)
         self.assertEqual(adb_cmd, '"adb" shell arg1 arg2')
 
-    def test_format_adb_command_with_shell_true_with_serial(self):
-        adb_cmd = adb.AdbProxy('12345')._format_adb_command(
+    def test_construct_adb_cmd_with_shell_true_with_one_command(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
+            'shell ls /asdafsfd/asdf-asfd/asa', [], shell=True)
+        self.assertEqual(adb_cmd, '"adb" shell ls /asdafsfd/asdf-asfd/asa ')
+
+    def test_construct_adb_cmd_with_shell_true_with_one_arg_command(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
+            'shell', 'ls /asdafsfd/asdf-asfd/asa', shell=True)
+        self.assertEqual(adb_cmd, '"adb" shell ls /asdafsfd/asdf-asfd/asa')
+
+    def test_construct_adb_cmd_with_shell_true_with_one_arg_command_list(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
+            'shell', ['ls /asdafsfd/asdf-asfd/asa'], shell=True)
+        self.assertEqual(adb_cmd, '"adb" shell \'ls /asdafsfd/asdf-asfd/asa\'')
+
+    def test_construct_adb_cmd_with_shell_true_with_auto_quotes(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
+            'shell', ['a b', '"blah"', '\/\/'], shell=True)
+        self.assertEqual(adb_cmd, '"adb" shell \'a b\' \'"blah"\' \'\\/\\/\'')
+
+    def test_construct_adb_cmd_with_shell_true_with_serial(self):
+        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
             'shell', 'arg1 arg2', shell=True)
         self.assertEqual(adb_cmd, '"adb" -s "12345" shell arg1 arg2')
 
-    def test_format_adb_command_with_shell_true_with_list(self):
-        adb_cmd = adb.AdbProxy()._format_adb_command(
+    def test_construct_adb_cmd_with_shell_true_with_list(self):
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
             'shell', ['arg1', 'arg2'], shell=True)
         self.assertEqual(adb_cmd, '"adb" shell arg1 arg2')
 
-    def test_format_adb_command_with_shell_true_with_serial_with_list(self):
-        adb_cmd = adb.AdbProxy('12345')._format_adb_command(
+    def test_construct_adb_cmd_with_shell_true_with_serial_with_list(self):
+        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
             'shell', ['arg1', 'arg2'], shell=True)
         self.assertEqual(adb_cmd, '"adb" -s "12345" shell arg1 arg2')
 
@@ -186,14 +228,14 @@ class AdbTest(unittest.TestCase):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             with mock.patch.object(
                     adb.AdbProxy,
-                    '_format_adb_command') as mock_format_adb_command:
+                    '_construct_adb_cmd') as mock_construct_adb_cmd:
                 mock_adb_cmd = mock.MagicMock()
                 mock_adb_args = mock.MagicMock()
-                mock_format_adb_command.return_value = mock_adb_cmd
+                mock_construct_adb_cmd.return_value = mock_adb_cmd
                 mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
 
                 adb.AdbProxy().shell(mock_adb_args)
-                mock_format_adb_command.assert_called_once_with(
+                mock_construct_adb_cmd.assert_called_once_with(
                     'shell', mock_adb_args, shell=False)
                 mock_exec_cmd.assert_called_once_with(
                     mock_adb_cmd, shell=False, timeout=None, stderr=None)
@@ -202,13 +244,13 @@ class AdbTest(unittest.TestCase):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             with mock.patch.object(
                     adb.AdbProxy,
-                    '_format_adb_command') as mock_format_adb_command:
+                    '_construct_adb_cmd') as mock_construct_adb_cmd:
                 mock_adb_cmd = mock.MagicMock()
                 mock_adb_args = mock.MagicMock()
-                mock_format_adb_command.return_value = mock_adb_cmd
+                mock_construct_adb_cmd.return_value = mock_adb_cmd
 
                 adb.AdbProxy().shell(mock_adb_args, shell=True)
-                mock_format_adb_command.assert_called_once_with(
+                mock_construct_adb_cmd.assert_called_once_with(
                     'shell', mock_adb_args, shell=True)
                 mock_exec_cmd.assert_called_once_with(
                     mock_adb_cmd, shell=True, timeout=None, stderr=None)
