@@ -217,7 +217,10 @@ class AdbProxy(object):
             return err
         else:
             raise AdbError(
-                cmd=args, stdout='[elided]', stderr=err, ret_code=ret)
+                cmd=args,
+                stdout='[elided, processed via handler]',
+                stderr=err,
+                ret_code=ret)
 
     def _construct_adb_cmd(self, raw_name, args, shell):
         """Constructs an adb command with arguments for a subprocess call.
@@ -328,8 +331,10 @@ class AdbProxy(object):
                 class.
             runner: string, the test runner name, which defaults to
                 DEFAULT_INSTRUMENTATION_RUNNER.
-            handler: func, a function to parse the instrumentation output line
-                by line.
+            handler: optional func, when specified the function is used to parse
+                the instrumentation stdout line by line as the output is
+                generated; otherwise if not specified, the stdout is simply
+                returned once the instrumentation is finished.
 
         Returns:
             The stdout of instrumentation command or the stderr if the handler
