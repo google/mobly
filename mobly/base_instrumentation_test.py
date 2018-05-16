@@ -951,7 +951,7 @@ class BaseInstrumentationTestClass(base_test.BaseTestClass):
             instrumentation_block[0] = self._parse_line(
                 instrumentation_block[0], line)
 
-        stderr = device.adb.instrument(
+        device.adb.instrument(
             package=package,
             options=options,
             runner=runner,

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """JSON RPC interface to Mobly Snippet Lib."""
-import logging
+
 import re
 import time
 
