@@ -67,6 +67,20 @@ class AdbTest(unittest.TestCase):
         mock_proc.returncode = 0
         return (mock_psutil_process, mock_popen)
 
+    def _mock_execute_and_process_stdout_process(self, mock_popen):
+        # the created proc object in adb._execute_and_process_stdout()
+        mock_proc = mock.Mock()
+        mock_popen.return_value = mock_proc
+
+        mock_popen.return_value.poll.return_value = None
+        mock_popen.return_value.stdout.readline.side_effect = ['']
+
+        mock_proc.communicate = mock.Mock(
+            return_value=(MOCK_DEFAULT_STDOUT.encode('utf-8'),
+                          MOCK_DEFAULT_STDERR.encode('utf-8')))
+        mock_proc.returncode = 0
+        return mock_popen
+
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
     def test_exec_cmd_no_timeout_success(self, mock_psutil_process,
@@ -123,6 +137,73 @@ class AdbTest(unittest.TestCase):
                                     'Timeout is not a positive value: -1'):
             adb.AdbProxy()._exec_cmd(
                 ['fake_cmd'], shell=False, timeout=-1, stderr=None)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    def test_execute_and_process_stdout_reads_stdout(self, mock_popen):
+        self._mock_execute_and_process_stdout_process(mock_popen)
+        mock_popen.return_value.stdout.readline.side_effect = ['1', '2', '']
+        mock_handler = mock.MagicMock()
+
+        err = adb.AdbProxy()._execute_and_process_stdout(
+            ['fake_cmd'], shell=False, handler=mock_handler)
+        self.assertEqual(mock_handler.call_count, 2)
+        mock_handler.assert_any_call('1')
+        mock_handler.assert_any_call('2')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    def test_execute_and_process_stdout_when_cmd_exits(self, mock_popen):
+        self._mock_execute_and_process_stdout_process(mock_popen)
+        mock_popen.return_value.poll.side_effect = [None, None, None, 0]
+        mock_popen.return_value.stdout.readline.return_value = '123'
+        mock_handler = mock.MagicMock()
+
+        err = adb.AdbProxy()._execute_and_process_stdout(
+            ['fake_cmd'], shell=False, handler=mock_handler)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    def test_execute_and_process_stdout_when_cmd_eof(self, mock_popen):
+        self._mock_execute_and_process_stdout_process(mock_popen)
+        mock_popen.return_value.poll.return_value = None
+        mock_popen.return_value.stdout.readline.side_effect = [
+            '1', '2', '3', ''
+        ]
+        mock_handler = mock.MagicMock()
+
+        err = adb.AdbProxy()._execute_and_process_stdout(
+            ['fake_cmd'], shell=False, handler=mock_handler)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    def test_execute_and_process_stdout_returns_stderr(self, mock_popen):
+        self._mock_execute_and_process_stdout_process(mock_popen)
+
+        err = adb.AdbProxy()._execute_and_process_stdout(
+            ['fake_cmd'], shell=False, handler=mock.MagicMock())
+        self.assertEqual(MOCK_DEFAULT_STDERR, err.decode('utf-8'))
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    def test_execute_and_process_stdout_raises_adb_error(self, mock_popen):
+        self._mock_execute_and_process_stdout_process(mock_popen)
+        mock_popen.return_value.returncode = 1
+
+        with self.assertRaisesRegex(adb.AdbError,
+                                    'Error executing adb cmd .*'):
+            err = adb.AdbProxy()._execute_and_process_stdout(
+                ['fake_cmd'], shell=False, handler=mock.MagicMock())
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    def test_execute_and_process_stdout_when_handler_crash(self, mock_popen):
+        self._mock_execute_and_process_stdout_process(mock_popen)
+        mock_popen.return_value.stdout.readline.side_effect = [
+            '1', '2', '3', ''
+        ]
+        mock_handler = mock.MagicMock()
+        mock_handler.side_effect = ['', TypeError('fake crash'), '', '']
+
+        with self.assertRaisesRegex(TypeError, 'fake crash'):
+            err = adb.AdbProxy()._execute_and_process_stdout(
+                ['fake_cmd'], shell=False, handler=mock_handler)
+
+        mock_popen.return_value.communicate.assert_called_once_with()
 
     def test_construct_adb_cmd(self):
         adb_cmd = adb.AdbProxy()._construct_adb_cmd(
@@ -255,6 +336,24 @@ class AdbTest(unittest.TestCase):
                 mock_exec_cmd.assert_called_once_with(
                     mock_adb_cmd, shell=True, timeout=None, stderr=None)
 
+    def test_execute_adb_and_process_stdout_formats_command(self):
+        with mock.patch.object(adb.AdbProxy, '_execute_and_process_stdout'
+                               ) as mock_execute_and_process_stdout:
+            with mock.patch.object(
+                    adb.AdbProxy,
+                    '_construct_adb_cmd') as mock_construct_adb_cmd:
+                mock_adb_cmd = mock.MagicMock()
+                mock_adb_args = mock.MagicMock()
+                mock_handler = mock.MagicMock()
+                mock_construct_adb_cmd.return_value = mock_adb_cmd
+
+                adb.AdbProxy()._execute_adb_and_process_stdout(
+                    'shell', mock_adb_args, shell=False, handler=mock_handler)
+                mock_construct_adb_cmd.assert_called_once_with(
+                    'shell', mock_adb_args, shell=False)
+                mock_execute_and_process_stdout.assert_called_once_with(
+                    mock_adb_cmd, shell=False, handler=mock_handler)
+
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
     def test_exec_adb_cmd_with_stderr_pipe(self, mock_psutil_process,
@@ -276,7 +375,6 @@ class AdbTest(unittest.TestCase):
         the basic case.
         """
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
             adb.AdbProxy().instrument(MOCK_INSTRUMENTATION_PACKAGE)
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', MOCK_BASIC_INSTRUMENTATION_COMMAND],
@@ -289,7 +387,6 @@ class AdbTest(unittest.TestCase):
         with a runner specified.
         """
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
             adb.AdbProxy().instrument(
                 MOCK_INSTRUMENTATION_PACKAGE,
                 runner=MOCK_INSTRUMENTATION_RUNNER)
@@ -304,7 +401,6 @@ class AdbTest(unittest.TestCase):
         with options.
         """
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
             adb.AdbProxy().instrument(
                 MOCK_INSTRUMENTATION_PACKAGE,
                 options=MOCK_INSTRUMENTATION_OPTIONS)
@@ -313,6 +409,61 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 timeout=None,
                 stderr=None)
+
+    def test_instrument_with_handler(self):
+        """Verifies the AndroidDevice object's instrument command is correct
+        with a handler passed in.
+        """
+
+        def mock_handler(raw_line):
+            pass
+
+        with mock.patch.object(adb.AdbProxy, '_execute_and_process_stdout'
+                               ) as mock_execute_and_process_stdout:
+            adb.AdbProxy().instrument(
+                MOCK_INSTRUMENTATION_PACKAGE, handler=mock_handler)
+            mock_execute_and_process_stdout.assert_called_once_with(
+                ['adb', 'shell', MOCK_BASIC_INSTRUMENTATION_COMMAND],
+                shell=False,
+                handler=mock_handler)
+
+    def test_instrument_with_handler_with_runner(self):
+        """Verifies the AndroidDevice object's instrument command is correct
+        with a handler passed in and a runner specified.
+        """
+
+        def mock_handler(raw_line):
+            pass
+
+        with mock.patch.object(adb.AdbProxy, '_execute_and_process_stdout'
+                               ) as mock_execute_and_process_stdout:
+            adb.AdbProxy().instrument(
+                MOCK_INSTRUMENTATION_PACKAGE,
+                runner=MOCK_INSTRUMENTATION_RUNNER,
+                handler=mock_handler)
+            mock_execute_and_process_stdout.assert_called_once_with(
+                ['adb', 'shell', MOCK_RUNNER_INSTRUMENTATION_COMMAND],
+                shell=False,
+                handler=mock_handler)
+
+    def test_instrument_with_handler_with_options(self):
+        """Verifies the AndroidDevice object's instrument command is correct
+        with a handler passed in and options.
+        """
+
+        def mock_handler(raw_line):
+            pass
+
+        with mock.patch.object(adb.AdbProxy, '_execute_and_process_stdout'
+                               ) as mock_execute_and_process_stdout:
+            adb.AdbProxy().instrument(
+                MOCK_INSTRUMENTATION_PACKAGE,
+                options=MOCK_INSTRUMENTATION_OPTIONS,
+                handler=mock_handler)
+            mock_execute_and_process_stdout.assert_called_once_with(
+                ['adb', 'shell', MOCK_OPTIONS_INSTRUMENTATION_COMMAND],
+                shell=False,
+                handler=mock_handler)
 
     def test_cli_cmd_to_string(self):
         cmd = ['"adb"', 'a b', 'c//']

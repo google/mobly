@@ -181,6 +181,47 @@ class AdbProxy(object):
         else:
             raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
+    def _execute_and_process_stdout(self, args, shell, handler):
+        """Executes adb commands and processes the stdout with a handler.
+
+        Args:
+            args: string or list of strings, program arguments.
+                See subprocess.Popen() documentation.
+            shell: bool, True to run this command through the system shell,
+                False to invoke it directly. See subprocess.Popen() docs.
+            handler: func, a function to handle adb stdout line by line.
+
+        Returns:
+            The stderr of the adb command run if exit code is 0.
+
+        Raises:
+            AdbError: The adb command exit code is not 0.
+        """
+        proc = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=shell,
+            bufsize=1)
+        try:
+            while proc.poll() is None:
+                line = proc.stdout.readline()
+                if line:
+                    handler(line)
+                else:
+                    break
+        finally:
+            (_, err) = proc.communicate()
+        ret = proc.returncode
+        if ret == 0:
+            return err
+        else:
+            raise AdbError(
+                cmd=args,
+                stdout='[elided, processed via handler]',
+                stderr=err,
+                ret_code=ret)
+
     def _construct_adb_cmd(self, raw_name, args, shell):
         """Constructs an adb command with arguments for a subprocess call.
 
@@ -225,6 +266,12 @@ class AdbProxy(object):
             adb_cmd, shell=shell, timeout=timeout, stderr=stderr)
         return out
 
+    def _execute_adb_and_process_stdout(self, name, args, shell, handler):
+        adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
+        out = self._execute_and_process_stdout(
+            adb_cmd, shell=shell, handler=handler)
+        return out
+
     def getprop(self, prop_name):
         """Get a property of the device.
 
@@ -262,7 +309,7 @@ class AdbProxy(object):
             return self._exec_adb_cmd(
                 'forward', args, shell, timeout=None, stderr=None)
 
-    def instrument(self, package, options=None, runner=None):
+    def instrument(self, package, options=None, runner=None, handler=None):
         """Runs an instrumentation command on the device.
 
         This is a convenience wrapper to avoid parameter formatting.
@@ -284,9 +331,14 @@ class AdbProxy(object):
                 class.
             runner: string, the test runner name, which defaults to
                 DEFAULT_INSTRUMENTATION_RUNNER.
+            handler: optional func, when specified the function is used to parse
+                the instrumentation stdout line by line as the output is
+                generated; otherwise, the stdout is simply returned once the
+                instrumentation is finished.
 
         Returns:
-            The output of instrumentation command.
+            The stdout of instrumentation command or the stderr if the handler
+                is set.
         """
         if runner is None:
             runner = DEFAULT_INSTRUMENTATION_RUNNER
@@ -302,7 +354,17 @@ class AdbProxy(object):
             options_string, package, runner)
         logging.info('AndroidDevice|%s: Executing adb shell %s', self.serial,
                      instrumentation_command)
-        return self.shell(instrumentation_command)
+        if handler is None:
+            # Flow kept for backwards-compatibility reasons
+            self._exec_adb_cmd(
+                'shell',
+                instrumentation_command,
+                shell=False,
+                timeout=None,
+                stderr=None)
+        else:
+            return self._execute_adb_and_process_stdout(
+                'shell', instrumentation_command, shell=False, handler=handler)
 
     def __getattr__(self, name):
         def adb_call(args=None, shell=False, timeout=None, stderr=None):
