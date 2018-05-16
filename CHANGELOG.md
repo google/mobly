@@ -1,6 +1,19 @@
 # Mobly Release History
 
 
+## 1.7.3: Windows support fixes
+
+### New
+  * `self.current_test_info` now exists for `setup_class` stage.
+  * adb calls through `AdbProxy` can now propagate stderr.
+  * Instrumentation runner now outputs timestamp for each test.
+
+### Fixes
+  * Fix several bugs for running on Windows.
+
+[Full list of changes.](https://github.com/google/mobly/milestone/16?closed=1)
+
+
 ## 1.7.2: Custom Info in Test Summary
 
 ### New
