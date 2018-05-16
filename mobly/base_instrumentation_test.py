@@ -281,8 +281,8 @@ class _InstrumentationBlock(object):
     needs to be done for those.
 
     Attributes:
-        begin_time: string or None, optional timestamp for when the test
-            corresponding to the instrumentation block began.
+        begin_time: string, optional timestamp for when the test corresponding
+            to the instrumentation block began.
         current_key: string, the current key that is being parsed, default to
             _InstrumentationKnownStatusKeys.STREAM.
         error_message: string, an error message indicating that something

@@ -333,8 +333,8 @@ class AdbProxy(object):
                 DEFAULT_INSTRUMENTATION_RUNNER.
             handler: optional func, when specified the function is used to parse
                 the instrumentation stdout line by line as the output is
-                generated; otherwise if not specified, the stdout is simply
-                returned once the instrumentation is finished.
+                generated; otherwise, the stdout is simply returned once the
+                instrumentation is finished.
 
         Returns:
             The stdout of instrumentation command or the stderr if the handler
