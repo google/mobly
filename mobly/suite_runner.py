@@ -84,7 +84,7 @@ def run_suite(test_classes, argv=None):
             sys.exit(1)
 
     # Find the full list of tests to execute
-    selected_tests = _compute_selected_tests(test_classes, args.tests)
+    selected_tests = compute_selected_tests(test_classes, args.tests)
 
     # Execute the suite
     ok = True

@@ -14,7 +14,6 @@
 """This module is where all the test signal classes and related utilities live.
 """
 
-import functools
 import json
 
 

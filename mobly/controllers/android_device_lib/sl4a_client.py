@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """JSON RPC interface to android scripting engine."""
-import logging
+
 import time
 
 from mobly import utils
@@ -134,7 +134,8 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _retry_connect(self):
         self._adb.forward(
-            ['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+            ['tcp:%d' % self.host_port,
+             'tcp:%d' % self.device_port])
         start_time = time.time()
         expiration_time = start_time + _APP_START_WAIT_TIME
         started = False
