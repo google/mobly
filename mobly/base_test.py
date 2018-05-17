@@ -17,15 +17,13 @@ import copy
 import functools
 import inspect
 import logging
-import sys
-import time
 
 from future.utils import raise_with_traceback
 
 from mobly import expects
 from mobly import records
-from mobly import signals
 from mobly import runtime_test_info
+from mobly import signals
 from mobly import utils
 
 # Macro strings for test result reporting

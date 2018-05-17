@@ -15,12 +15,9 @@
 """
 
 import collections
-import itertools
 import copy
 import enum
-import json
 import logging
-import pprint
 import sys
 import threading
 import traceback
