@@ -212,9 +212,12 @@ class AdbProxy(object):
                 else:
                     break
         finally:
-            (unhandled_out, err) = proc.communicate()
-            if unhandled_out:
-                out = '[unhandled stdout] %s' % unhandled_out
+            (unexpected_out, err) = proc.communicate()
+            if unexpected_out:
+                out = '[unexpected stdout] %s' % unexpected_out
+                for line in unexpected_out.splitlines():
+                    handler(line)
+
         ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
                       cli_cmd_to_string(args), out, err, ret)
