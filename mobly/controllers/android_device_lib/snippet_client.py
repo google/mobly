@@ -125,8 +125,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
         # Yaaay! We're done!
         self.log.debug('Snippet %s started after %.1fs on host port %s',
-                       self.package,
-                       time.time() - start_time, self.host_port)
+                       self.package, time.time() - start_time, self.host_port)
 
     def restore_app_connection(self, port=None):
         """Restores the app after device got reconnected.
@@ -153,10 +152,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         except:
             # Failed to connect to app, something went wrong.
             raise jsonrpc_client_base.AppRestoreConnectionError(
-                self._ad(
-                    'Failed to restore app connection for %s at host port %s, '
-                    'device port %s'), self.package, self.host_port,
-                self.device_port)
+                self._ad,
+                ('Failed to restore app connection for %s at host port %s, '
+                 'device port %s') % (self.package, self.host_port,
+                                      self.device_port))
 
         # Because the previous connection was lost, update self._proc
         self._proc = None
