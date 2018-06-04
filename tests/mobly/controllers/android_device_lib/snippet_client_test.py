@@ -166,6 +166,15 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.assertEqual(789, callback._event_client.host_port)
         self.assertEqual(456, callback._event_client.device_port)
 
+        # if unable to reconnect for any reason, a
+        # jsonrpc_client_base.AppRestoreConnectionError is raised.
+        mock_create_connection.side_effect = IOError('socket timed out')
+        with self.assertRaisesRegex(
+                jsonrpc_client_base.AppRestoreConnectionError,
+            ('Failed to restore app connection for %s at host port %s, '
+             'device port %s') % (MOCK_PACKAGE_NAME, 789, 456)):
+            client.restore_app_connection()
+
     @mock.patch('socket.create_connection')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.start_standing_subprocess')
