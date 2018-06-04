@@ -76,8 +76,7 @@ class AdbTest(unittest.TestCase):
         mock_popen.return_value.stdout.readline.side_effect = ['']
 
         mock_proc.communicate = mock.Mock(
-            return_value=(MOCK_DEFAULT_STDOUT.encode('utf-8'),
-                          MOCK_DEFAULT_STDERR.encode('utf-8')))
+            return_value=('', MOCK_DEFAULT_STDERR.encode('utf-8')))
         mock_proc.returncode = 0
         return mock_popen
 
@@ -149,6 +148,57 @@ class AdbTest(unittest.TestCase):
         self.assertEqual(mock_handler.call_count, 2)
         mock_handler.assert_any_call('1')
         mock_handler.assert_any_call('2')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    def test_execute_and_process_stdout_reads_unexpected_stdout(
+            self, mock_popen):
+        unexpected_stdout = MOCK_DEFAULT_STDOUT.encode('utf-8')
+
+        self._mock_execute_and_process_stdout_process(mock_popen)
+        mock_handler = mock.MagicMock()
+        mock_popen.return_value.communicate = mock.Mock(
+            return_value=(unexpected_stdout, MOCK_DEFAULT_STDERR.encode(
+                'utf-8')))
+
+        err = adb.AdbProxy()._execute_and_process_stdout(
+            ['fake_cmd'], shell=False, handler=mock_handler)
+        self.assertEqual(mock_handler.call_count, 1)
+        mock_handler.assert_called_with(unexpected_stdout)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    @mock.patch('logging.debug')
+    def test_execute_and_process_stdout_logs_cmd(self, mock_debug_logger,
+                                                 mock_popen):
+        raw_expected_stdout = ''
+        expected_stdout = '[elided, processed via handler]'
+        expected_stderr = MOCK_DEFAULT_STDERR.encode('utf-8')
+        self._mock_execute_and_process_stdout_process(mock_popen)
+        mock_popen.return_value.communicate = mock.Mock(
+            return_value=(raw_expected_stdout, expected_stderr))
+
+        err = adb.AdbProxy()._execute_and_process_stdout(
+            ['fake_cmd'], shell=False, handler=mock.MagicMock())
+        mock_debug_logger.assert_called_with(
+            'cmd: %s, stdout: %s, stderr: %s, ret: %s', 'fake_cmd',
+            expected_stdout, expected_stderr, 0)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    @mock.patch('logging.debug')
+    def test_execute_and_process_stdout_logs_cmd_with_unexpected_stdout(
+            self, mock_debug_logger, mock_popen):
+        raw_expected_stdout = MOCK_DEFAULT_STDOUT.encode('utf-8')
+        expected_stdout = '[unexpected stdout] %s' % raw_expected_stdout
+        expected_stderr = MOCK_DEFAULT_STDERR.encode('utf-8')
+
+        self._mock_execute_and_process_stdout_process(mock_popen)
+        mock_popen.return_value.communicate = mock.Mock(
+            return_value=(raw_expected_stdout, expected_stderr))
+
+        err = adb.AdbProxy()._execute_and_process_stdout(
+            ['fake_cmd'], shell=False, handler=mock.MagicMock())
+        mock_debug_logger.assert_called_with(
+            'cmd: %s, stdout: %s, stderr: %s, ret: %s', 'fake_cmd',
+            expected_stdout, expected_stderr, 0)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     def test_execute_and_process_stdout_when_cmd_exits(self, mock_popen):

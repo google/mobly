@@ -203,6 +203,7 @@ class AdbProxy(object):
             stderr=subprocess.PIPE,
             shell=shell,
             bufsize=1)
+        out = '[elided, processed via handler]'
         try:
             while proc.poll() is None:
                 line = proc.stdout.readline()
@@ -211,16 +212,19 @@ class AdbProxy(object):
                 else:
                     break
         finally:
-            (_, err) = proc.communicate()
+            (unexpected_out, err) = proc.communicate()
+            if unexpected_out:
+                out = '[unexpected stdout] %s' % unexpected_out
+                for line in unexpected_out.splitlines():
+                    handler(line)
+
         ret = proc.returncode
+        logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
+                      cli_cmd_to_string(args), out, err, ret)
         if ret == 0:
             return err
         else:
-            raise AdbError(
-                cmd=args,
-                stdout='[elided, processed via handler]',
-                stderr=err,
-                ret_code=ret)
+            raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
 
     def _construct_adb_cmd(self, raw_name, args, shell):
         """Constructs an adb command with arguments for a subprocess call.
