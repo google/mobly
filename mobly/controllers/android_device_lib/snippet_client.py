@@ -151,7 +151,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             self.connect()
         except:
             # Log the original error and raise AppRestoreConnectionError.
-            self.log.exception('Failed to connect to app!')
+            self.log.exception('Failed to re-connect to app.')
             raise jsonrpc_client_base.AppRestoreConnectionError(
                 self._ad,
                 ('Failed to restore app connection for %s at host port %s, '
