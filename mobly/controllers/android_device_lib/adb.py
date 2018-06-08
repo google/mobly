@@ -205,7 +205,7 @@ class AdbProxy(object):
             bufsize=1)
         out = '[elided, processed via handler]'
         try:
-            while proc.poll() is None:
+            while True:
                 line = proc.stdout.readline()
                 if line:
                     handler(line)
