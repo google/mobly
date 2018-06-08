@@ -72,7 +72,6 @@ class AdbTest(unittest.TestCase):
         mock_proc = mock.Mock()
         mock_popen.return_value = mock_proc
 
-        mock_popen.return_value.poll.return_value = None
         mock_popen.return_value.stdout.readline.side_effect = ['']
 
         mock_proc.communicate = mock.Mock(
@@ -201,19 +200,9 @@ class AdbTest(unittest.TestCase):
             expected_stdout, expected_stderr, 0)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
-    def test_execute_and_process_stdout_when_cmd_exits(self, mock_popen):
+    def test_execute_and_process_stdout_despite_cmd_exits(self, mock_popen):
         self._mock_execute_and_process_stdout_process(mock_popen)
-        mock_popen.return_value.poll.side_effect = [None, None, None, 0]
-        mock_popen.return_value.stdout.readline.return_value = '123'
-        mock_handler = mock.MagicMock()
-
-        err = adb.AdbProxy()._execute_and_process_stdout(
-            ['fake_cmd'], shell=False, handler=mock_handler)
-
-    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
-    def test_execute_and_process_stdout_when_cmd_eof(self, mock_popen):
-        self._mock_execute_and_process_stdout_process(mock_popen)
-        mock_popen.return_value.poll.return_value = None
+        mock_popen.return_value.poll.side_effect = [None, 0]
         mock_popen.return_value.stdout.readline.side_effect = [
             '1', '2', '3', ''
         ]
@@ -221,6 +210,27 @@ class AdbTest(unittest.TestCase):
 
         err = adb.AdbProxy()._execute_and_process_stdout(
             ['fake_cmd'], shell=False, handler=mock_handler)
+
+        self.assertEqual(mock_handler.call_count, 3)
+        mock_handler.assert_any_call('1')
+        mock_handler.assert_any_call('2')
+        mock_handler.assert_any_call('3')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    def test_execute_and_process_stdout_when_cmd_eof(self, mock_popen):
+        self._mock_execute_and_process_stdout_process(mock_popen)
+        mock_popen.return_value.stdout.readline.side_effect = [
+            '1', '2', '3', ''
+        ]
+        mock_handler = mock.MagicMock()
+
+        err = adb.AdbProxy()._execute_and_process_stdout(
+            ['fake_cmd'], shell=False, handler=mock_handler)
+
+        self.assertEqual(mock_handler.call_count, 3)
+        mock_handler.assert_any_call('1')
+        mock_handler.assert_any_call('2')
+        mock_handler.assert_any_call('3')
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     def test_execute_and_process_stdout_returns_stderr(self, mock_popen):

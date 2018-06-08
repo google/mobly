@@ -205,13 +205,16 @@ class AdbProxy(object):
             bufsize=1)
         out = '[elided, processed via handler]'
         try:
-            while proc.poll() is None:
+            # Even if the process dies, stdout.readline still works
+            # and will continue until it runs out of stdout to process.
+            while True:
                 line = proc.stdout.readline()
                 if line:
                     handler(line)
                 else:
                     break
         finally:
+            # Note, communicate will not contain any buffered output.
             (unexpected_out, err) = proc.communicate()
             if unexpected_out:
                 out = '[unexpected stdout] %s' % unexpected_out
