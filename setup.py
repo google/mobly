@@ -23,7 +23,7 @@ install_requires = [
     # which is what comes with Ubuntu 14.04 LTS.
     'mock<=1.0.1',
     'portpicker',
-    'psutil',
+    'psutil>=5.4.4',
     'pytz',
     'pyyaml',
     'timeout_decorator',
