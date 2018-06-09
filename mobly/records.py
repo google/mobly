@@ -14,6 +14,8 @@
 """This module has classes for test result collection, and test result output.
 """
 
+from io import open
+
 import collections
 import copy
 import enum
@@ -116,7 +118,10 @@ class TestSummaryWriter(object):
         # Both user code and Mobly code can trigger this dump, hence the lock.
         with self._lock:
             # Use safe_dump here to avoid language-specific tags in final output.
-            with open(self._path, 'a') as f:
+            with open(self._path, 'a', encoding='utf-8') as f:
+                # Setting encoding on safe_dump doesn't do anything
+                # because it's set for Python3 and the stream encoding
+                # overrides the parameter for PyYAML.
                 yaml.safe_dump(
                     new_content,
                     f,
