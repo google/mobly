@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from builtins import str
+from io import open
 
 import copy
 import mock
@@ -355,10 +356,33 @@ class RecordsTest(unittest.TestCase):
         dump_path = os.path.join(self.tmp_path, 'ha.yaml')
         writer = records.TestSummaryWriter(dump_path)
         writer.dump(record1.to_dict(), records.TestSummaryEntryType.RECORD)
-        with open(dump_path, 'r') as f:
+        with open(dump_path, 'r', encoding='utf-8') as f:
             content = yaml.load(f)
             self.assertEqual(content['Type'],
                              records.TestSummaryEntryType.RECORD.value)
+            self.assertEqual(content[records.TestResultEnums.RECORD_DETAILS],
+                             self.details)
+            self.assertEqual(content[records.TestResultEnums.RECORD_EXTRAS],
+                             self.float_extra)
+
+    def test_summary_write_dump_with_unicode(self):
+        unicode_details = u'\u901a'  # utf-8 -> b'\xe9\x80\x9a'
+        unicode_extras = u'\u8fc7'  # utf-8 -> b'\xe8\xbf\x87'
+        s = signals.TestFailure(unicode_details, unicode_extras)
+        record1 = records.TestResultRecord(self.tn)
+        record1.test_begin()
+        record1.test_fail(s)
+        dump_path = os.path.join(self.tmp_path, 'ha.yaml')
+        writer = records.TestSummaryWriter(dump_path)
+        writer.dump(record1.to_dict(), records.TestSummaryEntryType.RECORD)
+        with open(dump_path, 'r', encoding='utf-8') as f:
+            content = yaml.load(f)
+            self.assertEqual(content['Type'],
+                             records.TestSummaryEntryType.RECORD.value)
+            self.assertEqual(content[records.TestResultEnums.RECORD_DETAILS],
+                             unicode_details)
+            self.assertEqual(content[records.TestResultEnums.RECORD_EXTRAS],
+                             unicode_extras)
 
     def test_summary_user_data(self):
         user_data1 = {'a': 1}
@@ -368,7 +392,7 @@ class RecordsTest(unittest.TestCase):
         writer = records.TestSummaryWriter(dump_path)
         for data in user_data:
             writer.dump(data, records.TestSummaryEntryType.USER_DATA)
-        with open(dump_path, 'r') as f:
+        with open(dump_path, 'r', encoding='utf-8') as f:
             contents = []
             for c in yaml.load_all(f):
                 contents.append(c)
