@@ -119,9 +119,11 @@ class TestSummaryWriter(object):
         with self._lock:
             # Use safe_dump here to avoid language-specific tags in final output.
             with open(self._path, 'a', encoding='utf-8') as f:
-                # Setting encoding on safe_dump doesn't do anything
-                # because it's set for Python3 and the stream encoding
-                # overrides the parameter for PyYAML.
+                # For Python3, setting the encoding on yaml.safe_dump does not
+                # work because Python3 file descriptors set an encoding by
+                # default, which PyYAML uses instead of the encoding on
+                # yaml.safe_dump. So, the encoding has to be set on the open
+                # call instead.
                 yaml.safe_dump(
                     new_content,
                     f,
