@@ -874,7 +874,7 @@ class BaseTestTest(unittest.TestCase):
                          ("Error 0, Executed 2, Failed 1, Passed 1, "
                           "Requested 3, Skipped 1"))
 
-    def test_abort_all_setup_class(self):
+    def test_abort_all_in_setup_class(self):
         class MockBaseTest(base_test.BaseTestClass):
             def setup_class(self):
                 asserts.abort_all(MSG_EXPECTED_EXCEPTION)
@@ -896,6 +896,26 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(bt_cls.results.summary_str(),
                          ("Error 0, Executed 0, Failed 0, Passed 0, "
                           "Requested 3, Skipped 3"))
+
+    def test_abort_all_in_teardown_class(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_1(self):
+                pass
+
+            def test_2(self):
+                pass
+
+            def teardown_class(self):
+                asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        with self.assertRaisesRegex(signals.TestAbortAll,
+                                    MSG_EXPECTED_EXCEPTION) as context:
+            bt_cls.run(test_names=["test_1", "test_2"])
+        self.assertTrue(hasattr(context.exception, 'results'))
+        self.assertEqual(bt_cls.results.summary_str(),
+                         ("Error 0, Executed 2, Failed 0, Passed 2, "
+                          "Requested 2, Skipped 0"))
 
     def test_abort_all_in_setup_test(self):
         class MockBaseTest(base_test.BaseTestClass):

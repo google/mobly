@@ -190,6 +190,9 @@ class BaseTestClass(object):
         record.test_begin()
         try:
             self.teardown_class()
+        except signals.TestAbortAll as e:
+            setattr(e, 'results', self.results)
+            raise
         except Exception as e:
             logging.exception('Error encountered in teardown_class.')
             record.test_error(e)
