@@ -636,10 +636,10 @@ class BaseTestClass(object):
                 # Fail the class and skip all tests.
                 logging.exception('Error in setup_class %s.', self.TAG)
                 class_record.test_error(e)
-                self._exec_procedure_func(self._on_fail, class_record)
                 self.results.add_class_error(class_record)
                 self.summary_writer.dump(class_record.to_dict(),
                                          records.TestSummaryEntryType.RECORD)
+                self._exec_procedure_func(self._on_fail, class_record)
                 self._skip_remaining_tests(e)
                 return self.results
             # Run tests in order.
@@ -651,6 +651,8 @@ class BaseTestClass(object):
             self._skip_remaining_tests(e)
             return self.results
         except signals.TestAbortAll as e:
+            e.details = 'All remaining tests aborted due to: %s' % e.details
+            self._skip_remaining_tests(e)
             # Piggy-back test results on this exception object so we don't lose
             # results from this test class.
             setattr(e, 'results', self.results)
