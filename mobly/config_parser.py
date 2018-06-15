@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from builtins import str
+from io import open
 
 import copy
 import os
@@ -149,7 +150,7 @@ def _load_config_file(path):
     Returns:
         A dict that represents info in the config file.
     """
-    with open(utils.abs_path(path), 'r') as f:
+    with open(utils.abs_path(path), 'r', encoding='utf-8') as f:
         conf = yaml.load(f)
         return conf
 

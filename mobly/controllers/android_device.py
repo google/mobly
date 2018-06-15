@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from builtins import str as new_str
-from builtins import open
+from io import open
 from past.builtins import basestring
 
 import contextlib
@@ -436,9 +436,8 @@ class AndroidDevice(object):
         self._log_path = os.path.join(self._log_path_base,
                                       'AndroidDevice%s' % self._serial)
         self._debug_tag = self._serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            'tag': self.debug_tag
-        })
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                              {'tag': self.debug_tag})
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None

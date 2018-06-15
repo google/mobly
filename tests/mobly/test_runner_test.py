@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from io import open
+
 import logging
 import mock
 import os
@@ -206,7 +208,7 @@ class TestRunnerTest(unittest.TestCase):
         tr.run()
         summary_path = os.path.join(logging.log_path,
                                     records.OUTPUT_FILE_SUMMARY)
-        with open(summary_path, 'r') as f:
+        with open(summary_path, 'r', encoding='utf-8') as f:
             summary_entries = list(yaml.load_all(f))
         self.assertEqual(len(summary_entries), 4)
         # Verify the first entry is the list of test names.

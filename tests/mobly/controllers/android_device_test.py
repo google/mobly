@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from builtins import str as new_str
+from io import open
 
 import logging
 import mock
@@ -548,8 +549,13 @@ class AndroidDeviceTest(unittest.TestCase):
             FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         new_log_path = tempfile.mkdtemp()
-        with open(os.path.join(new_log_path, 'file.txt'), 'w') as f:
-            f.write('hahah.')
+        with open(
+                os.path.join(new_log_path, 'file.txt'), 'w',
+                encoding='utf-8') as f:
+            if sys.version_info < (3, ):
+                f.write('hahah.'.decode('utf-8'))
+            else:
+                f.write('hahah.')
         expected_msg = '.* Logs already exist .*'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.log_path = new_log_path
@@ -625,13 +631,16 @@ class AndroidDeviceTest(unittest.TestCase):
         utils.create_dir(ad.log_path)
         mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
                                          (ad.model, ad.serial))
-        with open(mock_adb_log_path, 'w') as f:
-            f.write(MOCK_ADB_LOGCAT)
+        with open(mock_adb_log_path, 'w', encoding='utf-8') as f:
+            if sys.version_info < (3, ):
+                f.write(MOCK_ADB_LOGCAT.decode('utf-8'))
+            else:
+                f.write(MOCK_ADB_LOGCAT)
         ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
         cat_file_path = os.path.join(
             ad.log_path, 'AdbLogExcerpts',
             ('some_test,02-29 14-02-20.123,%s,%s.txt') % (ad.model, ad.serial))
-        with open(cat_file_path, 'r') as f:
+        with open(cat_file_path, 'r', encoding='utf-8') as f:
             actual_cat = f.read()
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
         # Stops adb logcat.
