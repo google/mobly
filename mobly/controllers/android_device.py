@@ -903,6 +903,22 @@ class AndroidDevice(object):
         self._snippet_clients[name] = client
         setattr(self, name, client)
 
+    def unload_snippet(self, name):
+        """Stops a snippet apk.
+
+        Args:
+            name: The attribute name the snippet server is attached with.
+
+        Raises:
+            SnippetError: The given snippet name is not registered.
+        """
+        if name not in self._snippet_clients:
+            raise SnippetError(self,
+                               'No snippet registered with name "%s"' % name)
+        client = self._snippet_clients.pop(name)
+        client.stop_app()
+        delattr(self, name)
+
     def load_sl4a(self):
         """Start sl4a service on the Android device.
 
