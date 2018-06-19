@@ -916,8 +916,8 @@ class AndroidDevice(object):
             raise SnippetError(self,
                                'No snippet registered with name "%s"' % name)
         client = self._snippet_clients.pop(name)
-        client.stop_app()
         delattr(self, name)
+        client.stop_app()
 
     def load_sl4a(self):
         """Start sl4a service on the Android device.
