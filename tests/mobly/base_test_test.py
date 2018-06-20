@@ -555,7 +555,7 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
-    def test_on_fail_executed_if_test_setup_fails_by_exception(self):
+    def test_on_fail_executed_if_setup_test_fails_by_exception(self):
         my_mock = mock.MagicMock()
 
         class MockBaseTest(base_test.BaseTestClass):
@@ -579,6 +579,54 @@ class BaseTestTest(unittest.TestCase):
                             "Requested 1, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
+    def test_on_fail_executed_if_setup_class_fails_by_exception(self):
+        my_mock = mock.MagicMock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+
+            def on_fail(self, record):
+                my_mock("on_fail")
+
+            def test_something(self):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        my_mock.assert_called_once_with("on_fail")
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, 'setup_class')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertIsNone(actual_record.extras)
+        expected_summary = ("Error 1, Executed 0, Failed 0, Passed 0, "
+                            "Requested 1, Skipped 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+    def test_on_fail_triggered_by_setup_class_failure_then_fail_too(self):
+        """Errors thrown from on_fail should be captured."""
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+
+            def on_fail(self, record):
+                raise Exception('Failure in on_fail.')
+
+            def test_something(self):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        setup_class_record = bt_cls.results.error[0]
+        self.assertEqual(setup_class_record.test_name, 'setup_class')
+        self.assertEqual(setup_class_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(setup_class_record.extra_errors['on_fail'].details,
+                         'Failure in on_fail.')
+        expected_summary = ("Error 1, Executed 0, Failed 0, Passed 0, "
+                            "Requested 1, Skipped 1")
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
     def test_failure_to_call_procedure_function_is_recorded(self):
         class MockBaseTest(base_test.BaseTestClass):
             def on_fail(self):
@@ -590,7 +638,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.failed[0]
-        self.assertIn('_on_fail', actual_record.extra_errors)
+        self.assertIn('on_fail', actual_record.extra_errors)
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertIsNone(actual_record.extras)
@@ -611,7 +659,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.error[0]
-        self.assertEqual(actual_record.extra_errors['_on_pass'].details,
+        self.assertEqual(actual_record.extra_errors['on_pass'].details,
                          expected_msg)
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
@@ -738,7 +786,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
-        self.assertEqual(actual_record.extra_errors['_on_pass'].details,
+        self.assertEqual(actual_record.extra_errors['on_pass'].details,
                          MSG_EXPECTED_EXCEPTION)
         expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                             "Requested 1, Skipped 0")
@@ -758,7 +806,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, self.mock_test_name)
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
-        self.assertEqual(actual_record.extra_errors['_on_fail'].details,
+        self.assertEqual(actual_record.extra_errors['on_fail'].details,
                          MSG_EXPECTED_EXCEPTION)
         expected_summary = ("Error 0, Executed 1, Failed 1, Passed 0, "
                             "Requested 1, Skipped 0")
