@@ -901,6 +901,29 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
+    def test_AndroidDevice_unload_snippet(self, MockGetPort, MockSnippetClient,
+                                          MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='1')
+        ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
+        ad.unload_snippet('snippet')
+        self.assertFalse(hasattr(ad, 'snippet'))
+        with self.assertRaisesRegex(
+                android_device.SnippetError,
+                '<AndroidDevice|1> No snippet registered with name "snippet"'):
+            ad.unload_snippet('snippet')
+        # Loading the same snippet again should succeed
+        ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
+        self.assertTrue(hasattr(ad, 'snippet'))
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
+    @mock.patch('mobly.utils.get_available_host_port')
     def test_AndroidDevice_snippet_cleanup(
             self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
