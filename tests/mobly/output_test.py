@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import open
-
+import io
 import logging
 import mock
 import os
@@ -87,7 +86,7 @@ class OutputTest(unittest.TestCase):
         return (summary_file_path, debug_log_path, info_log_path)
 
     def assert_log_contents(self, log_path, whitelist=[], blacklist=[]):
-        with open(log_path, 'r', encoding='utf-8') as f:
+        with io.open(log_path, 'r', encoding='utf-8') as f:
             content = f.read()
             for item in whitelist:
                 self.assertIn(item, content)
@@ -234,7 +233,7 @@ class OutputTest(unittest.TestCase):
         (summary_file_path, debug_log_path,
          info_log_path) = self.assert_output_logs_exist(output_dir)
         summary_entries = []
-        with open(summary_file_path, 'r', encoding='utf-8') as f:
+        with io.open(summary_file_path, 'r', encoding='utf-8') as f:
             for entry in yaml.load_all(f):
                 self.assertTrue(entry['Type'])
                 summary_entries.append(entry)
@@ -255,7 +254,7 @@ class OutputTest(unittest.TestCase):
         summary_file_path = os.path.join(output_dir,
                                          records.OUTPUT_FILE_SUMMARY)
         found = False
-        with open(summary_file_path, 'r', encoding='utf-8') as f:
+        with io.open(summary_file_path, 'r', encoding='utf-8') as f:
             raw_content = f.read()
             f.seek(0)
             for entry in yaml.load_all(f):

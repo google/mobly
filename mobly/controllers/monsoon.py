@@ -15,10 +15,10 @@
 (http://msoon.com/LabEquipment/PowerMonitor/).
 """
 
-from io import open
 from past.builtins import basestring
 
 import fcntl
+import io
 import logging
 import os
 import select
@@ -553,7 +553,7 @@ class MonsoonData(object):
             raise MonsoonError("Attempting to write empty Monsoon data to "
                                "file, abort")
         utils.create_dir(os.path.dirname(file_path))
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with io.open(file_path, 'w', encoding='utf-8') as f:
             for md in monsoon_data:
                 f.write(str(md))
                 f.write(MonsoonData.delimiter)
@@ -571,7 +571,7 @@ class MonsoonData(object):
             A list of MonsoonData objects.
         """
         results = []
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with io.open(file_path, 'r', encoding='utf-8') as f:
             data_strs = f.read().split(MonsoonData.delimiter)
             for data_str in data_strs:
                 results.append(MonsoonData.from_string(data_str))

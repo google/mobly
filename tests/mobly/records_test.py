@@ -13,9 +13,9 @@
 # limitations under the License.
 
 from builtins import str
-from io import open
 
 import copy
+import io
 import mock
 import os
 import shutil
@@ -356,7 +356,7 @@ class RecordsTest(unittest.TestCase):
         dump_path = os.path.join(self.tmp_path, 'ha.yaml')
         writer = records.TestSummaryWriter(dump_path)
         writer.dump(record1.to_dict(), records.TestSummaryEntryType.RECORD)
-        with open(dump_path, 'r', encoding='utf-8') as f:
+        with io.open(dump_path, 'r', encoding='utf-8') as f:
             content = yaml.load(f)
             self.assertEqual(content['Type'],
                              records.TestSummaryEntryType.RECORD.value)
@@ -375,7 +375,7 @@ class RecordsTest(unittest.TestCase):
         dump_path = os.path.join(self.tmp_path, 'ha.yaml')
         writer = records.TestSummaryWriter(dump_path)
         writer.dump(record1.to_dict(), records.TestSummaryEntryType.RECORD)
-        with open(dump_path, 'r', encoding='utf-8') as f:
+        with io.open(dump_path, 'r', encoding='utf-8') as f:
             content = yaml.load(f)
             self.assertEqual(content['Type'],
                              records.TestSummaryEntryType.RECORD.value)
@@ -392,7 +392,7 @@ class RecordsTest(unittest.TestCase):
         writer = records.TestSummaryWriter(dump_path)
         for data in user_data:
             writer.dump(data, records.TestSummaryEntryType.USER_DATA)
-        with open(dump_path, 'r', encoding='utf-8') as f:
+        with io.open(dump_path, 'r', encoding='utf-8') as f:
             contents = []
             for c in yaml.load_all(f):
                 contents.append(c)

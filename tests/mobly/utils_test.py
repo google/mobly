@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import open
-
+import io
 import mock
 import os
 import platform
@@ -122,7 +121,7 @@ class UtilsTest(unittest.TestCase):
     def test_load_file_to_base64_str_reads_bytes_file_as_base64_string(self):
         tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
         expected_base64_encoding = u'SGVsbG93IHdvcmxkIQ=='
-        with open(tmp_file_path, 'wb') as f:
+        with io.open(tmp_file_path, 'wb') as f:
             f.write(b'Hellow world!')
         self.assertEqual(
             utils.load_file_to_base64_str(tmp_file_path),
@@ -131,7 +130,7 @@ class UtilsTest(unittest.TestCase):
     def test_load_file_to_base64_str_reads_text_file_as_base64_string(self):
         tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
         expected_base64_encoding = u'SGVsbG93IHdvcmxkIQ=='
-        with open(tmp_file_path, 'w', encoding='utf-8') as f:
+        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u'Hellow world!')
         self.assertEqual(
             utils.load_file_to_base64_str(tmp_file_path),
@@ -140,7 +139,7 @@ class UtilsTest(unittest.TestCase):
     def test_load_file_to_base64_str_reads_unicode_file_as_base64_string(self):
         tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
         expected_base64_encoding = u'6YCa'
-        with open(tmp_file_path, 'w', encoding='utf-8') as f:
+        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u'\u901a')
         self.assertEqual(
             utils.load_file_to_base64_str(tmp_file_path),

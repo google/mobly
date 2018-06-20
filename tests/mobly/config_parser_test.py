@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import open
-
+import io
 import os
 import shutil
 import tempfile
@@ -35,7 +34,7 @@ class OutputTest(unittest.TestCase):
 
     def test__load_config_file(self):
         tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
-        with open(tmp_file_path, 'w', encoding='utf-8') as f:
+        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u'TestBeds:\n')
             f.write(u'  # A test bed where adb will find Android devices.\n')
             f.write(u'  - Name: SampleTestBed\n')
@@ -47,7 +46,7 @@ class OutputTest(unittest.TestCase):
 
     def test__load_config_file_with_unicode(self):
         tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
-        with open(tmp_file_path, 'w', encoding='utf-8') as f:
+        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u'TestBeds:\n')
             f.write(u'  # A test bed where adb will find Android devices.\n')
             f.write(u'  - Name: \u901a\n')

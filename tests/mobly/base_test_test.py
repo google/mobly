@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import open
-
+import io
 import os
 import mock
 import shutil
@@ -1736,7 +1735,7 @@ class BaseTestTest(unittest.TestCase):
         actual_record = bt_cls.results.passed[0]
         self.assertEqual(actual_record.test_name, "test_something")
         hit = False
-        with open(self.summary_file, 'r', encoding='utf-8') as f:
+        with io.open(self.summary_file, 'r', encoding='utf-8') as f:
             for c in yaml.load_all(f):
                 if c['Type'] != records.TestSummaryEntryType.USER_DATA.value:
                     continue

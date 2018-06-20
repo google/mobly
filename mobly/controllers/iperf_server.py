@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import open
-
+import io
 import json
 import logging
 import os
@@ -45,10 +44,10 @@ def destroy(objs):
 class IPerfResult(object):
     def __init__(self, result_path):
         try:
-            with open(result_path, 'r', encoding='utf-8') as f:
+            with io.open(result_path, 'r', encoding='utf-8') as f:
                 self.result = json.load(f)
         except ValueError:
-            with open(result_path, 'r', encoding='utf-8') as f:
+            with io.open(result_path, 'r', encoding='utf-8') as f:
                 # Possibly a result from interrupted iperf run, skip first line
                 # and try again.
                 lines = f.readlines()[1:]

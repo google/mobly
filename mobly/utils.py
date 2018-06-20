@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import open
-
 import base64
 import concurrent.futures
 import datetime
+import io
 import logging
 import os
 import platform
@@ -211,7 +210,7 @@ def load_file_to_base64_str(f_path):
         A base64 string representing the content of the file in utf-8 encoding.
     """
     path = abs_path(f_path)
-    with open(path, 'rb') as f:
+    with io.open(path, 'rb') as f:
         f_bytes = f.read()
         base64_str = base64.b64encode(f_bytes).decode("utf-8")
         return base64_str
