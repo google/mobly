@@ -333,9 +333,12 @@ class BaseTestClass(object):
         except signals.TestAbortSignal:
             raise
         except Exception as e:
+            func_name = func.__name__
+            if func_name.startswith('_'):
+                func_name = func_name[1:]
             logging.exception('Exception happened when executing %s for %s.',
-                              func.__name__, self.current_test_name)
-            tr_record.add_error(func.__name__, e)
+                              func_name, self.current_test_name)
+            tr_record.add_error(func_name, e)
 
     def record_data(self, content):
         """Record an entry in test summary file.
