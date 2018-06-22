@@ -143,7 +143,7 @@ class MonsoonProxy(object):
                 if not dev.startswith(prefix):
                     continue
                 tmpname = "/tmp/monsoon.%s.%s" % (os.uname()[0], dev)
-                self._tempfile = open(tmpname, "w", encoding='utf-8')
+                self._tempfile = io.open(tmpname, "w", encoding='utf-8')
                 try:
                     os.chmod(tmpname, 0o666)
                 except OSError as e:
