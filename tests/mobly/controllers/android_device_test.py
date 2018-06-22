@@ -14,6 +14,7 @@
 
 from builtins import str as new_str
 
+import io
 import logging
 import mock
 import os
@@ -38,11 +39,23 @@ MOCK_ADB_LOGCAT_CAT_RESULT = [
     '02-29 14:02:21.456  4454  Something\n',
     '02-29 14:02:21.789  4454  Something again\n'
 ]
-# A mockd piece of adb logcat output.
-MOCK_ADB_LOGCAT = ('02-29 14:02:19.123  4454  Nothing\n'
-                   '%s'
-                   '02-29 14:02:22.123  4454  Something again and again\n'
-                   ) % ''.join(MOCK_ADB_LOGCAT_CAT_RESULT)
+# A mocked piece of adb logcat output.
+MOCK_ADB_LOGCAT = (u'02-29 14:02:19.123  4454  Nothing\n'
+                   u'%s'
+                   u'02-29 14:02:22.123  4454  Something again and again\n'
+                   ) % u''.join(MOCK_ADB_LOGCAT_CAT_RESULT)
+# The expected result of the cat adb operation.
+MOCK_ADB_UNICODE_LOGCAT_CAT_RESULT = [
+    '02-29 14:02:21.456  4454  Something \u901a\n',
+    '02-29 14:02:21.789  4454  Something again\n'
+]
+# A mocked piece of adb logcat output.
+MOCK_ADB_UNICODE_LOGCAT = (
+    u'02-29 14:02:19.123  4454  Nothing\n'
+    u'%s'
+    u'02-29 14:02:22.123  4454  Something again and again\n'
+) % u''.join(MOCK_ADB_UNICODE_LOGCAT_CAT_RESULT)
+
 # Mock start and end time of the adb cat.
 MOCK_ADB_LOGCAT_BEGIN_TIME = '02-29 14:02:20.123'
 MOCK_ADB_LOGCAT_END_TIME = '02-29 14:02:22.000'
@@ -548,8 +561,9 @@ class AndroidDeviceTest(unittest.TestCase):
             FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         new_log_path = tempfile.mkdtemp()
-        with open(os.path.join(new_log_path, 'file.txt'), 'w') as f:
-            f.write('hahah.')
+        new_file_path = os.path.join(new_log_path, 'file.txt')
+        with io.open(new_file_path, 'w', encoding='utf-8') as f:
+            f.write(u'hahah.')
         expected_msg = '.* Logs already exist .*'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.log_path = new_log_path
@@ -625,15 +639,60 @@ class AndroidDeviceTest(unittest.TestCase):
         utils.create_dir(ad.log_path)
         mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
                                          (ad.model, ad.serial))
-        with open(mock_adb_log_path, 'w') as f:
+        with io.open(mock_adb_log_path, 'w', encoding='utf-8') as f:
             f.write(MOCK_ADB_LOGCAT)
         ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
         cat_file_path = os.path.join(
             ad.log_path, 'AdbLogExcerpts',
             ('some_test,02-29 14-02-20.123,%s,%s.txt') % (ad.model, ad.serial))
-        with open(cat_file_path, 'r') as f:
+        with io.open(cat_file_path, 'r', encoding='utf-8') as f:
             actual_cat = f.read()
         self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
+        # Stops adb logcat.
+        ad.stop_adb_logcat()
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch(
+        'mobly.logger.get_log_line_timestamp',
+        return_value=MOCK_ADB_LOGCAT_END_TIME)
+    def test_AndroidDevice_cat_adb_log_with_unicode(
+            self, mock_timestamp_getter, stop_proc_mock, start_proc_mock,
+            FastbootProxy, MockAdbProxy):
+        """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
+        file, locates the correct adb log lines within the given time range,
+        and writes the lines to the correct output file.
+        """
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        # Direct the log path of the ad to a temp dir to avoid racing.
+        ad._log_path_base = self.tmp_dir
+        # Expect error if attempted to cat adb log before starting adb logcat.
+        expected_msg = ('.* Attempting to cat adb log when none'
+                        ' has been collected.')
+        with self.assertRaisesRegex(android_device.Error, expected_msg):
+            ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
+        ad.start_adb_logcat()
+        utils.create_dir(ad.log_path)
+        mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
+                                         (ad.model, ad.serial))
+        with io.open(mock_adb_log_path, 'w', encoding='utf-8') as f:
+            f.write(MOCK_ADB_UNICODE_LOGCAT)
+        ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
+        cat_file_path = os.path.join(
+            ad.log_path, 'AdbLogExcerpts',
+            ('some_test,02-29 14-02-20.123,%s,%s.txt') % (ad.model, ad.serial))
+        with io.open(cat_file_path, 'r', encoding='utf-8') as f:
+            actual_cat = f.read()
+        self.assertEqual(actual_cat,
+                         ''.join(MOCK_ADB_UNICODE_LOGCAT_CAT_RESULT))
         # Stops adb logcat.
         ad.stop_adb_logcat()
 
