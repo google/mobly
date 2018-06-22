@@ -14,11 +14,10 @@
 """This module has classes for test result collection, and test result output.
 """
 
-from io import open
-
 import collections
 import copy
 import enum
+import io
 import logging
 import sys
 import threading
@@ -121,7 +120,7 @@ class TestSummaryWriter(object):
             # because Python3 file descriptors set an encoding by default, which
             # PyYAML uses instead of the encoding on yaml.safe_dump. So, the
             # encoding has to be set on the open call instead.
-            with open(self._path, 'a', encoding='utf-8') as f:
+            with io.open(self._path, 'a', encoding='utf-8') as f:
                 # Use safe_dump here to avoid language-specific tags in final
                 # output.
                 yaml.safe_dump(

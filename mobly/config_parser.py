@@ -15,6 +15,7 @@
 from builtins import str
 
 import copy
+import io
 import os
 import yaml
 
@@ -149,7 +150,7 @@ def _load_config_file(path):
     Returns:
         A dict that represents info in the config file.
     """
-    with open(utils.abs_path(path), 'r') as f:
+    with io.open(utils.abs_path(path), 'r', encoding='utf-8') as f:
         conf = yaml.load(f)
         return conf
 

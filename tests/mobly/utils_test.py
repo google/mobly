@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 import mock
 import os
 import platform
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -36,6 +38,10 @@ class UtilsTest(unittest.TestCase):
     def setUp(self):
         system = platform.system()
         self.sleep_cmd = 'timeout' if system == 'Windows' else 'sleep'
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
 
     def test_start_standing_subproc(self):
         try:
@@ -61,17 +67,15 @@ class UtilsTest(unittest.TestCase):
         self.assertFalse(p1.is_running())
 
     def test_create_dir(self):
-        tmp_dir = tempfile.mkdtemp()
-        new_path = os.path.join(tmp_dir, 'haha')
+        new_path = os.path.join(self.tmp_dir, 'haha')
         self.assertFalse(os.path.exists(new_path))
         utils.create_dir(new_path)
         self.assertTrue(os.path.exists(new_path))
 
     def test_create_dir_already_exists(self):
-        tmp_dir = tempfile.mkdtemp()
-        self.assertTrue(os.path.exists(tmp_dir))
-        utils.create_dir(tmp_dir)
-        self.assertTrue(os.path.exists(tmp_dir))
+        self.assertTrue(os.path.exists(self.tmp_dir))
+        utils.create_dir(self.tmp_dir)
+        self.assertTrue(os.path.exists(self.tmp_dir))
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports')
@@ -113,6 +117,33 @@ class UtilsTest(unittest.TestCase):
             s.bind(('localhost', port))
         finally:
             s.close()
+
+    def test_load_file_to_base64_str_reads_bytes_file_as_base64_string(self):
+        tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
+        expected_base64_encoding = u'SGVsbG93IHdvcmxkIQ=='
+        with io.open(tmp_file_path, 'wb') as f:
+            f.write(b'Hellow world!')
+        self.assertEqual(
+            utils.load_file_to_base64_str(tmp_file_path),
+            expected_base64_encoding)
+
+    def test_load_file_to_base64_str_reads_text_file_as_base64_string(self):
+        tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
+        expected_base64_encoding = u'SGVsbG93IHdvcmxkIQ=='
+        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+            f.write(u'Hellow world!')
+        self.assertEqual(
+            utils.load_file_to_base64_str(tmp_file_path),
+            expected_base64_encoding)
+
+    def test_load_file_to_base64_str_reads_unicode_file_as_base64_string(self):
+        tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
+        expected_base64_encoding = u'6YCa'
+        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+            f.write(u'\u901a')
+        self.assertEqual(
+            utils.load_file_to_base64_str(tmp_file_path),
+            expected_base64_encoding)
 
 
 if __name__ == '__main__':
