@@ -260,7 +260,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Executed'], 2)
         self.assertEqual(results['Passed'], 2)
 
-    def test_run_two_test_classes_different_configs(self):
+    def test_run_two_test_classes_different_configs_and_aliases(self):
         """Verifies that running more than one test class in one test run with
         different configs works properly.
         """
@@ -272,8 +272,14 @@ class TestRunnerTest(unittest.TestCase):
         config2 = config1.copy()
         config2.user_params['icecream'] = 10
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        tr.add_test_class(config1, integration_test.IntegrationTest)
-        tr.add_test_class(config2, integration_test.IntegrationTest)
+        tr.add_test_class(
+            config1,
+            integration_test.IntegrationTest,
+            class_alias='IntegrationTest-FirstConfig')
+        tr.add_test_class(
+            config2,
+            integration_test.IntegrationTest,
+            class_alias='IntegrationTest-SecondConfig')
         tr.run()
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 2)
@@ -281,6 +287,10 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Passed'], 1)
         self.assertEqual(results['Failed'], 1)
         self.assertEqual(tr.results.failed[0].details, '10 != 42')
+        record1 = tr.results.executed[0]
+        record2 = tr.results.executed[1]
+        self.assertEqual(record1.test_class, 'IntegrationTest-FirstConfig')
+        self.assertEqual(record2.test_class, 'IntegrationTest-SecondConfig')
 
     def test_run_with_abort_all(self):
         mock_test_config = self.base_mock_test_config.copy()
