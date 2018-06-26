@@ -262,8 +262,8 @@ class TestRunnerTest(unittest.TestCase):
         # Tag of the test class defaults to the class name.
         record1 = tr.results.executed[0]
         record2 = tr.results.executed[1]
-        self.assertEqual(record1.test_class, 'IntegrationTest')
-        self.assertEqual(record1.test_class, 'IntegrationTest')
+        self.assertEqual(record1.test_class, 'Integration2Test')
+        self.assertEqual(record2.test_class, 'IntegrationTest')
 
     def test_run_two_test_classes_different_configs_and_aliases(self):
         """Verifies that running more than one test class in one test run with
