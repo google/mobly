@@ -83,7 +83,7 @@ class _InstrumentationKnownStatusKeys(object):
     .. code-block:: none
 
         android.app.Instrumentation
-        android.support.test.internal.runner.listener.InstrumentationResultPrinter
+        androidx.test.internal.runner.listener.InstrumentationResultPrinter
 
     """
 
@@ -117,7 +117,7 @@ class _InstrumentationStatusCodes(object):
 
     .. code-block:: none
 
-        android.support.test.internal.runner.listener.InstrumentationResultPrinter
+        androidx.test.internal.runner.listener.InstrumentationResultPrinter
 
     """
 
