@@ -83,8 +83,10 @@ class _InstrumentationKnownStatusKeys(object):
     .. code-block:: none
 
         android.app.Instrumentation
-        androidx.test.internal.runner.listener.InstrumentationResultPrinter
+        android.support.test.internal.runner.listener.InstrumentationResultPrinter
 
+    Note: android.support.* is in the process of being converted to androidx.*,
+    (https://android-developers.googleblog.com/2018/05/hello-world-androidx.html).
     """
 
     CLASS = 'class'
@@ -117,8 +119,10 @@ class _InstrumentationStatusCodes(object):
 
     .. code-block:: none
 
-        androidx.test.internal.runner.listener.InstrumentationResultPrinter
+        android.support.test.internal.runner.listener.InstrumentationResultPrinter
 
+    Note: android.support.* is in the process of being converted to androidx.*,
+    (https://android-developers.googleblog.com/2018/05/hello-world-androidx.html).
     """
 
     UNKNOWN = None
