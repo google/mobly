@@ -84,8 +84,12 @@ class BaseTestClass(object):
             configs: A config_parser.TestRunConfig object.
         """
         self.tests = []
-        if not self.TAG:
-            self.TAG = self.__class__.__name__
+        self._class_name = self.__class__.__name__
+        if configs.test_class_name_suffix and self.TAG is None:
+            self.TAG = '%s_%s' % (self._class_name,
+                                  configs.test_class_name_suffix)
+        elif self.TAG is None:
+            self.TAG = self._class_name
         # Set params.
         self.log_path = configs.log_path
         self.controller_configs = configs.controller_configs

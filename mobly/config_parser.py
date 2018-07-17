@@ -169,6 +169,9 @@ class TestRunConfig(object):
             modules.
         summary_writer: records.TestSummaryWriter, used to write elements to
             the test result summary file.
+        test_class_name_suffix: string, suffix to append to the class name for
+                reporting. This is used for differentiating the same class
+                executed with different parameters in a suite.
     """
 
     def __init__(self):
@@ -178,6 +181,7 @@ class TestRunConfig(object):
         self.user_params = None
         self.register_controller = None
         self.summary_writer = None
+        self.test_class_name_suffix = None
 
     def copy(self):
         """Returns a deep copy of the current config.

@@ -280,11 +280,11 @@ class TestRunnerTest(unittest.TestCase):
         tr.add_test_class(
             config1,
             integration_test.IntegrationTest,
-            class_alias='IntegrationTest-FirstConfig')
+            name_suffix='FirstConfig')
         tr.add_test_class(
             config2,
             integration_test.IntegrationTest,
-            class_alias='IntegrationTest-SecondConfig')
+            name_suffix='SecondConfig')
         tr.run()
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 2)
@@ -294,8 +294,8 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(tr.results.failed[0].details, '10 != 42')
         record1 = tr.results.executed[0]
         record2 = tr.results.executed[1]
-        self.assertEqual(record1.test_class, 'IntegrationTest-FirstConfig')
-        self.assertEqual(record2.test_class, 'IntegrationTest-SecondConfig')
+        self.assertEqual(record1.test_class, 'IntegrationTest_FirstConfig')
+        self.assertEqual(record2.test_class, 'IntegrationTest_SecondConfig')
 
     def test_run_with_abort_all(self):
         mock_test_config = self.base_mock_test_config.copy()

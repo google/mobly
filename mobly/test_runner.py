@@ -265,10 +265,14 @@ class TestRunner(object):
         run it with.
         """
 
-        def __init__(self, config, test_class, tests=None, class_alias=None):
+        def __init__(self,
+                     config,
+                     test_class,
+                     tests=None,
+                     test_class_name_suffix=None):
             self.config = config
             self.test_class = test_class
-            self.class_alias = class_alias
+            self.test_class_name_suffix = test_class_name_suffix
             self.tests = tests
 
     def __init__(self, log_dir, test_bed_name):
@@ -330,7 +334,7 @@ class TestRunner(object):
         logger.kill_test_logger(logging.getLogger())
         self._log_path = None
 
-    def add_test_class(self, config, test_class, tests=None, class_alias=None):
+    def add_test_class(self, config, test_class, tests=None, name_suffix=None):
         """Adds tests to the execution plan of this TestRunner.
 
         Args:
@@ -339,8 +343,9 @@ class TestRunner(object):
             test_class: class, test class to execute.
             tests: list of strings, optional list of test names within the
                 class to execute.
-            class_alias: string, the alias to refer to the test class with. If
-                not specified, the class's name is used.
+            name_suffix: string, suffix to append to the class name for
+                reporting. This is used for differentiating the same class
+                executed with different parameters in a suite.
 
         Raises:
             Error: if the provided config has a log_path or test_bed_name which
@@ -362,10 +367,9 @@ class TestRunner(object):
                 config=config,
                 test_class=test_class,
                 tests=tests,
-                class_alias=class_alias))
+                test_class_name_suffix=name_suffix))
 
-    def _run_test_class(self, config, test_class, tests=None,
-                        class_alias=None):
+    def _run_test_class(self, config, test_class, tests=None):
         """Instantiates and executes a test class.
 
         If tests is None, the tests listed in self.tests will be executed
@@ -376,12 +380,9 @@ class TestRunner(object):
             config: A config_parser.TestRunConfig object.
             test_class: class, test class to execute.
             tests: Optional list of test names within the class to execute.
-            class_alias: string, the alias to refer to the test class with. If
-                not specified, the class's name is used.
         """
+
         with test_class(config) as test_instance:
-            if class_alias:
-                test_instance.TAG = class_alias
             try:
                 cls_result = test_instance.run(tests)
                 self.results += cls_result
@@ -413,12 +414,12 @@ class TestRunner(object):
                 test_config.register_controller = functools.partial(
                     self._register_controller, test_config)
                 test_config.summary_writer = summary_writer
+                test_config.test_class_name_suffix = test_run_info.test_class_name_suffix
                 try:
                     self._run_test_class(
                         config=test_config,
                         test_class=test_run_info.test_class,
-                        tests=test_run_info.tests,
-                        class_alias=test_run_info.class_alias)
+                        tests=test_run_info.tests)
                 except signals.TestAbortAll as e:
                     logging.warning(
                         'Abort all subsequent test classes. Reason: %s', e)
