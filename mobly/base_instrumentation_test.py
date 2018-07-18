@@ -85,6 +85,8 @@ class _InstrumentationKnownStatusKeys(object):
         android.app.Instrumentation
         android.support.test.internal.runner.listener.InstrumentationResultPrinter
 
+    TODO: Convert android.support.* to androidx.*,
+    (https://android-developers.googleblog.com/2018/05/hello-world-androidx.html).
     """
 
     CLASS = 'class'
@@ -119,6 +121,8 @@ class _InstrumentationStatusCodes(object):
 
         android.support.test.internal.runner.listener.InstrumentationResultPrinter
 
+    TODO: Convert android.support.* to androidx.*,
+    (https://android-developers.googleblog.com/2018/05/hello-world-androidx.html).
     """
 
     UNKNOWN = None
