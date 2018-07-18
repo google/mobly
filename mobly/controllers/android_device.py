@@ -784,7 +784,6 @@ class AndroidDevice(object):
 
     @property
     def is_rootable(self):
-        """Only debuggable builds are rootable."""
         return self.adb.getprop('ro.debuggable') == '1'
 
     @property

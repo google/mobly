@@ -706,7 +706,8 @@ class AndroidDeviceTest(unittest.TestCase):
             self, MockFastboot, MockAdbProxy):
         mock_serial = '1'
         mock_adb_proxy = MockAdbProxy.return_value
-        mock_adb_proxy.getprop.return_value = 'userdebug'
+        # Set getprop to return '1' to indicate the device is rootable.
+        mock_adb_proxy.getprop.return_value = '1'
         mock_adb_proxy.has_shell_command.side_effect = lambda command: {
             'logpersist.start': True,
             'logpersist.stop': True, }[command]
