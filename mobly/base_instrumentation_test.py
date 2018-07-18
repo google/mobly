@@ -85,7 +85,7 @@ class _InstrumentationKnownStatusKeys(object):
         android.app.Instrumentation
         android.support.test.internal.runner.listener.InstrumentationResultPrinter
 
-    Note: android.support.* is in the process of being converted to androidx.*,
+    TODO: Convert android.support.* to androidx.*,
     (https://android-developers.googleblog.com/2018/05/hello-world-androidx.html).
     """
 
@@ -121,7 +121,7 @@ class _InstrumentationStatusCodes(object):
 
         android.support.test.internal.runner.listener.InstrumentationResultPrinter
 
-    Note: android.support.* is in the process of being converted to androidx.*,
+    TODO: Convert android.support.* to androidx.*,
     (https://android-developers.googleblog.com/2018/05/hello-world-androidx.html).
     """
 
