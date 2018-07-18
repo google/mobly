@@ -436,8 +436,9 @@ class AndroidDevice(object):
         self._log_path = os.path.join(self._log_path_base,
                                       'AndroidDevice%s' % self._serial)
         self._debug_tag = self._serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                              {'tag': self.debug_tag})
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
+            'tag': self.debug_tag
+        })
         self.sl4a = None
         self.ed = None
         self._adb_logcat_process = None
@@ -783,15 +784,8 @@ class AndroidDevice(object):
 
     @property
     def is_rootable(self):
-        """If the build type is 'user', the device is not rootable.
-
-        Other possible build types are 'userdebug' and 'eng', both are rootable.
-        We are checking the last four chars of the clean stdout because the
-        stdout of the adb command could be polluted with other info like adb
-        server startup message.
-        """
-        build_type_output = self.adb.getprop('ro.build.type').lower()
-        return build_type_output[-4:] != 'user'
+        """Only debuggable builds are rootable."""
+        return self.adb.getprop('ro.debuggable') == '1'
 
     @property
     def model(self):
