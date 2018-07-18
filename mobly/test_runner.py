@@ -265,9 +265,14 @@ class TestRunner(object):
         run it with.
         """
 
-        def __init__(self, config, test_class, tests=None):
+        def __init__(self,
+                     config,
+                     test_class,
+                     tests=None,
+                     test_class_name_suffix=None):
             self.config = config
             self.test_class = test_class
+            self.test_class_name_suffix = test_class_name_suffix
             self.tests = tests
 
     def __init__(self, log_dir, test_bed_name):
@@ -329,7 +334,7 @@ class TestRunner(object):
         logger.kill_test_logger(logging.getLogger())
         self._log_path = None
 
-    def add_test_class(self, config, test_class, tests=None):
+    def add_test_class(self, config, test_class, tests=None, name_suffix=None):
         """Adds tests to the execution plan of this TestRunner.
 
         Args:
@@ -338,6 +343,9 @@ class TestRunner(object):
             test_class: class, test class to execute.
             tests: list of strings, optional list of test names within the
                 class to execute.
+            name_suffix: string, suffix to append to the class name for
+                reporting. This is used for differentiating the same class
+                executed with different parameters in a suite.
 
         Raises:
             Error: if the provided config has a log_path or test_bed_name which
@@ -356,7 +364,10 @@ class TestRunner(object):
                 (self._test_bed_name, config.test_bed_name))
         self._test_run_infos.append(
             TestRunner._TestRunInfo(
-                config=config, test_class=test_class, tests=tests))
+                config=config,
+                test_class=test_class,
+                tests=tests,
+                test_class_name_suffix=name_suffix))
 
     def _run_test_class(self, config, test_class, tests=None):
         """Instantiates and executes a test class.
@@ -370,6 +381,7 @@ class TestRunner(object):
             test_class: class, test class to execute.
             tests: Optional list of test names within the class to execute.
         """
+
         with test_class(config) as test_instance:
             try:
                 cls_result = test_instance.run(tests)
@@ -402,9 +414,12 @@ class TestRunner(object):
                 test_config.register_controller = functools.partial(
                     self._register_controller, test_config)
                 test_config.summary_writer = summary_writer
+                test_config.test_class_name_suffix = test_run_info.test_class_name_suffix
                 try:
-                    self._run_test_class(test_config, test_run_info.test_class,
-                                         test_run_info.tests)
+                    self._run_test_class(
+                        config=test_config,
+                        test_class=test_run_info.test_class,
+                        tests=test_run_info.tests)
                 except signals.TestAbortAll as e:
                     logging.warning(
                         'Abort all subsequent test classes. Reason: %s', e)
@@ -513,8 +528,8 @@ class TestRunner(object):
             logging.warning('No optional debug info found for controller %s. '
                             'To provide it, implement get_info in this '
                             'controller module.', module_config_name)
-        logging.debug('Found %d objects for controller %s',
-                      len(objects), module_config_name)
+        logging.debug('Found %d objects for controller %s', len(objects),
+                      module_config_name)
         destroy_func = module.destroy
         self._controller_destructors[module_ref_name] = destroy_func
         return objects
