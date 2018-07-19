@@ -257,7 +257,7 @@ class JsonRpcClientBase(object):
         """
         try:
             response = self._client.readline()
-            self.log.debug('Snippet received: %s', response, encoding='utf8')
+            self.log.debug('Snippet received: %s', response)
             return response
         except socket.error as e:
             raise Error(
