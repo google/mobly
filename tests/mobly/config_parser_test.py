@@ -56,6 +56,11 @@ class OutputTest(unittest.TestCase):
         config = config_parser._load_config_file(tmp_file_path)
         self.assertEqual(config['TestBeds'][0]['Name'], u'\u901a')
 
+    def test_run_config_type(self):
+        config = config_parser.TestRunConfig()
+        self.assertNotIn('summary_writer', str(config))
+        self.assertNotIn('register_controller', str(config))
+
 
 if __name__ == "__main__":
     unittest.main()
