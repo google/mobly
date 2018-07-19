@@ -16,6 +16,7 @@ from builtins import str
 
 import copy
 import io
+import pprint
 import os
 import yaml
 
@@ -189,4 +190,7 @@ class TestRunConfig(object):
         return copy.deepcopy(self)
 
     def __str__(self):
-        return str(self.__dict__)
+        content = dict(self.__dict__)
+        content.pop('summary_writer')
+        content.pop('register_controller')
+        return pprint.pformat(content)
