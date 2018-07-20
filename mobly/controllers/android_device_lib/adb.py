@@ -86,14 +86,25 @@ def list_occupied_adb_ports():
     Returns:
         A list of integers representing occupied host ports.
     """
-    out = AdbProxy().forward('--list')
-    clean_lines = str(out, 'utf-8').strip().split('\n')
+    serials = []
+    dout = AdbProxy().devices()
+    devices_lines = str(dout, 'utf-8').strip().split('\n')
+    for ds in devices_lines[1:]:
+        d = ds.split('\t')[0].strip()
+        serials.append(d)
+
     used_ports = []
-    for line in clean_lines:
-        tokens = line.split(' tcp:')
-        if len(tokens) != 3:
-            continue
-        used_ports.append(int(tokens[1]))
+
+    for serial in serials:
+        out = AdbProxy(serial).forward('--list')
+        clean_lines = str(out, 'utf-8').strip().split('\n')
+
+        for line in clean_lines:
+            tokens = line.split(' tcp:')
+            if len(tokens) != 3:
+                continue
+            used_ports.append(int(tokens[1]))
+
     return used_ports
 
 
