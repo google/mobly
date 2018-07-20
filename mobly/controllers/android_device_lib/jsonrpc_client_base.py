@@ -19,7 +19,7 @@ The JSON protocol expected by this module is:
 
     Request:
     {
-        "id": <monotonically increasing integer containing the ID of 
+        "id": <monotonically increasing integer containing the ID of
                this request>
         "method": <string containing the name of the method to execute>
         "params": <JSON array containing the arguments to the method>
@@ -239,6 +239,7 @@ class JsonRpcClientBase(object):
         try:
             self._client.write(msg.encode("utf8") + b'\n')
             self._client.flush()
+            self.log.debug('Snippet sent %s.', msg)
         except socket.error as e:
             raise Error(
                 self._ad,
@@ -255,7 +256,9 @@ class JsonRpcClientBase(object):
             Error: a socket error occurred during the read.
         """
         try:
-            return self._client.readline()
+            response = self._client.readline()
+            self.log.debug('Snippet received: %s', response)
+            return response
         except socket.error as e:
             raise Error(
                 self._ad,
@@ -299,7 +302,7 @@ class JsonRpcClientBase(object):
         if not response:
             raise ProtocolError(self._ad,
                                 ProtocolError.NO_RESPONSE_FROM_SERVER)
-        result = json.loads(str(response, encoding="utf8"))
+        result = json.loads(str(response, encoding='utf8'))
         if result['error']:
             raise ApiError(self._ad, result['error'])
         if result['id'] != apiid:
