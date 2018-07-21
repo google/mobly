@@ -31,8 +31,8 @@ from mobly import utils
 TEST_CASE_TOKEN = '[Test]'
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + ' %s %s'
 
-TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{test_name}]#{stage_name} BEGIN >>>'
-TEST_STAGE_END_LOG_TEMPLATE = '[{test_name}]#{stage_name} END   <<<'
+TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{test_name}]#{stage_name} >>> BEGIN >>>'
+TEST_STAGE_END_LOG_TEMPLATE = '[{test_name}]#{stage_name} <<< END <<<'
 
 
 class Error(Exception):
