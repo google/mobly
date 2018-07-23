@@ -432,7 +432,7 @@ class AndroidDevice(object):
     def _normalized_serial(self):
         """Sanitized serial name for usage in log filename.
 
-        Android emulators use ip:port as their serial names, while on Windows `:` is not
+        Some Android emulators use ip:port as their serial names, while on Windows `:` is not
         valid in filename, it should be sanitized first.
         """
         if self._serial is None:
