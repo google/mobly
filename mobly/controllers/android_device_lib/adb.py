@@ -90,8 +90,12 @@ def list_occupied_adb_ports():
     dout = AdbProxy().devices()
     devices_lines = str(dout, 'utf-8').strip().split('\n')
     for ds in devices_lines[1:]:
-        d = ds.split('\t')[0].strip()
-        serials.append(d)
+        toks = ds.split('\t')
+        if len(toks) != 2:
+            continue
+        d = toks[0].strip()
+        if d != '':
+            serials.append(d)
 
     used_ports = []
 
