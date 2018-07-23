@@ -1630,6 +1630,35 @@ class BaseTestTest(unittest.TestCase):
         bc.unpack_userparams(arg1="haha")
         self.assertEqual(bc.arg1, "haha")
 
+    def test_setup_generated_tests_failure(self):
+        """Test code path for setup_generated_tests failure.
+
+        When setup_generated_tests fails, pre-execution calculation is
+        incomplete and the number of tests requested is unknown. This is a
+        fatal issue that blocks any test execution in a class.
+
+        A class level error record is generated.
+        Unlike `setup_class` failure, no test is considered "skipped" in this
+        case as execution stage never started.
+        """
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_generated_tests(self):
+                raise Exception(MSG_EXPECTED_EXCEPTION)
+
+            def logic(self, a, b):
+                pass
+
+            def test_foo(self):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        self.assertEqual(len(bt_cls.results.requested), 0)
+        class_record = bt_cls.results.error[0]
+        self.assertEqual(class_record.test_name, 'setup_generated_tests')
+        self.assertEqual(bt_cls.results.skipped, [])
+
     def test_generate_tests_run(self):
         class MockBaseTest(base_test.BaseTestClass):
             def setup_generated_tests(self):
