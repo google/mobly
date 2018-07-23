@@ -432,7 +432,6 @@ class AndroidDevice(object):
     def normalized_serial(self):
         if self._serial is None:
             return None
-        
         n = self._serial.replace(' ', '_')
         n = n.replace(':', '-')
         return n
