@@ -181,7 +181,7 @@ class BaseTestClass(object):
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
             stage_name, self.log_path, record)
         try:
-            with self.log_test_stage(stage_name):
+            with self._log_test_stage(stage_name):
                 self.setup_generated_tests()
         except Exception as e:
             logging.exception('%s failed for %s.', stage_name, self.TAG)
@@ -206,7 +206,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
         """
-        with self.log_test_stage(STAGE_NAME_SETUP_CLASS):
+        with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
             self.setup_class()
 
     def setup_class(self):
@@ -228,7 +228,7 @@ class BaseTestClass(object):
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
             stage_name, self.log_path, record)
         try:
-            with self.log_test_stage(stage_name):
+            with self._log_test_stage(stage_name):
                 self.teardown_class()
         except signals.TestAbortAll as e:
             setattr(e, 'results', self.results)
@@ -249,7 +249,7 @@ class BaseTestClass(object):
         """
 
     @contextlib.contextmanager
-    def log_test_stage(self, stage_name):
+    def _log_test_stage(self, stage_name):
         """Logs the begin and end of a test stage.
 
         This context adds two log lines meant for clarifying the boundary of
@@ -277,7 +277,7 @@ class BaseTestClass(object):
         called.
         """
         self.current_test_name = test_name
-        with self.log_test_stage(STAGE_NAME_SETUP_TEST):
+        with self._log_test_stage(STAGE_NAME_SETUP_TEST):
             self.setup_test()
 
     def setup_test(self):
@@ -293,7 +293,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of teardown_test
         is called.
         """
-        with self.log_test_stage(STAGE_NAME_TEARDOWN_TEST):
+        with self._log_test_stage(STAGE_NAME_TEARDOWN_TEST):
             self.teardown_test()
 
     def teardown_test(self):
@@ -392,7 +392,7 @@ class BaseTestClass(object):
         """
         func_name = func.__name__
         procedure_name = func_name[1:] if func_name[0] == '_' else func_name
-        with self.log_test_stage(procedure_name):
+        with self._log_test_stage(procedure_name):
             try:
                 # Pass a copy of the record instead of the actual object so that it
                 # will not be modified.
