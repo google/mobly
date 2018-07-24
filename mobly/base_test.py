@@ -27,19 +27,19 @@ from mobly import runtime_test_info
 from mobly import signals
 from mobly import utils
 
-# Macro strings for test result reporting
+# Macro strings for test result reporting.
 TEST_CASE_TOKEN = '[Test]'
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + ' %s %s'
 
 TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{parent_token}]#{child_token} >>> BEGIN >>>'
 TEST_STAGE_END_LOG_TEMPLATE = '[{parent_token}]#{child_token} <<< END <<<'
 
-# Names of execution stages.
+# Names of execution stages, in the order they happen during test runs.
 STAGE_NAME_SETUP_GENERATED_TESTS = 'setup_generated_tests'
 STAGE_NAME_SETUP_CLASS = 'setup_class'
-STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
 STAGE_NAME_SETUP_TEST = 'setup_test'
 STAGE_NAME_TEARDOWN_TEST = 'teardown_test'
+STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
 
 
 class Error(Exception):
