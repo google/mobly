@@ -34,9 +34,12 @@ RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + ' %s %s'
 TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{parent_token}]#{child_token} >>> BEGIN >>>'
 TEST_STAGE_END_LOG_TEMPLATE = '[{parent_token}]#{child_token} <<< END <<<'
 
+# Names of execution stages.
 STAGE_NAME_SETUP_GENERATED_TESTS = 'setup_generated_tests'
 STAGE_NAME_SETUP_CLASS = 'setup_class'
 STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
+STAGE_NAME_SETUP_TEST = 'setup_test'
+STAGE_NAME_TEARDOWN_TEST = 'teardown_test'
 
 
 class Error(Exception):
@@ -274,7 +277,7 @@ class BaseTestClass(object):
         called.
         """
         self.current_test_name = test_name
-        with self.log_test_stage('setup_test'):
+        with self.log_test_stage(STAGE_NAME_SETUP_TEST):
             self.setup_test()
 
     def setup_test(self):
@@ -290,7 +293,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of teardown_test
         is called.
         """
-        with self.log_test_stage('teardown_test'):
+        with self.log_test_stage(STAGE_NAME_TEARDOWN_TEST):
             self.teardown_test()
 
     def teardown_test(self):
@@ -469,7 +472,7 @@ class BaseTestClass(object):
                 except Exception as e:
                     logging.exception(e)
                     tr_record.test_error()
-                    tr_record.add_error('teardown_test', e)
+                    tr_record.add_error(STAGE_NAME_TEARDOWN_TEST, e)
                     teardown_test_failed = True
                 else:
                     # Check if anything failed by `expects`.
