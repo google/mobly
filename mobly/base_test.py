@@ -174,6 +174,9 @@ class BaseTestClass(object):
     def _setup_generated_tests(self):
         """Proxy function to guarantee the base implementation of
         setup_generated_tests is called.
+
+        Returns:
+            True if setup is successful, False otherwise.
         """
         stage_name = STAGE_NAME_SETUP_GENERATED_TESTS
         record = records.TestResultRecord(stage_name, self.TAG)
@@ -183,13 +186,14 @@ class BaseTestClass(object):
         try:
             with self._log_test_stage(stage_name):
                 self.setup_generated_tests()
+                return True
         except Exception as e:
             logging.exception('%s failed for %s.', stage_name, self.TAG)
             record.test_error(e)
             self.results.add_class_error(record)
             self.summary_writer.dump(record.to_dict(),
                                      records.TestSummaryEntryType.RECORD)
-            return self.results
+            return False
 
     def setup_generated_tests(self):
         """Preprocesses that need to be done before setup_class.
@@ -668,9 +672,8 @@ class BaseTestClass(object):
             The test results object of this class.
         """
         # Executes pre-setup procedures, like generating test methods.
-        generated_test_ret = self._setup_generated_tests()
-        if generated_test_ret is not None:
-            return generated_test_ret
+        if not self._setup_generated_tests():
+            return self.results
         logging.info('==========> %s <==========', self.TAG)
         # Devise the actual test methods to run in the test class.
         if not test_names:
@@ -699,7 +702,7 @@ class BaseTestClass(object):
             except Exception as e:
                 # Setup class failed for unknown reasons.
                 # Fail the class and skip all tests.
-                logging.exception('Error in setup_class of %s.', self.TAG)
+                logging.exception('Error in %s#setup_class.', self.TAG)
                 class_record.test_error(e)
                 self.results.add_class_error(class_record)
                 self.summary_writer.dump(class_record.to_dict(),
