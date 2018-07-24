@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import collections
+import contextlib
 import copy
 import functools
 import inspect
@@ -26,9 +27,19 @@ from mobly import runtime_test_info
 from mobly import signals
 from mobly import utils
 
-# Macro strings for test result reporting
+# Macro strings for test result reporting.
 TEST_CASE_TOKEN = '[Test]'
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + ' %s %s'
+
+TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{parent_token}]#{child_token} >>> BEGIN >>>'
+TEST_STAGE_END_LOG_TEMPLATE = '[{parent_token}]#{child_token} <<< END <<<'
+
+# Names of execution stages, in the order they happen during test runs.
+STAGE_NAME_SETUP_GENERATED_TESTS = 'setup_generated_tests'
+STAGE_NAME_SETUP_CLASS = 'setup_class'
+STAGE_NAME_SETUP_TEST = 'setup_test'
+STAGE_NAME_TEARDOWN_TEST = 'teardown_test'
+STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
 
 
 class Error(Exception):
@@ -160,6 +171,30 @@ class BaseTestClass(object):
                 logging.warning('Missing optional user param "%s" in '
                                 'configuration, continue.', name)
 
+    def _setup_generated_tests(self):
+        """Proxy function to guarantee the base implementation of
+        setup_generated_tests is called.
+
+        Returns:
+            True if setup is successful, False otherwise.
+        """
+        stage_name = STAGE_NAME_SETUP_GENERATED_TESTS
+        record = records.TestResultRecord(stage_name, self.TAG)
+        record.test_begin()
+        self.current_test_info = runtime_test_info.RuntimeTestInfo(
+            stage_name, self.log_path, record)
+        try:
+            with self._log_test_stage(stage_name):
+                self.setup_generated_tests()
+                return True
+        except Exception as e:
+            logging.exception('%s failed for %s.', stage_name, self.TAG)
+            record.test_error(e)
+            self.results.add_class_error(record)
+            self.summary_writer.dump(record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
+            return False
+
     def setup_generated_tests(self):
         """Preprocesses that need to be done before setup_class.
 
@@ -175,7 +210,8 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
         """
-        self.setup_class()
+        with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
+            self.setup_class()
 
     def setup_class(self):
         """Setup function that will be called before executing any test in the
@@ -190,15 +226,19 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of
         teardown_class is called.
         """
-        record = records.TestResultRecord('teardown_class', self.TAG)
+        stage_name = STAGE_NAME_TEARDOWN_CLASS
+        record = records.TestResultRecord(stage_name, self.TAG)
         record.test_begin()
+        self.current_test_info = runtime_test_info.RuntimeTestInfo(
+            stage_name, self.log_path, record)
         try:
-            self.teardown_class()
+            with self._log_test_stage(stage_name):
+                self.teardown_class()
         except signals.TestAbortAll as e:
             setattr(e, 'results', self.results)
             raise
         except Exception as e:
-            logging.exception('Error encountered in teardown_class.')
+            logging.exception('Error encountered in %s.', stage_name)
             record.test_error(e)
             record.update_record()
             self.results.add_class_error(record)
@@ -212,12 +252,37 @@ class BaseTestClass(object):
         Implementation is optional.
         """
 
+    @contextlib.contextmanager
+    def _log_test_stage(self, stage_name):
+        """Logs the begin and end of a test stage.
+
+        This context adds two log lines meant for clarifying the boundary of
+        each execution stage in Mobly log.
+
+        Args:
+            stage_name: string, name of the stage to log.
+        """
+        parent_token = self.current_test_info.name
+        # If the name of the stage is the same as the test name, in which case
+        # the stage is class-level instead of test-level, use the class's
+        # reference tag as the parent token instead.
+        if parent_token == stage_name:
+            parent_token = self.TAG
+        logging.debug(
+            TEST_STAGE_BEGIN_LOG_TEMPLATE.format(
+                parent_token=parent_token, child_token=stage_name))
+        yield
+        logging.debug(
+            TEST_STAGE_END_LOG_TEMPLATE.format(
+                parent_token=parent_token, child_token=stage_name))
+
     def _setup_test(self, test_name):
         """Proxy function to guarantee the base implementation of setup_test is
         called.
         """
         self.current_test_name = test_name
-        self.setup_test()
+        with self._log_test_stage(STAGE_NAME_SETUP_TEST):
+            self.setup_test()
 
     def setup_test(self):
         """Setup function that will be called every time before executing each
@@ -232,7 +297,8 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of teardown_test
         is called.
         """
-        self.teardown_test()
+        with self._log_test_stage(STAGE_NAME_TEARDOWN_TEST):
+            self.teardown_test()
 
     def teardown_test(self):
         """Teardown function that will be called every time a test method has
@@ -250,7 +316,6 @@ class BaseTestClass(object):
                     this test, containing all information of the test execution
                     including exception objects.
         """
-        logging.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
         self.on_fail(record)
 
     def on_fail(self, record):
@@ -276,7 +341,6 @@ class BaseTestClass(object):
         msg = record.details
         if msg:
             logging.info(msg)
-        logging.info(RESULT_LINE_TEMPLATE, record.test_name, record.result)
         self.on_pass(record)
 
     def on_pass(self, record):
@@ -330,19 +394,20 @@ class BaseTestClass(object):
             tr_record: The TestResultRecord object associated with the test
                 executed.
         """
-        try:
-            # Pass a copy of the record instead of the actual object so that it
-            # will not be modified.
-            func(copy.deepcopy(tr_record))
-        except signals.TestAbortSignal:
-            raise
-        except Exception as e:
-            func_name = func.__name__
-            if func_name.startswith('_'):
-                func_name = func_name[1:]
-            logging.exception('Exception happened when executing %s for %s.',
-                              func_name, self.current_test_name)
-            tr_record.add_error(func_name, e)
+        func_name = func.__name__
+        procedure_name = func_name[1:] if func_name[0] == '_' else func_name
+        with self._log_test_stage(procedure_name):
+            try:
+                # Pass a copy of the record instead of the actual object so that it
+                # will not be modified.
+                func(copy.deepcopy(tr_record))
+            except signals.TestAbortSignal:
+                raise
+            except Exception as e:
+                logging.exception(
+                    'Exception happened when executing %s for %s.',
+                    procedure_name, self.current_test_name)
+                tr_record.add_error(procedure_name, e)
 
     def record_data(self, content):
         """Record an entry in test summary file.
@@ -411,7 +476,7 @@ class BaseTestClass(object):
                 except Exception as e:
                     logging.exception(e)
                     tr_record.test_error()
-                    tr_record.add_error('teardown_test', e)
+                    tr_record.add_error(STAGE_NAME_TEARDOWN_TEST, e)
                     teardown_test_failed = True
                 else:
                     # Check if anything failed by `expects`.
@@ -452,6 +517,8 @@ class BaseTestClass(object):
                 elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
                     self._exec_procedure_func(self._on_skip, tr_record)
             finally:
+                logging.info(RESULT_LINE_TEMPLATE, tr_record.test_name,
+                             tr_record.result)
                 self.results.add_record(tr_record)
                 self.summary_writer.dump(tr_record.to_dict(),
                                          records.TestSummaryEntryType.RECORD)
@@ -487,7 +554,7 @@ class BaseTestClass(object):
             arg_sets: a list of tuples, each tuple is a set of arguments to be
                 passed to the test logic function and name function.
         """
-        self._assert_function_name_in_stack('setup_generated_tests')
+        self._assert_function_name_in_stack(STAGE_NAME_SETUP_GENERATED_TESTS)
         for args in arg_sets:
             test_name = name_func(*args)
             if test_name in self.get_existing_test_names():
@@ -605,17 +672,7 @@ class BaseTestClass(object):
             The test results object of this class.
         """
         # Executes pre-setup procedures, like generating test methods.
-        try:
-            self.setup_generated_tests()
-        except Exception as e:
-            logging.exception('Pre-setup processes failed for %s.', self.TAG)
-            class_record = records.TestResultRecord('setup_generated_tests',
-                                                    self.TAG)
-            class_record.test_begin()
-            class_record.test_error(e)
-            self.results.add_class_error(class_record)
-            self.summary_writer.dump(class_record.to_dict(),
-                                     records.TestSummaryEntryType.RECORD)
+        if not self._setup_generated_tests():
             return self.results
         logging.info('==========> %s <==========', self.TAG)
         # Devise the actual test methods to run in the test class.
@@ -632,10 +689,11 @@ class BaseTestClass(object):
         tests = self._get_test_methods(test_names)
         try:
             # Setup for the class.
-            class_record = records.TestResultRecord('setup_class', self.TAG)
+            class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS,
+                                                    self.TAG)
             class_record.test_begin()
             self.current_test_info = runtime_test_info.RuntimeTestInfo(
-                'setup_class', self.log_path, class_record)
+                STAGE_NAME_SETUP_CLASS, self.log_path, class_record)
             try:
                 self._setup_class()
             except signals.TestAbortSignal:
@@ -644,7 +702,7 @@ class BaseTestClass(object):
             except Exception as e:
                 # Setup class failed for unknown reasons.
                 # Fail the class and skip all tests.
-                logging.exception('Error in setup_class %s.', self.TAG)
+                logging.exception('Error in %s#setup_class.', self.TAG)
                 class_record.test_error(e)
                 self.results.add_class_error(class_record)
                 self.summary_writer.dump(class_record.to_dict(),
