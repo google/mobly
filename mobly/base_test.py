@@ -31,8 +31,12 @@ from mobly import utils
 TEST_CASE_TOKEN = '[Test]'
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + ' %s %s'
 
-TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{test_name}]#{stage_name} >>> BEGIN >>>'
-TEST_STAGE_END_LOG_TEMPLATE = '[{test_name}]#{stage_name} <<< END <<<'
+TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{parent_token}]#{child_token} >>> BEGIN >>>'
+TEST_STAGE_END_LOG_TEMPLATE = '[{parent_token}]#{child_token} <<< END <<<'
+
+STAGE_NAME_SETUP_GENERATED_TESTS = 'setup_generated_tests'
+STAGE_NAME_SETUP_CLASS = 'setup_class'
+STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
 
 
 class Error(Exception):
@@ -168,7 +172,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of
         setup_generated_tests is called.
         """
-        stage_name = 'setup_generated_tests'
+        stage_name = STAGE_NAME_SETUP_GENERATED_TESTS
         record = records.TestResultRecord(stage_name, self.TAG)
         record.test_begin()
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
@@ -199,7 +203,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
         """
-        with self.log_test_stage('setup_class'):
+        with self.log_test_stage(STAGE_NAME_SETUP_CLASS):
             self.setup_class()
 
     def setup_class(self):
@@ -215,7 +219,7 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of
         teardown_class is called.
         """
-        stage_name = 'teardown_class'
+        stage_name = STAGE_NAME_TEARDOWN_CLASS
         record = records.TestResultRecord(stage_name, self.TAG)
         record.test_begin()
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
@@ -243,16 +247,27 @@ class BaseTestClass(object):
 
     @contextlib.contextmanager
     def log_test_stage(self, stage_name):
-        test_name = self.current_test_info.name
-        if test_name == stage_name:
-            test_name = self.TAG
+        """Logs the begin and end of a test stage.
+
+        This context adds two log lines meant for clarifying the boundary of
+        each execution stage in Mobly log.
+
+        Args:
+            stage_name: string, name of the stage to log.
+        """
+        parent_token = self.current_test_info.name
+        # If the name of the stage is the same as the test name, in which case
+        # the stage is class-level instead of test-level, use the class's
+        # reference tag as the parent token instead.
+        if parent_token == stage_name:
+            parent_token = self.TAG
         logging.debug(
             TEST_STAGE_BEGIN_LOG_TEMPLATE.format(
-                test_name=test_name, stage_name=stage_name))
+                parent_token=parent_token, child_token=stage_name))
         yield
         logging.debug(
             TEST_STAGE_END_LOG_TEMPLATE.format(
-                test_name=test_name, stage_name=stage_name))
+                parent_token=parent_token, child_token=stage_name))
 
     def _setup_test(self, test_name):
         """Proxy function to guarantee the base implementation of setup_test is
@@ -532,7 +547,7 @@ class BaseTestClass(object):
             arg_sets: a list of tuples, each tuple is a set of arguments to be
                 passed to the test logic function and name function.
         """
-        self._assert_function_name_in_stack('setup_generated_tests')
+        self._assert_function_name_in_stack(STAGE_NAME_SETUP_GENERATED_TESTS)
         for args in arg_sets:
             test_name = name_func(*args)
             if test_name in self.get_existing_test_names():
@@ -668,10 +683,11 @@ class BaseTestClass(object):
         tests = self._get_test_methods(test_names)
         try:
             # Setup for the class.
-            class_record = records.TestResultRecord('setup_class', self.TAG)
+            class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS,
+                                                    self.TAG)
             class_record.test_begin()
             self.current_test_info = runtime_test_info.RuntimeTestInfo(
-                'setup_class', self.log_path, class_record)
+                STAGE_NAME_SETUP_CLASS, self.log_path, class_record)
             try:
                 self._setup_class()
             except signals.TestAbortSignal:
