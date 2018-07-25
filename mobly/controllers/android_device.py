@@ -446,8 +446,9 @@ class AndroidDevice(object):
         self._serial = str(serial)
         # logging.log_path only exists when this is used in an Mobly test run.
         self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
-        self._log_path = os.path.join(self._log_path_base,
-                                      'AndroidDevice%s' % self._normalized_serial)
+        self._log_path = os.path.join(
+            self._log_path_base,
+            'AndroidDevice%s' % self._normalized_serial)
         self._debug_tag = self._serial
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
             'tag': self.debug_tag
