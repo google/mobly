@@ -430,8 +430,8 @@ class AndroidDevice(object):
     """
 
     @property
-    def normalized_serial(self):
-        """Sanitized serial name for usage in log filename.
+    def _normalized_serial(self):
+        """Normalized serial name for usage in log filename.
 
         Some Android emulators use ip:port as their serial names, while on Windows `:` is not
         valid in filename, it should be sanitized first.
@@ -447,7 +447,7 @@ class AndroidDevice(object):
         # logging.log_path only exists when this is used in an Mobly test run.
         self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self._log_path = os.path.join(self._log_path_base,
-                                      'AndroidDevice%s' % self.normalized_serial)
+                                      'AndroidDevice%s' % self._normalized_serial)
         self._debug_tag = self._serial
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
             'tag': self.debug_tag
@@ -1038,7 +1038,7 @@ class AndroidDevice(object):
 
         self._enable_logpersist()
 
-        f_name = 'adblog,%s,%s.txt' % (self.model, self.normalized_serial)
+        f_name = 'adblog,%s,%s.txt' % (self.model, self._normalized_serial)
         utils.create_dir(self.log_path)
         logcat_file_path = os.path.join(self.log_path, f_name)
         try:
@@ -1093,7 +1093,7 @@ class AndroidDevice(object):
         else:
             br_path = os.path.join(self.log_path, 'BugReports')
         utils.create_dir(br_path)
-        base_name = ',%s,%s.txt' % (begin_time, self.normalized_serial)
+        base_name = ',%s,%s.txt' % (begin_time, self._normalized_serial)
         if new_br:
             base_name = base_name.replace('.txt', '.zip')
         test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
