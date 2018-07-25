@@ -528,6 +528,22 @@ class AndroidDeviceTest(unittest.TestCase):
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('127.0.0.1:5557'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('127.0.0.1:5557'))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_with_reserved_character_in_serial_log_path(
+            self, stop_proc_mock, start_proc_mock, FastbootProxy,
+            MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='127.0.0.1:5557')
+        base_log_path = os.path.basename(ad.log_path)
+        self.assertEqual(base_log_path, 'AndroidDevice127.0.0.1-5557')
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
         return_value=mock_android_device.MockAdbProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
