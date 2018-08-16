@@ -230,7 +230,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         cmd_setsid = '%s am instrument -w -e action start %s/%s' % (
             snippet_client._SETSID_COMMAND, MOCK_PACKAGE_NAME,
             snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
-        mock_do_start_app.assert_has_calls(mock.call(cmd_setsid))
+        mock_do_start_app.assert_has_calls([mock.call(cmd_setsid)])
 
         # Test 'setsid' does not exist, but 'nohup' exsits
         client = self._make_client()
