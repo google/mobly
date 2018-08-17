@@ -3,7 +3,7 @@
 
 ## Mobly Release 1.7.5: Dependency Cleanup
 
-### New
+### Fixes
 * Only install test dependencies when running the unit tests.
 * Limit `CallbackHandler.waitForEvent` to the max rpc timeout.
 
