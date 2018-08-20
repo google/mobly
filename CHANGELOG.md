@@ -5,7 +5,8 @@
 
 ### Fixes
 * Only install test dependencies when running the unit tests.
-* Limit `CallbackHandler.waitForEvent` to the max rpc timeout.
+* Allow `CallbackHandler.waitForEvent` to wait for longer than the max rpc
+  timeout.
 
 [Full list of changes.](https://github.com/google/mobly/milestone/19?closed=1)
 
