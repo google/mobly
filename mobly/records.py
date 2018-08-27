@@ -21,6 +21,7 @@ import io
 import logging
 import sys
 import threading
+import time
 import traceback
 import yaml
 
@@ -52,7 +53,7 @@ class TestSummaryEntryType(enum.Enum):
     RECORD = 'Record'
     # A summary of the test run stats, e.g. how many test failed.
     SUMMARY = 'Summary'
-    # Information on the controllers used in the test.
+    # Information on the controllers used in a test class.
     CONTROLLER_INFO = 'ControllerInfo'
     # Additional data added by users during test.
     # This can be added at any point in the test, so do not assume the location
@@ -155,8 +156,34 @@ class TestResultEnums(object):
     TEST_RESULT_ERROR = 'ERROR'
 
 
+class ControllerInfoRecord(object):
+    """A record representing the controller info in test results."""
+
+    KEY_TEST_CLASS = TestResultEnums.RECORD_CLASS
+    KEY_CONTROLLER_NAME = 'Controller Name'
+    KEY_CONTROLLER_INFO = 'Controller Info'
+    KEY_TIMESTAMP = 'Timestamp'
+
+    def __init__(self, test_class, controller_name, info):
+        self.test_class = test_class
+        self.controller_name = controller_name
+        self.controller_info = info
+        self.timestamp = time.time()
+
+    def to_dict(self):
+        result = {}
+        result[self.KEY_TEST_CLASS] = self.test_class
+        result[self.KEY_CONTROLLER_NAME] = self.controller_name
+        result[self.KEY_CONTROLLER_INFO] = self.controller_info
+        result[self.KEY_TIMESTAMP] = self.timestamp
+        return result
+
+    def __repr__(self):
+        return str(self.to_dict())
+
+
 class ExceptionRecord(object):
-    """A wrapper class for representing exception objects in TestResultRecord.
+    """A record representing exception objects in TestResultRecord.
 
     Attributes:
         exception: Exception object, the original Exception.
@@ -235,7 +262,7 @@ class ExceptionRecord(object):
         result = ExceptionRecord(exception, self.position)
         result.stacktrace = self.stacktrace
         result.details = self.details
-        result.extras = self.extras
+        result.extras = copy.deepcopy(self.extras)
         result.position = self.position
         return result
 
@@ -447,13 +474,14 @@ class TestResult(object):
     This class is essentially a container of TestResultRecord objects.
 
     Attributes:
-        self.requested: A list of strings, each is the name of a test requested
+        requested: A list of strings, each is the name of a test requested
             by user.
-        self.failed: A list of records for tests failed.
-        self.executed: A list of records for tests that were actually executed.
-        self.passed: A list of records for tests passed.
-        self.skipped: A list of records for tests skipped.
-        self.error: A list of records for tests with error result token.
+        failed: A list of records for tests failed.
+        executed: A list of records for tests that were actually executed.
+        passed: A list of records for tests passed.
+        skipped: A list of records for tests skipped.
+        error: A list of records for tests with error result token.
+        controller_info: list of ControllerInfoRecord.
     """
 
     def __init__(self):
@@ -463,7 +491,7 @@ class TestResult(object):
         self.passed = []
         self.skipped = []
         self.error = []
-        self.controller_info = {}
+        self.controller_info = []
 
     def __add__(self, r):
         """Overrides '+' operator for TestResult class.
@@ -486,12 +514,6 @@ class TestResult(object):
             l_value = getattr(self, name)
             if isinstance(r_value, list):
                 setattr(sum_result, name, l_value + r_value)
-            elif isinstance(r_value, dict):
-                # '+' operator for TestResult is only valid when multiple
-                # TestResult objs were created in the same test run, use the
-                # r-value which is more up to date.
-                # TODO(xpconanfan): have a better way to validate this situation.
-                setattr(sum_result, name, r_value)
         return sum_result
 
     def add_record(self, record):
@@ -517,15 +539,26 @@ class TestResult(object):
         else:
             self.error.append(record)
 
-    def add_controller_info(self, name, info):
+    def add_controller_info(self, test_class, controller_name,
+                            controller_info):
+        """Adds controller info to results.
+
+        Args:
+            test_class: string, a tag for identifying a class. This should be
+                the test class's own `TAG` attribute.
+            controller_name: string, name of the controller.
+            controller_info: yaml serializable info about the controller.
+        """
+        info = controller_info
         try:
-            yaml.dump(info)
+            yaml.dump(controller_info)
         except TypeError:
-            logging.warning('Controller info for %s is not YAML serializable!'
-                            ' Coercing it to string.' % name)
-            self.controller_info[name] = str(info)
-            return
-        self.controller_info[name] = info
+            logging.warning('The info of controller %s in class "%s" is not '
+                            'YAML serializable! Coercing it to string.',
+                            controller_name, test_class)
+            info = str(controller_info)
+        self.controller_info.append(
+            ControllerInfoRecord(test_class, controller_name, info))
 
     def add_class_error(self, test_record):
         """Add a record to indicate a test class has failed before any test

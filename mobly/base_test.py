@@ -134,8 +134,8 @@ class BaseTestClass(object):
         self.current_test_name = None
         self._generated_test_table = collections.OrderedDict()
         # Controller object management.
-        self._controller_registry = {}
-        self._controller_destructors = {}
+        self._controller_registry = {}  # controller_name: objects
+        self._controller_modules = {}  # controller_name: module
 
     def __enter__(self):
         return self
@@ -312,22 +312,9 @@ class BaseTestClass(object):
         # Save a shallow copy of the list for internal usage, so tests can't
         # affect internal registry by manipulating the object list.
         self._controller_registry[module_ref_name] = copy.copy(objects)
-        # Collect controller information and write to test result.
-        # Implementation of 'get_info' is optional for a controller module.
-        if hasattr(module, 'get_info'):
-            controller_info = module.get_info(copy.copy(objects))
-            logging.debug('Controller %s: %s', module_config_name,
-                          controller_info)
-            self.results.add_controller_info(module_config_name,
-                                             controller_info)
-        else:
-            logging.warning('No optional debug info found for controller %s. '
-                            'To provide it, implement get_info in this '
-                            'controller module.', module_config_name)
         logging.debug('Found %d objects for controller %s', len(objects),
                       module_config_name)
-        destroy_func = module.destroy
-        self._controller_destructors[module_ref_name] = destroy_func
+        self._controller_modules[module_ref_name] = module
         return objects
 
     def _unregister_controllers(self):
@@ -337,14 +324,28 @@ class BaseTestClass(object):
         """
         # TODO(xpconanfan): actually record these errors instead of just
         # logging them.
-        for name, destroy in self._controller_destructors.items():
+        for name, module in self._controller_modules.items():
             try:
                 logging.debug('Destroying %s.', name)
-                destroy(self._controller_registry[name])
+                module.destroy(self._controller_registry[name])
             except:
                 logging.exception('Exception occurred destroying %s.', name)
         self._controller_registry = {}
-        self._controller_destructors = {}
+        self._controller_modules = {}
+
+    def _record_controller_info(self):
+        # Collect controller information and write to test result.
+        for module_ref_name, objects in self._controller_registry.items():
+            module = self._controller_modules[module_ref_name]
+            try:
+                controller_info = module.get_info(copy.copy(objects))
+            except AttributeError:
+                logging.warning('No optional debug info found for controller '
+                                '%s. To provide it, implement `get_info`.',
+                                module_ref_name)
+                continue
+            self.results.add_controller_info(
+                self.TAG, module.MOBLY_CONTROLLER_CONFIG_NAME, controller_info)
 
     def _setup_generated_tests(self):
         """Proxy function to guarantee the base implementation of
@@ -901,6 +902,12 @@ class BaseTestClass(object):
             setattr(e, 'results', self.results)
             raise e
         finally:
+            # Write controller info and summary to summary file.
+            self._record_controller_info()
+            for controller_info in self.results.controller_info:
+                self.summary_writer.dump(
+                    controller_info.to_dict(),
+                    records.TestSummaryEntryType.CONTROLLER_INFO)
             self._teardown_class()
             self._unregister_controllers()
             logging.info('Summary for test class %s: %s', self.TAG,

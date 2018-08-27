@@ -55,6 +55,13 @@ class TestRunnerTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
+    def _assertControllerInfoEqual(self, info, expected_info_dict):
+        self.assertEqual(expected_info_dict['Controller Name'],
+                         info.controller_name)
+        self.assertEqual(expected_info_dict['Test Class'], info.test_class)
+        self.assertEqual(expected_info_dict['Controller Info'],
+                         info.controller_info)
+
     def test_run_twice(self):
         """Verifies that:
         1. Repeated run works properly.
@@ -81,8 +88,8 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Requested'], 2)
         self.assertEqual(results['Executed'], 2)
         self.assertEqual(results['Passed'], 2)
-        expected_info = {
-            'MagicDevice': [{
+        expected_info_dict = {
+            'Controller Info': [{
                 'MyMagic': {
                     'magic': 'Magic1'
                 }
@@ -90,9 +97,18 @@ class TestRunnerTest(unittest.TestCase):
                 'MyMagic': {
                     'magic': 'Magic2'
                 }
-            }]
+            }],
+            'Controller Name':
+            'MagicDevice',
+            'Test Class':
+            'IntegrationTest',
         }
-        self.assertEqual(tr.results.controller_info, expected_info)
+        self._assertControllerInfoEqual(tr.results.controller_info[0],
+                                        expected_info_dict)
+        self._assertControllerInfoEqual(tr.results.controller_info[1],
+                                        expected_info_dict)
+        self.assertNotEqual(tr.results.controller_info[0].timestamp,
+                            tr.results.controller_info[1].timestamp)
 
     def test_summary_file_entries(self):
         """Verifies the output summary's file format.
@@ -117,12 +133,17 @@ class TestRunnerTest(unittest.TestCase):
                                     records.OUTPUT_FILE_SUMMARY)
         with io.open(summary_path, 'r', encoding='utf-8') as f:
             summary_entries = list(yaml.load_all(f))
+        print(summary_entries)
         self.assertEqual(len(summary_entries), 4)
         # Verify the first entry is the list of test names.
         self.assertEqual(summary_entries[0]['Type'],
                          records.TestSummaryEntryType.TEST_NAME_LIST.value)
         self.assertEqual(summary_entries[1]['Type'],
                          records.TestSummaryEntryType.RECORD.value)
+        self.assertEqual(summary_entries[2]['Type'],
+                         records.TestSummaryEntryType.CONTROLLER_INFO.value)
+        self.assertEqual(summary_entries[3]['Type'],
+                         records.TestSummaryEntryType.SUMMARY.value)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
