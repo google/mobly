@@ -166,8 +166,6 @@ class TestRunConfig(object):
         controller_configs: dict, configs used for instantiating controller
             objects.
         user_params: dict, all the parameters to be consumed by the test logic.
-        register_controller: func, used by test classes to register controller
-            modules.
         summary_writer: records.TestSummaryWriter, used to write elements to
             the test result summary file.
         test_class_name_suffix: string, suffix to append to the class name for
@@ -180,7 +178,6 @@ class TestRunConfig(object):
         self.test_bed_name = None
         self.controller_configs = None
         self.user_params = None
-        self.register_controller = None
         self.summary_writer = None
         self.test_class_name_suffix = None
 
@@ -192,5 +189,4 @@ class TestRunConfig(object):
     def __str__(self):
         content = dict(self.__dict__)
         content.pop('summary_writer')
-        content.pop('register_controller')
         return pprint.pformat(content)
