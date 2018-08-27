@@ -335,6 +335,8 @@ class BaseTestClass(object):
 
         This will be called after each test class.
         """
+        # TODO(xpconanfan): actually record these errors instead of just
+        # logging them.
         for name, destroy in self._controller_destructors.items():
             try:
                 logging.debug('Destroying %s.', name)
@@ -900,6 +902,7 @@ class BaseTestClass(object):
             raise e
         finally:
             self._teardown_class()
+            self._unregister_controllers()
             logging.info('Summary for test class %s: %s', self.TAG,
                          self.results.summary_str())
 

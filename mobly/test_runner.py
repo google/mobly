@@ -317,8 +317,6 @@ class TestRunner(object):
             except signals.TestAbortAll as e:
                 self.results += e.results
                 raise e
-            finally:
-                test_instance._unregister_controllers()
 
     def run(self):
         """Executes tests.
