@@ -63,14 +63,14 @@ class TestSuiteTest(unittest.TestCase):
         test_run_config.controller_configs = {'MagicDevice': [{'serial': 1}]}
 
         class FooTest(base_test.BaseTestClass):
-            def setup_class(cls):
-                cls.controller = cls.register_controller(mock_controller)[0]
-                self.foo_test_controller_obj_id = id(cls.controller)
+            def setup_class(cls1):
+                controller1 = cls1.register_controller(mock_controller)[0]
+                self.foo_test_controller_obj_id = id(controller1)
 
         class BarTest(base_test.BaseTestClass):
-            def setup_class(cls):
-                cls.controller = cls.register_controller(mock_controller)[0]
-                self.bar_test_controller_obj_id = id(cls.controller)
+            def setup_class(cls2):
+                controller2 = cls2.register_controller(mock_controller)[0]
+                self.bar_test_controller_obj_id = id(controller2)
 
         tr = test_runner.TestRunner(self.tmp_dir,
                                     test_run_config.test_bed_name)
