@@ -16,7 +16,6 @@ import io
 import logging
 import mock
 import os
-import platform
 import re
 import shutil
 import tempfile
@@ -56,93 +55,6 @@ class TestRunnerTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
-    def test_register_controller_no_config(self):
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with self.assertRaisesRegex(signals.ControllerError,
-                                    'No corresponding config found for'):
-            tr._register_controller(self.base_mock_test_config,
-                                    mock_controller)
-
-    def test_register_controller_no_config_no_register(self):
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        self.assertIsNone(
-            tr._register_controller(
-                self.base_mock_test_config, mock_controller, required=False))
-
-    def test_register_controller_dup_register(self):
-        """Verifies correctness of registration, internal tally of controllers
-        objects, and the right error happen when a controller module is
-        registered twice.
-        """
-        mock_test_config = self.base_mock_test_config.copy()
-        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        mock_test_config.controller_configs = {
-            mock_ctrlr_config_name: ['magic1', 'magic2']
-        }
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        tr._register_controller(mock_test_config, mock_controller)
-        registered_name = 'mock_controller'
-        self.assertTrue(registered_name in tr._controller_registry)
-        mock_ctrlrs = tr._controller_registry[registered_name]
-        self.assertEqual(mock_ctrlrs[0].magic, 'magic1')
-        self.assertEqual(mock_ctrlrs[1].magic, 'magic2')
-        self.assertTrue(tr._controller_destructors[registered_name])
-        expected_msg = 'Controller module .* has already been registered.'
-        with self.assertRaisesRegex(signals.ControllerError, expected_msg):
-            tr._register_controller(mock_test_config, mock_controller)
-
-    def test_register_controller_no_get_info(self):
-        mock_test_config = self.base_mock_test_config.copy()
-        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        get_info = getattr(mock_controller, 'get_info')
-        delattr(mock_controller, 'get_info')
-        try:
-            mock_test_config.controller_configs = {
-                mock_ctrlr_config_name: ['magic1', 'magic2']
-            }
-            tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-            tr._register_controller(mock_test_config, mock_controller)
-            self.assertEqual(tr.results.controller_info, {})
-        finally:
-            setattr(mock_controller, 'get_info', get_info)
-
-    def test_register_controller_return_value(self):
-        mock_test_config = self.base_mock_test_config.copy()
-        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        mock_test_config.controller_configs = {
-            mock_ctrlr_config_name: ['magic1', 'magic2']
-        }
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        magic_devices = tr._register_controller(mock_test_config,
-                                                mock_controller)
-        self.assertEqual(magic_devices[0].magic, 'magic1')
-        self.assertEqual(magic_devices[1].magic, 'magic2')
-
-    def test_register_controller_change_return_value(self):
-        mock_test_config = self.base_mock_test_config.copy()
-        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        mock_test_config.controller_configs = {
-            mock_ctrlr_config_name: ['magic1', 'magic2']
-        }
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        magic_devices = tr._register_controller(mock_test_config,
-                                                mock_controller)
-        magic1 = magic_devices.pop(0)
-        self.assertIs(magic1, tr._controller_registry['mock_controller'][0])
-        self.assertEqual(len(tr._controller_registry['mock_controller']), 2)
-
-    def test_register_controller_less_than_min_number(self):
-        mock_test_config = self.base_mock_test_config.copy()
-        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        mock_test_config.controller_configs = {
-            mock_ctrlr_config_name: ['magic1', 'magic2']
-        }
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        expected_msg = 'Expected to get at least 3 controller objects, got 2.'
-        with self.assertRaisesRegex(signals.ControllerError, expected_msg):
-            tr._register_controller(
-                mock_test_config, mock_controller, min_number=3)
-
     def test_run_twice(self):
         """Verifies that:
         1. Repeated run works properly.
@@ -162,13 +74,9 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run()
-        self.assertFalse(tr._controller_registry)
-        self.assertFalse(tr._controller_destructors)
         self.assertTrue(
             mock_test_config.controller_configs[mock_ctrlr_config_name][0])
         tr.run()
-        self.assertFalse(tr._controller_registry)
-        self.assertFalse(tr._controller_destructors)
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 2)
         self.assertEqual(results['Executed'], 2)
@@ -253,8 +161,6 @@ class TestRunnerTest(unittest.TestCase):
         tr.add_test_class(mock_test_config, integration2_test.Integration2Test)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run()
-        self.assertFalse(tr._controller_registry)
-        self.assertFalse(tr._controller_destructors)
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 2)
         self.assertEqual(results['Executed'], 2)
@@ -341,29 +247,6 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         with self.assertRaisesRegex(test_runner.Error, 'No tests to execute.'):
             tr.run()
-
-    def test_verify_controller_module(self):
-        test_runner.verify_controller_module(mock_controller)
-
-    def test_verify_controller_module_null_attr(self):
-        try:
-            tmp = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-            mock_controller.MOBLY_CONTROLLER_CONFIG_NAME = None
-            msg = 'Controller interface .* in .* cannot be null.'
-            with self.assertRaisesRegex(signals.ControllerError, msg):
-                test_runner.verify_controller_module(mock_controller)
-        finally:
-            mock_controller.MOBLY_CONTROLLER_CONFIG_NAME = tmp
-
-    def test_verify_controller_module_missing_attr(self):
-        try:
-            tmp = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-            delattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME')
-            msg = 'Module .* missing required controller module attribute'
-            with self.assertRaisesRegex(signals.ControllerError, msg):
-                test_runner.verify_controller_module(mock_controller)
-        finally:
-            setattr(mock_controller, 'MOBLY_CONTROLLER_CONFIG_NAME', tmp)
 
     @mock.patch(
         'mobly.test_runner._find_test_class',
