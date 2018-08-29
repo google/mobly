@@ -488,10 +488,10 @@ class TestResult(object):
                 setattr(sum_result, name, l_value + r_value)
             elif isinstance(r_value, dict):
                 # '+' operator for TestResult is only valid when multiple
-                # TestResult objs were created in the same test run, which means
-                # the controller info would be the same across all of them.
+                # TestResult objs were created in the same test run, use the
+                # r-value which is more up to date.
                 # TODO(xpconanfan): have a better way to validate this situation.
-                setattr(sum_result, name, l_value)
+                setattr(sum_result, name, r_value)
         return sum_result
 
     def add_record(self, record):

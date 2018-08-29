@@ -55,30 +55,24 @@ class TestSuiteTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
-    def test_controller_object_not_persistent_across_classes_in_the_same_run(
-            self):
-        self.foo_test_controller_obj_id = None
-        self.bar_test_controller_obj_id = None
+    def test_controller_object_not_persistent_across_classes(self):
         test_run_config = self.base_mock_test_config.copy()
         test_run_config.controller_configs = {'MagicDevice': [{'serial': 1}]}
 
         class FooTest(base_test.BaseTestClass):
-            def setup_class(cls):
-                cls.controller = cls.register_controller(mock_controller)[0]
-                self.foo_test_controller_obj_id = id(cls.controller)
+            def setup_class(cls1):
+                self.controller1 = cls1.register_controller(mock_controller)[0]
 
         class BarTest(base_test.BaseTestClass):
-            def setup_class(cls):
-                cls.controller = cls.register_controller(mock_controller)[0]
-                self.bar_test_controller_obj_id = id(cls.controller)
+            def setup_class(cls2):
+                self.controller2 = cls2.register_controller(mock_controller)[0]
 
         tr = test_runner.TestRunner(self.tmp_dir,
                                     test_run_config.test_bed_name)
         tr.add_test_class(test_run_config, FooTest)
         tr.add_test_class(test_run_config, BarTest)
         tr.run()
-        self.assertNotEqual(self.foo_test_controller_obj_id,
-                            self.bar_test_controller_obj_id)
+        self.assertIsNot(self.controller1, self.controller2)
 
 
 if __name__ == "__main__":
