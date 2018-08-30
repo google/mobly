@@ -331,7 +331,7 @@ class BaseTestClass(object):
                 module.destroy(self._controller_registry[name])
             except:
                 logging.exception('Exception occurred destroying %s.', name)
-        self._controller_registry = OrderedDict()
+        self._controller_registry = collections.OrderedDict()
         self._controller_modules = {}
 
     def _record_controller_info(self):
