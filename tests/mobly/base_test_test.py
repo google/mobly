@@ -57,6 +57,21 @@ class MockEmptyBaseTest(base_test.BaseTestClass):
         pass
 
 
+class ControllerInfoTest(base_test.BaseTestClass):
+    """Registers two different controller types and modifies controller info at
+    runtime.
+    """
+
+    def setup_class(self):
+        self.register_controller(mock_controller)
+        second_controller = self.register_controller(mock_second_controller)[0]
+        # This should appear in recorded controller info.
+        second_controller.set_magic('haha')
+
+    def test_func(self):
+        pass
+
+
 class BaseTestTest(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
@@ -1799,18 +1814,6 @@ class BaseTestTest(unittest.TestCase):
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
         mock_test_config.controller_configs[
             mock_ctrlr_2_config_name] = copy.copy(my_config)
-
-        class ControllerInfoTest(base_test.BaseTestClass):
-            def setup_class(self):
-                self.register_controller(mock_controller)
-                second_controller = self.register_controller(
-                    mock_second_controller)[0]
-                # This should appear in recorded controller info.
-                second_controller.set_magic('haha')
-
-            def test_func(self):
-                pass
-
         bt_cls = ControllerInfoTest(mock_test_config)
         bt_cls.run()
         info1 = bt_cls.results.controller_info[0]
