@@ -134,7 +134,8 @@ class BaseTestClass(object):
         self.current_test_name = None
         self._generated_test_table = collections.OrderedDict()
         # Controller object management.
-        self._controller_registry = {}  # controller_name: objects
+        self._controller_registry = collections.OrderedDict(
+        )  # controller_name: objects
         self._controller_modules = {}  # controller_name: module
 
     def __enter__(self):
@@ -330,7 +331,7 @@ class BaseTestClass(object):
                 module.destroy(self._controller_registry[name])
             except:
                 logging.exception('Exception occurred destroying %s.', name)
-        self._controller_registry = {}
+        self._controller_registry = OrderedDict()
         self._controller_modules = {}
 
     def _record_controller_info(self):
