@@ -133,7 +133,6 @@ class TestRunnerTest(unittest.TestCase):
                                     records.OUTPUT_FILE_SUMMARY)
         with io.open(summary_path, 'r', encoding='utf-8') as f:
             summary_entries = list(yaml.load_all(f))
-        print(summary_entries)
         self.assertEqual(len(summary_entries), 4)
         # Verify the first entry is the list of test names.
         self.assertEqual(summary_entries[0]['Type'],
