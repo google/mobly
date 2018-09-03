@@ -416,7 +416,7 @@ class RecordsTest(unittest.TestCase):
     def test_add_controller_info(self):
         tr = records.TestResult()
         self.assertFalse(tr.controller_info)
-        tr.add_controller_info('MyTest', 'MockDevice', ['magicA', 'magicB'])
+        tr.add_controller_info('MockDevice', ['magicA', 'magicB'], 'MyTest')
         self.assertTrue(tr.controller_info[0])
         self.assertEqual(tr.controller_info[0].controller_name, 'MockDevice')
         self.assertEqual(tr.controller_info[0].controller_info,
@@ -426,7 +426,7 @@ class RecordsTest(unittest.TestCase):
     def test_add_controller_info_not_serializable(self, mock_yaml_dump):
         tr = records.TestResult()
         self.assertFalse(tr.controller_info)
-        tr.add_controller_info('MyTest', 'MockDevice', ['magicA', 'magicB'])
+        tr.add_controller_info('MockDevice', ['magicA', 'magicB'], 'MyTest')
         self.assertTrue(tr.controller_info[0])
         self.assertEqual(tr.controller_info[0].controller_name, 'MockDevice')
         self.assertEqual(tr.controller_info[0].controller_info,

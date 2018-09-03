@@ -346,7 +346,9 @@ class BaseTestClass(object):
                                 module_ref_name)
                 continue
             self.results.add_controller_info(
-                self.TAG, module.MOBLY_CONTROLLER_CONFIG_NAME, controller_info)
+                controller_name=module.MOBLY_CONTROLLER_CONFIG_NAME,
+                controller_info=controller_info,
+                test_class=self.TAG)
 
     def _setup_generated_tests(self):
         """Proxy function to guarantee the base implementation of

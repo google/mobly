@@ -539,15 +539,17 @@ class TestResult(object):
         else:
             self.error.append(record)
 
-    def add_controller_info(self, test_class, controller_name,
-                            controller_info):
+    def add_controller_info(self, controller_name, controller_info,
+                            test_class):
         """Adds controller info to results.
 
+        This can be called multiple times for each
+
         Args:
-            test_class: string, a tag for identifying a class. This should be
-                the test class's own `TAG` attribute.
             controller_name: string, name of the controller.
             controller_info: yaml serializable info about the controller.
+            test_class: string, a tag for identifying a class. This should be
+                the test class's own `TAG` attribute.
         """
         info = controller_info
         try:
