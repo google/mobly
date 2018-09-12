@@ -351,9 +351,6 @@ class TestRunner(object):
                         'Abort all subsequent test classes. Reason: %s', e)
                     raise
         finally:
-            # Write controller info and summary to summary file.
-            summary_writer.dump(self.results.controller_info,
-                                records.TestSummaryEntryType.CONTROLLER_INFO)
             summary_writer.dump(self.results.summary_dict(),
                                 records.TestSummaryEntryType.SUMMARY)
             # Stop and show summary.

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import io
 import os
 import mock
@@ -30,6 +31,7 @@ from mobly import signals
 
 from tests.lib import utils
 from tests.lib import mock_controller
+from tests.lib import mock_second_controller
 
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 MSG_EXPECTED_TEST_FAILURE = "This is an expected test failure."
@@ -1784,6 +1786,56 @@ class BaseTestTest(unittest.TestCase):
                 self.assertIsNotNone(c['timestamp'])
         self.assertTrue(hit)
 
+    def test_record_controller_info(self):
+        """Verifies that controller info is correctly recorded.
+
+        1. Info added in test is recorded.
+        2. Info of multiple controller types are recorded.
+        """
+        mock_test_config = self.mock_test_cls_configs.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_2_config_name = mock_second_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{'serial': 'xxxx', 'magic': 'Magic'}]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs[
+            mock_ctrlr_2_config_name] = copy.copy(my_config)
+
+        class ControllerInfoTest(base_test.BaseTestClass):
+            """Registers two different controller types and modifies controller
+            info at runtime.
+            """
+
+            def setup_class(self):
+                self.register_controller(mock_controller)
+                second_controller = self.register_controller(
+                    mock_second_controller)[0]
+                # This should appear in recorded controller info.
+                second_controller.set_magic('haha')
+
+            def test_func(self):
+                pass
+
+        bt_cls = ControllerInfoTest(mock_test_config)
+        bt_cls.run()
+        info1 = bt_cls.results.controller_info[0]
+        info2 = bt_cls.results.controller_info[1]
+        self.assertNotEqual(info1.timestamp, info2.timestamp)
+        self.assertEqual(info1.test_class, 'ControllerInfoTest')
+        self.assertEqual(info1.controller_name, 'MagicDevice')
+        self.assertEqual(info1.controller_info, [{
+            'MyMagic': {
+                'magic': 'Magic'
+            }
+        }])
+        self.assertEqual(info2.test_class, 'ControllerInfoTest')
+        self.assertEqual(info2.controller_name, 'AnotherMagicDevice')
+        self.assertEqual(info2.controller_info, [{
+            'MyOtherMagic': {
+                'magic': 'Magic',
+                'extra_magic': 'haha'
+            }
+        }])
+
     def test_register_controller_no_config(self):
         bt_cls = MockEmptyBaseTest(self.mock_test_cls_configs)
         with self.assertRaisesRegex(signals.ControllerError,
@@ -1812,7 +1864,7 @@ class BaseTestTest(unittest.TestCase):
         mock_ctrlrs = bt_cls._controller_registry[registered_name]
         self.assertEqual(mock_ctrlrs[0].magic, 'magic1')
         self.assertEqual(mock_ctrlrs[1].magic, 'magic2')
-        self.assertTrue(bt_cls._controller_destructors[registered_name])
+        self.assertTrue(bt_cls._controller_modules[registered_name])
         expected_msg = 'Controller module .* has already been registered.'
         with self.assertRaisesRegex(signals.ControllerError, expected_msg):
             bt_cls.register_controller(mock_controller)
@@ -1828,7 +1880,7 @@ class BaseTestTest(unittest.TestCase):
             }
             bt_cls = MockEmptyBaseTest(mock_test_config)
             bt_cls.register_controller(mock_controller)
-            self.assertEqual(bt_cls.results.controller_info, {})
+            self.assertEqual(bt_cls.results.controller_info, [])
         finally:
             setattr(mock_controller, 'get_info', get_info)
 
