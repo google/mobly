@@ -107,8 +107,8 @@ class TestRunnerTest(unittest.TestCase):
                                         expected_info_dict)
         self._assertControllerInfoEqual(tr.results.controller_info[1],
                                         expected_info_dict)
-        self.assertNotEqual(tr.results.controller_info[0].timestamp,
-                            tr.results.controller_info[1].timestamp)
+        self.assertNotEqual(tr.results.controller_info[0],
+                            tr.results.controller_info[1])
 
     def test_summary_file_entries(self):
         """Verifies the output summary's file format.
