@@ -1819,7 +1819,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls.run()
         info1 = bt_cls.results.controller_info[0]
         info2 = bt_cls.results.controller_info[1]
-        self.assertNotEqual(info1.timestamp, info2.timestamp)
+        self.assertNotEqual(info1, info2)
         self.assertEqual(info1.test_class, 'ControllerInfoTest')
         self.assertEqual(info1.controller_name, 'MagicDevice')
         self.assertEqual(info1.controller_info, [{
