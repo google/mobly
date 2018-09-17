@@ -292,8 +292,6 @@ class BaseTestClass(object):
         """
         with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
             self.setup_class()
-        print('$$$$$ %s',
-              self._controller_manager.get_controller_info_records())
 
     def setup_class(self):
         """Setup function that will be called before executing any test in the
