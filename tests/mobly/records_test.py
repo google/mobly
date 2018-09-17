@@ -239,15 +239,18 @@ class RecordsTest(unittest.TestCase):
         record1.test_pass(s)
         tr1 = records.TestResult()
         tr1.add_record(record1)
-        tr1.add_controller_info('SomeClass', 'MockDevice',
-                                ['magicA', 'magicB'])
+        controller_info = records.ControllerInfoRecord(
+            'SomeClass', 'MockDevice', ['magicA', 'magicB'])
+        tr1.add_controller_info_record(controller_info)
         record2 = records.TestResultRecord(self.tn)
         record2.test_begin()
         s = signals.TestPass(self.details, self.json_extra)
         record2.test_pass(s)
         tr2 = records.TestResult()
         tr2.add_record(record2)
-        tr2.add_controller_info('SomeClass', 'MockDevice', ['magicC'])
+        controller_info = records.ControllerInfoRecord(
+            'SomeClass', 'MockDevice', ['magicC'])
+        tr2.add_controller_info_record(controller_info)
         tr2 += tr1
         self.assertTrue(tr2.passed, [tr1, tr2])
         self.assertTrue(tr2.controller_info, {'MockDevice': ['magicC']})
@@ -413,24 +416,16 @@ class RecordsTest(unittest.TestCase):
         self.assertIsNot(er, new_er)
         self.assertDictEqual(er.to_dict(), new_er.to_dict())
 
-    def test_add_controller_info(self):
+    def test_add_controller_info_record(self):
         tr = records.TestResult()
         self.assertFalse(tr.controller_info)
-        tr.add_controller_info('MockDevice', ['magicA', 'magicB'], 'MyTest')
+        controller_info = records.ControllerInfoRecord(
+            'SomeClass', 'MockDevice', ['magicA', 'magicB'])
+        tr.add_controller_info_record(controller_info)
         self.assertTrue(tr.controller_info[0])
         self.assertEqual(tr.controller_info[0].controller_name, 'MockDevice')
         self.assertEqual(tr.controller_info[0].controller_info,
                          ['magicA', 'magicB'])
-
-    @mock.patch('yaml.dump', side_effect=TypeError('ha'))
-    def test_add_controller_info_not_serializable(self, mock_yaml_dump):
-        tr = records.TestResult()
-        self.assertFalse(tr.controller_info)
-        tr.add_controller_info('MockDevice', ['magicA', 'magicB'], 'MyTest')
-        self.assertTrue(tr.controller_info[0])
-        self.assertEqual(tr.controller_info[0].controller_name, 'MockDevice')
-        self.assertEqual(tr.controller_info[0].controller_info,
-                         "['magicA', 'magicB']")
 
 
 if __name__ == '__main__':

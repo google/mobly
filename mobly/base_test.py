@@ -21,6 +21,7 @@ import logging
 
 from future.utils import raise_with_traceback
 
+from mobly import controller_manager
 from mobly import expects
 from mobly import records
 from mobly import runtime_test_info
@@ -44,30 +45,6 @@ STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
 
 class Error(Exception):
     """Raised for exceptions that occured in BaseTestClass."""
-
-
-def _verify_controller_module(module):
-    """Verifies a module object follows the required interface for
-    controllers.
-
-    Args:
-        module: An object that is a controller module. This is usually
-            imported with import statements or loaded by importlib.
-
-    Raises:
-        ControllerError: if the module does not match the Mobly controller
-            interface, or one of the required members is null.
-    """
-    required_attributes = ('create', 'destroy', 'MOBLY_CONTROLLER_CONFIG_NAME')
-    for attr in required_attributes:
-        if not hasattr(module, attr):
-            raise signals.ControllerError(
-                'Module %s missing required controller module attribute'
-                ' %s.' % (module.__name__, attr))
-        if not getattr(module, attr):
-            raise signals.ControllerError(
-                'Controller interface %s in %s cannot be null.' %
-                (attr, module.__name__))
 
 
 class BaseTestClass(object):
@@ -97,8 +74,6 @@ class BaseTestClass(object):
         log_path: string, specifies the root directory for all logs written
             by a test run.
         test_bed_name: string, the name of the test bed used by a test run.
-        controller_configs: dict, configs used for instantiating controller
-            objects.
         user_params: dict, custom parameters from user, to be consumed by
             the test logic.
     """
@@ -125,7 +100,6 @@ class BaseTestClass(object):
             self.TAG = self._class_name
         # Set params.
         self.log_path = configs.log_path
-        self.controller_configs = configs.controller_configs
         self.test_bed_name = configs.test_bed_name
         self.user_params = configs.user_params
         self.results = records.TestResult()
@@ -133,10 +107,8 @@ class BaseTestClass(object):
         # Deprecated, use `self.current_test_info.name`.
         self.current_test_name = None
         self._generated_test_table = collections.OrderedDict()
-        # Controller object management.
-        self._controller_registry = collections.OrderedDict(
-        )  # controller_name: objects
-        self._controller_modules = {}  # controller_name: module
+        self._controller_manager = controller_manager.ControllerManager(
+            class_name=self.TAG, controller_configs=configs.controller_configs)
 
     def __enter__(self):
         return self
@@ -269,86 +241,15 @@ class BaseTestClass(object):
                 * `required` is True and no corresponding config can be found.
                 * Any other error occurred in the registration process.
         """
-        _verify_controller_module(module)
-        # Use the module's name as the ref name
-        module_ref_name = module.__name__.split('.')[-1]
-        if module_ref_name in self._controller_registry:
-            raise signals.ControllerError(
-                'Controller module %s has already been registered. It cannot '
-                'be registered again.' % module_ref_name)
-        # Create controller objects.
-        create = module.create
-        module_config_name = module.MOBLY_CONTROLLER_CONFIG_NAME
-        if module_config_name not in self.controller_configs:
-            if required:
-                raise signals.ControllerError(
-                    'No corresponding config found for %s' %
-                    module_config_name)
-            logging.warning(
-                'No corresponding config found for optional controller %s',
-                module_config_name)
-            return None
-        try:
-            # Make a deep copy of the config to pass to the controller module,
-            # in case the controller module modifies the config internally.
-            original_config = self.controller_configs[module_config_name]
-            controller_config = copy.deepcopy(original_config)
-            objects = create(controller_config)
-        except:
-            logging.exception(
-                'Failed to initialize objects for controller %s, abort!',
-                module_config_name)
-            raise
-        if not isinstance(objects, list):
-            raise signals.ControllerError(
-                'Controller module %s did not return a list of objects, abort.'
-                % module_ref_name)
-        # Check we got enough controller objects to continue.
-        actual_number = len(objects)
-        if actual_number < min_number:
-            module.destroy(objects)
-            raise signals.ControllerError(
-                'Expected to get at least %d controller objects, got %d.' %
-                (min_number, actual_number))
-        # Save a shallow copy of the list for internal usage, so tests can't
-        # affect internal registry by manipulating the object list.
-        self._controller_registry[module_ref_name] = copy.copy(objects)
-        logging.debug('Found %d objects for controller %s', len(objects),
-                      module_config_name)
-        self._controller_modules[module_ref_name] = module
-        return objects
-
-    def _unregister_controllers(self):
-        """Destroy controller objects and clear internal registry.
-
-        This will be called after each test class.
-        """
-        # TODO(xpconanfan): actually record these errors instead of just
-        # logging them.
-        for name, module in self._controller_modules.items():
-            try:
-                logging.debug('Destroying %s.', name)
-                module.destroy(self._controller_registry[name])
-            except:
-                logging.exception('Exception occurred destroying %s.', name)
-        self._controller_registry = collections.OrderedDict()
-        self._controller_modules = {}
+        return self._controller_manager.register_controller(
+            module, required, min_number)
 
     def _record_controller_info(self):
         # Collect controller information and write to test result.
-        for module_ref_name, objects in self._controller_registry.items():
-            module = self._controller_modules[module_ref_name]
-            try:
-                controller_info = module.get_info(copy.copy(objects))
-            except AttributeError:
-                logging.warning('No optional debug info found for controller '
-                                '%s. To provide it, implement `get_info`.',
-                                module_ref_name)
-                continue
-            self.results.add_controller_info(
-                controller_name=module.MOBLY_CONTROLLER_CONFIG_NAME,
-                controller_info=controller_info,
-                test_class=self.TAG)
+        for record in self._controller_manager.get_controller_info_records():
+            self.results.add_controller_info_record(record)
+            self.summary_writer.dump(
+                record.to_dict(), records.TestSummaryEntryType.CONTROLLER_INFO)
 
     def _setup_generated_tests(self):
         """Proxy function to guarantee the base implementation of
@@ -391,6 +292,8 @@ class BaseTestClass(object):
         """
         with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
             self.setup_class()
+        print('$$$$$ %s',
+              self._controller_manager.get_controller_info_records())
 
     def setup_class(self):
         """Setup function that will be called before executing any test in the
@@ -905,14 +808,10 @@ class BaseTestClass(object):
             setattr(e, 'results', self.results)
             raise e
         finally:
+            self._teardown_class()
             # Write controller info and summary to summary file.
             self._record_controller_info()
-            for controller_info in self.results.controller_info:
-                self.summary_writer.dump(
-                    controller_info.to_dict(),
-                    records.TestSummaryEntryType.CONTROLLER_INFO)
-            self._teardown_class()
-            self._unregister_controllers()
+            self._controller_manager.unregister_controllers()
             logging.info('Summary for test class %s: %s', self.TAG,
                          self.results.summary_str())
 
