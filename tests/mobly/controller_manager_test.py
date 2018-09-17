@@ -12,26 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-import io
-import os
 import mock
-import shutil
-import tempfile
-import yaml
 
 from future.tests.base import unittest
 
-from mobly import asserts
-from mobly import base_test
 from mobly import controller_manager
-from mobly import expects
-from mobly import records
 from mobly import signals
 
-from tests.lib import utils
 from tests.lib import mock_controller
-from tests.lib import mock_second_controller
 
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 MSG_EXPECTED_TEST_FAILURE = "This is an expected test failure."
@@ -168,7 +156,7 @@ class ControllerManagerTest(unittest.TestCase):
             })
 
     @mock.patch('yaml.dump', side_effect=TypeError('ha'))
-    def test_get_controller_info_record_not_serializable(self, mock_yaml_dump):
+    def test_get_controller_info_record_not_serializable(self, _):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
         c_manager = controller_manager.ControllerManager(
