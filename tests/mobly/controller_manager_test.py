@@ -21,22 +21,6 @@ from mobly import signals
 
 from tests.lib import mock_controller
 
-MSG_EXPECTED_EXCEPTION = "This is an expected exception."
-MSG_EXPECTED_TEST_FAILURE = "This is an expected test failure."
-MSG_UNEXPECTED_EXCEPTION = "Unexpected exception!"
-
-MOCK_EXTRA = {"key": "value", "answer_to_everything": 42}
-
-
-def never_call():
-    """Function used for verifying something was never called.
-    """
-    raise Exception(MSG_UNEXPECTED_EXCEPTION)
-
-
-class SomeError(Exception):
-    """A custom exception class used for tests in this module."""
-
 
 class ControllerManagerTest(unittest.TestCase):
     """Unit tests for Mobly's ControllerManager."""
@@ -139,6 +123,18 @@ class ControllerManagerTest(unittest.TestCase):
         with self.assertRaisesRegex(signals.ControllerError, expected_msg):
             c_manager.register_controller(mock_controller, min_number=3)
 
+    @mock.patch('yaml.dump', side_effect=TypeError('ha'))
+    def test_unregister_controller(self, _):
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
+        c_manager = controller_manager.ControllerManager(
+            'SomeClass', controller_configs)
+        c_manager.register_controller(mock_controller)
+        record = c_manager.get_controller_info_records()[0]
+        actual_controller_info = record.controller_info
+        self.assertEqual(actual_controller_info,
+                         "[{'MyMagic': 'magic1'}, {'MyMagic': 'magic2'}]")
+
     def test_get_controller_info_records(self):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
@@ -159,17 +155,18 @@ class ControllerManagerTest(unittest.TestCase):
                 'Test Class': 'SomeClass'
             })
 
-    @mock.patch('yaml.dump', side_effect=TypeError('ha'))
-    def test_get_controller_info_record_not_serializable(self, _):
+    @mock.patch('tests.lib.mock_controller.destroy')
+    def test_get_controller_info_record_not_serializable(
+            self, mock_destroy_func):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
         c_manager = controller_manager.ControllerManager(
             'SomeClass', controller_configs)
-        c_manager.register_controller(mock_controller)
-        record = c_manager.get_controller_info_records()[0]
-        actual_controller_info = record.controller_info
-        self.assertEqual(actual_controller_info,
-                         "[{'MyMagic': 'magic1'}, {'MyMagic': 'magic2'}]")
+        objects = c_manager.register_controller(mock_controller)
+        c_manager.unregister_controllers()
+        mock_destroy_func.assert_called_once_with(objects)
+        self.assertFalse(c_manager._controller_objects)
+        self.assertFalse(c_manager._controller_modules)
 
 
 if __name__ == "__main__":
