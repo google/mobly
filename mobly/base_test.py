@@ -324,6 +324,10 @@ class BaseTestClass(object):
             self.results.add_class_error(record)
             self.summary_writer.dump(record.to_dict(),
                                      records.TestSummaryEntryType.RECORD)
+        finally:
+            # Write controller info and summary to summary file.
+            self._record_controller_info()
+            self._controller_manager.unregister_controllers()
 
     def teardown_class(self):
         """Teardown function that will be called after all the selected tests in
@@ -807,9 +811,6 @@ class BaseTestClass(object):
             raise e
         finally:
             self._teardown_class()
-            # Write controller info and summary to summary file.
-            self._record_controller_info()
-            self._controller_manager.unregister_controllers()
             logging.info('Summary for test class %s: %s', self.TAG,
                          self.results.summary_str())
 

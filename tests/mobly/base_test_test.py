@@ -267,14 +267,25 @@ class BaseTestTest(unittest.TestCase):
         on_fail_call_check.assert_called_once_with("haha")
 
     def test_teardown_class_fail_by_exception(self):
+        mock_test_config = self.mock_test_cls_configs.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_2_config_name = mock_second_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{'serial': 'xxxx', 'magic': 'Magic'}]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs[
+            mock_ctrlr_2_config_name] = copy.copy(my_config)
+
         class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                self.register_controller(mock_controller)
+
             def test_something(self):
                 pass
 
             def teardown_class(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
 
-        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls = MockBaseTest(mock_test_config)
         bt_cls.run()
         test_record = bt_cls.results.passed[0]
         class_record = bt_cls.results.error[0]
@@ -287,6 +298,53 @@ class BaseTestTest(unittest.TestCase):
         expected_summary = ('Error 1, Executed 1, Failed 0, Passed 1, '
                             'Requested 1, Skipped 0')
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+        # Verify the controller info is recorded correctly.
+        info = bt_cls.results.controller_info[0]
+        self.assertEqual(info.test_class, 'MockBaseTest')
+        self.assertEqual(info.controller_name, 'MagicDevice')
+        self.assertEqual(info.controller_info, [{
+            'MyMagic': {
+                'magic': 'Magic'
+            }
+        }])
+
+    def test_teardown_class_raise_abort_all(self):
+        mock_test_config = self.mock_test_cls_configs.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_2_config_name = mock_second_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{'serial': 'xxxx', 'magic': 'Magic'}]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs[
+            mock_ctrlr_2_config_name] = copy.copy(my_config)
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                self.register_controller(mock_controller)
+
+            def test_something(self):
+                pass
+
+            def teardown_class(self):
+                raise asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(mock_test_config)
+        with self.assertRaisesRegex(signals.TestAbortAll,
+                                    MSG_EXPECTED_EXCEPTION):
+            bt_cls.run()
+        test_record = bt_cls.results.passed[0]
+        self.assertTrue(bt_cls.results.is_all_pass)
+        expected_summary = ('Error 0, Executed 1, Failed 0, Passed 1, '
+                            'Requested 1, Skipped 0')
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+        # Verify the controller info is recorded correctly.
+        info = bt_cls.results.controller_info[0]
+        self.assertEqual(info.test_class, 'MockBaseTest')
+        self.assertEqual(info.controller_name, 'MagicDevice')
+        self.assertEqual(info.controller_info, [{
+            'MyMagic': {
+                'magic': 'Magic'
+            }
+        }])
 
     def test_setup_test_fail_by_exception(self):
         mock_on_fail = mock.Mock()
