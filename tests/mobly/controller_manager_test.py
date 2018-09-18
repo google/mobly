@@ -189,6 +189,18 @@ class ControllerManagerTest(unittest.TestCase):
         self.assertFalse(c_manager._controller_objects)
         self.assertFalse(c_manager._controller_modules)
 
+    @mock.patch('tests.lib.mock_controller.destroy')
+    def test_unregister_controller_without_registration(
+            self, mock_destroy_func):
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
+        c_manager = controller_manager.ControllerManager(
+            'SomeClass', controller_configs)
+        c_manager.unregister_controllers()
+        mock_destroy_func.assert_not_called()
+        self.assertFalse(c_manager._controller_objects)
+        self.assertFalse(c_manager._controller_modules)
+
 
 if __name__ == "__main__":
     unittest.main()
