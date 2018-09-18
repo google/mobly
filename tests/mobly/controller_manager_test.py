@@ -170,6 +170,13 @@ class ControllerManagerTest(unittest.TestCase):
                 'Test Class': 'SomeClass'
             })
 
+    def test_get_controller_info_without_registration(self):
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
+        c_manager = controller_manager.ControllerManager(
+            'SomeClass', controller_configs)
+        self.assertFalse(c_manager.get_controller_info_records())
+
     @mock.patch('tests.lib.mock_controller.destroy')
     def test_unregister_controller(self, mock_destroy_func):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
