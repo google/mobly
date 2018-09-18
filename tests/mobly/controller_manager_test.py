@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc.
+# Copyright 2018 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Unit tests for controller manager."""
 import mock
 
 from future.tests.base import unittest
@@ -29,6 +29,8 @@ MOCK_EXTRA = {"key": "value", "answer_to_everything": 42}
 
 
 def never_call():
+    """Function used for verifying something was never called.
+    """
     raise Exception(MSG_UNEXPECTED_EXCEPTION)
 
 
@@ -37,6 +39,8 @@ class SomeError(Exception):
 
 
 class ControllerManagerTest(unittest.TestCase):
+    """Unit tests for Mobly's ControllerManager."""
+
     def test_verify_controller_module(self):
         controller_manager.verify_controller_module(mock_controller)
 
