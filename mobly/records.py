@@ -539,28 +539,16 @@ class TestResult(object):
         else:
             self.error.append(record)
 
-    def add_controller_info(self, controller_name, controller_info,
-                            test_class):
-        """Adds controller info to results.
+    def add_controller_info_record(self, controller_info_record):
+        """Adds a controller info record to results.
 
-        This can be called multiple times for each
+        This can be called multiple times for each test class.
 
         Args:
-            controller_name: string, name of the controller.
-            controller_info: yaml serializable info about the controller.
-            test_class: string, a tag for identifying a class. This should be
-                the test class's own `TAG` attribute.
+            controller_info_record: ControllerInfoRecord object to be added to
+                the result.
         """
-        info = controller_info
-        try:
-            yaml.dump(controller_info)
-        except TypeError:
-            logging.warning('The info of controller %s in class "%s" is not '
-                            'YAML serializable! Coercing it to string.',
-                            controller_name, test_class)
-            info = str(controller_info)
-        self.controller_info.append(
-            ControllerInfoRecord(test_class, controller_name, info))
+        self.controller_info.append(controller_info_record)
 
     def add_class_error(self, test_record):
         """Add a record to indicate a test class has failed before any test
