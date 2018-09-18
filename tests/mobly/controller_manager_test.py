@@ -124,7 +124,7 @@ class ControllerManagerTest(unittest.TestCase):
             c_manager.register_controller(mock_controller, min_number=3)
 
     @mock.patch('yaml.dump', side_effect=TypeError('ha'))
-    def test_unregister_controller(self, _):
+    def test_get_controller_info_record_not_serializable(self, _):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
         c_manager = controller_manager.ControllerManager(
@@ -156,8 +156,7 @@ class ControllerManagerTest(unittest.TestCase):
             })
 
     @mock.patch('tests.lib.mock_controller.destroy')
-    def test_get_controller_info_record_not_serializable(
-            self, mock_destroy_func):
+    def test_unregister_controller(self, mock_destroy_func):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
         c_manager = controller_manager.ControllerManager(
