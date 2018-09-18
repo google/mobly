@@ -177,7 +177,6 @@ class ControllerManager(object):
             logging.warning('No optional debug info found for controller '
                             '%s. To provide it, implement `get_info`.',
                             controller_module_name)
-            return
         try:
             yaml.dump(controller_info)
         except TypeError:

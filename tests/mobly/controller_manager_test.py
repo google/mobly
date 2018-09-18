@@ -79,20 +79,6 @@ class ControllerManagerTest(unittest.TestCase):
         with self.assertRaisesRegex(signals.ControllerError, expected_msg):
             c_manager.register_controller(mock_controller)
 
-    def test_register_controller_no_get_info(self):
-        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
-        controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
-        c_manager = controller_manager.ControllerManager(
-            'SomeClass', controller_configs)
-        get_info = getattr(mock_controller, 'get_info')
-        delattr(mock_controller, 'get_info')
-        try:
-            c_manager.register_controller(mock_controller)
-            # should not crash or return any result.
-            self.assertFalse(c_manager.get_controller_info_records())
-        finally:
-            setattr(mock_controller, 'get_info', get_info)
-
     def test_register_controller_return_value(self):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
@@ -134,6 +120,35 @@ class ControllerManagerTest(unittest.TestCase):
         actual_controller_info = record.controller_info
         self.assertEqual(actual_controller_info,
                          "[{'MyMagic': 'magic1'}, {'MyMagic': 'magic2'}]")
+
+    def test_controller_record_exists_without_get_info(self):
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
+        c_manager = controller_manager.ControllerManager(
+            'SomeClass', controller_configs)
+        get_info = getattr(mock_controller, 'get_info')
+        delattr(mock_controller, 'get_info')
+        try:
+            c_manager.register_controller(mock_controller)
+            record = c_manager.get_controller_info_records()[0]
+            self.assertIsNone(record.controller_info)
+            self.assertEqual(record.test_class, 'SomeClass')
+            self.assertEqual(record.controller_name, 'MagicDevice')
+        finally:
+            setattr(mock_controller, 'get_info', get_info)
+
+    @mock.patch('tests.lib.mock_controller.get_info')
+    def test_get_controller_info_records_empty(self, mock_get_info_func):
+        mock_get_info_func.return_value = None
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
+        c_manager = controller_manager.ControllerManager(
+            'SomeClass', controller_configs)
+        c_manager.register_controller(mock_controller)
+        record = c_manager.get_controller_info_records()[0]
+        self.assertIsNone(record.controller_info)
+        self.assertEqual(record.test_class, 'SomeClass')
+        self.assertEqual(record.controller_name, 'MagicDevice')
 
     def test_get_controller_info_records(self):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
