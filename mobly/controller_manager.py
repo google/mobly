@@ -53,6 +53,10 @@ class ControllerManager(object):
 
     This manages the life cycles and info retrieval of all controller objects
     used in a test.
+
+    Attributes:
+        controller_configs: dict, controller configs provided by the user via
+            test bed config.
     """
 
     def __init__(self, class_name, controller_configs):
@@ -61,7 +65,7 @@ class ControllerManager(object):
         )  # controller_name: objects
         self._controller_modules = {}  # controller_name: module
         self._class_name = class_name
-        self._controller_configs = controller_configs
+        self.controller_configs = controller_configs
 
     def register_controller(self, module, required=True, min_number=1):
         """Loads a controller module and returns its loaded devices.
@@ -100,7 +104,7 @@ class ControllerManager(object):
                 'be registered again.' % module_ref_name)
         # Create controller objects.
         module_config_name = module.MOBLY_CONTROLLER_CONFIG_NAME
-        if module_config_name not in self._controller_configs:
+        if module_config_name not in self.controller_configs:
             if required:
                 raise signals.ControllerError(
                     'No corresponding config found for %s' %
@@ -112,7 +116,7 @@ class ControllerManager(object):
         try:
             # Make a deep copy of the config to pass to the controller module,
             # in case the controller module modifies the config internally.
-            original_config = self._controller_configs[module_config_name]
+            original_config = self.controller_configs[module_config_name]
             controller_config = copy.deepcopy(original_config)
             objects = module.create(controller_config)
         except:
