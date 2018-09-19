@@ -53,6 +53,10 @@ class ControllerManager(object):
 
     This manages the life cycles and info retrieval of all controller objects
     used in a test.
+
+    Attributes:
+        controller_configs: dict, read-only controller configs provided by the
+            user via test bed config.
     """
 
     def __init__(self, class_name, controller_configs):
@@ -62,6 +66,10 @@ class ControllerManager(object):
         self._controller_modules = {}  # controller_name: module
         self._class_name = class_name
         self._controller_configs = controller_configs
+
+    @property
+    def controller_configs(self):
+        return self._controller_configs
 
     def register_controller(self, module, required=True, min_number=1):
         """Loads a controller module and returns its loaded devices.
