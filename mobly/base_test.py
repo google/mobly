@@ -66,6 +66,8 @@ class BaseTestClass(object):
             name.
         results: A records.TestResult object for aggregating test results from
             the execution of tests.
+        controller_configs: dict, controller configs provided by the user via
+            test bed config.
         current_test_name: [Deprecated, use `self.current_test_info.name`]
             A string that's the name of the test method currently being
             executed. If no test is executing, this should be None.
@@ -109,6 +111,7 @@ class BaseTestClass(object):
         self._generated_test_table = collections.OrderedDict()
         self._controller_manager = controller_manager.ControllerManager(
             class_name=self.TAG, controller_configs=configs.controller_configs)
+        self.controller_configs = self._controller_manager.controller_configs
 
     def __enter__(self):
         return self
