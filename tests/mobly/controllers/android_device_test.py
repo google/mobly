@@ -460,6 +460,40 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.utils.start_standing_subprocess', return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch(
+        'mobly.controllers.android_device.AndroidDevice._clear_adb_log')
+    def test_AndroidDevice_start_adb_logcat_clear_log_fails(
+            self, mock_clear_adb_log, stop_proc_mock, start_proc_mock,
+            creat_dir_mock, FastbootProxy, MockAdbProxy):
+        """Verifies the steps of collecting adb logcat on an AndroidDevice
+        object, including various function calls and the expected behaviors of
+        the calls.
+        """
+        mock_clear_adb_log.side_effect = adb.AdbError(
+            cmd='adb -s xx logcat -c',
+            stdout='',
+            stderr="failed to clear 'main' log",
+            ret_code=1)
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        ad.start_adb_logcat()
+        # Verify start did the correct operations.
+        self.assertTrue(ad._adb_logcat_process)
+        expected_log_path = os.path.join(logging.log_path,
+                                         'AndroidDevice%s' % ad.serial,
+                                         'adblog,fakemodel,%s.txt' % ad.serial)
+        creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.create_dir')
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_take_logcat_with_user_param(
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
             FastbootProxy, MockAdbProxy):
