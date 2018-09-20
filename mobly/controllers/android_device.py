@@ -447,8 +447,7 @@ class AndroidDevice(object):
         # logging.log_path only exists when this is used in an Mobly test run.
         self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
         self._log_path = os.path.join(
-            self._log_path_base,
-            'AndroidDevice%s' % self._normalized_serial)
+            self._log_path_base, 'AndroidDevice%s' % self._normalized_serial)
         self._debug_tag = self._serial
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
             'tag': self.debug_tag
@@ -1035,7 +1034,16 @@ class AndroidDevice(object):
                 self,
                 'Logcat thread is already running, cannot start another one.')
         if clear_log:
-            self._clear_adb_log()
+            try:
+                self._clear_adb_log()
+            except adb.AdbError as e:
+                # On Android O, the clear command fails due to a known bug.
+                # Catching this so we don't crash from this Android issue.
+                if "failed to clear" in e.stderr:
+                    self.log.warning(
+                        'Encountered known Android error to clear logcat.')
+                else:
+                    raise
 
         self._enable_logpersist()
 
