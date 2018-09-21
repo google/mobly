@@ -617,9 +617,9 @@ class AndroidDevice(object):
         """Starts long running services on the android device, like adb logcat
         capture.
         """
-        self.services.register('logcat', logcat.Logcat, {
-            'clear_log': clear_log
-        })
+        configs = logcat.Config()
+        configs.clear_log = clear_log
+        self.services.register('logcat', logcat.Logcat, configs)
 
     def stop_services(self):
         """Stops long running services on the Android device.
@@ -733,7 +733,7 @@ class AndroidDevice(object):
         self.wait_for_boot_completion()
         if self.is_rootable:
             self.root_adb()
-        self.services.resume()
+        self.start_services()
         # Restore snippets.
         snippet_info = service_info['snippet_info']
         for attr_name, package_name in snippet_info:
