@@ -173,14 +173,13 @@ class Logcat(base_service.BaseService):
             self._adb_logcat_process = None
 
     def stop(self):
-        """Stops the adb logcat collection subprocess.
-
-        Raises:
-            errors.DeviceError: raised if there's no adb logcat collection going on.
-        """
+        """Stops the adb logcat service."""
         if not self._adb_logcat_process:
-            raise Error(self._ad, 'No ongoing adb logcat collection found.')
-        utils.stop_standing_subprocess(self._adb_logcat_process)
+            return
+        try:
+            utils.stop_standing_subprocess(self._adb_logcat_process)
+        except:
+            self.log.exception('Failed to stop adb logcat.')
         self._adb_logcat_process = None
 
     def pause(self):

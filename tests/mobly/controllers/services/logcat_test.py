@@ -113,10 +113,6 @@ class AndroidDeviceTest(unittest.TestCase):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad)
-        expected_msg = '.* No ongoing adb logcat collection found.'
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(logcat.Error, expected_msg):
-            logcat_service.stop()
         logcat_service.start()
         # Verify start did the correct operations.
         self.assertTrue(logcat_service._adb_logcat_process)
@@ -164,10 +160,6 @@ class AndroidDeviceTest(unittest.TestCase):
         configs = logcat.Config()
         configs.logcat_params = '-b radio'
         logcat_service = logcat.Logcat(ad, configs)
-        expected_msg = '.* No ongoing adb logcat collection found.'
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(logcat.Error, expected_msg):
-            logcat_service.stop()
         logcat_service.start()
         # Verify start did the correct operations.
         self.assertTrue(logcat_service._adb_logcat_process)
@@ -203,10 +195,6 @@ class AndroidDeviceTest(unittest.TestCase):
         configs = logcat.Config()
         configs.logcat_params = '-b radio'
         logcat_service = logcat.Logcat(ad, configs)
-        expected_msg = '.* No ongoing adb logcat collection found.'
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(logcat.Error, expected_msg):
-            logcat_service.stop()
         new_configs = logcat.Config()
         new_configs.logcat_params = '-b something_else'
         logcat_service.start(configs=new_configs)
