@@ -621,6 +621,16 @@ class AndroidDevice(object):
         configs.clear_log = clear_log
         self.services.register('logcat', logcat.Logcat, configs)
 
+    def start_adb_logcat(self, clear_log=True):
+        """[Deprecated] Use logcat service's methods instead."""
+        configs = logcat.Config()
+        configs.clear_log = clear_log
+        self.services.logcat.start(configs)
+
+    def stop_adb_logcat(self):
+        """[Deprecated] Use logcat service's methods instead."""
+        self.services.logcat.stop()
+
     def stop_services(self):
         """Stops long running services on the Android device.
 
