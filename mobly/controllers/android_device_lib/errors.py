@@ -23,6 +23,16 @@ class Error(signals.ControllerError):
 
 class DeviceError(Error):
     """Raised for errors specific to an AndroidDevice object."""
+
     def __init__(self, ad, msg):
         new_msg = '%s %s' % (repr(ad), msg)
+        super(DeviceError, self).__init__(new_msg)
+
+
+class ServiceError(Error):
+    """Raised for errors specific to an AndroidDevice object."""
+    SERVICE_TYPE = None
+
+    def __init__(self, device, msg):
+        new_msg = '[%s]:[%s] %s' % (repr(device), self.SERVICE_TYPE, msg)
         super(DeviceError, self).__init__(new_msg)

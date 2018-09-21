@@ -25,10 +25,12 @@ import time
 from mobly import logger as mobly_logger
 from mobly import signals
 from mobly import utils
+from mobly.controllers import service_manager
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import fastboot
 from mobly.controllers.android_device_lib import sl4a_client
 from mobly.controllers.android_device_lib import snippet_client
+from mobly.controllers.android_device_lib.services import logcat
 
 # Convenience constant for the package of Mobly Bundled Snippets
 # (http://github.com/google/mobly-bundled-snippets).
@@ -429,19 +431,6 @@ class AndroidDevice(object):
             via fastboot.
     """
 
-    @property
-    def _normalized_serial(self):
-        """Normalized serial name for usage in log filename.
-
-        Some Android emulators use ip:port as their serial names, while on 
-        Windows `:` is not valid in filename, it should be sanitized first.
-        """
-        if self._serial is None:
-            return None
-        normalized_serial = self._serial.replace(' ', '_')
-        normalized_serial = normalized_serial.replace(':', '-')
-        return normalized_serial
-
     def __init__(self, serial=''):
         self._serial = str(serial)
         # logging.log_path only exists when this is used in an Mobly test run.
@@ -454,12 +443,11 @@ class AndroidDevice(object):
         })
         self.sl4a = None
         self.ed = None
-        self._adb_logcat_process = None
-        self.adb_logcat_file_path = None
         self.adb = adb.AdbProxy(serial)
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader and self.is_rootable:
             self.root_adb()
+        self.services = service_manager.ServiceManager(self)
         # A dict for tracking snippet clients. Keys are clients' attribute
         # names, values are the clients: {<attr name string>: <client object>}.
         self._snippet_clients = {}
@@ -468,6 +456,26 @@ class AndroidDevice(object):
 
     def __repr__(self):
         return '<AndroidDevice|%s>' % self.debug_tag
+
+    @property
+    def adb_logcat_file_path(self):
+        try:
+            return self.services.logcat.adb_logcat_file_path
+        except AttributeError:
+            return None
+
+    @property
+    def _normalized_serial(self):
+        """Normalized serial name for usage in log filename.
+
+        Some Android emulators use ip:port as their serial names, while on 
+        Windows `:` is not valid in filename, it should be sanitized first.
+        """
+        if self._serial is None:
+            return None
+        normalized_serial = self._serial.replace(' ', '_')
+        normalized_serial = normalized_serial.replace(':', '-')
+        return normalized_serial
 
     @property
     def device_info(self):
@@ -531,8 +539,9 @@ class AndroidDevice(object):
 
         A service can be a snippet or logcat collection.
         """
-        return any(
-            [self._snippet_clients, self._adb_logcat_process, self.sl4a])
+        return any([
+            self._snippet_clients, self.services.is_anything_alive, self.sl4a
+        ])
 
     @property
     def log_path(self):
@@ -608,11 +617,9 @@ class AndroidDevice(object):
         """Starts long running services on the android device, like adb logcat
         capture.
         """
-        try:
-            self.start_adb_logcat(clear_log)
-        except:
-            self.log.exception('Failed to start adb logcat!')
-            raise
+        self.services.register('logcat', logcat.Logcat, {
+            'clear_log': clear_log
+        })
 
     def stop_services(self):
         """Stops long running services on the Android device.
@@ -633,17 +640,8 @@ class AndroidDevice(object):
             client.stop_app()
             delattr(self, attr_name)
         self._snippet_clients = {}
-        self._stop_logcat_process()
+        self.services.logcat.stop()
         return service_info
-
-    def _stop_logcat_process(self):
-        """Stops logcat process."""
-        if self._adb_logcat_process:
-            try:
-                self.stop_adb_logcat()
-            except:
-                self.log.exception('Failed to stop adb logcat.')
-            self._adb_logcat_process = None
 
     @contextlib.contextmanager
     def handle_reboot(self):
@@ -709,16 +707,16 @@ class AndroidDevice(object):
                   # context
                   ad.adb.wait_for_device(timeout=SOME_TIMEOUT)
         """
-        self._stop_logcat_process()
-        # Only need to stop dispatcher because it continuously polling device
-        # It's not necessary to stop snippet and sl4a.
-        if self.sl4a:
-            self.sl4a.stop_event_dispatcher()
+        self.services.logcat.stop()
         # Clears cached adb content, so that the next time start_adb_logcat()
         # won't produce duplicated logs to log file.
         # This helps disconnection that caused by, e.g., USB off; at the
         # cost of losing logs at disconnection caused by reboot.
-        self._clear_adb_log()
+        self.services.logcat.clear_adb_log()
+        # Only need to stop dispatcher because it continuously polling device
+        # It's not necessary to stop snippet and sl4a.
+        if self.sl4a:
+            self.sl4a.stop_event_dispatcher()
         try:
             yield
         finally:
@@ -735,7 +733,7 @@ class AndroidDevice(object):
         self.wait_for_boot_completion()
         if self.is_rootable:
             self.root_adb()
-        self.start_services()
+        self.services.resume()
         # Restore snippets.
         snippet_info = service_info['snippet_info']
         for attr_name, package_name in snippet_info:
@@ -938,141 +936,6 @@ class AndroidDevice(object):
         # Unpack the 'ed' attribute for compatibility.
         self.ed = self.sl4a.ed
 
-    def _is_timestamp_in_range(self, target, begin_time, end_time):
-        low = mobly_logger.logline_timestamp_comparator(begin_time,
-                                                        target) <= 0
-        high = mobly_logger.logline_timestamp_comparator(end_time, target) >= 0
-        return low and high
-
-    def cat_adb_log(self, tag, begin_time):
-        """Takes an excerpt of the adb logcat log from a certain time point to
-        current time.
-
-        Args:
-            tag: An identifier of the time period, usualy the name of a test.
-            begin_time: Logline format timestamp of the beginning of the time
-                period.
-        """
-        if not self.adb_logcat_file_path:
-            raise DeviceError(
-                self,
-                'Attempting to cat adb log when none has been collected.')
-        end_time = mobly_logger.get_log_line_timestamp()
-        self.log.debug('Extracting adb log from logcat.')
-        adb_excerpt_path = os.path.join(self.log_path, 'AdbLogExcerpts')
-        utils.create_dir(adb_excerpt_path)
-        f_name = os.path.basename(self.adb_logcat_file_path)
-        out_name = f_name.replace('adblog,', '').replace('.txt', '')
-        out_name = ',%s,%s.txt' % (begin_time, out_name)
-        out_name = out_name.replace(':', '-')
-        tag_len = utils.MAX_FILENAME_LEN - len(out_name)
-        tag = tag[:tag_len]
-        out_name = tag + out_name
-        full_adblog_path = os.path.join(adb_excerpt_path, out_name)
-        with io.open(full_adblog_path, 'w', encoding='utf-8') as out:
-            in_file = self.adb_logcat_file_path
-            with io.open(
-                    in_file, 'r', encoding='utf-8', errors='replace') as f:
-                in_range = False
-                while True:
-                    line = None
-                    try:
-                        line = f.readline()
-                        if not line:
-                            break
-                    except:
-                        continue
-                    line_time = line[:mobly_logger.log_line_timestamp_len]
-                    if not mobly_logger.is_valid_logline_timestamp(line_time):
-                        continue
-                    if self._is_timestamp_in_range(line_time, begin_time,
-                                                   end_time):
-                        in_range = True
-                        if not line.endswith('\n'):
-                            line += '\n'
-                        out.write(line)
-                    else:
-                        if in_range:
-                            break
-
-    def _enable_logpersist(self):
-        """Attempts to enable logpersist daemon to persist logs."""
-        # Logpersist is only allowed on rootable devices because of excessive
-        # reads/writes for persisting logs.
-        if not self.is_rootable:
-            return
-
-        logpersist_warning = ('%s encountered an error enabling persistent'
-                              ' logs, logs may not get saved.')
-        # Android L and older versions do not have logpersist installed,
-        # so check that the logpersist scripts exists before trying to use
-        # them.
-        if not self.adb.has_shell_command('logpersist.start'):
-            logging.warning(logpersist_warning, self)
-            return
-
-        try:
-            # Disable adb log spam filter for rootable devices. Have to stop
-            # and clear settings first because 'start' doesn't support --clear
-            # option before Android N.
-            self.adb.shell('logpersist.stop --clear')
-            self.adb.shell('logpersist.start')
-        except adb.AdbError:
-            logging.warning(logpersist_warning, self)
-
-    def start_adb_logcat(self, clear_log=True):
-        """Starts a standing adb logcat collection in separate subprocesses and
-        save the logcat in a file.
-
-        This clears the previous cached logcat content on device.
-
-        Args:
-            clear: If True, clear device log before starting logcat.
-        """
-        if self._adb_logcat_process:
-            raise DeviceError(
-                self,
-                'Logcat thread is already running, cannot start another one.')
-        if clear_log:
-            try:
-                self._clear_adb_log()
-            except adb.AdbError as e:
-                # On Android O, the clear command fails due to a known bug.
-                # Catching this so we don't crash from this Android issue.
-                if "failed to clear" in e.stderr:
-                    self.log.warning(
-                        'Encountered known Android error to clear logcat.')
-                else:
-                    raise
-
-        self._enable_logpersist()
-
-        f_name = 'adblog,%s,%s.txt' % (self.model, self._normalized_serial)
-        utils.create_dir(self.log_path)
-        logcat_file_path = os.path.join(self.log_path, f_name)
-        try:
-            extra_params = self.adb_logcat_param
-        except AttributeError:
-            extra_params = ''
-        cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (adb.ADB,
-                                                              self.serial,
-                                                              extra_params,
-                                                              logcat_file_path)
-        process = utils.start_standing_subprocess(cmd, shell=True)
-        self._adb_logcat_process = process
-        self.adb_logcat_file_path = logcat_file_path
-
-    def stop_adb_logcat(self):
-        """Stops the adb logcat collection subprocess.
-
-        Raises:
-            DeviceError: raised if there's no adb logcat collection going on.
-        """
-        if not self._adb_logcat_process:
-            raise DeviceError(self, 'No ongoing adb logcat collection found.')
-        utils.stop_standing_subprocess(self._adb_logcat_process)
-        self._adb_logcat_process = None
-
     def take_bug_report(self,
                         test_name,
                         begin_time,
@@ -1124,10 +987,6 @@ class AndroidDevice(object):
                 ' > "%s"' % full_out_path, shell=True, timeout=timeout)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
-
-    def _clear_adb_log(self):
-        # Clears cached adb content.
-        self.adb.logcat('-c')
 
     def _terminate_sl4a(self):
         """Terminate the current sl4a session.
