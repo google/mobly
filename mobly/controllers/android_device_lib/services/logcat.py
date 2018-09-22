@@ -27,9 +27,16 @@ class Error(errors.DeviceError):
 
 
 class Config(object):
+    """Config object for logcat service.
+
+    Attributes:
+        clear_log: bool, clears the logcat before collection if True.
+        logcat_params: string, extra params to be added to logcat command.
+    """
+
     def __init__(self):
         self.clear_log = True
-        self.logcat_params = None
+        self.logcat_params = ''
 
 
 class Logcat(base_service.BaseService):
@@ -132,13 +139,12 @@ class Logcat(base_service.BaseService):
                             break
 
     def start(self, configs=None):
-        """Starts a standing adb logcat collection in separate subprocesses and
-        save the logcat in a file.
+        """Starts a standing adb logcat collection.
 
-        This clears the previous cached logcat content on device.
+        The collection runs in a separate subprocess and saves logs in a file.
 
         Args:
-            clear: If True, clear device log before starting logcat.
+            configs: Conifg object.
         """
         if self._adb_logcat_process:
             raise Error(
@@ -154,11 +160,8 @@ class Logcat(base_service.BaseService):
                                        self._ad._normalized_serial)
         utils.create_dir(self._ad.log_path)
         logcat_file_path = os.path.join(self._ad.log_path, f_name)
-        extra_params = configs.logcat_params if configs.logcat_params else ''
-        cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (adb.ADB,
-                                                              self._ad.serial,
-                                                              extra_params,
-                                                              logcat_file_path)
+        cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (
+            adb.ADB, self._ad.serial, configs.logcat_params, logcat_file_path)
         process = utils.start_standing_subprocess(cmd, shell=True)
         self._adb_logcat_process = process
         self.adb_logcat_file_path = logcat_file_path
