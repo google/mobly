@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import io
+import logging
 import os
 
 from mobly import logger as mobly_logger
@@ -43,6 +44,7 @@ class Logcat(base_service.BaseService):
     """Android logcat service for Mobly's AndroidDevice controller."""
 
     def __init__(self, android_device, configs=None):
+        super(Logcat, self).__init__(android_device, configs)
         self._ad = android_device
         self._adb_logcat_process = None
         self.adb_logcat_file_path = None
@@ -166,15 +168,6 @@ class Logcat(base_service.BaseService):
         self._adb_logcat_process = process
         self.adb_logcat_file_path = logcat_file_path
 
-    def _stop_logcat_process(self):
-        """Stops logcat process."""
-        if self._adb_logcat_process:
-            try:
-                self.stop_adb_logcat()
-            except:
-                self.log.exception('Failed to stop adb logcat.')
-            self._adb_logcat_process = None
-
     def stop(self):
         """Stops the adb logcat service."""
         if not self._adb_logcat_process:
@@ -182,15 +175,5 @@ class Logcat(base_service.BaseService):
         try:
             utils.stop_standing_subprocess(self._adb_logcat_process)
         except:
-            self.log.exception('Failed to stop adb logcat.')
+            self._ad.log.exception('Failed to stop adb logcat.')
         self._adb_logcat_process = None
-
-    def pause(self):
-        """
-        """
-        self.stop()
-
-    def resume(self, config=None):
-        """
-        """
-        self.start(config)

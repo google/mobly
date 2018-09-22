@@ -16,7 +16,6 @@ from builtins import str as new_str
 from past.builtins import basestring
 
 import contextlib
-import io
 import logging
 import os
 import shutil
@@ -825,8 +824,7 @@ class AndroidDevice(object):
         model = self.adb.getprop('ro.build.product').lower()
         if model == 'sprout':
             return model
-        else:
-            return self.adb.getprop('ro.product.name').lower()
+        return self.adb.getprop('ro.product.name').lower()
 
     def load_config(self, config):
         """Add attributes to the AndroidDevice object based on config.

@@ -36,7 +36,7 @@ class BaseService(object):
         """True if the service is active; False otherwise."""
         raise NotImplementedError('"is_alive" is a required service property.')
 
-    def start(self, config=None):
+    def start(self, configs=None):
         """Starts the service.
 
         Args:
@@ -54,7 +54,9 @@ class BaseService(object):
     def pause(self):
         """
         """
+        self.stop()
 
     def resume(self, config=None):
         """
         """
+        self.start(config)
