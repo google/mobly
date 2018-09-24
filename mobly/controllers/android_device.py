@@ -24,9 +24,9 @@ import time
 from mobly import logger as mobly_logger
 from mobly import signals
 from mobly import utils
-from mobly.controllers import service_manager
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import fastboot
+from mobly.controllers.android_device_lib import service_manager
 from mobly.controllers.android_device_lib import sl4a_client
 from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import logcat

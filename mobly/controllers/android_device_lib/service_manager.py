@@ -29,9 +29,9 @@ class ServiceManager(object):
     adb logcat or Snippet.
     """
 
-    def __init__(self, parent):
+    def __init__(self, device):
         self._service_objects = {}
-        self._parent = parent
+        self._device = device
 
     @property
     def is_anything_alive(self):
@@ -55,12 +55,9 @@ class ServiceManager(object):
         """
         if alias in self._service_objects:
             raise Error(
-                'A service is already registered with alias "%s"' % alias)
-        service_obj = None
-        if configs is None:
-            service_obj = service_class(self._parent)
-        else:
-            service_obj = service_class(self._parent, configs)
+                self._device,
+                'A service is already registered with alias "%s".' % alias)
+        service_obj = service_class(self._device, configs)
         service_obj.start()
         self._service_objects[alias] = service_obj
 
@@ -73,21 +70,27 @@ class ServiceManager(object):
             alias: string, the alias of the service instance to unregister.
         """
         if alias not in self._service_objects:
-            raise Error('No service is registered with alias "%s"' % alias)
+            raise Error(self._device,
+                        'No service is registered with alias "%s".' % alias)
         service_obj = self._service_objects.pop(alias)
         if service_obj.is_alive:
-            service_obj.stop()
+            with expects.expect_no_raises(
+                    'Failed to stop service instance "%s".' % alias):
+                service_obj.stop()
 
-    def unregister_all_safe(self):
+    def unregister_all(self):
         """Safely unregisters all active instances.
 
         Errors occurred here will be recorded but not raised.
         """
         aliases = list(self._service_objects.keys())
         for alias in aliases:
-            with expects.expect_no_raises(
-                    'Failed to unregister service %s' % alias):
-                self.unregister(alias)
+            self.unregister(alias)
 
     def __getattr__(self, name):
+        """Syntactic sugar to enable direct access of service objects by alias.
+
+        Args:
+            name: string, the alias a service object was registered under.
+        """
         return self._service_objects[name]
