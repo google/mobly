@@ -30,9 +30,9 @@ class DeviceError(Error):
 
 
 class ServiceError(Error):
-    """Raised for errors specific to an AndroidDevice object."""
+    """Raised for errors specific to an AndroidDevice service."""
     SERVICE_TYPE = None
 
     def __init__(self, device, msg):
-        new_msg = '[%s]:[%s] %s' % (repr(device), self.SERVICE_TYPE, msg)
-        super(DeviceError, self).__init__(new_msg)
+        new_msg = '%s:Service<%s> %s' % (repr(device), self.SERVICE_TYPE, msg)
+        super(ServiceError, self).__init__(new_msg)

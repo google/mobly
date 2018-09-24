@@ -22,7 +22,7 @@ from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib.services import base_service
 
 
-class Error(errors.DeviceError):
+class Error(errors.ServiceError):
     """Root error type for logcat service."""
     SERVICE_TYPE = 'Logcat'
 
