@@ -616,14 +616,12 @@ class AndroidDevice(object):
         """Starts long running services on the android device, like adb logcat
         capture.
         """
-        configs = logcat.Config()
-        configs.clear_log = clear_log
+        configs = logcat.Config(clear_log=clear_log)
         self.services.register('logcat', logcat.Logcat, configs)
 
     def start_adb_logcat(self, clear_log=True):
         """[Deprecated] Use logcat service's methods instead."""
-        configs = logcat.Config()
-        configs.clear_log = clear_log
+        configs = logcat.Config(clear_log=clear_log)
         self.services.logcat.start(configs)
 
     def stop_adb_logcat(self):
@@ -755,7 +753,8 @@ class AndroidDevice(object):
         """Reconnects to services after USB reconnected."""
         # Do not clear device log at this time. Otherwise the log during USB
         # disconnection will be lost.
-        self.start_services(clear_log=False)
+        configs = logcat.Config(clear_log=False)
+        self.services.logcat.start(configs)
         # Restore snippets.
         for attr_name, client in self._snippet_clients.items():
             client.restore_app_connection()

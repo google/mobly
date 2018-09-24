@@ -35,9 +35,9 @@ class Config(object):
         logcat_params: string, extra params to be added to logcat command.
     """
 
-    def __init__(self):
-        self.clear_log = True
-        self.logcat_params = ''
+    def __init__(self, params=None, clear_log=True):
+        self.clear_log = clear_log
+        self.logcat_params = params if params else ''
 
 
 class Logcat(base_service.BaseService):
