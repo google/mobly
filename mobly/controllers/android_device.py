@@ -647,7 +647,7 @@ class AndroidDevice(object):
             client.stop_app()
             delattr(self, attr_name)
         self._snippet_clients = {}
-        self.services.logcat.stop()
+        self.services.unregister_all()
         return service_info
 
     @contextlib.contextmanager
