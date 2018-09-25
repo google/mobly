@@ -187,7 +187,7 @@ class Logcat(base_service.BaseService):
         # cost of losing logs at disconnection caused by reboot.
         self.clear_adb_log()
 
-    def resume(self, configs=None):
+    def resume(self):
         """Resumes a paused logcat service.
 
         Args:
@@ -195,5 +195,4 @@ class Logcat(base_service.BaseService):
         """
         # Do not clear device log at this time. Otherwise the log during USB
         # disconnection will be lost.
-        configs = logcat.Config(clear_log=False)
-        self.services.logcat.start(configs)
+        self.services.logcat.start(logcat.Config(clear_log=False))

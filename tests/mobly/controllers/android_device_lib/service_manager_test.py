@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Unit tests for Mobly's ServiceManager."""
 import mock
 
@@ -31,7 +30,7 @@ class MockService(base_service.BaseService):
     def is_alive(self):
         return self._alive
 
-    def start(self):
+    def start(self, configs=None):
         self._alive = True
         self._device.start()
 
@@ -105,7 +104,19 @@ class ServiceManagerTest(unittest.TestCase):
         self.assertFalse(service1.is_alive)
         self.assertFalse(service2.is_alive)
 
-    def test_unregister_all_some_failed_to_stop(self):
+    def test_unregister_all(self):
+        mock_device = mock.MagicMock()
+        manager = service_manager.ServiceManager(mock_device)
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        service1 = manager.mock_service1
+        service2 = manager.mock_service2
+        manager.unregister_all()
+        self.assertFalse(manager.is_anything_alive)
+        self.assertFalse(service1.is_alive)
+        self.assertFalse(service2.is_alive)
+
+    def test_unregister_all_with_some_failed(self):
         mock_device = mock.MagicMock()
         manager = service_manager.ServiceManager(mock_device)
         manager.register('mock_service1', MockService)
@@ -118,6 +129,62 @@ class ServiceManagerTest(unittest.TestCase):
         self.assertFalse(manager.is_anything_alive)
         self.assertFalse(service1.is_alive)
         self.assertFalse(service2.is_alive)
+
+    def test_pause_all(self):
+        mock_device = mock.MagicMock()
+        manager = service_manager.ServiceManager(mock_device)
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        service1 = manager.mock_service1
+        service2 = manager.mock_service2
+        manager.pause_all()
+        self.assertFalse(manager.is_anything_alive)
+        self.assertFalse(service1.is_alive)
+        self.assertFalse(service2.is_alive)
+
+    def test_pause_all_with_some_failed(self):
+        mock_device = mock.MagicMock()
+        manager = service_manager.ServiceManager(mock_device)
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        service1 = manager.mock_service1
+        service1._device.pause.side_deffect = Exception(
+            'Something failed in stop.')
+        service2 = manager.mock_service2
+        manager.pause_all()
+        self.assertFalse(manager.is_anything_alive)
+        # state of service1 is undefined
+        # verify state of service2
+        self.assertFalse(service2.is_alive)
+
+    def test_resume_all(self):
+        mock_device = mock.MagicMock()
+        manager = service_manager.ServiceManager(mock_device)
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        service1 = manager.mock_service1
+        service2 = manager.mock_service2
+        manager.pause_all()
+        manager.resume_all()
+        self.assertTrue(manager.is_anything_alive)
+        self.assertTrue(service1.is_alive)
+        self.assertTrue(service2.is_alive)
+
+    def test_resume_all_with_some_failed(self):
+        mock_device = mock.MagicMock()
+        manager = service_manager.ServiceManager(mock_device)
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        service1 = manager.mock_service1
+        service1._device.resume.side_deffect = Exception(
+            'Something failed in stop.')
+        service2 = manager.mock_service2
+        manager.pause_all()
+        manager.resume_all()
+        self.assertTrue(manager.is_anything_alive)
+        # state of service1 is undefined
+        # verify state of service2
+        self.assertTrue(service2.is_alive)
 
 
 if __name__ == '__main__':

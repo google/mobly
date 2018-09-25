@@ -714,7 +714,7 @@ class AndroidDevice(object):
                   # context
                   ad.adb.wait_for_device(timeout=SOME_TIMEOUT)
         """
-        self.services.logcat.pause()
+        self.services.pause_all()
         # Only need to stop dispatcher because it continuously polling device
         # It's not necessary to stop snippet and sl4a.
         if self.sl4a:
@@ -746,7 +746,7 @@ class AndroidDevice(object):
 
     def _reconnect_to_services(self):
         """Reconnects to services after USB reconnected."""
-        self.services.logcat.resume()
+        self.services.resume_all()
         # Restore snippets.
         for attr_name, client in self._snippet_clients.items():
             client.restore_app_connection()

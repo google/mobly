@@ -75,7 +75,7 @@ class BaseService(object):
         """
         self.stop()
 
-    def resume(self, config=None):
+    def resume(self):
         """Resumes a paused service.
 
         Same context as the `pause` method. This should resume the service
@@ -84,4 +84,4 @@ class BaseService(object):
         If not implemented, we assume the service is not sensitive to device
         disconnect, and `start` will be called by default.
         """
-        self.start(config)
+        self.start(configs=self._configs)

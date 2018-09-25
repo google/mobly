@@ -87,6 +87,24 @@ class ServiceManager(object):
         for alias in aliases:
             self.unregister(alias)
 
+    def pause_all(self):
+        """Pauses all active service instances.
+        """
+        for alias, obj in self._service_objects.items():
+            if obj.is_alive:
+                with expects.expect_no_raises(
+                        'Failed to pause service "%s".' % alias):
+                    obj.pause()
+
+    def resume_all(self):
+        """Resumes all paused service instances.
+        """
+        for alias, obj in self._service_objects.items():
+            if not obj.is_alive:
+                with expects.expect_no_raises(
+                        'Failed to pause service "%s".' % alias):
+                    obj.resume()
+
     def __getattr__(self, name):
         """Syntactic sugar to enable direct access of service objects by alias.
 
