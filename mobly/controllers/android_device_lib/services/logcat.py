@@ -177,3 +177,23 @@ class Logcat(base_service.BaseService):
         except:
             self._ad.log.exception('Failed to stop adb logcat.')
         self._adb_logcat_process = None
+
+    def pause(self):
+        """Pauses logcat for usb disconnect."""
+        self.stop()
+        # Clears cached adb content, so that the next time start_adb_logcat()
+        # won't produce duplicated logs to log file.
+        # This helps disconnection that caused by, e.g., USB off; at the
+        # cost of losing logs at disconnection caused by reboot.
+        self.clear_adb_log()
+
+    def resume(self, configs=None):
+        """Resumes a paused logcat service.
+
+        Args:
+            configs: Not used.
+        """
+        # Do not clear device log at this time. Otherwise the log during USB
+        # disconnection will be lost.
+        configs = logcat.Config(clear_log=False)
+        self.services.logcat.start(configs)

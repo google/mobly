@@ -714,12 +714,7 @@ class AndroidDevice(object):
                   # context
                   ad.adb.wait_for_device(timeout=SOME_TIMEOUT)
         """
-        self.services.logcat.stop()
-        # Clears cached adb content, so that the next time start_adb_logcat()
-        # won't produce duplicated logs to log file.
-        # This helps disconnection that caused by, e.g., USB off; at the
-        # cost of losing logs at disconnection caused by reboot.
-        self.services.logcat.clear_adb_log()
+        self.services.logcat.pause()
         # Only need to stop dispatcher because it continuously polling device
         # It's not necessary to stop snippet and sl4a.
         if self.sl4a:
@@ -751,10 +746,7 @@ class AndroidDevice(object):
 
     def _reconnect_to_services(self):
         """Reconnects to services after USB reconnected."""
-        # Do not clear device log at this time. Otherwise the log during USB
-        # disconnection will be lost.
-        configs = logcat.Config(clear_log=False)
-        self.services.logcat.start(configs)
+        self.services.logcat.resume()
         # Restore snippets.
         for attr_name, client in self._snippet_clients.items():
             client.restore_app_connection()
