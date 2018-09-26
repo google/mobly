@@ -57,10 +57,8 @@ class ServiceManagerTest(unittest.TestCase):
         mock_device = mock.MagicMock()
         manager = service_manager.ServiceManager(mock_device)
         manager.register('mock_service', MockService)
-        with self.assertRaisesRegex(
-                service_manager.Error,
-                '.* A service is already registered with alias "mock_service"'
-        ):
+        msg = '.* A service is already registered with alias "mock_service"'
+        with self.assertRaisesRegex(service_manager.Error, msg):
             manager.register('mock_service', MockService)
 
     def test_unregister(self):
