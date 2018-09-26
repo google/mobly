@@ -88,7 +88,16 @@ class Logcat(base_service.BaseService):
 
     def clear_adb_log(self):
         # Clears cached adb content.
-        self._ad.adb.logcat('-c')
+        try:
+            self._ad.adb.logcat('-c')
+        except adb.AdbError as e:
+            # On Android O, the clear command fails due to a known bug.
+            # Catching this so we don't crash from this Android issue.
+            if "failed to clear" in e.stderr:
+                self._ad.log.warning(
+                    'Encountered known Android error to clear logcat.')
+            else:
+                raise
 
     def cat_adb_log(self, tag, begin_time):
         """Takes an excerpt of the adb logcat log from a certain time point to
