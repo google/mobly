@@ -381,8 +381,8 @@ class AndroidDeviceTest(unittest.TestCase):
                                            start_proc_mock, FastbootProxy,
                                            MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.services.register('logcat', logcat.Logcat)
-        ad.services.logcat.stop()
+        ad.start_services()
+        ad.services.unregister('logcat')
         old_path = ad.log_path
         new_log_path = tempfile.mkdtemp()
         ad.log_path = new_log_path
@@ -438,7 +438,7 @@ class AndroidDeviceTest(unittest.TestCase):
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
             FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.services.register('logcat', logcat.Logcat)
+        ad.start_services()
         new_log_path = tempfile.mkdtemp()
         expected_msg = '.* Cannot change `log_path` when there is service running.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
@@ -500,7 +500,7 @@ class AndroidDeviceTest(unittest.TestCase):
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
             FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.services.register('logcat', logcat.Logcat)
+        ad.start_services()
         expected_msg = '.* Cannot change device serial number when there is service running.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.update_serial('2')
@@ -702,7 +702,7 @@ class AndroidDeviceTest(unittest.TestCase):
     def test_AndroidDevice_snippet_cleanup(
             self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.services.register('logcat', logcat.Logcat)
+        ad.start_services()
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         ad.stop_services()
         self.assertFalse(hasattr(ad, 'snippet'))
