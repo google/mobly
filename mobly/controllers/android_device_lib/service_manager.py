@@ -88,8 +88,7 @@ class ServiceManager(object):
             self.unregister(alias)
 
     def pause_all(self):
-        """Pauses all active service instances.
-        """
+        """Pauses all active service instances."""
         for alias, obj in self._service_objects.items():
             if obj.is_alive:
                 with expects.expect_no_raises(
@@ -97,8 +96,7 @@ class ServiceManager(object):
                     obj.pause()
 
     def resume_all(self):
-        """Resumes all paused service instances.
-        """
+        """Resumes all paused service instances."""
         for alias, obj in self._service_objects.items():
             if not obj.is_alive:
                 with expects.expect_no_raises(
