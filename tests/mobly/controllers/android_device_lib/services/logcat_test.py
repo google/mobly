@@ -433,6 +433,22 @@ class LogcatTest(unittest.TestCase):
         logcat_service = logcat.Logcat(ad)
         logcat_service._enable_logpersist()
 
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy')
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_logcat_service_clear_adb_log(self, MockFastboot, MockAdbProxy):
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        ad.adb.logcat = mock.MagicMock()
+        ad.adb.logcat.side_effect = adb.AdbError(
+            cmd='cmd',
+            stdout='',
+            stderr='failed to clear "main" log',
+            ret_code=1)
+        logcat_service = logcat.Logcat(ad)
+        logcat_service.clear_adb_log()
+
 
 if __name__ == '__main__':
     unittest.main()
