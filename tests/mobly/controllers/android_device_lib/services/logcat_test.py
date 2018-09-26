@@ -12,30 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str as new_str
-
 import io
 import logging
 import mock
 import os
 import shutil
-import sys
 import tempfile
-import yaml
 
 from future.tests.base import unittest
 
 from mobly import utils
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import errors
-from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import logcat
 
 from tests.lib import mock_android_device
 
-# Mock log path for a test run.
-MOCK_LOG_PATH = '/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/'
 # The expected result of the cat adb operation.
 MOCK_ADB_LOGCAT_CAT_RESULT = [
     '02-29 14:02:21.456  4454  Something\n',
@@ -61,11 +53,6 @@ MOCK_ADB_UNICODE_LOGCAT = (
 # Mock start and end time of the adb cat.
 MOCK_ADB_LOGCAT_BEGIN_TIME = '02-29 14:02:20.123'
 MOCK_ADB_LOGCAT_END_TIME = '02-29 14:02:22.000'
-MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
-
-# A mock SnippetClient used for testing snippet management logic.
-MockSnippetClient = mock.MagicMock()
-MockSnippetClient.package = MOCK_SNIPPET_PACKAGE_NAME
 
 # Mock AdbError for missing logpersist scripts
 MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR = adb.AdbError(
@@ -76,10 +63,8 @@ MOCK_LOGPERSIST_START_MISSING_ADB_ERROR = adb.AdbError(
     '/system/bin/sh: logpersist.stop: not found', 0)
 
 
-class AndroidDeviceTest(unittest.TestCase):
-    """This test class has unit tests for the implementation of everything
-    under mobly.controllers.android_device.
-    """
+class LogcatTest(unittest.TestCase):
+    """Tests for Logcat service and its integration with AndroidDevice."""
 
     def setUp(self):
         # Set log_path to logging since mobly logger setup is not called.

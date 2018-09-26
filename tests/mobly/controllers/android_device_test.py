@@ -25,7 +25,6 @@ import yaml
 
 from future.tests.base import unittest
 
-from mobly import utils
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import snippet_client
@@ -33,46 +32,12 @@ from mobly.controllers.android_device_lib.services import logcat
 
 from tests.lib import mock_android_device
 
-# Mock log path for a test run.
-MOCK_LOG_PATH = '/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/'
-# The expected result of the cat adb operation.
-MOCK_ADB_LOGCAT_CAT_RESULT = [
-    '02-29 14:02:21.456  4454  Something\n',
-    '02-29 14:02:21.789  4454  Something again\n'
-]
-# A mocked piece of adb logcat output.
-MOCK_ADB_LOGCAT = (u'02-29 14:02:19.123  4454  Nothing\n'
-                   u'%s'
-                   u'02-29 14:02:22.123  4454  Something again and again\n'
-                   ) % u''.join(MOCK_ADB_LOGCAT_CAT_RESULT)
-# The expected result of the cat adb operation.
-MOCK_ADB_UNICODE_LOGCAT_CAT_RESULT = [
-    '02-29 14:02:21.456  4454  Something \u901a\n',
-    '02-29 14:02:21.789  4454  Something again\n'
-]
-# A mocked piece of adb logcat output.
-MOCK_ADB_UNICODE_LOGCAT = (
-    u'02-29 14:02:19.123  4454  Nothing\n'
-    u'%s'
-    u'02-29 14:02:22.123  4454  Something again and again\n'
-) % u''.join(MOCK_ADB_UNICODE_LOGCAT_CAT_RESULT)
 
-# Mock start and end time of the adb cat.
-MOCK_ADB_LOGCAT_BEGIN_TIME = '02-29 14:02:20.123'
-MOCK_ADB_LOGCAT_END_TIME = '02-29 14:02:22.000'
 MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
 
 # A mock SnippetClient used for testing snippet management logic.
 MockSnippetClient = mock.MagicMock()
 MockSnippetClient.package = MOCK_SNIPPET_PACKAGE_NAME
-
-# Mock AdbError for missing logpersist scripts
-MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR = adb.AdbError(
-    'logpersist.stop --clear', '',
-    '/system/bin/sh: logpersist.stop: not found', 0)
-MOCK_LOGPERSIST_START_MISSING_ADB_ERROR = adb.AdbError(
-    'logpersist.start --clear', '',
-    '/system/bin/sh: logpersist.stop: not found', 0)
 
 
 class AndroidDeviceTest(unittest.TestCase):

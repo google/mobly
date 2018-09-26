@@ -19,7 +19,7 @@ from future.tests.base import unittest
 from mobly.controllers.android_device_lib import errors
 
 
-class ServiceManagerTest(unittest.TestCase):
+class ErrorsTest(unittest.TestCase):
     def test_device_error(self):
         device = mock.MagicMock()
         device.__repr__ = lambda _: '[MockDevice]'
