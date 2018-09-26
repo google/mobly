@@ -28,10 +28,10 @@ from future.tests.base import unittest
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import snippet_client
+from mobly.controllers.android_device_lib.services import base_service
 from mobly.controllers.android_device_lib.services import logcat
 
 from tests.lib import mock_android_device
-
 
 MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
 
@@ -732,6 +732,52 @@ class AndroidDeviceTest(unittest.TestCase):
             raise Exception(ad, 'Something')
         except Exception as e:
             self.assertEqual("(<AndroidDevice|Mememe>, 'Something')", str(e))
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_handle_usb_disconnect(self, stop_proc_mock,
+                                                 start_proc_mock,
+                                                 FastbootProxy, MockAdbProxy):
+        class MockService(base_service.BaseService):
+            def __init__(self, device, configs=None):
+                self._alive = False
+                self.pause_called = False
+                self.resume_called = False
+
+            @property
+            def is_alive(self):
+                return self._alive
+
+            def start(self, configs=None):
+                self._alive = True
+
+            def stop(self):
+                self._alive = False
+
+            def pause(self):
+                self._alive = False
+                self.pause_called = True
+
+            def resume(self):
+                self._alive = True
+                self.resume_called = True
+
+        ad = android_device.AndroidDevice(serial='1')
+        ad.start_services()
+        ad.services.register('mock_service', MockService)
+        with ad.handle_usb_disconnect():
+            self.assertFalse(ad.services.is_any_alive)
+            self.assertTrue(ad.services.mock_service.pause_called)
+            self.assertFalse(ad.services.mock_service.resume_called)
+        self.assertTrue(ad.services.is_any_alive)
+        self.assertTrue(ad.services.mock_service.resume_called)
 
 
 if __name__ == '__main__':

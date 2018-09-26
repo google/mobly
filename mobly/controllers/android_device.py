@@ -538,9 +538,8 @@ class AndroidDevice(object):
 
         A service can be a snippet or logcat collection.
         """
-        return any([
-            self._snippet_clients, self.services.is_anything_alive, self.sl4a
-        ])
+        return any(
+            [self._snippet_clients, self.services.is_any_alive, self.sl4a])
 
     @property
     def log_path(self):

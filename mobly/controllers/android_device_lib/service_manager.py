@@ -34,7 +34,7 @@ class ServiceManager(object):
         self._device = device
 
     @property
-    def is_anything_alive(self):
+    def is_any_alive(self):
         """True if any service is alive; False otherwise."""
         for service in self._service_objects.values():
             if service.is_alive:

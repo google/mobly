@@ -51,7 +51,7 @@ class ServiceManagerTest(unittest.TestCase):
         service = manager.mock_service
         self.assertTrue(service)
         self.assertTrue(service.is_alive)
-        self.assertTrue(manager.is_anything_alive)
+        self.assertTrue(manager.is_any_alive)
 
     def test_register_dup_alias(self):
         mock_device = mock.MagicMock()
@@ -69,7 +69,7 @@ class ServiceManagerTest(unittest.TestCase):
         manager.register('mock_service', MockService)
         service = manager.mock_service
         manager.unregister('mock_service')
-        self.assertFalse(manager.is_anything_alive)
+        self.assertFalse(manager.is_any_alive)
         self.assertFalse(service.is_alive)
 
     def test_unregister_non_existent(self):
@@ -100,7 +100,7 @@ class ServiceManagerTest(unittest.TestCase):
         service1 = manager.mock_service1
         service2 = manager.mock_service2
         manager.unregister_all()
-        self.assertFalse(manager.is_anything_alive)
+        self.assertFalse(manager.is_any_alive)
         self.assertFalse(service1.is_alive)
         self.assertFalse(service2.is_alive)
 
@@ -112,7 +112,7 @@ class ServiceManagerTest(unittest.TestCase):
         service1 = manager.mock_service1
         service2 = manager.mock_service2
         manager.unregister_all()
-        self.assertFalse(manager.is_anything_alive)
+        self.assertFalse(manager.is_any_alive)
         self.assertFalse(service1.is_alive)
         self.assertFalse(service2.is_alive)
 
@@ -126,7 +126,7 @@ class ServiceManagerTest(unittest.TestCase):
             'Something failed in stop.')
         service2 = manager.mock_service2
         manager.unregister_all()
-        self.assertFalse(manager.is_anything_alive)
+        self.assertFalse(manager.is_any_alive)
         self.assertFalse(service1.is_alive)
         self.assertFalse(service2.is_alive)
 
@@ -138,7 +138,7 @@ class ServiceManagerTest(unittest.TestCase):
         service1 = manager.mock_service1
         service2 = manager.mock_service2
         manager.pause_all()
-        self.assertFalse(manager.is_anything_alive)
+        self.assertFalse(manager.is_any_alive)
         self.assertFalse(service1.is_alive)
         self.assertFalse(service2.is_alive)
 
@@ -152,7 +152,7 @@ class ServiceManagerTest(unittest.TestCase):
             'Something failed in stop.')
         service2 = manager.mock_service2
         manager.pause_all()
-        self.assertFalse(manager.is_anything_alive)
+        self.assertFalse(manager.is_any_alive)
         # state of service1 is undefined
         # verify state of service2
         self.assertFalse(service2.is_alive)
@@ -166,7 +166,7 @@ class ServiceManagerTest(unittest.TestCase):
         service2 = manager.mock_service2
         manager.pause_all()
         manager.resume_all()
-        self.assertTrue(manager.is_anything_alive)
+        self.assertTrue(manager.is_any_alive)
         self.assertTrue(service1.is_alive)
         self.assertTrue(service2.is_alive)
 
@@ -181,7 +181,7 @@ class ServiceManagerTest(unittest.TestCase):
         service2 = manager.mock_service2
         manager.pause_all()
         manager.resume_all()
-        self.assertTrue(manager.is_anything_alive)
+        self.assertTrue(manager.is_any_alive)
         # state of service1 is undefined
         # verify state of service2
         self.assertTrue(service2.is_alive)
