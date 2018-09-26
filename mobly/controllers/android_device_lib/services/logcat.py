@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import copy
 import io
 import logging
 import os
@@ -195,4 +196,6 @@ class Logcat(base_service.BaseService):
         """
         # Do not clear device log at this time. Otherwise the log during USB
         # disconnection will be lost.
-        self.services.logcat.start(logcat.Config(clear_log=False))
+        resume_configs = copy.copy(self._configs)
+        resume_configs.clear_log = False
+        self.start(resume_configs)

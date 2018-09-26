@@ -148,6 +148,37 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.utils.start_standing_subprocess', return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch(
+        'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    def test_logcat_service_pause_and_resume(
+            self, clear_adb_mock, stop_proc_mock, start_proc_mock,
+            creat_dir_mock, FastbootProxy, MockAdbProxy):
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        logcat_service = logcat.Logcat(ad)
+        logcat_service.start()
+        clear_adb_mock.assert_called_once_with()
+        self.assertTrue(logcat_service.is_alive)
+        logcat_service.pause()
+        self.assertFalse(logcat_service.is_alive)
+        stop_proc_mock.assert_called_with('process')
+        self.assertIsNone(logcat_service._adb_logcat_process)
+        clear_adb_mock.reset_mock()
+        logcat_service.resume()
+        self.assertTrue(logcat_service.is_alive)
+        clear_adb_mock.assert_not_called()
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.create_dir')
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_logcat_service_take_logcat_with_extra_params(
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
             FastbootProxy, MockAdbProxy):
