@@ -616,9 +616,7 @@ class AndroidDeviceTest(unittest.TestCase):
             self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        expected_msg = ('Attribute "%s" is already registered with package '
-                        '"%s", it cannot be used again.') % (
-                            'snippet', MOCK_SNIPPET_PACKAGE_NAME)
+        expected_msg = '.* Attribute "snippet" already exists, please use a different name.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME + 'haha')
 
