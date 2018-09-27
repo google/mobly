@@ -46,6 +46,7 @@ class SnippetManager(base_service.BaseService):
 
     @property
     def is_alive(self):
+        """True if any service is alive, False otherwise."""
         return any(
             [client.is_alive for client in self._snippet_services.values()])
 

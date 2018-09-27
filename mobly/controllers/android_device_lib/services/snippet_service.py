@@ -12,8 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module for the snippet service."""
+from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import base_service
+
+
+class Error(errors.ServiceError):
+    SERVICE_TYPE = 'Snippet:%s'
+
+    def __init__(self, snippet_package, device, msg):
+        self.SERVICE_TYPE = self.SERVICE_TYPE % snippet_package
+        super(Error, self).__init__(device, msg)
 
 
 class Config(object):
@@ -25,13 +34,6 @@ class SnippetService(base_service.BaseService):
     """Service for a single Snippet client."""
 
     def __init__(self, device, configs=None):
-        """Constructor of the class.
-
-        Args:
-          device: the device object this service is associated with.
-          config: optional configuration defined by the author of the service
-              class.
-        """
         self._device = device
         self._configs = configs
         self._is_alive = False
@@ -42,7 +44,10 @@ class SnippetService(base_service.BaseService):
         return self.client is not None
 
     def start(self, configs=None):
-        del configs # Overriding config is not allowed here.
+        if configs:
+            raise Error(
+                self._configs.package, self._device,
+                'Overriding config in `start` is allowed for SnippetService.')
         client = snippet_client.SnippetClient(
             package=self._configs.package, ad=self._device)
         try:
@@ -58,7 +63,7 @@ class SnippetService(base_service.BaseService):
                 client.stop_app()
             except:
                 self._device.log.exception(
-                    'Failed to stop app after failure to start app and connect.'
+                    'Failed to stop app after failure to start and connect.'
                 )
             # Explicitly raise the error from start app failure.
             raise e

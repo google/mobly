@@ -11,23 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import io
-import logging
 import mock
-import os
-import shutil
-import tempfile
-
 from future.tests.base import unittest
 
-from mobly import utils
-from mobly.controllers import android_device
-from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import snippet_service
-
-from tests.lib import mock_android_device
 
 MOCK_SNIPPET_PACKAGE = 'com.some.snippet'
 MOCK_CONFIG = snippet_service.Config(package=MOCK_SNIPPET_PACKAGE)
@@ -43,8 +31,10 @@ class SnippetServiceTest(unittest.TestCase):
         mock_device = mock.MagicMock()
         service = snippet_service.SnippetService(mock_device, MOCK_CONFIG)
         service.start()
+        self.assertTrue(service.is_alive)
         self.assertIsNotNone(service.client)
         service.stop()
+        self.assertFalse(service.is_alive)
         self.assertIsNone(service.client)
 
     @mock.patch(
@@ -59,6 +49,17 @@ class SnippetServiceTest(unittest.TestCase):
         service.client.do_something.assert_called_once_with('crazy')
 
     @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy')
+    def test_override_start_config(self, mock_adb, mock_snippet_client):
+        mock_device = mock.MagicMock()
+        service = snippet_service.SnippetService(mock_device, MOCK_CONFIG)
+        msg = 'Overriding config in `start` is allowed for SnippetService.'
+        with self.assertRaisesRegex(snippet_service.Error, msg):
+            service.start('something')
+        self.assertFalse(service.is_alive)
+
+    @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient.start_app_and_connect'
     )
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy')
@@ -70,6 +71,7 @@ class SnippetServiceTest(unittest.TestCase):
         with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
                                     'ha'):
             service.start()
+        self.assertFalse(service.is_alive)
         self.assertIsNone(service.client)
 
     @mock.patch(
@@ -87,6 +89,7 @@ class SnippetServiceTest(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'Something failed!'):
             service.start()
         mock_stop_func.assert_called_once_with()
+        self.assertFalse(service.is_alive)
         self.assertIsNone(service.client)
 
     @mock.patch(
@@ -105,6 +108,7 @@ class SnippetServiceTest(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'Something failed!'):
             service.start()
         mock_stop_func.assert_called_once_with()
+        self.assertFalse(service.is_alive)
         self.assertIsNone(service.client)
 
 
