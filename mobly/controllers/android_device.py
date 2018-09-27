@@ -603,6 +603,7 @@ class AndroidDevice(object):
         """
         configs = logcat.Config(clear_log=clear_log)
         self.services.register('logcat', logcat.Logcat, configs)
+        self.services.start_all()
 
     def start_adb_logcat(self, clear_log=True):
         """.. deprecated:: 1.8
@@ -1029,7 +1030,7 @@ class AndroidDevice(object):
         if client:
             return client
         raise AttributeError('Attribute "%s" not found on device %s.' %
-                             (name, self._device))
+                             (name, self))
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):

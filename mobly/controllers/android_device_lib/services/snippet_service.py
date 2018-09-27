@@ -17,8 +17,7 @@ from mobly.controllers.android_device_lib.services import base_service
 
 
 class Config(object):
-    def __init__(self, name, package):
-        self.name = name
+    def __init__(self, package):
         self.package = package
 
 
@@ -43,6 +42,7 @@ class SnippetService(base_service.BaseService):
         return self.client is not None
 
     def start(self, configs=None):
+        del configs # Overriding config is not allowed here.
         client = snippet_client.SnippetClient(
             package=self._configs.package, ad=self._device)
         try:
@@ -76,3 +76,7 @@ class SnippetService(base_service.BaseService):
     def resume(self):
         if self.client:
             self.client.restore_app_connection()
+
+    def __getattr__(self, name):
+        if self.client:
+            return getattr(self.client, name)

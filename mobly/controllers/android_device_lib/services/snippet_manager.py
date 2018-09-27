@@ -68,10 +68,8 @@ class SnippetManager(base_service.BaseService):
                     self,
                     'Snippet package "%s" has already been loaded under name'
                     ' "%s".' % (package, name))
-        service = snippet_service.SnippetService(self._device,
-                                                 snippet_service.Config(
-                                                     name=name,
-                                                     package=package))
+        config = snippet_service.Config(package=package)
+        service = snippet_service.SnippetService(self._device, config)
         service.start()
         self._snippet_services[name] = service
 
