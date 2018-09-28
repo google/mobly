@@ -88,7 +88,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self._proc = None
 
     @property
-    def is_running(self):
+    def is_alive(self):
         return self._proc is not None
 
     def start_app_and_connect(self):

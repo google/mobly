@@ -16,6 +16,8 @@ from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import base_service
 
+MISSING_SNIPPET_CLIENT_MSG = 'No snippet client is registered with name "%s".'
+
 
 class Error(errors.ServiceError):
     """Root error type for snippet service."""
@@ -62,22 +64,23 @@ class SnippetManager(base_service.BaseService):
 
     def remove_snippet_client(self, name):
         if name not in self._snippet_clients:
-            raise Error(self._device,
-                        'No snippet registered with name "%s"' % name)
+            raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
         client = self._snippet_clients.pop(name)
         client.stop_app()
 
     def start(self, configs=None):
         """Starts all the snippet services under management."""
-        del configs  # Not used.
+        if configs:
+            raise Error(self._device,
+                        'Overriding configs in `start` is not allowed.')
         for client in self._snippet_clients.values():
-            if not client.is_running:
+            if not client.is_alive:
                 client.start_app_and_connect()
 
     def stop(self):
         """Stops all the snippet services under management."""
         for client in self._snippet_clients.values():
-            if not client.is_running:
+            if client.is_alive:
                 client.stop_app()
 
     def pause(self):
@@ -85,11 +88,11 @@ class SnippetManager(base_service.BaseService):
 
     def resume(self):
         for client in self._snippet_clients.values():
-            client.restore_app_connection()
+            if not client.is_alive:
+                client.restore_app_connection()
 
     def __getattr__(self, name):
         client = self.get_snippet_client(name)
         if client:
             return client
-        raise Error(self._device,
-                    'No snippet client is registered with name "%s".' % name)
+        raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)

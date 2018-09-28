@@ -193,7 +193,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client = self._make_client()
         client.start_app_and_connect()
         self.assertEqual(123, client.device_port)
-        self.assertTrue(client.is_running)
+        self.assertTrue(client.is_alive)
 
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.stop_standing_subprocess')
@@ -203,7 +203,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client = self._make_client(adb_proxy)
         client._proc = True
         client.stop_app()
-        self.assertFalse(client.is_running)
+        self.assertFalse(client.is_alive)
 
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'SnippetClient.disconnect')
@@ -246,7 +246,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
                                     'ha'):
             client.start_app_and_connect()
         mock_stop.assert_not_called()
-        self.assertFalse(client.is_running)
+        self.assertFalse(client.is_alive)
 
     @mock.patch('socket.create_connection')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
@@ -274,7 +274,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         with self.assertRaisesRegex(Exception, 'ha'):
             client.start_app_and_connect()
         mock_stop.assert_called_once_with()
-        self.assertFalse(client.is_running)
+        self.assertFalse(client.is_alive)
 
     @mock.patch('socket.create_connection')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
@@ -303,7 +303,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         with self.assertRaisesRegex(Exception, 'Some error'):
             client.start_app_and_connect()
         mock_stop.assert_called_once_with()
-        self.assertFalse(client.is_running)
+        self.assertFalse(client.is_alive)
 
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'SnippetClient._do_start_app')
