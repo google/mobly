@@ -195,25 +195,27 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.assertEqual(123, client.device_port)
         self.assertTrue(client.is_alive)
 
+    @mock.patch('socket.create_connection')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'utils.stop_standing_subprocess')
-    def test_snippet_stop_app(self, mock_stop_standing_subprocess):
+    def test_snippet_stop_app(self, mock_stop_standing_subprocess,
+                              mock_create_connection):
         adb_proxy = mock.MagicMock()
         adb_proxy.shell.return_value = b'OK (0 tests)'
         client = self._make_client(adb_proxy)
-        client._proc = True
         client.stop_app()
         self.assertFalse(client.is_alive)
 
+    @mock.patch('socket.create_connection')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'SnippetClient.disconnect')
-    def test_snippet_stop_app_raises(self, mock_disconect):
+    def test_snippet_stop_app_raises(self, mock_disconect,
+                                     mock_create_connection):
         mock_disconect.side_effect = Exception('ha')
         adb_proxy = mock.MagicMock()
         adb_proxy.shell.return_value = b'OK (0 tests)'
         client = self._make_client(adb_proxy)
         client.host_port = 1
-        client._proc = True
         with self.assertRaisesRegex(Exception, 'ha'):
             client.stop_app()
         adb_proxy.forward.assert_called_once_with(['--remove', 'tcp:1'])

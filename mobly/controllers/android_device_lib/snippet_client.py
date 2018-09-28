@@ -89,7 +89,22 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     @property
     def is_alive(self):
-        return self._proc is not None
+        """Is the client alive.
+
+        The client is considered alive if there is a connection object held for
+        it. This is an approximation due to the following scenario:
+
+        In the USB disconnect case, the host subprocess that kicked off the
+        snippet  apk would die, but the snippet apk itself would continue
+        running on the device.
+
+        The best approximation we can make is, the connection object has not
+        been explicitly torn down, so the client should be considered alive.
+
+        Returns:
+            True if the client is considered alive, False otherwise.
+        """
+        return self._conn is not None
 
     def start_app_and_connect(self):
         """Starts snippet apk on the device and connects to it.
