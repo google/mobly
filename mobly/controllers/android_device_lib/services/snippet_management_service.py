@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module for the snippet service."""
+"""Module for the snippet management service."""
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import base_service
@@ -20,12 +20,16 @@ MISSING_SNIPPET_CLIENT_MSG = 'No snippet client is registered with name "%s".'
 
 
 class Error(errors.ServiceError):
-    """Root error type for snippet service."""
-    SERVICE_TYPE = 'SnippetService'
+    """Root error type for snippet management service."""
+    SERVICE_TYPE = 'SnippetManagementService'
 
 
 class SnippetManagementService(base_service.BaseService):
-    """Manager of snippet clients."""
+    """Management service of snippet clients.
+
+    This service manages all the snippet clients associated with an Android
+    device.
+    """
 
     def __init__(self, device, configs=None):
         del configs  # Unused param.
@@ -40,16 +44,39 @@ class SnippetManagementService(base_service.BaseService):
             [client.is_alive for client in self._snippet_clients.values()])
 
     def get_snippet_client(self, name):
+        """Gets the snippet client managed under a given name.
+
+        Args:
+            name: string, the name of the snippet client under management.
+
+        Returns:
+            SnippetClient.
+
+        Raises:
+            Error, if no snippet client is managed under the given name.
+        """
         if name in self._snippet_clients:
             return self._snippet_clients[name]
+        raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
 
     def add_snippet_client(self, name, package):
+        """Adds a snippet client to the management.
+
+        Args:
+            name: string, the attribute name to which to attach the snippet
+                client. E.g. `name='maps'` attaches the snippet client to
+                `ad.maps`.
+            package: string, the package name of the snippet apk to connect to.
+
+        Raises:
+            Error, if a duplicated name or package is passed in.
+        """
         # Should not load snippet with the same name more than once.
         if name in self._snippet_clients:
             raise Error(
                 self,
-                'Attribute "%s" is already registered with package "%s", it '
-                'cannot be used again.' %
+                'Name "%s" is already registered with package "%s", it cannot '
+                'be used again.' %
                 (name, self._snippet_clients[name].client.package))
         # Should not load the same snippet package more than once.
         for name, client in self._snippet_clients.items():
@@ -69,7 +96,7 @@ class SnippetManagementService(base_service.BaseService):
         client.stop_app()
 
     def start(self, configs=None):
-        """Starts all the snippet services under management."""
+        """Starts all the snippet clients under management."""
         if configs:
             raise Error(self._device,
                         'Overriding configs in `start` is not allowed.')
@@ -78,7 +105,7 @@ class SnippetManagementService(base_service.BaseService):
                 client.start_app_and_connect()
 
     def stop(self):
-        """Stops all the snippet services under management."""
+        """Stops all the snippet clients under management."""
         for client in self._snippet_clients.values():
             if client.is_alive:
                 client.stop_app()
@@ -87,12 +114,10 @@ class SnippetManagementService(base_service.BaseService):
         """Intentionally no-op."""
 
     def resume(self):
+        """Resumes all paused snippet clients."""
         for client in self._snippet_clients.values():
             if not client.is_alive:
                 client.restore_app_connection()
 
     def __getattr__(self, name):
-        client = self.get_snippet_client(name)
-        if client:
-            return client
-        raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
+        return self.get_snippet_client(name)

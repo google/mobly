@@ -837,10 +837,10 @@ class AndroidDevice(object):
             ad.maps.activateZoom('3')
 
         Args:
-            name: The attribute name to which to attach the snippet server.
-                e.g. name='maps' will attach the snippet server to ad.maps.
-            package: The package name defined in AndroidManifest.xml of the
-                snippet apk.
+            name: string, the attribute name to which to attach the snippet
+                client. E.g. `name='maps'` attaches the snippet client to
+                `ad.maps`.
+            package: string, the package name of the snippet apk to connect to.
 
         Raises:
             SnippetError: Illegal load operations are attempted.
@@ -1023,15 +1023,11 @@ class AndroidDevice(object):
             self.adb.reboot()
 
     def __getattr__(self, name):
-        """Tries to return the snippet client.
+        """Tries to return a snippet client registered with `name`.
 
         This is for backward compatibility of direct accessing snippet clients.
         """
-        client = self.services.snippets.get_snippet_client(name)
-        if client:
-            return client
-        raise AttributeError('Attribute "%s" not found on device %s.' % (name,
-                                                                         self))
+        return self.services.snippets.get_snippet_client(name)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
