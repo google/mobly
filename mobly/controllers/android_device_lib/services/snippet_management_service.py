@@ -24,7 +24,7 @@ class Error(errors.ServiceError):
     SERVICE_TYPE = 'SnippetService'
 
 
-class SnippetManager(base_service.BaseService):
+class SnippetManagementService(base_service.BaseService):
     """Manager of snippet clients."""
 
     def __init__(self, device, configs=None):

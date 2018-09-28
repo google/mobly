@@ -14,17 +14,18 @@
 import mock
 from future.tests.base import unittest
 
-from mobly.controllers.android_device_lib.services import snippet_manager
+from mobly.controllers.android_device_lib.services import snippet_management_service
 
 MOCK_PACKAGE = 'com.mock.package'
 SNIPPET_CLIENT_CLASS_PATH = 'mobly.controllers.android_device_lib.snippet_client.SnippetClient'
 
 
-class SnippetManagerTest(unittest.TestCase):
+class SnippetManagementServiceTest(unittest.TestCase):
     """Tests for the snippet manager."""
 
     def test_empty_manager_start_stop(self):
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         manager.start()
         # When no client is registered, manager is never alive.
         self.assertFalse(manager.is_alive)
@@ -34,7 +35,8 @@ class SnippetManagerTest(unittest.TestCase):
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
     def test_stop_with_live_service(self, mock_class):
         mock_client = mock_class.return_value
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         manager.add_snippet_client('foo', MOCK_PACKAGE)
         mock_client.start_app_and_connect.assert_called_once_with()
         manager.stop()
@@ -47,33 +49,36 @@ class SnippetManagerTest(unittest.TestCase):
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
     def test_add_snippet_client_dup_name(self, mock_class):
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         manager.add_snippet_client('foo', MOCK_PACKAGE)
         msg = ('.* Attribute "foo" is already registered with package ".*", '
                'it cannot be used again.')
-        with self.assertRaisesRegex(snippet_manager.Error, msg):
+        with self.assertRaisesRegex(snippet_management_service.Error, msg):
             manager.add_snippet_client('foo', MOCK_PACKAGE + 'ha')
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
     def test_add_snippet_client_dup_package(self, mock_class):
         mock_client = mock_class.return_value
         mock_client.package = MOCK_PACKAGE
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         manager.add_snippet_client('foo', MOCK_PACKAGE)
         msg = ('Snippet package "com.mock.package" has already been loaded '
                'under name "foo".')
-        with self.assertRaisesRegex(snippet_manager.Error, msg):
+        with self.assertRaisesRegex(snippet_management_service.Error, msg):
             manager.add_snippet_client('bar', MOCK_PACKAGE)
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
     def test_remove_snippet_client(self, mock_class):
         mock_client = mock.MagicMock()
         mock_class.return_value = mock_client
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         manager.add_snippet_client('foo', MOCK_PACKAGE)
         manager.remove_snippet_client('foo')
         with self.assertRaisesRegex(
-                snippet_manager.Error,
+                snippet_management_service.Error,
                 'No snippet client is registered with name "foo".'):
             manager.foo.do_something()
 
@@ -81,16 +86,18 @@ class SnippetManagerTest(unittest.TestCase):
     def test_remove_snippet_client(self, mock_class):
         mock_client = mock.MagicMock()
         mock_class.return_value = mock_client
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         with self.assertRaisesRegex(
-                snippet_manager.Error,
+                snippet_management_service.Error,
                 'No snippet client is registered with name "foo".'):
             manager.remove_snippet_client('foo')
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
     def test_start_with_live_service(self, mock_class):
         mock_client = mock_class.return_value
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         manager.add_snippet_client('foo', MOCK_PACKAGE)
         mock_client.start_app_and_connect.reset_mock()
         mock_client.is_alive = True
@@ -102,16 +109,18 @@ class SnippetManagerTest(unittest.TestCase):
         mock_client.start_app_and_connect.assert_called_once_with()
 
     def test_start_with_configs(self):
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         with self.assertRaisesRegex(
-                snippet_manager.Error,
+                snippet_management_service.Error,
                 'Overriding configs in `start` is not allowed.'):
             manager.start('configs')
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
     def test_resume(self, mock_class):
         mock_client = mock_class.return_value
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         manager.add_snippet_client('foo', MOCK_PACKAGE)
         mock_client.is_alive = True
         manager.resume()
@@ -124,7 +133,8 @@ class SnippetManagerTest(unittest.TestCase):
     def test_attribute_access(self, mock_class):
         mock_client = mock.MagicMock()
         mock_class.return_value = mock_client
-        manager = snippet_manager.SnippetManager(mock.MagicMock())
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
         manager.add_snippet_client('foo', MOCK_PACKAGE)
         manager.foo.ha('param')
         mock_client.ha.assert_called_once_with('param')

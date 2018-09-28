@@ -29,7 +29,7 @@ from mobly.controllers.android_device_lib import fastboot
 from mobly.controllers.android_device_lib import service_manager
 from mobly.controllers.android_device_lib import sl4a_client
 from mobly.controllers.android_device_lib.services import logcat
-from mobly.controllers.android_device_lib.services import snippet_manager
+from mobly.controllers.android_device_lib.services import snippet_management_service
 
 # Convenience constant for the package of Mobly Bundled Snippets
 # (http://github.com/google/mobly-bundled-snippets).
@@ -61,7 +61,7 @@ DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
 # Aliases of error types for backward compatibility.
 Error = errors.Error
 DeviceError = errors.DeviceError
-SnippetError = snippet_manager.Error
+SnippetError = snippet_management_service.Error
 
 
 def create(configs):
@@ -436,7 +436,8 @@ class AndroidDevice(object):
         if not self.is_bootloader and self.is_rootable:
             self.root_adb()
         self.services = service_manager.ServiceManager(self)
-        self.services.register('snippets', snippet_manager.SnippetManager)
+        self.services.register(
+            'snippets', snippet_management_service.SnippetManagementService)
         # Device info cache.
         self._user_added_device_info = {}
 
@@ -1029,8 +1030,8 @@ class AndroidDevice(object):
         client = self.services.snippets.get_snippet_client(name)
         if client:
             return client
-        raise AttributeError('Attribute "%s" not found on device %s.' %
-                             (name, self))
+        raise AttributeError('Attribute "%s" not found on device %s.' % (name,
+                                                                         self))
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
