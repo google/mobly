@@ -199,7 +199,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
                 'utils.stop_standing_subprocess')
     def test_snippet_stop_app(self, mock_stop_standing_subprocess):
         adb_proxy = mock.MagicMock()
-        adb_proxy.shell.return_value = 'OK (0 tests)'
+        adb_proxy.shell.return_value = b'OK (0 tests)'
         client = self._make_client(adb_proxy)
         client._proc = True
         client.stop_app()
@@ -210,7 +210,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     def test_snippet_stop_app_raises(self, mock_disconect):
         mock_disconect.side_effect = Exception('ha')
         adb_proxy = mock.MagicMock()
-        adb_proxy.shell.return_value = 'OK (0 tests)'
+        adb_proxy.shell.return_value = b'OK (0 tests)'
         client = self._make_client(adb_proxy)
         client.host_port = 1
         client._proc = True
