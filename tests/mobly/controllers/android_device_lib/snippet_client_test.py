@@ -193,6 +193,117 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client = self._make_client()
         client.start_app_and_connect()
         self.assertEqual(123, client.device_port)
+        self.assertTrue(client.is_running)
+
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.stop_standing_subprocess')
+    def test_snippet_stop_app(self, mock_stop_standing_subprocess):
+        adb_proxy = mock.MagicMock()
+        adb_proxy.shell.return_value = 'OK (0 tests)'
+        client = self._make_client(adb_proxy)
+        client._proc = True
+        client.stop_app()
+        self.assertFalse(client.is_running)
+
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'SnippetClient.disconnect')
+    def test_snippet_stop_app_raises(self, mock_disconect):
+        mock_disconect.side_effect = Exception('ha')
+        adb_proxy = mock.MagicMock()
+        adb_proxy.shell.return_value = 'OK (0 tests)'
+        client = self._make_client(adb_proxy)
+        client.host_port = 1
+        client._proc = True
+        with self.assertRaisesRegex(Exception, 'ha'):
+            client.stop_app()
+        adb_proxy.forward.assert_called_once_with(['--remove', 'tcp:1'])
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient.'
+        'disable_hidden_api_blacklist')
+    @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient.'
+        'stop_app')
+    def test_start_app_and_connect_precheck_fail(
+            self, mock_stop, mock_precheck, mock_get_port,
+            mock_start_standing_subprocess, mock_create_connection):
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[
+                b'SNIPPET START, PROTOCOL 1 0\n',
+                b'SNIPPET SERVING, PORT 123\n',
+            ])
+        client = self._make_client()
+        mock_precheck.side_effect = snippet_client.AppStartPreCheckError(
+            client.ad, 'ha')
+        with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
+                                    'ha'):
+            client.start_app_and_connect()
+        mock_stop.assert_not_called()
+        self.assertFalse(client.is_running)
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient._start_app_and_connect'
+    )
+    @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient.stop_app'
+    )
+    def test_start_app_and_connect_generic_error(
+            self, mock_stop, mock_start, mock_get_port,
+            mock_start_standing_subprocess, mock_create_connection):
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[
+                b'SNIPPET START, PROTOCOL 1 0\n',
+                b'SNIPPET SERVING, PORT 123\n',
+            ])
+        client = self._make_client()
+        mock_start.side_effect = Exception('ha')
+        with self.assertRaisesRegex(Exception, 'ha'):
+            client.start_app_and_connect()
+        mock_stop.assert_called_once_with()
+        self.assertFalse(client.is_running)
+
+    @mock.patch('socket.create_connection')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.start_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
+                'utils.get_available_host_port')
+    @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient._start_app_and_connect'
+    )
+    @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient.stop_app'
+    )
+    def test_start_app_and_connect_fail_stop_also_fail(
+            self, mock_stop, mock_start, mock_get_port,
+            mock_start_standing_subprocess, mock_create_connection):
+        self.setup_mock_socket_file(mock_create_connection)
+        self._setup_mock_instrumentation_cmd(
+            mock_start_standing_subprocess,
+            resp_lines=[
+                b'SNIPPET START, PROTOCOL 1 0\n',
+                b'SNIPPET SERVING, PORT 123\n',
+            ])
+        client = self._make_client()
+        mock_start.side_effect = Exception('Some error')
+        mock_stop.side_effect = Exception('Another error')
+        with self.assertRaisesRegex(Exception, 'Some error'):
+            client.start_app_and_connect()
+        mock_stop.assert_called_once_with()
+        self.assertFalse(client.is_running)
 
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'SnippetClient._do_start_app')

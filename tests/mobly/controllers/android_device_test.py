@@ -527,69 +527,6 @@ class AndroidDeviceTest(unittest.TestCase):
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
         return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
-        'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
-    @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_load_snippet_failure(
-            self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
-        ad = android_device.AndroidDevice(serial='1')
-        client = mock.MagicMock()
-        client.start_app_and_connect.side_effect = Exception(
-            'Something went wrong.')
-        MockSnippetClient.return_value = client
-        with self.assertRaisesRegex(Exception, 'Something went wrong.'):
-            ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        client.stop_app.assert_called_once_with()
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
-    @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_load_snippet_precheck_failure(
-            self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
-        ad = android_device.AndroidDevice(serial='1')
-        client = mock.MagicMock()
-        client.start_app_and_connect.side_effect = snippet_client.AppStartPreCheckError(
-            mock.MagicMock, 'Something went wrong in precheck.')
-        MockSnippetClient.return_value = client
-        with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
-                                    'Something went wrong in precheck.'):
-            ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        client.stop_app.assert_not_called()
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
-    @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_load_snippet_fail_cleanup_also_fail(
-            self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
-        ad = android_device.AndroidDevice(serial='1')
-        client = mock.MagicMock()
-        client.start_app_and_connect.side_effect = Exception(
-            'Something went wrong in start app.')
-        client.stop_app.side_effect = Exception('Stop app also failed.')
-        MockSnippetClient.return_value = client
-        with self.assertRaisesRegex(Exception,
-                                    'Something went wrong in start app.'):
-            ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        client.stop_app.assert_called_once_with()
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient',
         return_value=MockSnippetClient)
     @mock.patch('mobly.utils.get_available_host_port')
@@ -702,7 +639,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial='1')
         ad.start_services()
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        ad.stop_services()
+        ad.unload_snippet('snippet')
         self.assertFalse(hasattr(ad, 'snippet'))
 
     @mock.patch(

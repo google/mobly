@@ -87,8 +87,36 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self._adb = ad.adb
         self._proc = None
 
+    @property
+    def is_running(self):
+        return self._proc is not None
+
     def start_app_and_connect(self):
-        """Overrides superclass. Launches a snippet app and connects to it."""
+        """Starts snippet apk on the device and connects to it.
+
+        This wraps the main logic with safe handling
+
+        Raises:
+            AppStartPreCheckError, when pre-launch checks fail.
+        """
+        try:
+            self._start_app_and_connect()
+        except AppStartPreCheckError:
+            # Precheck errors don't need cleanup, directly raise.
+            raise
+        except Exception as e:
+            # Log the stacktrace of `e` as re-raising doesn't preserve trace.
+            self._ad.log.exception('Failed to start app and connect.')
+            # If errors happen, make sure we clean up before raising.
+            try:
+                self.stop_app()
+            except:
+                self._ad.log.exception(
+                    'Failed to stop app after failure to start and connect.')
+            # Explicitly raise the original error from starting app.
+            raise e
+
+    def _start_app_and_connect(self):
         self._check_app_installed()
         self.disable_hidden_api_blacklist()
 
@@ -125,7 +153,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
         # Yaaay! We're done!
         self.log.debug('Snippet %s started after %.1fs on host port %s',
-                       self.package, time.time() - start_time, self.host_port)
+                       self.package,
+                       time.time() - start_time, self.host_port)
 
     def restore_app_connection(self, port=None):
         """Restores the app after device got reconnected.
@@ -174,6 +203,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             self.disconnect()
             if self._proc:
                 utils.stop_standing_subprocess(self._proc)
+            self._proc = None
             out = self._adb.shell(_STOP_CMD % self.package).decode('utf-8')
             if 'OK (0 tests)' not in out:
                 raise errors.DeviceError(
