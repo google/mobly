@@ -36,6 +36,7 @@ class SnippetManagementService(base_service.BaseService):
         self._device = device
         self._is_alive = False
         self._snippet_clients = {}
+        super(SnippetManagementService, self).__init__(device)
 
     @property
     def is_alive(self):
@@ -75,27 +76,32 @@ class SnippetManagementService(base_service.BaseService):
                 'be used again.' %
                 (name, self._snippet_clients[name].client.package))
         # Should not load the same snippet package more than once.
-        for name, client in self._snippet_clients.items():
+        for _name, client in self._snippet_clients.items():
             if package == client.package:
                 raise Error(
                     self,
                     'Snippet package "%s" has already been loaded under name'
-                    ' "%s".' % (package, name))
+                    ' "%s".' % (package, _name))
         client = snippet_client.SnippetClient(package=package, ad=self._device)
         client.start_app_and_connect()
         self._snippet_clients[name] = client
 
     def remove_snippet_client(self, name):
+        """Removes a snippet client from management.
+
+        Args:
+            name: string, the name of the snippet client to remove.
+
+        Raises:
+            Error: if no snippet client is managed under the specified name.
+        """
         if name not in self._snippet_clients:
             raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
         client = self._snippet_clients.pop(name)
         client.stop_app()
 
-    def start(self, configs=None):
+    def start(self):
         """Starts all the snippet clients under management."""
-        if configs:
-            raise Error(self._device,
-                        'Overriding configs in `start` is not allowed.')
         for client in self._snippet_clients.values():
             if not client.is_alive:
                 client.start_app_and_connect()

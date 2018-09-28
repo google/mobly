@@ -247,7 +247,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             raise AppStartPreCheckError(
                 self._ad,
                 '%s is installed, but it is not instrumented.' % self.package)
-        match = re.search('^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
+        match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
                           matched_out[0])
         target_name = match.group(3)
         # Check that the instrumentation target is installed if it's not the

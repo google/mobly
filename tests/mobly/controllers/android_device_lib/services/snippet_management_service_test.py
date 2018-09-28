@@ -41,8 +41,7 @@ class SnippetManagementServiceTest(unittest.TestCase):
         self.assertEqual(manager.get_snippet_client('foo'), mock_client)
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
-    def test_get_snippet_client_fail(self, mock_class):
-        mock_client = mock_class.return_value
+    def test_get_snippet_client_fail(self, _):
         manager = snippet_management_service.SnippetManagementService(
             mock.MagicMock())
         self.assertIsNone(manager.get_snippet_client('foo'))
@@ -63,7 +62,7 @@ class SnippetManagementServiceTest(unittest.TestCase):
         mock_client.stop_app.assert_not_called()
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
-    def test_add_snippet_client_dup_name(self, mock_class):
+    def test_add_snippet_client_dup_name(self, _):
         manager = snippet_management_service.SnippetManagementService(
             mock.MagicMock())
         manager.add_snippet_client('foo', MOCK_PACKAGE)
@@ -92,9 +91,8 @@ class SnippetManagementServiceTest(unittest.TestCase):
             mock.MagicMock())
         manager.add_snippet_client('foo', MOCK_PACKAGE)
         manager.remove_snippet_client('foo')
-        with self.assertRaisesRegex(
-                snippet_management_service.Error,
-                'No snippet client is registered with name "foo".'):
+        msg = 'No snippet client is registered with name "foo".'
+        with self.assertRaisesRegex(snippet_management_service.Error, msg):
             manager.foo.do_something()
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
@@ -122,14 +120,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
         mock_client.is_alive = False
         manager.start()
         mock_client.start_app_and_connect.assert_called_once_with()
-
-    def test_start_with_configs(self):
-        manager = snippet_management_service.SnippetManagementService(
-            mock.MagicMock())
-        with self.assertRaisesRegex(
-                snippet_management_service.Error,
-                'Overriding configs in `start` is not allowed.'):
-            manager.start('configs')
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
     def test_resume(self, mock_class):
