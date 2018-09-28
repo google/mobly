@@ -117,6 +117,16 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             raise e
 
     def _start_app_and_connect(self):
+        """Starts snippet apk on the device and connects to it.
+
+        After prechecks, this launches the snippet apk with an adb cmd in a
+        standing subprocess, checks the cmd response from the apk for protocol
+        version, then sets up the socket connection over adb port-forwarding.
+
+        Args:
+            ProtocolVersionError, if protocol info or port info cannot be
+                retrieved from the snippet apk.
+        """
         self._check_app_installed()
         self.disable_hidden_api_blacklist()
 
