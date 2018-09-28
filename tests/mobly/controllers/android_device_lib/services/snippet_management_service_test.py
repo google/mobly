@@ -45,10 +45,7 @@ class SnippetManagementServiceTest(unittest.TestCase):
         mock_client = mock_class.return_value
         manager = snippet_management_service.SnippetManagementService(
             mock.MagicMock())
-        with self.assertRaisesRegex(
-                snippet_management_service.Error,
-                'No snippet client is registered with name "foo".'):
-            manager.get_snippet_client('foo')
+        self.assertIsNone(manager.get_snippet_client('foo'))
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
     def test_stop_with_live_client(self, mock_class):

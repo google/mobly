@@ -1027,7 +1027,10 @@ class AndroidDevice(object):
 
         This is for backward compatibility of direct accessing snippet clients.
         """
-        return self.services.snippets.get_snippet_client(name)
+        client = self.services.snippets.get_snippet_client(name)
+        if client:
+            return client
+        return self.__getattribute__(name)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):

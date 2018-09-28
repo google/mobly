@@ -51,13 +51,9 @@ class SnippetManagementService(base_service.BaseService):
 
         Returns:
             SnippetClient.
-
-        Raises:
-            Error, if no snippet client is managed under the given name.
         """
         if name in self._snippet_clients:
             return self._snippet_clients[name]
-        raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
 
     def add_snippet_client(self, name, package):
         """Adds a snippet client to the management.
@@ -120,4 +116,7 @@ class SnippetManagementService(base_service.BaseService):
                 client.restore_app_connection()
 
     def __getattr__(self, name):
-        return self.get_snippet_client(name)
+        client = self.get_snippet_client(name)
+        if client:
+            return client
+        return self.__getattribute__(name)

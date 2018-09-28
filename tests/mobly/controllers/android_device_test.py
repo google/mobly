@@ -527,6 +527,23 @@ class AndroidDeviceTest(unittest.TestCase):
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
         return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
+        'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
+    @mock.patch('mobly.utils.get_available_host_port')
+    def test_AndroidDevice_getattr(self, MockGetPort, MockSnippetClient,
+                                   MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='1')
+        ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
+        value = {'value': 42}
+        actual_value = getattr(ad, 'some_attr', value)
+        self.assertEqual(actual_value, value)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient',
         return_value=MockSnippetClient)
     @mock.patch('mobly.utils.get_available_host_port')
