@@ -11,27 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module for the BaseService."""
+"""Module for the Sl4aService."""
 
 from mobly.controllers.android_device_lib import sl4a_client
 from mobly.controllers.android_device_lib.services import base_service
 
 
 class Sl4aService(base_service.BaseService):
-    """Base class of a Mobly AndroidDevice service.
+    """Service for managing sl4a's client.
 
-    This class defines the interface for Mobly's AndroidDevice service.
+    Direct calls on the service object will forwarded to the client object as
+    syntactic sugar. So `Sl4aService.doFoo()` is equivalent to
+    `Sl4aClient.doFoo()`.
     """
-
     def __init__(self, device):
-        """Constructor of the class.
-
-        Args:
-          device: the device object this service is associated with.
-          config: optional configuration defined by the author of the service
-              class.
-        """
-        self._device = device
+        self._ad = device
         self._sl4a_client = None
 
     @property
@@ -39,7 +33,7 @@ class Sl4aService(base_service.BaseService):
         return self._sl4a_client is not None
 
     def start(self):
-        self._sl4a_client = sl4a_client.Sl4aClient(ad=self._device)
+        self._sl4a_client = sl4a_client.Sl4aClient(ad=self._ad)
         self._sl4a_client.start_app_and_connect()
 
     def stop(self):
@@ -60,4 +54,6 @@ class Sl4aService(base_service.BaseService):
 
     def __getattr__(self, name):
         """Forwards the getattr calls to the client itself."""
-        return getattr(self._sl4a_client, name)
+        if self._sl4a_client:
+            return getattr(self._sl4a_client, name)
+        return self.__getattribute__(name)
