@@ -117,7 +117,7 @@ def parse_mobly_cli_args(argv):
         '--list_tests',
         action='store_true',
         help='Print the names of the tests defined in a script without '
-        'executing them. If the script ')
+        'executing them.')
     parser.add_argument(
         '--tests',
         '--test_case',
