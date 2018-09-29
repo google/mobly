@@ -87,8 +87,61 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self._adb = ad.adb
         self._proc = None
 
+    @property
+    def is_alive(self):
+        """Is the client alive.
+
+        The client is considered alive if there is a connection object held for
+        it. This is an approximation due to the following scenario:
+
+        In the USB disconnect case, the host subprocess that kicked off the
+        snippet  apk would die, but the snippet apk itself would continue
+        running on the device.
+
+        The best approximation we can make is, the connection object has not
+        been explicitly torn down, so the client should be considered alive.
+
+        Returns:
+            True if the client is considered alive, False otherwise.
+        """
+        return self._conn is not None
+
     def start_app_and_connect(self):
-        """Overrides superclass. Launches a snippet app and connects to it."""
+        """Starts snippet apk on the device and connects to it.
+
+        This wraps the main logic with safe handling
+
+        Raises:
+            AppStartPreCheckError, when pre-launch checks fail.
+        """
+        try:
+            self._start_app_and_connect()
+        except AppStartPreCheckError:
+            # Precheck errors don't need cleanup, directly raise.
+            raise
+        except Exception as e:
+            # Log the stacktrace of `e` as re-raising doesn't preserve trace.
+            self._ad.log.exception('Failed to start app and connect.')
+            # If errors happen, make sure we clean up before raising.
+            try:
+                self.stop_app()
+            except:
+                self._ad.log.exception(
+                    'Failed to stop app after failure to start and connect.')
+            # Explicitly raise the original error from starting app.
+            raise e
+
+    def _start_app_and_connect(self):
+        """Starts snippet apk on the device and connects to it.
+
+        After prechecks, this launches the snippet apk with an adb cmd in a
+        standing subprocess, checks the cmd response from the apk for protocol
+        version, then sets up the socket connection over adb port-forwarding.
+
+        Args:
+            ProtocolVersionError, if protocol info or port info cannot be
+                retrieved from the snippet apk.
+        """
         self._check_app_installed()
         self.disable_hidden_api_blacklist()
 
@@ -125,7 +178,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
         # Yaaay! We're done!
         self.log.debug('Snippet %s started after %.1fs on host port %s',
-                       self.package, time.time() - start_time, self.host_port)
+                       self.package,
+                       time.time() - start_time, self.host_port)
 
     def restore_app_connection(self, port=None):
         """Restores the app after device got reconnected.
@@ -174,6 +228,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             self.disconnect()
             if self._proc:
                 utils.stop_standing_subprocess(self._proc)
+            self._proc = None
             out = self._adb.shell(_STOP_CMD % self.package).decode('utf-8')
             if 'OK (0 tests)' not in out:
                 raise errors.DeviceError(
@@ -217,7 +272,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             raise AppStartPreCheckError(
                 self._ad,
                 '%s is installed, but it is not instrumented.' % self.package)
-        match = re.search('^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
+        match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
                           matched_out[0])
         target_name = match.group(3)
         # Check that the instrumentation target is installed if it's not the
