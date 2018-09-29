@@ -76,12 +76,12 @@ class SnippetManagementService(base_service.BaseService):
                 'be used again.' %
                 (name, self._snippet_clients[name].client.package))
         # Should not load the same snippet package more than once.
-        for _name, client in self._snippet_clients.items():
+        for snippet_name, client in self._snippet_clients.items():
             if package == client.package:
                 raise Error(
                     self,
                     'Snippet package "%s" has already been loaded under name'
-                    ' "%s".' % (package, _name))
+                    ' "%s".' % (package, snippet_name))
         client = snippet_client.SnippetClient(package=package, ad=self._device)
         client.start_app_and_connect()
         self._snippet_clients[name] = client
