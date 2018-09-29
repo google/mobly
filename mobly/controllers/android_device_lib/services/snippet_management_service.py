@@ -113,7 +113,12 @@ class SnippetManagementService(base_service.BaseService):
                 client.stop_app()
 
     def pause(self):
-        """Intentionally no-op."""
+        """Intentionally no-op.
+
+        No action on the client side is needed per current snippet clients
+        design. Because snippet clients do not explicitly handle temporary
+        disconnect (Issue #509).
+        """
 
     def resume(self):
         """Resumes all paused snippet clients."""
