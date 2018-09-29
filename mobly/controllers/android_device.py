@@ -22,14 +22,14 @@ import shutil
 import time
 
 from mobly import logger as mobly_logger
-from mobly import signals
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
+from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import fastboot
 from mobly.controllers.android_device_lib import service_manager
 from mobly.controllers.android_device_lib import sl4a_client
-from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import logcat
+from mobly.controllers.android_device_lib.services import snippet_management_service
 
 # Convenience constant for the package of Mobly Bundled Snippets
 # (http://github.com/google/mobly-bundled-snippets).
@@ -58,21 +58,10 @@ DEFAULT_VALUE_SKIP_LOGCAT = False
 # Default Timeout to wait for boot completion
 DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
 
-
-class Error(signals.ControllerError):
-    pass
-
-
-class DeviceError(Error):
-    """Raised for errors from within an AndroidDevice object."""
-
-    def __init__(self, ad, msg):
-        new_msg = '%s %s' % (repr(ad), msg)
-        super(DeviceError, self).__init__(new_msg)
-
-
-class SnippetError(DeviceError):
-    """Raised for errors related to Mobly snippet."""
+# Aliases of error types for backward compatibility.
+Error = errors.Error
+DeviceError = errors.DeviceError
+SnippetError = snippet_management_service.Error
 
 
 def create(configs):
@@ -447,9 +436,8 @@ class AndroidDevice(object):
         if not self.is_bootloader and self.is_rootable:
             self.root_adb()
         self.services = service_manager.ServiceManager(self)
-        # A dict for tracking snippet clients. Keys are clients' attribute
-        # names, values are the clients: {<attr name string>: <client object>}.
-        self._snippet_clients = {}
+        self.services.register(
+            'snippets', snippet_management_service.SnippetManagementService)
         # Device info cache.
         self._user_added_device_info = {}
 
@@ -538,8 +526,7 @@ class AndroidDevice(object):
 
         A service can be a snippet or logcat collection.
         """
-        return any(
-            [self._snippet_clients, self.services.is_any_alive, self.sl4a])
+        return any([self.services.is_any_alive, self.sl4a])
 
     @property
     def log_path(self):
@@ -617,6 +604,7 @@ class AndroidDevice(object):
         """
         configs = logcat.Config(clear_log=clear_log)
         self.services.register('logcat', logcat.Logcat, configs)
+        self.services.start_all()
 
     def start_adb_logcat(self, clear_log=True):
         """.. deprecated:: 1.8
@@ -644,15 +632,10 @@ class AndroidDevice(object):
             are torn down. This can be used to restore these services, which
             includes snippets and sl4a.
         """
+        self.services.stop_all()
         service_info = {}
-        service_info['snippet_info'] = self._get_active_snippet_info()
         service_info['use_sl4a'] = self.sl4a is not None
         self._terminate_sl4a()
-        for attr_name, client in self._snippet_clients.items():
-            client.stop_app()
-            delattr(self, attr_name)
-        self._snippet_clients = {}
-        self.services.unregister_all()
         return service_info
 
     @contextlib.contextmanager
@@ -670,7 +653,23 @@ class AndroidDevice(object):
         try:
             yield
         finally:
+            self.wait_for_boot_completion()
+            if self.is_rootable:
+                self.root_adb()
             self._restore_services(service_info)
+
+    def _restore_services(self, service_info):
+        """Restores services after a device has come back from temporary
+        being offline.
+
+        Args:
+            service_info: A dict containing information on the services to
+                          restore, which could include snippet and sl4a.
+        """
+        self.services.start_all()
+        # Restore sl4a if needed.
+        if service_info['use_sl4a']:
+            self.load_sl4a()
 
     @contextlib.contextmanager
     def handle_usb_disconnect(self):
@@ -729,32 +728,9 @@ class AndroidDevice(object):
         finally:
             self._reconnect_to_services()
 
-    def _restore_services(self, service_info):
-        """Restores services after a device has come back from temporary
-        being offline.
-
-        Args:
-            service_info: A dict containing information on the services to
-                          restore, which could include snippet and sl4a.
-        """
-        self.wait_for_boot_completion()
-        if self.is_rootable:
-            self.root_adb()
-        self.start_services()
-        # Restore snippets.
-        snippet_info = service_info['snippet_info']
-        for attr_name, package_name in snippet_info:
-            self.load_snippet(attr_name, package_name)
-        # Restore sl4a if needed.
-        if service_info['use_sl4a']:
-            self.load_sl4a()
-
     def _reconnect_to_services(self):
         """Reconnects to services after USB reconnected."""
         self.services.resume_all()
-        # Restore snippets.
-        for attr_name, client in self._snippet_clients.items():
-            client.restore_app_connection()
         # Restore sl4a if needed.
         if self.sl4a:
             self.sl4a.restore_app_connection()
@@ -861,54 +837,21 @@ class AndroidDevice(object):
             ad.maps.activateZoom('3')
 
         Args:
-            name: The attribute name to which to attach the snippet server.
-                e.g. name='maps' will attach the snippet server to ad.maps.
-            package: The package name defined in AndroidManifest.xml of the
-                snippet apk.
+            name: string, the attribute name to which to attach the snippet
+                client. E.g. `name='maps'` attaches the snippet client to
+                `ad.maps`.
+            package: string, the package name of the snippet apk to connect to.
 
         Raises:
             SnippetError: Illegal load operations are attempted.
         """
-        # Should not load snippet with the same attribute more than once.
-        if name in self._snippet_clients:
-            raise SnippetError(
-                self,
-                'Attribute "%s" is already registered with package "%s", it '
-                'cannot be used again.' %
-                (name, self._snippet_clients[name].package))
         # Should not load snippet with an existing attribute.
         if hasattr(self, name):
             raise SnippetError(
                 self,
                 'Attribute "%s" already exists, please use a different name.' %
                 name)
-        # Should not load the same snippet package more than once.
-        for client_name, client in self._snippet_clients.items():
-            if package == client.package:
-                raise SnippetError(
-                    self,
-                    'Snippet package "%s" has already been loaded under name'
-                    ' "%s".' % (package, client_name))
-        client = snippet_client.SnippetClient(package=package, ad=self)
-        try:
-            client.start_app_and_connect()
-        except snippet_client.AppStartPreCheckError:
-            # Precheck errors don't need cleanup, directly raise.
-            raise
-        except Exception as e:
-            # Log the stacktrace of `e` as re-raising doesn't preserve trace.
-            self.log.exception('Failed to start app and connect.')
-            # If errors happen, make sure we clean up before raising.
-            try:
-                client.stop_app()
-            except:
-                self.log.exception(
-                    'Failed to stop app after failure to start app and connect.'
-                )
-            # Explicitly raise the error from start app failure.
-            raise e
-        self._snippet_clients[name] = client
-        setattr(self, name, client)
+        self.services.snippets.add_snippet_client(name, package)
 
     def unload_snippet(self, name):
         """Stops a snippet apk.
@@ -919,12 +862,7 @@ class AndroidDevice(object):
         Raises:
             SnippetError: The given snippet name is not registered.
         """
-        if name not in self._snippet_clients:
-            raise SnippetError(self,
-                               'No snippet registered with name "%s"' % name)
-        client = self._snippet_clients.pop(name)
-        delattr(self, name)
-        client.stop_app()
+        self.services.snippets.remove_snippet_client(name)
 
     def load_sl4a(self):
         """Start sl4a service on the Android device.
@@ -1064,20 +1002,6 @@ class AndroidDevice(object):
             return True
         return False
 
-    def _get_active_snippet_info(self):
-        """Collects information on currently active snippet clients.
-        The info is used for restoring the snippet clients after rebooting the
-        device.
-        Returns:
-            A list of tuples, each tuple's first element is the name of the
-            snippet client's attribute, the second element is the package name
-            of the snippet.
-        """
-        snippet_info = []
-        for attr_name, client in self._snippet_clients.items():
-            snippet_info.append((attr_name, client.package))
-        return snippet_info
-
     def reboot(self):
         """Reboots the device.
 
@@ -1097,6 +1021,16 @@ class AndroidDevice(object):
             return
         with self.handle_reboot():
             self.adb.reboot()
+
+    def __getattr__(self, name):
+        """Tries to return a snippet client registered with `name`.
+
+        This is for backward compatibility of direct accessing snippet clients.
+        """
+        client = self.services.snippets.get_snippet_client(name)
+        if client:
+            return client
+        return self.__getattribute__(name)
 
 
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
