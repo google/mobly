@@ -17,8 +17,6 @@ from future import standard_library
 standard_library.install_aliases()
 
 import argparse
-import copy
-import functools
 import inspect
 import logging
 import os
@@ -119,7 +117,7 @@ def parse_mobly_cli_args(argv):
         '--list_tests',
         action='store_true',
         help='Print the names of the tests defined in a script without '
-        'executing them. If the script ')
+        'executing them.')
     parser.add_argument(
         '--tests',
         '--test_case',
@@ -180,73 +178,6 @@ def _print_test_names(test_class):
         print(name)
 
 
-def verify_controller_module(module):
-    """Verifies a module object follows the required interface for
-    controllers.
-
-    A Mobly controller module is a Python lib that can be used to control
-    a device, service, or equipment. To be Mobly compatible, a controller
-    module needs to have the following members:
-
-        def create(configs):
-            [Required] Creates controller objects from configurations.
-
-            Args:
-                configs: A list of serialized data like string/dict. Each
-                    element of the list is a configuration for a controller
-                    object.
-            Returns:
-                A list of objects.
-
-        def destroy(objects):
-            [Required] Destroys controller objects created by the create
-            function. Each controller object shall be properly cleaned up
-            and all the resources held should be released, e.g. memory
-            allocation, sockets, file handlers etc.
-
-            Args:
-                A list of controller objects created by the create function.
-
-        def get_info(objects):
-            [Optional] Gets info from the controller objects used in a test
-            run. The info will be included in test_summary.yaml under
-            the key 'ControllerInfo'. Such information could include unique
-            ID, version, or anything that could be useful for describing the
-            test bed and debugging.
-
-            Args:
-                objects: A list of controller objects created by the create
-                    function.
-            Returns:
-                A list of json serializable objects, each represents the
-                info of a controller object. The order of the info object
-                should follow that of the input objects.
-
-    Registering a controller module declares a test class's dependency the
-    controller. If the module config exists and the module matches the
-    controller interface, controller objects will be instantiated with
-    corresponding configs. The module should be imported first.
-
-    Args:
-        module: An object that is a controller module. This is usually
-            imported with import statements or loaded by importlib.
-
-    Raises:
-        ControllerError: if the module does not match the Mobly controller
-            interface, or one of the required members is null.
-    """
-    required_attributes = ('create', 'destroy', 'MOBLY_CONTROLLER_CONFIG_NAME')
-    for attr in required_attributes:
-        if not hasattr(module, attr):
-            raise signals.ControllerError(
-                'Module %s missing required controller module attribute'
-                ' %s.' % (module.__name__, attr))
-        if not getattr(module, attr):
-            raise signals.ControllerError(
-                'Controller interface %s in %s cannot be null.' %
-                (attr, module.__name__))
-
-
 class TestRunner(object):
     """The class that instantiates test classes, executes tests, and
     report results.
@@ -287,10 +218,6 @@ class TestRunner(object):
 
         self.results = records.TestResult()
         self._test_run_infos = []
-
-        # Controller management. These members will be updated for each class.
-        self._controller_registry = {}
-        self._controller_destructors = {}
 
         self._log_path = None
 
@@ -412,8 +339,6 @@ class TestRunner(object):
                 # Set up the test-specific config
                 test_config = test_run_info.config.copy()
                 test_config.log_path = self._log_path
-                test_config.register_controller = functools.partial(
-                    self._register_controller, test_config)
                 test_config.summary_writer = summary_writer
                 test_config.test_class_name_suffix = test_run_info.test_class_name_suffix
                 try:
@@ -425,12 +350,7 @@ class TestRunner(object):
                     logging.warning(
                         'Abort all subsequent test classes. Reason: %s', e)
                     raise
-                finally:
-                    self._unregister_controllers()
         finally:
-            # Write controller info and summary to summary file.
-            summary_writer.dump(self.results.controller_info,
-                                records.TestSummaryEntryType.CONTROLLER_INFO)
             summary_writer.dump(self.results.summary_dict(),
                                 records.TestSummaryEntryType.SUMMARY)
             # Stop and show summary.
@@ -439,112 +359,3 @@ class TestRunner(object):
                 self.results.summary_str())
             logging.info(msg.strip())
             self._teardown_logger()
-
-    def _register_controller(self, config, module, required=True,
-                             min_number=1):
-        """Loads a controller module and returns its loaded devices.
-
-        See the docstring of verify_controller_module() for a description of
-        what API a controller module must implement to be compatible with this
-        method.
-
-        Args:
-            config: A config_parser.TestRunConfig object.
-            module: A module that follows the controller module interface.
-            required: A bool. If True, failing to register the specified
-                controller module raises exceptions. If False, the objects
-                failed to instantiate will be skipped.
-            min_number: An integer that is the minimum number of controller
-                objects to be created. Default is one, since you should not
-                register a controller module without expecting at least one
-                object.
-
-        Returns:
-            A list of controller objects instantiated from controller_module, or
-            None if no config existed for this controller and it was not a
-            required controller.
-
-        Raises:
-            ControllerError:
-                * The controller module has already been registered.
-                * The actual number of objects instantiated is less than the
-                * `min_number`.
-                * `required` is True and no corresponding config can be found.
-                * Any other error occurred in the registration process.
-
-        """
-        verify_controller_module(module)
-        # Use the module's name as the ref name
-        module_ref_name = module.__name__.split('.')[-1]
-        if module_ref_name in self._controller_registry:
-            raise signals.ControllerError(
-                'Controller module %s has already been registered. It cannot '
-                'be registered again.' % module_ref_name)
-        # Create controller objects.
-        create = module.create
-        module_config_name = module.MOBLY_CONTROLLER_CONFIG_NAME
-        if module_config_name not in config.controller_configs:
-            if required:
-                raise signals.ControllerError(
-                    'No corresponding config found for %s' %
-                    module_config_name)
-            logging.warning(
-                'No corresponding config found for optional controller %s',
-                module_config_name)
-            return None
-        try:
-            # Make a deep copy of the config to pass to the controller module,
-            # in case the controller module modifies the config internally.
-            original_config = config.controller_configs[module_config_name]
-            controller_config = copy.deepcopy(original_config)
-            objects = create(controller_config)
-        except:
-            logging.exception(
-                'Failed to initialize objects for controller %s, abort!',
-                module_config_name)
-            raise
-        if not isinstance(objects, list):
-            raise signals.ControllerError(
-                'Controller module %s did not return a list of objects, abort.'
-                % module_ref_name)
-        # Check we got enough controller objects to continue.
-        actual_number = len(objects)
-        if actual_number < min_number:
-            module.destroy(objects)
-            raise signals.ControllerError(
-                'Expected to get at least %d controller objects, got %d.' %
-                (min_number, actual_number))
-        # Save a shallow copy of the list for internal usage, so tests can't
-        # affect internal registry by manipulating the object list.
-        self._controller_registry[module_ref_name] = copy.copy(objects)
-        # Collect controller information and write to test result.
-        # Implementation of 'get_info' is optional for a controller module.
-        if hasattr(module, 'get_info'):
-            controller_info = module.get_info(copy.copy(objects))
-            logging.debug('Controller %s: %s', module_config_name,
-                          controller_info)
-            self.results.add_controller_info(module_config_name,
-                                             controller_info)
-        else:
-            logging.warning('No optional debug info found for controller %s. '
-                            'To provide it, implement get_info in this '
-                            'controller module.', module_config_name)
-        logging.debug('Found %d objects for controller %s', len(objects),
-                      module_config_name)
-        destroy_func = module.destroy
-        self._controller_destructors[module_ref_name] = destroy_func
-        return objects
-
-    def _unregister_controllers(self):
-        """Destroy controller objects and clear internal registry.
-
-        This will be called after each test class.
-        """
-        for name, destroy in self._controller_destructors.items():
-            try:
-                logging.debug('Destroying %s.', name)
-                destroy(self._controller_registry[name])
-            except:
-                logging.exception('Exception occurred destroying %s.', name)
-        self._controller_registry = {}
-        self._controller_destructors = {}

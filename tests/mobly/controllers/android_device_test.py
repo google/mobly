@@ -25,53 +25,19 @@ import yaml
 
 from future.tests.base import unittest
 
-from mobly import utils
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import snippet_client
+from mobly.controllers.android_device_lib.services import base_service
+from mobly.controllers.android_device_lib.services import logcat
 
 from tests.lib import mock_android_device
 
-# Mock log path for a test run.
-MOCK_LOG_PATH = '/tmp/logs/MockTest/xx-xx-xx_xx-xx-xx/'
-# The expected result of the cat adb operation.
-MOCK_ADB_LOGCAT_CAT_RESULT = [
-    '02-29 14:02:21.456  4454  Something\n',
-    '02-29 14:02:21.789  4454  Something again\n'
-]
-# A mocked piece of adb logcat output.
-MOCK_ADB_LOGCAT = (u'02-29 14:02:19.123  4454  Nothing\n'
-                   u'%s'
-                   u'02-29 14:02:22.123  4454  Something again and again\n'
-                   ) % u''.join(MOCK_ADB_LOGCAT_CAT_RESULT)
-# The expected result of the cat adb operation.
-MOCK_ADB_UNICODE_LOGCAT_CAT_RESULT = [
-    '02-29 14:02:21.456  4454  Something \u901a\n',
-    '02-29 14:02:21.789  4454  Something again\n'
-]
-# A mocked piece of adb logcat output.
-MOCK_ADB_UNICODE_LOGCAT = (
-    u'02-29 14:02:19.123  4454  Nothing\n'
-    u'%s'
-    u'02-29 14:02:22.123  4454  Something again and again\n'
-) % u''.join(MOCK_ADB_UNICODE_LOGCAT_CAT_RESULT)
-
-# Mock start and end time of the adb cat.
-MOCK_ADB_LOGCAT_BEGIN_TIME = '02-29 14:02:20.123'
-MOCK_ADB_LOGCAT_END_TIME = '02-29 14:02:22.000'
 MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
 
 # A mock SnippetClient used for testing snippet management logic.
 MockSnippetClient = mock.MagicMock()
 MockSnippetClient.package = MOCK_SNIPPET_PACKAGE_NAME
-
-# Mock AdbError for missing logpersist scripts
-MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR = adb.AdbError(
-    'logpersist.stop --clear', '',
-    '/system/bin/sh: logpersist.stop: not found', 0)
-MOCK_LOGPERSIST_START_MISSING_ADB_ERROR = adb.AdbError(
-    'logpersist.start --clear', '',
-    '/system/bin/sh: logpersist.stop: not found', 0)
 
 
 class AndroidDeviceTest(unittest.TestCase):
@@ -272,8 +238,6 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         self.assertEqual(ad.serial, '1')
         self.assertEqual(ad.model, 'fakemodel')
-        self.assertIsNone(ad._adb_logcat_process)
-        self.assertIsNone(ad.adb_logcat_file_path)
         expected_lp = os.path.join(logging.log_path,
                                    'AndroidDevice%s' % mock_serial)
         self.assertEqual(ad.log_path, expected_lp)
@@ -410,88 +374,6 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
         return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch('mobly.utils.create_dir')
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
-    @mock.patch('mobly.utils.stop_standing_subprocess')
-    def test_AndroidDevice_take_logcat(self, stop_proc_mock, start_proc_mock,
-                                       creat_dir_mock, FastbootProxy,
-                                       MockAdbProxy):
-        """Verifies the steps of collecting adb logcat on an AndroidDevice
-        object, including various function calls and the expected behaviors of
-        the calls.
-        """
-        mock_serial = '1'
-        ad = android_device.AndroidDevice(serial=mock_serial)
-        expected_msg = '.* No ongoing adb logcat collection found.'
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(android_device.Error, expected_msg):
-            ad.stop_adb_logcat()
-        ad.start_adb_logcat()
-        # Verify start did the correct operations.
-        self.assertTrue(ad._adb_logcat_process)
-        expected_log_path = os.path.join(logging.log_path,
-                                         'AndroidDevice%s' % ad.serial,
-                                         'adblog,fakemodel,%s.txt' % ad.serial)
-        creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = '"adb" -s %s logcat -v threadtime  >> %s'
-        start_proc_mock.assert_called_with(
-            adb_cmd % (ad.serial, '"%s"' % expected_log_path), shell=True)
-        self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
-        expected_msg = (
-            'Logcat thread is already running, cannot start another'
-            ' one.')
-        # Expect error if start is called back to back.
-        with self.assertRaisesRegex(android_device.Error, expected_msg):
-            ad.start_adb_logcat()
-        # Verify stop did the correct operations.
-        ad.stop_adb_logcat()
-        stop_proc_mock.assert_called_with('process')
-        self.assertIsNone(ad._adb_logcat_process)
-        self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch('mobly.utils.create_dir')
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
-    @mock.patch('mobly.utils.stop_standing_subprocess')
-    def test_AndroidDevice_take_logcat_with_user_param(
-            self, stop_proc_mock, start_proc_mock, creat_dir_mock,
-            FastbootProxy, MockAdbProxy):
-        """Verifies the steps of collecting adb logcat on an AndroidDevice
-        object, including various function calls and the expected behaviors of
-        the calls.
-        """
-        mock_serial = '1'
-        ad = android_device.AndroidDevice(serial=mock_serial)
-        ad.adb_logcat_param = '-b radio'
-        expected_msg = '.* No ongoing adb logcat collection found.'
-        # Expect error if stop is called before start.
-        with self.assertRaisesRegex(android_device.Error, expected_msg):
-            ad.stop_adb_logcat()
-        ad.start_adb_logcat()
-        # Verify start did the correct operations.
-        self.assertTrue(ad._adb_logcat_process)
-        expected_log_path = os.path.join(logging.log_path,
-                                         'AndroidDevice%s' % ad.serial,
-                                         'adblog,fakemodel,%s.txt' % ad.serial)
-        creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = '"adb" -s %s logcat -v threadtime -b radio >> %s'
-        start_proc_mock.assert_called_with(
-            adb_cmd % (ad.serial, '"%s"' % expected_log_path), shell=True)
-        self.assertEqual(ad.adb_logcat_file_path, expected_log_path)
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.utils.start_standing_subprocess', return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
@@ -499,8 +381,8 @@ class AndroidDeviceTest(unittest.TestCase):
                                            start_proc_mock, FastbootProxy,
                                            MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.start_adb_logcat()
-        ad.stop_adb_logcat()
+        ad.start_services()
+        ad.services.unregister('logcat')
         old_path = ad.log_path
         new_log_path = tempfile.mkdtemp()
         ad.log_path = new_log_path
@@ -556,7 +438,7 @@ class AndroidDeviceTest(unittest.TestCase):
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
             FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.start_adb_logcat()
+        ad.start_services()
         new_log_path = tempfile.mkdtemp()
         expected_msg = '.* Cannot change `log_path` when there is service running.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
@@ -618,193 +500,10 @@ class AndroidDeviceTest(unittest.TestCase):
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
             FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.start_adb_logcat()
+        ad.start_services()
         expected_msg = '.* Cannot change device serial number when there is service running.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.update_serial('2')
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
-    @mock.patch('mobly.utils.stop_standing_subprocess')
-    @mock.patch(
-        'mobly.logger.get_log_line_timestamp',
-        return_value=MOCK_ADB_LOGCAT_END_TIME)
-    def test_AndroidDevice_cat_adb_log(self, mock_timestamp_getter,
-                                       stop_proc_mock, start_proc_mock,
-                                       FastbootProxy, MockAdbProxy):
-        """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
-        file, locates the correct adb log lines within the given time range,
-        and writes the lines to the correct output file.
-        """
-        mock_serial = '1'
-        ad = android_device.AndroidDevice(serial=mock_serial)
-        # Direct the log path of the ad to a temp dir to avoid racing.
-        ad._log_path_base = self.tmp_dir
-        # Expect error if attempted to cat adb log before starting adb logcat.
-        expected_msg = ('.* Attempting to cat adb log when none'
-                        ' has been collected.')
-        with self.assertRaisesRegex(android_device.Error, expected_msg):
-            ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
-        ad.start_adb_logcat()
-        utils.create_dir(ad.log_path)
-        mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
-                                         (ad.model, ad.serial))
-        with io.open(mock_adb_log_path, 'w', encoding='utf-8') as f:
-            f.write(MOCK_ADB_LOGCAT)
-        ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
-        cat_file_path = os.path.join(
-            ad.log_path, 'AdbLogExcerpts',
-            ('some_test,02-29 14-02-20.123,%s,%s.txt') % (ad.model, ad.serial))
-        with io.open(cat_file_path, 'r', encoding='utf-8') as f:
-            actual_cat = f.read()
-        self.assertEqual(actual_cat, ''.join(MOCK_ADB_LOGCAT_CAT_RESULT))
-        # Stops adb logcat.
-        ad.stop_adb_logcat()
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
-    @mock.patch('mobly.utils.stop_standing_subprocess')
-    @mock.patch(
-        'mobly.logger.get_log_line_timestamp',
-        return_value=MOCK_ADB_LOGCAT_END_TIME)
-    def test_AndroidDevice_cat_adb_log_with_unicode(
-            self, mock_timestamp_getter, stop_proc_mock, start_proc_mock,
-            FastbootProxy, MockAdbProxy):
-        """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
-        file, locates the correct adb log lines within the given time range,
-        and writes the lines to the correct output file.
-        """
-        mock_serial = '1'
-        ad = android_device.AndroidDevice(serial=mock_serial)
-        # Direct the log path of the ad to a temp dir to avoid racing.
-        ad._log_path_base = self.tmp_dir
-        # Expect error if attempted to cat adb log before starting adb logcat.
-        expected_msg = ('.* Attempting to cat adb log when none'
-                        ' has been collected.')
-        with self.assertRaisesRegex(android_device.Error, expected_msg):
-            ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
-        ad.start_adb_logcat()
-        utils.create_dir(ad.log_path)
-        mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
-                                         (ad.model, ad.serial))
-        with io.open(mock_adb_log_path, 'w', encoding='utf-8') as f:
-            f.write(MOCK_ADB_UNICODE_LOGCAT)
-        ad.cat_adb_log('some_test', MOCK_ADB_LOGCAT_BEGIN_TIME)
-        cat_file_path = os.path.join(
-            ad.log_path, 'AdbLogExcerpts',
-            ('some_test,02-29 14-02-20.123,%s,%s.txt') % (ad.model, ad.serial))
-        with io.open(cat_file_path, 'r', encoding='utf-8') as f:
-            actual_cat = f.read()
-        self.assertEqual(actual_cat,
-                         ''.join(MOCK_ADB_UNICODE_LOGCAT_CAT_RESULT))
-        # Stops adb logcat.
-        ad.stop_adb_logcat()
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock.MagicMock())
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    def test_AndroidDevice__enable_logpersist_with_logpersist(
-            self, MockFastboot, MockAdbProxy):
-        mock_serial = '1'
-        mock_adb_proxy = MockAdbProxy.return_value
-        # Set getprop to return '1' to indicate the device is rootable.
-        mock_adb_proxy.getprop.return_value = '1'
-        mock_adb_proxy.has_shell_command.side_effect = lambda command: {
-            'logpersist.start': True,
-            'logpersist.stop': True, }[command]
-        ad = android_device.AndroidDevice(serial=mock_serial)
-        ad._enable_logpersist()
-        mock_adb_proxy.shell.assert_has_calls([
-            mock.call('logpersist.stop --clear'),
-            mock.call('logpersist.start'),
-        ])
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock.MagicMock())
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    def test_AndroidDevice__enable_logpersist_with_missing_all_logpersist(
-            self, MockFastboot, MockAdbProxy):
-        def adb_shell_helper(command):
-            if command == 'logpersist.start':
-                raise MOCK_LOGPERSIST_START_MISSING_ADB_ERROR
-            elif command == 'logpersist.stop --clear':
-                raise MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR
-            else:
-                return ''
-
-        mock_serial = '1'
-        mock_adb_proxy = MockAdbProxy.return_value
-        mock_adb_proxy.getprop.return_value = 'userdebug'
-        mock_adb_proxy.has_shell_command.side_effect = lambda command: {
-            'logpersist.start': False,
-            'logpersist.stop': False, }[command]
-        mock_adb_proxy.shell.side_effect = adb_shell_helper
-        ad = android_device.AndroidDevice(serial=mock_serial)
-        ad._enable_logpersist()
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock.MagicMock())
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    def test_AndroidDevice__enable_logpersist_with_missing_logpersist_stop(
-            self, MockFastboot, MockAdbProxy):
-        def adb_shell_helper(command):
-            if command == 'logpersist.stop --clear':
-                raise MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR
-            else:
-                return ''
-
-        mock_serial = '1'
-        mock_adb_proxy = MockAdbProxy.return_value
-        mock_adb_proxy.getprop.return_value = 'userdebug'
-        mock_adb_proxy.has_shell_command.side_effect = lambda command: {
-            'logpersist.start': True,
-            'logpersist.stop': False, }[command]
-        mock_adb_proxy.shell.side_effect = adb_shell_helper
-        ad = android_device.AndroidDevice(serial=mock_serial)
-        ad._enable_logpersist()
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock.MagicMock())
-    @mock.patch('mobly.utils.stop_standing_subprocess')
-    def test_AndroidDevice__enable_logpersist_with_missing_logpersist_start(
-            self, MockFastboot, MockAdbProxy):
-        def adb_shell_helper(command):
-            if command == 'logpersist.start':
-                raise MOCK_LOGPERSIST_START_MISSING_ADB_ERROR
-            else:
-                return ''
-
-        mock_serial = '1'
-        mock_adb_proxy = MockAdbProxy.return_value
-        mock_adb_proxy.getprop.return_value = 'userdebug'
-        mock_adb_proxy.has_shell_command.side_effect = lambda command: {
-            'logpersist.start': False,
-            'logpersist.stop': True, }[command]
-        mock_adb_proxy.shell.side_effect = adb_shell_helper
-        ad = android_device.AndroidDevice(serial=mock_serial)
-        ad._enable_logpersist()
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -830,59 +529,13 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_load_snippet_failure(
-            self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
+    def test_AndroidDevice_getattr(self, MockGetPort, MockSnippetClient,
+                                   MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        client = mock.MagicMock()
-        client.start_app_and_connect.side_effect = Exception(
-            'Something went wrong.')
-        MockSnippetClient.return_value = client
-        with self.assertRaisesRegex(Exception, 'Something went wrong.'):
-            ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        client.stop_app.assert_called_once_with()
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
-    @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_load_snippet_precheck_failure(
-            self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
-        ad = android_device.AndroidDevice(serial='1')
-        client = mock.MagicMock()
-        client.start_app_and_connect.side_effect = snippet_client.AppStartPreCheckError(
-            mock.MagicMock, 'Something went wrong in precheck.')
-        MockSnippetClient.return_value = client
-        with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
-                                    'Something went wrong in precheck.'):
-            ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        client.stop_app.assert_not_called()
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
-    @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_load_snippet_fail_cleanup_also_fail(
-            self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
-        ad = android_device.AndroidDevice(serial='1')
-        client = mock.MagicMock()
-        client.start_app_and_connect.side_effect = Exception(
-            'Something went wrong in start app.')
-        client.stop_app.side_effect = Exception('Stop app also failed.')
-        MockSnippetClient.return_value = client
-        with self.assertRaisesRegex(Exception,
-                                    'Something went wrong in start app.'):
-            ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        client.stop_app.assert_called_once_with()
+        ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
+        value = {'value': 42}
+        actual_value = getattr(ad, 'some_attr', value)
+        self.assertEqual(actual_value, value)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -917,9 +570,7 @@ class AndroidDeviceTest(unittest.TestCase):
             self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        expected_msg = ('Attribute "%s" is already registered with package '
-                        '"%s", it cannot be used again.') % (
-                            'snippet', MOCK_SNIPPET_PACKAGE_NAME)
+        expected_msg = '.* Attribute "snippet" already exists, please use a different name.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME + 'haha')
 
@@ -1003,8 +654,9 @@ class AndroidDeviceTest(unittest.TestCase):
     def test_AndroidDevice_snippet_cleanup(
             self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
+        ad.start_services()
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        ad.stop_services()
+        ad.unload_snippet('snippet')
         self.assertFalse(hasattr(ad, 'snippet'))
 
     @mock.patch(
@@ -1032,6 +684,52 @@ class AndroidDeviceTest(unittest.TestCase):
             raise Exception(ad, 'Something')
         except Exception as e:
             self.assertEqual("(<AndroidDevice|Mememe>, 'Something')", str(e))
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_handle_usb_disconnect(self, stop_proc_mock,
+                                                 start_proc_mock,
+                                                 FastbootProxy, MockAdbProxy):
+        class MockService(base_service.BaseService):
+            def __init__(self, device, configs=None):
+                self._alive = False
+                self.pause_called = False
+                self.resume_called = False
+
+            @property
+            def is_alive(self):
+                return self._alive
+
+            def start(self, configs=None):
+                self._alive = True
+
+            def stop(self):
+                self._alive = False
+
+            def pause(self):
+                self._alive = False
+                self.pause_called = True
+
+            def resume(self):
+                self._alive = True
+                self.resume_called = True
+
+        ad = android_device.AndroidDevice(serial='1')
+        ad.start_services()
+        ad.services.register('mock_service', MockService)
+        with ad.handle_usb_disconnect():
+            self.assertFalse(ad.services.is_any_alive)
+            self.assertTrue(ad.services.mock_service.pause_called)
+            self.assertFalse(ad.services.mock_service.resume_called)
+        self.assertTrue(ad.services.is_any_alive)
+        self.assertTrue(ad.services.mock_service.resume_called)
 
 
 if __name__ == '__main__':
