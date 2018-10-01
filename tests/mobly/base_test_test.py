@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import io
 import os
 import mock
@@ -29,6 +30,8 @@ from mobly import records
 from mobly import signals
 
 from tests.lib import utils
+from tests.lib import mock_controller
+from tests.lib import mock_second_controller
 
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 MSG_EXPECTED_TEST_FAILURE = "This is an expected test failure."
@@ -45,6 +48,15 @@ class SomeError(Exception):
     """A custom exception class used for tests in this module."""
 
 
+class MockEmptyBaseTest(base_test.BaseTestClass):
+    """Stub used to test functionalities not specific to a class
+    implementation.
+    """
+
+    def test_func(self):
+        pass
+
+
 class BaseTestTest(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
@@ -52,6 +64,7 @@ class BaseTestTest(unittest.TestCase):
         self.summary_file = os.path.join(self.tmp_dir, 'summary.yaml')
         self.mock_test_cls_configs.summary_writer = records.TestSummaryWriter(
             self.summary_file)
+        self.mock_test_cls_configs.controller_configs = {}
         self.mock_test_cls_configs.log_path = self.tmp_dir
         self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
         self.mock_test_cls_configs.reporter = mock.MagicMock()
@@ -254,14 +267,25 @@ class BaseTestTest(unittest.TestCase):
         on_fail_call_check.assert_called_once_with("haha")
 
     def test_teardown_class_fail_by_exception(self):
+        mock_test_config = self.mock_test_cls_configs.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_2_config_name = mock_second_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{'serial': 'xxxx', 'magic': 'Magic'}]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs[
+            mock_ctrlr_2_config_name] = copy.copy(my_config)
+
         class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                self.register_controller(mock_controller)
+
             def test_something(self):
                 pass
 
             def teardown_class(self):
                 raise Exception(MSG_EXPECTED_EXCEPTION)
 
-        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls = MockBaseTest(mock_test_config)
         bt_cls.run()
         test_record = bt_cls.results.passed[0]
         class_record = bt_cls.results.error[0]
@@ -274,6 +298,53 @@ class BaseTestTest(unittest.TestCase):
         expected_summary = ('Error 1, Executed 1, Failed 0, Passed 1, '
                             'Requested 1, Skipped 0')
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+        # Verify the controller info is recorded correctly.
+        info = bt_cls.results.controller_info[0]
+        self.assertEqual(info.test_class, 'MockBaseTest')
+        self.assertEqual(info.controller_name, 'MagicDevice')
+        self.assertEqual(info.controller_info, [{
+            'MyMagic': {
+                'magic': 'Magic'
+            }
+        }])
+
+    def test_teardown_class_raise_abort_all(self):
+        mock_test_config = self.mock_test_cls_configs.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_2_config_name = mock_second_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{'serial': 'xxxx', 'magic': 'Magic'}]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs[
+            mock_ctrlr_2_config_name] = copy.copy(my_config)
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                self.register_controller(mock_controller)
+
+            def test_something(self):
+                pass
+
+            def teardown_class(self):
+                raise asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+
+        bt_cls = MockBaseTest(mock_test_config)
+        with self.assertRaisesRegex(signals.TestAbortAll,
+                                    MSG_EXPECTED_EXCEPTION):
+            bt_cls.run()
+        test_record = bt_cls.results.passed[0]
+        self.assertTrue(bt_cls.results.is_all_pass)
+        expected_summary = ('Error 0, Executed 1, Failed 0, Passed 1, '
+                            'Requested 1, Skipped 0')
+        self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+        # Verify the controller info is recorded correctly.
+        info = bt_cls.results.controller_info[0]
+        self.assertEqual(info.test_class, 'MockBaseTest')
+        self.assertEqual(info.controller_name, 'MagicDevice')
+        self.assertEqual(info.controller_info, [{
+            'MyMagic': {
+                'magic': 'Magic'
+            }
+        }])
 
     def test_setup_test_fail_by_exception(self):
         mock_on_fail = mock.Mock()
@@ -1772,6 +1843,56 @@ class BaseTestTest(unittest.TestCase):
                 self.assertEqual(c['a'], content['a'])
                 self.assertIsNotNone(c['timestamp'])
         self.assertTrue(hit)
+
+    def test_record_controller_info(self):
+        """Verifies that controller info is correctly recorded.
+
+        1. Info added in test is recorded.
+        2. Info of multiple controller types are recorded.
+        """
+        mock_test_config = self.mock_test_cls_configs.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_2_config_name = mock_second_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{'serial': 'xxxx', 'magic': 'Magic'}]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs[
+            mock_ctrlr_2_config_name] = copy.copy(my_config)
+
+        class ControllerInfoTest(base_test.BaseTestClass):
+            """Registers two different controller types and modifies controller
+            info at runtime.
+            """
+
+            def setup_class(self):
+                self.register_controller(mock_controller)
+                second_controller = self.register_controller(
+                    mock_second_controller)[0]
+                # This should appear in recorded controller info.
+                second_controller.set_magic('haha')
+
+            def test_func(self):
+                pass
+
+        bt_cls = ControllerInfoTest(mock_test_config)
+        bt_cls.run()
+        info1 = bt_cls.results.controller_info[0]
+        info2 = bt_cls.results.controller_info[1]
+        self.assertNotEqual(info1, info2)
+        self.assertEqual(info1.test_class, 'ControllerInfoTest')
+        self.assertEqual(info1.controller_name, 'MagicDevice')
+        self.assertEqual(info1.controller_info, [{
+            'MyMagic': {
+                'magic': 'Magic'
+            }
+        }])
+        self.assertEqual(info2.test_class, 'ControllerInfoTest')
+        self.assertEqual(info2.controller_name, 'AnotherMagicDevice')
+        self.assertEqual(info2.controller_info, [{
+            'MyOtherMagic': {
+                'magic': 'Magic',
+                'extra_magic': 'haha'
+            }
+        }])
 
 
 if __name__ == "__main__":

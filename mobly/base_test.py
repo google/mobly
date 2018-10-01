@@ -21,6 +21,7 @@ import logging
 
 from future.utils import raise_with_traceback
 
+from mobly import controller_manager
 from mobly import expects
 from mobly import records
 from mobly import runtime_test_info
@@ -65,6 +66,8 @@ class BaseTestClass(object):
             name.
         results: A records.TestResult object for aggregating test results from
             the execution of tests.
+        controller_configs: dict, controller configs provided by the user via
+            test bed config.
         current_test_name: [Deprecated, use `self.current_test_info.name`]
             A string that's the name of the test method currently being
             executed. If no test is executing, this should be None.
@@ -73,12 +76,8 @@ class BaseTestClass(object):
         log_path: string, specifies the root directory for all logs written
             by a test run.
         test_bed_name: string, the name of the test bed used by a test run.
-        controller_configs: dict, configs used for instantiating controller
-            objects.
         user_params: dict, custom parameters from user, to be consumed by
             the test logic.
-        register_controller: func, used by test classes to register
-            controller modules.
     """
 
     TAG = None
@@ -103,15 +102,16 @@ class BaseTestClass(object):
             self.TAG = self._class_name
         # Set params.
         self.log_path = configs.log_path
-        self.controller_configs = configs.controller_configs
         self.test_bed_name = configs.test_bed_name
         self.user_params = configs.user_params
-        self.register_controller = configs.register_controller
         self.results = records.TestResult()
         self.summary_writer = configs.summary_writer
         # Deprecated, use `self.current_test_info.name`.
         self.current_test_name = None
         self._generated_test_table = collections.OrderedDict()
+        self._controller_manager = controller_manager.ControllerManager(
+            class_name=self.TAG, controller_configs=configs.controller_configs)
+        self.controller_configs = self._controller_manager.controller_configs
 
     def __enter__(self):
         return self
@@ -170,6 +170,89 @@ class BaseTestClass(object):
             else:
                 logging.warning('Missing optional user param "%s" in '
                                 'configuration, continue.', name)
+
+    def register_controller(self, module, required=True, min_number=1):
+        """Loads a controller module and returns its loaded devices.
+
+        A Mobly controller module is a Python lib that can be used to control
+        a device, service, or equipment. To be Mobly compatible, a controller
+        module needs to have the following members:
+
+        ```
+        def create(configs):
+            [Required] Creates controller objects from configurations.
+
+            Args:
+                configs: A list of serialized data like string/dict. Each
+                    element of the list is a configuration for a controller
+                    object.
+
+            Returns:
+                A list of objects.
+
+        def destroy(objects):
+            [Required] Destroys controller objects created by the create
+            function. Each controller object shall be properly cleaned up
+            and all the resources held should be released, e.g. memory
+            allocation, sockets, file handlers etc.
+
+            Args:
+                A list of controller objects created by the create function.
+
+        def get_info(objects):
+            [Optional] Gets info from the controller objects used in a test
+            run. The info will be included in test_summary.yaml under
+            the key 'ControllerInfo'. Such information could include unique
+            ID, version, or anything that could be useful for describing the
+            test bed and debugging.
+
+            Args:
+                objects: A list of controller objects created by the create
+                    function.
+
+            Returns:
+                A list of json serializable objects, each represents the
+                info of a controller object. The order of the info object
+                should follow that of the input objects.
+        ```
+
+        Registering a controller module declares a test class's dependency the
+        controller. If the module config exists and the module matches the
+        controller interface, controller objects will be instantiated with
+        corresponding configs. The module should be imported first.
+
+        Args:
+            module: A module that follows the controller module interface.
+            required: A bool. If True, failing to register the specified
+                controller module raises exceptions. If False, the objects
+                failed to instantiate will be skipped.
+            min_number: An integer that is the minimum number of controller
+                objects to be created. Default is one, since you should not
+                register a controller module without expecting at least one
+                object.
+
+        Returns:
+            A list of controller objects instantiated from controller_module, or
+            None if no config existed for this controller and it was not a
+            required controller.
+
+        Raises:
+            ControllerError:
+                * The controller module has already been registered.
+                * The actual number of objects instantiated is less than the
+                * `min_number`.
+                * `required` is True and no corresponding config can be found.
+                * Any other error occurred in the registration process.
+        """
+        return self._controller_manager.register_controller(
+            module, required, min_number)
+
+    def _record_controller_info(self):
+        # Collect controller information and write to test result.
+        for record in self._controller_manager.get_controller_info_records():
+            self.results.add_controller_info_record(record)
+            self.summary_writer.dump(
+                record.to_dict(), records.TestSummaryEntryType.CONTROLLER_INFO)
 
     def _setup_generated_tests(self):
         """Proxy function to guarantee the base implementation of
@@ -244,6 +327,10 @@ class BaseTestClass(object):
             self.results.add_class_error(record)
             self.summary_writer.dump(record.to_dict(),
                                      records.TestSummaryEntryType.RECORD)
+        finally:
+            # Write controller info and summary to summary file.
+            self._record_controller_info()
+            self._controller_manager.unregister_controllers()
 
     def teardown_class(self):
         """Teardown function that will be called after all the selected tests in

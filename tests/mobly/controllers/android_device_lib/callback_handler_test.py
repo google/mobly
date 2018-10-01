@@ -73,7 +73,7 @@ class CallbackHandlerTest(unittest.TestCase):
                             'EventSnippet$EventSnippetException: timeout.')
         mock_event_client.eventWaitAndGet = mock.Mock(
             side_effect=jsonrpc_client_base.ApiError(mock.Mock(),
-                java_timeout_msg))
+                                                     java_timeout_msg))
         handler = callback_handler.CallbackHandler(
             callback_id=MOCK_CALLBACK_ID,
             event_client=mock_event_client,
@@ -121,6 +121,27 @@ class CallbackHandlerTest(unittest.TestCase):
         with self.assertRaisesRegex(callback_handler.TimeoutError,
                                     expected_msg):
             handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
+
+    def test_wait_for_event_max_timeout(self):
+        """waitForEvent should not raise the timeout exceed threshold error.
+        """
+        mock_event_client = mock.Mock()
+        mock_event_client.eventWaitAndGet = mock.Mock(
+            return_value=MOCK_RAW_EVENT)
+        handler = callback_handler.CallbackHandler(
+            callback_id=MOCK_CALLBACK_ID,
+            event_client=mock_event_client,
+            ret_value=None,
+            method_name=None,
+            ad=mock.Mock())
+
+        def some_condition(event):
+            return event.data['successful']
+
+        big_timeout = callback_handler.MAX_TIMEOUT * 2
+        # This line should not raise.
+        event = handler.waitForEvent(
+            'AsyncTaskResult', some_condition, timeout=big_timeout)
 
 
 if __name__ == "__main__":

@@ -18,16 +18,8 @@ from setuptools.command import test
 import sys
 
 install_requires = [
-    'future',
-    # mock-1.0.1 is the last version compatible with setuptools <17.1,
-    # which is what comes with Ubuntu 14.04 LTS.
-    'mock<=1.0.1',
-    'portpicker',
-    'psutil>=5.4.4',
-    'pytz',
-    'pyyaml',
-    'timeout_decorator',
-    'pyserial'
+    'future', 'portpicker', 'psutil>=5.4.4', 'pyserial', 'pyyaml',
+    'timeout_decorator'
 ]
 
 if sys.version_info < (3, ):
@@ -60,17 +52,21 @@ class PyTest(test.test):
 def main():
     setuptools.setup(
         name='mobly',
-        version='1.7.4',
+        version='1.7.5',
         maintainer='Ang Li',
         maintainer_email='mobly-github@googlegroups.com',
         description='Automation framework for special end-to-end test cases',
         license='Apache2.0',
         url='https://github.com/google/mobly',
-        download_url='https://github.com/google/mobly/tarball/1.7.4',
+        download_url='https://github.com/google/mobly/tarball/1.7.5',
         packages=setuptools.find_packages(),
         include_package_data=False,
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
-        tests_require=['pytest'],
+        tests_require=[
+            'mock',
+            'pytest',
+            'pytz',
+        ],
         install_requires=install_requires,
         cmdclass={'test': PyTest},
     )

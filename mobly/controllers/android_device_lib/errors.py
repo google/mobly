@@ -16,6 +16,8 @@
 
 from mobly import signals
 
+HIERARCHY_TOKEN = '::'
+
 
 class Error(signals.ControllerError):
     pass
@@ -23,6 +25,26 @@ class Error(signals.ControllerError):
 
 class DeviceError(Error):
     """Raised for errors specific to an AndroidDevice object."""
+
     def __init__(self, ad, msg):
-        new_msg = '%s %s' % (repr(ad), msg)
+        template = '%s %s'
+        # If the message starts with the hierarchy token, don't add the extra
+        # space.
+        if isinstance(msg, str) and msg.startswith(HIERARCHY_TOKEN):
+            template = '%s%s'
+        new_msg = template % (repr(ad), msg)
         super(DeviceError, self).__init__(new_msg)
+
+
+class ServiceError(DeviceError):
+    """Raised for errors specific to an AndroidDevice service.
+
+    A service is inherently associated with a device instance, so the service
+    error type is a subtype of `DeviceError`.
+    """
+    SERVICE_TYPE = None
+
+    def __init__(self, device, msg):
+        new_msg = '%sService<%s> %s' % (HIERARCHY_TOKEN, self.SERVICE_TYPE,
+                                        msg)
+        super(ServiceError, self).__init__(device, new_msg)
