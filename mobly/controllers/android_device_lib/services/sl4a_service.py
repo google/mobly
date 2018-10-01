@@ -49,7 +49,7 @@ class Sl4aService(base_service.BaseService):
 
     def resume(self):
         # Restore sl4a if needed.
-        if self.is_alive:
+        if not self.is_alive:
             self._sl4a_client.restore_app_connection()
 
     def __getattr__(self, name):
