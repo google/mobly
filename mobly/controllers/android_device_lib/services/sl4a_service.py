@@ -24,6 +24,7 @@ class Sl4aService(base_service.BaseService):
     syntactic sugar. So `Sl4aService.doFoo()` is equivalent to
     `Sl4aClient.doFoo()`.
     """
+
     def __init__(self, device):
         self._ad = device
         self._sl4a_client = None
@@ -44,13 +45,12 @@ class Sl4aService(base_service.BaseService):
     def pause(self):
         # Need to stop dispatcher because it continuously polls the device.
         # It's not necessary to stop the sl4a client.
-        if self.is_alive:
-            self._sl4a_client.stop_event_dispatcher()
+        self._sl4a_client.stop_event_dispatcher()
+        self._sl4a_client.clear_host_port()
 
     def resume(self):
         # Restore sl4a if needed.
-        if not self.is_alive:
-            self._sl4a_client.restore_app_connection()
+        self._sl4a_client.restore_app_connection()
 
     def __getattr__(self, name):
         """Forwards the getattr calls to the client itself."""

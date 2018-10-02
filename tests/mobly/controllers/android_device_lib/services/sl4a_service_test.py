@@ -16,9 +16,11 @@ from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib.services import sl4a_service
 
+
 @mock.patch('mobly.controllers.android_device_lib.sl4a_client.Sl4aClient')
 class Sl4aTest(unittest.TestCase):
     """Tests for the sl4a service."""
+
     def test_instantiation(self, _):
         service = sl4a_service.Sl4aService(mock.MagicMock())
         self.assertFalse(service.is_alive)
@@ -44,6 +46,15 @@ class Sl4aTest(unittest.TestCase):
         service.start()
         service.pause()
         mock_client.stop_event_dispatcher.assert_called_once_with()
+        mock_client.clear_host_port.assert_called_once_with()
+
+    def test_resume(self, mock_class):
+        mock_client = mock_class.return_value
+        service = sl4a_service.Sl4aService(mock.MagicMock())
+        service.start()
+        service.pause()
+        service.resume()
+        mock_client.restore_app_connection.assert_called_once_with()
 
 
 if __name__ == '__main__':

@@ -238,13 +238,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             # Always clean up the adb port
             self.clear_host_port()
 
-    def clear_host_port(self):
-        """Stops the adb port forwarding of the host port used by this client.
-        """
-        if self.host_port:
-            self._adb.forward(['--remove', 'tcp:%d' % self.host_port])
-            self.host_port = None
-
     def _start_event_client(self):
         """Overrides superclass."""
         event_client = SnippetClient(package=self.package, ad=self._ad)
