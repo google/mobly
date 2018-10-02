@@ -113,17 +113,21 @@ class SnippetManagementService(base_service.BaseService):
                 client.stop_app()
 
     def pause(self):
-        """Intentionally no-op.
+        """Pauses all the snippet clients under management.
 
-        No action on the client side is needed per current snippet clients
-        design. Because snippet clients do not explicitly handle temporary
-        disconnect (Issue #509).
+        This clears the host port of a client because a new port will be
+        allocated in `resume`.
         """
+        for client in self._snippet_clients.values():
+            client.clear_host_port()
 
     def resume(self):
         """Resumes all paused snippet clients."""
         for client in self._snippet_clients.values():
-            if not client.is_alive:
+            # Resume is only applicable if a client is alive and does not have
+            # a host port.
+            print(client.is_alive, client.host_port)
+            if client.is_alive and client.host_port is None:
                 client.restore_app_connection()
 
     def __getattr__(self, name):
