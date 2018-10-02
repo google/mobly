@@ -18,7 +18,7 @@ from setuptools.command import test
 import sys
 
 install_requires = [
-    'future', 'portpicker', 'psutil>=5.4.4', 'pyserial', 'pyyaml',
+    'dateutil', 'future', 'portpicker', 'psutil>=5.4.4', 'pyserial', 'pyyaml',
     'timeout_decorator'
 ]
 

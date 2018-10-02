@@ -26,6 +26,7 @@ from mobly import utils
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import fastboot
+from mobly.controllers.android_device_lib import logcat_pubsub
 from mobly.controllers.android_device_lib import service_manager
 from mobly.controllers.android_device_lib import sl4a_client
 from mobly.controllers.android_device_lib.services import logcat
@@ -440,6 +441,7 @@ class AndroidDevice(object):
             'snippets', snippet_management_service.SnippetManagementService)
         # Device info cache.
         self._user_added_device_info = {}
+        self._logcat_publisher = None
 
     def __repr__(self):
         return '<AndroidDevice|%s>' % self.debug_tag
@@ -1021,6 +1023,33 @@ class AndroidDevice(object):
             return
         with self.handle_reboot():
             self.adb.reboot()
+
+    def register_logcat_subscriber(self, subscriber):
+      """Register a logcat subscriber with the logcat publisher.
+
+      Check if an existing logcat publisher is active. If not then lazy
+      instantiate a new one and register the subscriber to that publisher.
+
+      Args:
+          subscriber: LogcatSubscriber, subscriber to register
+      """
+      if not hasattr(self.services, 'logcat_publisher'):
+          self.services.register('logcat_publisher',
+                                 logcat_pubsub.LogcatPublisher)
+      subscriber.subscribe(self.services.logcat_publisher)
+
+    def logcat_event(self, pattern='.*', tag='*', level='V'):
+        """Context manager object for a logcat event.
+
+        Args:
+            pattern: str, Regular expression pattern to trigger on.
+            tag: str, Tag portion of filterspec string.
+            level: str, Level portion of filterspec string.
+        """
+        subscriber = logcat_pubsub.LogcatEventSubscriber(
+            pattern=pattern, tag=tag, level=level)
+        self.register_logcat_subscriber(subscriber)
+        return subscriber
 
     def __getattr__(self, name):
         """Tries to return a snippet client registered with `name`.
