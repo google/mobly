@@ -33,6 +33,18 @@ class ServiceManager(object):
         self._service_objects = {}
         self._device = device
 
+    def has_service_by_name(self, name):
+        """Checks if the manager has a service registered with a specific name.
+
+        Args:
+            name: string, the name to look for.
+
+        Returns:
+            True if a service is registered with the specified name, False
+            otherwise.
+        """
+        return name in self._service_objects
+
     @property
     def is_any_alive(self):
         """True if any service is alive; False otherwise."""
@@ -123,4 +135,6 @@ class ServiceManager(object):
         Args:
             name: string, the alias a service object was registered under.
         """
-        return self._service_objects[name]
+        if self.has_service_by_name(name):
+            return self._service_objects[name]
+        return self.__getattribute__(name)

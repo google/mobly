@@ -434,8 +434,6 @@ class AndroidDevice(object):
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
             'tag': self.debug_tag
         })
-        self.sl4a = None
-        self.ed = None
         self.adb = adb.AdbProxy(serial)
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader and self.is_rootable:
@@ -451,10 +449,8 @@ class AndroidDevice(object):
 
     @property
     def adb_logcat_file_path(self):
-        try:
+        if self.services.has_service_by_name('logcat'):
             return self.services.logcat.adb_logcat_file_path
-        except AttributeError:
-            return None
 
     @property
     def _normalized_serial(self):
@@ -496,6 +492,28 @@ class AndroidDevice(object):
         self._user_added_device_info.update({name: info})
 
     @property
+    def sl4a(self):
+        """Attribute for direct access of sl4a client.
+
+        Not recommended. This is here for backward compatibility reasons.
+
+        Preferred: directly access `ad.services.sl4a`.
+        """
+        if self.services.has_service_by_name('sl4a'):
+            return self.services.sl4a
+
+    @property
+    def ed(self):
+        """Attribute for direct access of sl4a's event dispatcher.
+
+        Not recommended. This is here for backward compatibility reasons.
+
+        Preferred: directly access `ad.services.sl4a.ed`.
+        """
+        if self.services.has_service_by_name('sl4a'):
+            return self.services.sl4a.ed
+
+    @property
     def debug_tag(self):
         """A string that represents a device object in debug info. Default value
         is the device serial.
@@ -531,7 +549,7 @@ class AndroidDevice(object):
 
         A service can be a snippet or logcat collection.
         """
-        return any([self.services.is_any_alive, self.sl4a])
+        return self.services.is_any_alive
 
     @property
     def log_path(self):
@@ -833,20 +851,17 @@ class AndroidDevice(object):
     def load_sl4a(self):
         """.. deprecated:: 1.8
 
+        Directly register with service manager instead:
+        `self.services.register('sl4a', sl4a_service)`
+
         Register sl4a_service directly instead.
 
         Start sl4a service on the Android device.
 
         Launch sl4a server if not already running, spin up a session on the
         server, and two connections to this session.
-
-        Creates an sl4a client (self.sl4a) with one connection, and one
-        EventDispatcher obj (self.ed) with the other connection.
         """
         self.services.register('sl4a', sl4a_service)
-        # Set the attributes for backward compatibility.
-        self.sl4a = self.services.sl4a
-        self.ed = self.sl4a.ed
 
     def take_bug_report(self,
                         test_name,
