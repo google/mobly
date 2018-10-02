@@ -126,7 +126,6 @@ class SnippetManagementService(base_service.BaseService):
         for client in self._snippet_clients.values():
             # Resume is only applicable if a client is alive and does not have
             # a host port.
-            print(client.is_alive, client.host_port)
             if client.is_alive and client.host_port is None:
                 client.restore_app_connection()
 
