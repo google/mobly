@@ -26,10 +26,10 @@ from mobly import utils
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import fastboot
-from mobly.controllers.android_device_lib import logcat_pubsub
 from mobly.controllers.android_device_lib import service_manager
 from mobly.controllers.android_device_lib import sl4a_client
 from mobly.controllers.android_device_lib.services import logcat
+from mobly.controllers.android_device_lib.services import logcat_pubsub
 from mobly.controllers.android_device_lib.services import snippet_management_service
 
 # Convenience constant for the package of Mobly Bundled Snippets
