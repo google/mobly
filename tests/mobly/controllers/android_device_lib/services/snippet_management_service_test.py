@@ -131,7 +131,18 @@ class SnippetManagementServiceTest(unittest.TestCase):
         mock_client.clear_host_port.assert_called_once_with()
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
-    def test_resume(self, mock_class):
+    def test_resume_positive_case(self, mock_class):
+        mock_client = mock_class.return_value
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
+        manager.add_snippet_client('foo', MOCK_PACKAGE)
+        mock_client.is_alive = True
+        mock_client.host_port = None
+        manager.resume()
+        mock_client.restore_app_connection.assert_called_once_with()
+
+    @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+    def test_resume_alive_with_host_port(self, mock_class):
         mock_client = mock_class.return_value
         manager = snippet_management_service.SnippetManagementService(
             mock.MagicMock())
@@ -140,14 +151,17 @@ class SnippetManagementServiceTest(unittest.TestCase):
         mock_client.host_port = 1
         manager.resume()
         mock_client.restore_app_connection.assert_not_called()
+
+    @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+    def test_resume_not_alive_no_host_port(self, mock_class):
+        mock_client = mock_class.return_value
+        manager = snippet_management_service.SnippetManagementService(
+            mock.MagicMock())
+        manager.add_snippet_client('foo', MOCK_PACKAGE)
         mock_client.is_alive = False
         mock_client.host_port = None
         manager.resume()
         mock_client.restore_app_connection.assert_not_called()
-        mock_client.is_alive = True
-        mock_client.host_port = None
-        manager.resume()
-        mock_client.restore_app_connection.assert_called_once_with()
 
     @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
     def test_attribute_access(self, mock_class):
