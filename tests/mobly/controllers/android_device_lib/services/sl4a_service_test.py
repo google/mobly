@@ -18,7 +18,7 @@ from mobly.controllers.android_device_lib.services import sl4a_service
 
 
 @mock.patch('mobly.controllers.android_device_lib.sl4a_client.Sl4aClient')
-class Sl4aTest(unittest.TestCase):
+class Sl4aServiceTest(unittest.TestCase):
     """Tests for the sl4a service."""
 
     def test_instantiation(self, _):
