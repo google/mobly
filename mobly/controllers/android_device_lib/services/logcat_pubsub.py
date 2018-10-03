@@ -137,7 +137,7 @@ class LogcatSubscriber(object):
 
     def __init__(self):
         super(LogcatSubscriber, self).__init__()
-        self._publishers = []
+        self._publisher = None
 
     def subscribe(self, publisher):
         """Subscribe this object to a publisher.
@@ -151,26 +151,12 @@ class LogcatSubscriber(object):
             raise Error(
                 'LogcatSubscriber can only subscribe a LogcatPublisher.')
         publisher.subscribe(self)
-        self._publishers.append(publisher)
+        self._publisher = publisher
 
-    def unsubscribe(self, publisher):
-        """Unsubscribe this object to a publisher.
-
-        Args:
-            publisher: LogcatPublisher, a logcat publisher to unsubscribe from.
-        Raises:
-            Error: If publisher is not a LogcatPublisher.
-        """
-        if not isinstance(publisher, LogcatPublisher):
-            raise Error(
-                'LogcatSubscriber can only subscribe a LogcatPublisher.')
-        publisher.unsubscribe(self)
-        self._publishers.remove(publisher)
-
-    def unsubscribe_all(self):
-      """Unsubscribe this object to all publishers."""
-      for publisher in self._publishers:
-          self.unsubscribe(publisher)
+    def unsubscribe(self):
+        """Unsubscribe this object to its publisher."""
+        self._publisher.unsubscribe(self)
+        self._publisher = None
 
     def handle(self, data):
         """Abstract subscribe handler method.
@@ -211,7 +197,7 @@ class LogcatEventSubscriber(LogcatSubscriber):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.unsubscribe_all()
+        self.unsubscribe()
 
     def clear(self):
         """Clears any set event."""
