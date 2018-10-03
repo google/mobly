@@ -139,7 +139,7 @@ def _start_services_on_ads(ads):
         if skip_logcat:
             continue
         try:
-            ad.start_services()
+            ad.services.register('logcat', logcat.Logcat)
         except Exception:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED,
                                   DEFAULT_VALUE_DEVICE_REQUIRED)
@@ -629,8 +629,6 @@ class AndroidDevice(object):
         Starts long running services on the android device, like adb logcat
         capture.
         """
-        configs = logcat.Config(clear_log=clear_log)
-        self.services.register('logcat', logcat.Logcat, configs)
         self.services.start_all()
 
     def start_adb_logcat(self, clear_log=True):
@@ -638,8 +636,7 @@ class AndroidDevice(object):
 
         Use `self.services.logcat.start` instead.
         """
-        configs = logcat.Config(clear_log=clear_log)
-        self.services.logcat.start(configs)
+        self.services.logcat.start()
 
     def stop_adb_logcat(self):
         """.. deprecated:: 1.8
