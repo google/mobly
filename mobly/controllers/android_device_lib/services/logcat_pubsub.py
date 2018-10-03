@@ -221,6 +221,8 @@ class LogcatEventSubscriber(LogcatSubscriber):
         Args:
             data: LogcatData, Data to handle.
         """
+        if self.trigger:
+            return
         if data.tag is None or not fnmatch.fnmatchcase(data.tag, self._tag):
             return
         if data.level is None or data.level not in self._levels:
