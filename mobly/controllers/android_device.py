@@ -1032,9 +1032,12 @@ class AndroidDevice(object):
       Args:
           subscriber: LogcatSubscriber, subscriber to register
       """
-      if not hasattr(self.services, 'logcat_publisher'):
+      try:
+          logcat_publisher = self.services.logcat_publisher
+      except KeyError:
           self.services.register('logcat_publisher',
                                  logcat_pubsub.LogcatPublisher)
+          logcat_publisher = self.services.logcat_publisher
       subscriber.subscribe(self.services.logcat_publisher)
 
     def logcat_event(self, pattern='.*', tag='*', level='V'):
