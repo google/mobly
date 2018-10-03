@@ -622,7 +622,11 @@ class AndroidDevice(object):
         self.fastboot.serial = new_serial
 
     def start_services(self, clear_log=True):
-        """Starts long running services on the android device, like adb logcat
+        """.. deprecated:: 1.8
+
+        Use service manager `self.services` instead.
+
+        Starts long running services on the android device, like adb logcat
         capture.
         """
         configs = logcat.Config(clear_log=clear_log)
@@ -645,7 +649,11 @@ class AndroidDevice(object):
         self.services.logcat.stop()
 
     def stop_services(self):
-        """Stops long running services on the Android device."""
+        """.. deprecated:: 1.8
+
+        Use service manager `self.services` instead.
+
+        Stops long running services on the Android device."""
         self.services.stop_all()
 
     @contextlib.contextmanager
@@ -861,6 +869,8 @@ class AndroidDevice(object):
         Launch sl4a server if not already running, spin up a session on the
         server, and two connections to this session.
         """
+        self.log.warning('`load_sl4a` is deprecated and scheduled for removal!'
+                         ' Register sl4a as a service instead.')
         self.services.register('sl4a', sl4a_service.Sl4aService)
 
     def take_bug_report(self,
