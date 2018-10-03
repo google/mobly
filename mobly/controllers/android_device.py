@@ -441,7 +441,6 @@ class AndroidDevice(object):
             'snippets', snippet_management_service.SnippetManagementService)
         # Device info cache.
         self._user_added_device_info = {}
-        self._logcat_publisher = None
 
     def __repr__(self):
         return '<AndroidDevice|%s>' % self.debug_tag
