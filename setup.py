@@ -18,8 +18,8 @@ from setuptools.command import test
 import sys
 
 install_requires = [
-    'dateutil', 'future', 'portpicker', 'psutil>=5.4.4', 'pyserial', 'pyyaml',
-    'timeout_decorator'
+    'python-dateutil', 'future', 'portpicker', 'psutil>=5.4.4', 'pyserial',
+    'pyyaml', 'timeout_decorator'
 ]
 
 if sys.version_info < (3, ):
