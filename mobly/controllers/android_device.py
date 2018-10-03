@@ -861,7 +861,7 @@ class AndroidDevice(object):
         Launch sl4a server if not already running, spin up a session on the
         server, and two connections to this session.
         """
-        self.services.register('sl4a', sl4a_service)
+        self.services.register('sl4a', sl4a_service.Sl4aService)
 
     def take_bug_report(self,
                         test_name,

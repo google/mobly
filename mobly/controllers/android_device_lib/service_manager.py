@@ -14,8 +14,11 @@
 """Module for the manager of services."""
 # TODO(xpconanfan: move the device errors to a more generic location so
 # other device controllers like iOS can share it.
+import inspect
+
 from mobly import expects
 from mobly.controllers.android_device_lib import errors
+from mobly.controllers.android_device_lib.services import base_service
 
 
 class Error(errors.DeviceError):
@@ -65,6 +68,12 @@ class ServiceManager(object):
             configs: (optional) config object to pass to the service class's
                 constructor.
         """
+        if not inspect.isclass(service_class):
+            raise Error(self._device, '"%s" is not a class!' % service_class)
+        if not issubclass(service_class, base_service.BaseService):
+            raise Error(
+                self._device,
+                'Class %s is not a subclass of BaseService!' % service_class)
         if alias in self._service_objects:
             raise Error(
                 self._device,
