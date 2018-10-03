@@ -92,7 +92,7 @@ class LogcatPubsubTest(unittest.TestCase):
         start_standing_subprocess.return_value = process
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         with ad.logcat_event(tag='*Serv*') as event:
-            map(process.mock_stdout.write, MOCK_LOG_LINES)
+            list(map(process.mock_stdout.write, MOCK_LOG_LINES))
             process.mock_stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
@@ -116,7 +116,7 @@ class LogcatPubsubTest(unittest.TestCase):
         start_standing_subprocess.return_value = process
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         with ad.logcat_event(level='E') as event:
-            map(process.mock_stdout.write, MOCK_LOG_LINES)
+            list(map(process.mock_stdout.write, MOCK_LOG_LINES))
             process.mock_stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
@@ -141,7 +141,7 @@ class LogcatPubsubTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         pattern = 'a=(?P<a>\d+) b=(?P<b>\d+) c=(?P<c>\d+)'
         with ad.logcat_event(pattern=pattern) as event:
-            map(process.mock_stdout.write, MOCK_LOG_LINES)
+            list(map(process.mock_stdout.write, MOCK_LOG_LINES))
             process.mock_stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
