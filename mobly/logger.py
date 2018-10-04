@@ -132,7 +132,7 @@ def get_log_file_timestamp(delta=None):
     return _get_timestamp('%m-%d-%Y_%H-%M-%S-%f', delta)
 
 
-def _setup_test_logger(log_path, prefix=None, filename=None):
+def _setup_test_logger(log_path, prefix=None):
     """Customizes the root logger for a test run.
 
     The logger object has a stream handler and a file handler. The stream
@@ -159,10 +159,6 @@ def _setup_test_logger(log_path, prefix=None, filename=None):
     ch.setLevel(logging.INFO)
     # Log everything to file
     f_formatter = logging.Formatter(log_line_format, log_line_time_format)
-    # All the logs of this test class go into one directory
-    if filename is None:
-        filename = get_log_file_timestamp()
-        utils.create_dir(log_path)
     # Write logger output to files
     fh_info = logging.FileHandler(
         os.path.join(log_path, records.OUTPUT_FILE_INFO_LOG))
@@ -210,10 +206,8 @@ def setup_test_logger(log_path, prefix=None, filename=None):
         filename: Name of the files. The default is the time the objects
             are requested.
     """
-    if filename is None:
-        filename = get_log_file_timestamp()
     utils.create_dir(log_path)
-    _setup_test_logger(log_path, prefix, filename)
+    _setup_test_logger(log_path, prefix)
     logging.info('Test output folder: "%s"', log_path)
     create_latest_log_alias(log_path)
 

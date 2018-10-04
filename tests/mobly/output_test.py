@@ -19,6 +19,7 @@ import os
 import platform
 import shutil
 import tempfile
+import time
 import unittest
 import yaml
 
@@ -151,8 +152,7 @@ class OutputTest(unittest.TestCase):
             info_log_path, whitelist=[info_uuid], blacklist=[debug_uuid])
 
     @mock.patch(
-        'mobly.logger.get_log_file_timestamp',
-        side_effect=['12', '12', '13', '13'])
+        'mobly.logger.get_log_file_timestamp', side_effect=str(time.time()))
     def test_run_twice_for_two_sets_of_logs(self, mock_timestamp):
         """Verifies the expected output files from a test run.
 
@@ -173,15 +173,13 @@ class OutputTest(unittest.TestCase):
         self.assert_output_logs_exist(output_dir2)
 
     @mock.patch(
-        'mobly.logger.get_log_file_timestamp',
-        side_effect=['423', '423', '5435', '5435'])
+        'mobly.logger.get_log_file_timestamp', side_effect=str(time.time()))
     def test_teardown_erases_logs(self, mock_timestamp):
         """Verifies the expected output files from a test run.
 
         * Files are correctly created.
         * Basic sanity checks of each output file.
         """
-        mock_timestamp.side_effects = ['423' '5346']
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
         info_uuid1 = '0c3ebb06-700d-496e-b015-62652da9e451'
