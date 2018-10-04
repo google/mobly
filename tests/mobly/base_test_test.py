@@ -1485,6 +1485,76 @@ class BaseTestTest(unittest.TestCase):
         must_call.assert_called_with('ha')
         self.assertEqual(len(bt_cls.results.passed), 2)
 
+    def test_expect_in_setup_class(self):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def test_func(self):
+                pass
+
+            def on_fail(self, record):
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, 'setup_class')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_in_teardown_class(self):
+        must_call = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                pass
+
+            def teardown_class(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        must_call.assert_called_once_with('ha')
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, 'teardown_class')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_in_setup_test(self):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_test(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def test_func(self):
+                pass
+
+            def on_fail(self, record):
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
     def test_expect_in_teardown_test(self):
         must_call = mock.Mock()
         must_call2 = mock.Mock()

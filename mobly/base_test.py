@@ -293,14 +293,47 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
         """
-        with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
-            self.setup_class()
+        # Setup for the class.
+        class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS,
+                                                self.TAG)
+        class_record.test_begin()
+        self.current_test_info = runtime_test_info.RuntimeTestInfo(
+            STAGE_NAME_SETUP_CLASS, self.log_path, class_record)
+        expects.recorder.reset_internal_states(class_record)
+        try:
+            with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
+                self.setup_class()
+        except signals.TestAbortSignal:
+            # Throw abort signals to outer try block for handling.
+            raise
+        except Exception as e:
+            # Setup class failed for unknown reasons.
+            # Fail the class and skip all tests.
+            logging.exception('Error in %s#setup_class.', self.TAG)
+            class_record.test_error(e)
+            self.results.add_class_error(class_record)
+            self.summary_writer.dump(class_record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
+            self._exec_procedure_func(self._on_fail, class_record)
+            self._skip_remaining_tests(e)
+            return self.results
+        if expects.recorder.has_error:
+            self.summary_writer.dump(class_record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
+            self._exec_procedure_func(self._on_fail, class_record)
+            class_record.update_record()
+            self.results.add_class_error(class_record)
+            self._skip_remaining_tests(
+                class_record.termination_signal.exception)
+            return self.results
 
     def setup_class(self):
         """Setup function that will be called before executing any test in the
         class.
 
         To signal setup failure, use asserts or raise your own exception.
+
+        Errors raised from `setup_class` will trigger `on_fail`.
 
         Implementation is optional.
         """
@@ -314,6 +347,7 @@ class BaseTestClass(object):
         record.test_begin()
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
             stage_name, self.log_path, record)
+        expects.recorder.reset_internal_states(record)
         try:
             with self._log_test_stage(stage_name):
                 self.teardown_class()
@@ -327,6 +361,12 @@ class BaseTestClass(object):
             self.results.add_class_error(record)
             self.summary_writer.dump(record.to_dict(),
                                      records.TestSummaryEntryType.RECORD)
+        else:
+            if expects.recorder.has_error:
+                record.update_record()
+                self.results.add_class_error(record)
+                self.summary_writer.dump(record.to_dict(),
+                                         records.TestSummaryEntryType.RECORD)
         finally:
             # Write controller info and summary to summary file.
             self._record_controller_info()
@@ -335,6 +375,8 @@ class BaseTestClass(object):
     def teardown_class(self):
         """Teardown function that will be called after all the selected tests in
         the test class have been executed.
+
+        Errors raised from `teardown_class` do not trigger `on_fail`.
 
         Implementation is optional.
         """
@@ -775,28 +817,9 @@ class BaseTestClass(object):
                                  records.TestSummaryEntryType.TEST_NAME_LIST)
         tests = self._get_test_methods(test_names)
         try:
-            # Setup for the class.
-            class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS,
-                                                    self.TAG)
-            class_record.test_begin()
-            self.current_test_info = runtime_test_info.RuntimeTestInfo(
-                STAGE_NAME_SETUP_CLASS, self.log_path, class_record)
-            try:
-                self._setup_class()
-            except signals.TestAbortSignal:
-                # Throw abort signals to outer try block for handling.
-                raise
-            except Exception as e:
-                # Setup class failed for unknown reasons.
-                # Fail the class and skip all tests.
-                logging.exception('Error in %s#setup_class.', self.TAG)
-                class_record.test_error(e)
-                self.results.add_class_error(class_record)
-                self.summary_writer.dump(class_record.to_dict(),
-                                         records.TestSummaryEntryType.RECORD)
-                self._exec_procedure_func(self._on_fail, class_record)
-                self._skip_remaining_tests(e)
-                return self.results
+            setup_class_result = self._setup_class()
+            if setup_class_result:
+                return setup_class_result
             # Run tests in order.
             for test_name, test_method in tests:
                 self.exec_one_test(test_name, test_method)
