@@ -168,7 +168,7 @@ class OutputTest(unittest.TestCase):
         output_dir1 = logging.log_path
         tr.run()
         output_dir2 = logging.log_path
-        self.assertNotEquals(output_dir1, output_dir2)
+        self.assertNotEqual(output_dir1, output_dir2)
         self.assert_output_logs_exist(output_dir1)
         self.assert_output_logs_exist(output_dir2)
 
@@ -200,7 +200,7 @@ class OutputTest(unittest.TestCase):
         tr._teardown_logger()
         output_dir2 = logging.log_path
 
-        self.assertNotEquals(output_dir1, output_dir2)
+        self.assertNotEqual(output_dir1, output_dir2)
 
         (summary_file_path1, debug_log_path1,
          info_log_path1) = self.get_output_logs(output_dir1)
