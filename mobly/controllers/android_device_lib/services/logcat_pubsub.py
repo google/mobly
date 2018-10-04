@@ -89,6 +89,7 @@ class LogcatPublisher(base_service.BaseService):
 
         Args:
             subscriber: LogcatSubscriber, a logcat subscriber to subscribe.
+
         Raises:
             Error: When subscriber is not a LogcatSubscriber.
         """
@@ -101,6 +102,7 @@ class LogcatPublisher(base_service.BaseService):
 
         Args:
             subscriber: LogcatSubscriber, a logcat subscriber to unsubscribe.
+
         Raises:
             Error: When the argument is not previously registered subscriber.
         """
@@ -111,25 +113,24 @@ class LogcatPublisher(base_service.BaseService):
     def _run(self):
         """Main publisher thread task."""
         while not self._stopped:
-            if not self._running.is_set():
-                self._running.wait()
-
+            self._running.wait()
             raw = self._proc.stdout.readline()
             if raw:
-              match = self.raw_regex.match(raw)
-              time = match and parse_date(match.group('time'))
-              pid = match and int(match.group('pid'))
-              tid = match and int(match.group('tid'))
-              level = match and match.group('level')
-              tag = match and match.group('tag')
-              message = match and match.group('message').strip()
+                match = self.raw_regex.match(raw)
+                time = match and parse_date(match.group('time'))
+                pid = match and int(match.group('pid'))
+                tid = match and int(match.group('tid'))
+                level = match and match.group('level')
+                tag = match and match.group('tag')
+                message = match and match.group('message').strip()
 
-              pub_data = LogcatData(
-                  time=time, pid=pid, tid=tid, level=level, tag=tag,
-                  message=message, host_time=datetime.datetime.now(), raw=raw)
+                pub_data = LogcatData(
+                    time=time, pid=pid, tid=tid, level=level, tag=tag,
+                    message=message, host_time=datetime.datetime.now(),
+                    raw=raw)
 
-              for subscriber in self._subscribers:
-                subscriber.handle(pub_data)
+                for subscriber in self._subscribers:
+                    subscriber.handle(pub_data)
 
     def event(self, pattern='.*', tag='*', level='V'):
         """Context manager object for a logcat event.
@@ -138,6 +139,7 @@ class LogcatPublisher(base_service.BaseService):
             pattern: str, Regular expression pattern to trigger on.
             tag: str, Tag portion of filterspec string.
             level: str, Level portion of filterspec string.
+
         Returns:
             A context manager describing the event.
         """
@@ -159,6 +161,7 @@ class LogcatSubscriber(object):
 
         Args:
             publisher: LogcatPublisher, a logcat publisher to subscribe to.
+
         Raises:
             Error: If publisher is not a LogcatPublisher.
         """
@@ -225,6 +228,7 @@ class LogcatEventSubscriber(LogcatSubscriber):
 
         Args:
             timeout: float, Timeout in seconds.
+
         Returns:
             True except if a timeout is given and the operation times out.
         """
