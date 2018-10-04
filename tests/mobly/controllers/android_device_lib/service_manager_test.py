@@ -59,6 +59,21 @@ class ServiceManagerTest(unittest.TestCase):
         self.assertTrue(service.is_alive)
         self.assertTrue(manager.is_any_alive)
 
+    def test_register_not_a_class(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        with self.assertRaisesRegex(service_manager.Error,
+                                    '.* is not a class!'):
+            manager.register('mock_service', base_service)
+
+    def test_register_wrong_subclass_type(self):
+        class MyClass(object):
+            pass
+
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        with self.assertRaisesRegex(service_manager.Error,
+                                    '.* is not a subclass of BaseService!'):
+            manager.register('mock_service', MyClass)
+
     def test_register_dup_alias(self):
         manager = service_manager.ServiceManager(mock.MagicMock())
         manager.register('mock_service', MockService)

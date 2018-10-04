@@ -227,6 +227,13 @@ class JsonRpcClientBase(object):
             self._conn.close()
             self._conn = None
 
+    def clear_host_port(self):
+        """Stops the adb port forwarding of the host port used by this client.
+        """
+        if self.host_port:
+            self._adb.forward(['--remove', 'tcp:%d' % self.host_port])
+            self.host_port = None
+
     def _client_send(self, msg):
         """Sends an Rpc message through the connection.
 

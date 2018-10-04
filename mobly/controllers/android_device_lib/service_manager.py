@@ -14,8 +14,11 @@
 """Module for the manager of services."""
 # TODO(xpconanfan: move the device errors to a more generic location so
 # other device controllers like iOS can share it.
+import inspect
+
 from mobly import expects
 from mobly.controllers.android_device_lib import errors
+from mobly.controllers.android_device_lib.services import base_service
 
 
 class Error(errors.DeviceError):
@@ -32,6 +35,18 @@ class ServiceManager(object):
     def __init__(self, device):
         self._service_objects = {}
         self._device = device
+
+    def has_service_by_name(self, name):
+        """Checks if the manager has a service registered with a specific name.
+
+        Args:
+            name: string, the name to look for.
+
+        Returns:
+            True if a service is registered with the specified name, False
+            otherwise.
+        """
+        return name in self._service_objects
 
     @property
     def is_any_alive(self):
@@ -53,6 +68,12 @@ class ServiceManager(object):
             configs: (optional) config object to pass to the service class's
                 constructor.
         """
+        if not inspect.isclass(service_class):
+            raise Error(self._device, '"%s" is not a class!' % service_class)
+        if not issubclass(service_class, base_service.BaseService):
+            raise Error(
+                self._device,
+                'Class %s is not a subclass of BaseService!' % service_class)
         if alias in self._service_objects:
             raise Error(
                 self._device,
@@ -123,4 +144,6 @@ class ServiceManager(object):
         Args:
             name: string, the alias a service object was registered under.
         """
-        return self._service_objects[name]
+        if self.has_service_by_name(name):
+            return self._service_objects[name]
+        return self.__getattribute__(name)
