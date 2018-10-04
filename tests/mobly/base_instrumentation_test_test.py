@@ -175,8 +175,8 @@ class BaseInstrumentationTestTest(unittest.TestCase):
             self.assertIsInstance(result.error, signals.TestError)
         else:
             self.assertIsNone(result.error)
-            self.assertEquals(result.completed_and_passed,
-                              expected_completed_and_passed)
+            self.assertEqual(result.completed_and_passed,
+                             expected_completed_and_passed)
         self.assertEqual(len(result.executed), len(expected_executed))
         for actual_test, expected_test in zip(result.executed,
                                               expected_executed):
@@ -189,8 +189,8 @@ class BaseInstrumentationTestTest(unittest.TestCase):
             for actual_test, expected_time in zip(result.executed,
                                                   expected_executed_times):
                 (expected_begin_time, expected_end_time) = expected_time
-                self.assertEquals(actual_test.begin_time, expected_begin_time)
-                self.assertEquals(actual_test.end_time, expected_end_time)
+                self.assertEqual(actual_test.begin_time, expected_begin_time)
+                self.assertEqual(actual_test.end_time, expected_end_time)
 
     def test_run_instrumentation_test_with_invalid_syntax(self):
         instrumentation_output = """\
