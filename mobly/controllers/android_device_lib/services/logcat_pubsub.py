@@ -29,8 +29,8 @@ LogcatData = collections.namedtuple(
                    'host_time', 'raw'])
 
 class Error(errors.ServiceError):
-  """Root error type for logcat publisher service."""
-  SERVICE_TYPE = 'LogcatPublisher'
+    """Root error type for logcat publisher service."""
+    SERVICE_TYPE = 'LogcatPublisher'
 
 
 class LogcatPublisher(base_service.BaseService):
@@ -130,6 +130,21 @@ class LogcatPublisher(base_service.BaseService):
 
               for subscriber in self._subscribers:
                 subscriber.handle(pub_data)
+
+    def event(self, pattern='.*', tag='*', level='V'):
+        """Context manager object for a logcat event.
+
+        Args:
+            pattern: str, Regular expression pattern to trigger on.
+            tag: str, Tag portion of filterspec string.
+            level: str, Level portion of filterspec string.
+        Returns:
+            A context manager describing the event.
+        """
+        subscriber = LogcatEventSubscriber(
+            pattern=pattern, tag=tag, level=level)
+        subscriber.subscribe(self)
+        return subscriber
 
 
 class LogcatSubscriber(object):

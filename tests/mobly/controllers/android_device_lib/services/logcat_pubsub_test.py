@@ -24,7 +24,7 @@ from future.tests.base import unittest
 from mobly import utils
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib.services import logcat
+from mobly.controllers.android_device_lib.services import logcat_pubsub
 from tests.lib import mock_android_device
 
 
@@ -67,7 +67,8 @@ class LogcatPubsubTest(unittest.TestCase):
         process = mock_process()
         start_standing_subprocess.return_value = process
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        with ad.logcat_event(pattern='Init complete.') as event:
+        ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
+        with ad.services.publisher.event(pattern='Init complete.') as event:
             list(map(process.mock_stdout.write, MOCK_LOG_LINES))
             process.mock_stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
@@ -91,7 +92,8 @@ class LogcatPubsubTest(unittest.TestCase):
         process = mock_process()
         start_standing_subprocess.return_value = process
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        with ad.logcat_event(tag='*Serv*') as event:
+        ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
+        with ad.services.publisher.event(tag='*Serv*') as event:
             list(map(process.mock_stdout.write, MOCK_LOG_LINES))
             process.mock_stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
@@ -115,7 +117,8 @@ class LogcatPubsubTest(unittest.TestCase):
         process = mock_process()
         start_standing_subprocess.return_value = process
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
-        with ad.logcat_event(level='E') as event:
+        ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
+        with ad.services.publisher.event(level='E') as event:
             list(map(process.mock_stdout.write, MOCK_LOG_LINES))
             process.mock_stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
@@ -139,8 +142,9 @@ class LogcatPubsubTest(unittest.TestCase):
         process = mock_process()
         start_standing_subprocess.return_value = process
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
+        ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
         pattern = 'a=(?P<a>\d+) b=(?P<b>\d+) c=(?P<c>\d+)'
-        with ad.logcat_event(pattern=pattern) as event:
+        with ad.services.publisher.event(pattern=pattern) as event:
             list(map(process.mock_stdout.write, MOCK_LOG_LINES))
             process.mock_stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')

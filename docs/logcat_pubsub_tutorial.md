@@ -22,8 +22,7 @@ that was dumping out logcat lines such as:
 01-02 03:45:02.300  2000  2001 I MyService: metric_a=20 metric_b=80
 ```
 
-You can define a subclass `MyLogcatSubscriber` and register that with the
-`AndroidDevice` instance:
+You can define a subclass `MyLogcatSubscriber` as such:
 
 ```python
 from mobly.controllers import android_device
@@ -39,10 +38,22 @@ class MyLogcatSubscriber(logcat_pubsub.LogcatSubscriber):
         if match:
             self.metric_a = int(match.group(1))
             self.metric_b = int(match.group(2))
+```
 
+Before the subscriber can subscribe to a logcat stream, the publisher first
+needs to be registered with the `AndroidDevice` object:
+
+```
 ad = android_device.AndroidDevice('0123456789')
+ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
+```
+
+From here, we can create a new instance of `MyLogcatSubscriber` and have it
+subscribe to the publisher service.
+
+```
 my_logcat_subscriber = MyLogcatSubscriber()
-ad.register_logcat_subscriber(my_logcat_subscriber)
+my_logcat_subscriber.subscribe(ad.services.publisher)
 ```
 
 When the logcat line appears, the subscriber's internal state will get updated:
@@ -73,7 +84,7 @@ until that logcat line appears.
 from mobly.controllers import android_device
 
 ad = android_device.AndroidDevice('0123456789')
-with ad.logcat_event(pattern='writeEvent (.*) (.*)') as event:
+with ad.services.publisher.event(pattern='writeEvent (.*) (.*)') as event:
    event.wait()
    print('time: %s' % event.trigger.time)
    print('pid: %d' % event.trigger.pid)
