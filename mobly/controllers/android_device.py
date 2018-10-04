@@ -860,7 +860,7 @@ class AndroidDevice(object):
         """.. deprecated:: 1.8
 
         Directly register with service manager instead:
-        `self.services.register('sl4a', sl4a_service)`
+        `self.services.register('sl4a', sl4a_service.Sl4aService)`
 
         Register sl4a_service directly instead.
 
