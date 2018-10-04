@@ -316,7 +316,7 @@ def start_standing_subprocess(cmd, shell=False):
     return proc
 
 
-def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
+def stop_standing_subprocess(proc):
     """Stops a subprocess started by start_standing_subprocess.
 
     Before killing the process, we check if the process is running, if it has
