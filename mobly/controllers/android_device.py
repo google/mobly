@@ -54,6 +54,7 @@ DEFAULT_VALUE_DEVICE_REQUIRED = True
 # Default is False.
 KEY_SKIP_LOGCAT = 'skip_logcat'
 DEFAULT_VALUE_SKIP_LOGCAT = False
+SERVICE_NAME_LOGCAT = 'logcat'
 
 # Default Timeout to wait for boot completion
 DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
@@ -139,7 +140,7 @@ def _start_services_on_ads(ads):
         if skip_logcat:
             continue
         try:
-            ad.services.register('logcat', logcat.Logcat)
+            ad.services.register(SERVICE_NAME_LOGCAT, logcat.Logcat)
         except Exception:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED,
                                   DEFAULT_VALUE_DEVICE_REQUIRED)
@@ -449,7 +450,7 @@ class AndroidDevice(object):
 
     @property
     def adb_logcat_file_path(self):
-        if self.services.has_service_by_name('logcat'):
+        if self.services.has_service_by_name(SERVICE_NAME_LOGCAT):
             return self.services.logcat.adb_logcat_file_path
 
     @property
