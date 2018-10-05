@@ -40,7 +40,7 @@ class PyTest(test.test):
 
     def finalize_options(self):
         test.test.finalize_options(self)
-        self.test_args = ['-x', "tests"]
+        self.test_args = ['-x', "tests/mobly"]
         self.test_suite = True
 
     def run_tests(self):
