@@ -15,6 +15,7 @@ import copy
 import io
 import logging
 import os
+import shutil
 
 from mobly import logger as mobly_logger
 from mobly import utils
@@ -87,6 +88,23 @@ class Logcat(base_service.BaseService):
                                                         target) <= 0
         high = mobly_logger.logline_timestamp_comparator(end_time, target) >= 0
         return low and high
+
+    def create_per_test_excerpt(self, current_test_info):
+        """Create a excerpt for a specific test.
+
+      This should be called in Mobly's teardown_test.
+
+      Move adb logs already collected from the device to the log dir specific to
+      the current test. Should be called in `teardown_test`.
+
+      Args:
+        current_test_info: `self.current_test_info` in a Mobly test.
+      """
+        self.pause()
+        dest_path = current_test_info.output_path
+        self._ad.log.debug('AdbLog exceprt location: %s', dest_path)
+        shutil.copy2(self.adb_logcat_file_path, dest_path)
+        self.resume()
 
     @property
     def is_alive(self):
@@ -205,7 +223,12 @@ class Logcat(base_service.BaseService):
         self._adb_logcat_process = None
 
     def pause(self):
-        """Pauses logcat for usb disconnect."""
+        """Pauses logcat.
+
+        Clears cached adb content, so that when the service resumes, we don't
+        duplicate what's in the device's log buffer already. This helps
+        situations like USB off.
+        """
         self.stop()
         # Clears cached adb content, so that the next time logcat is started,
         # we won't produce duplicated logs to log file.

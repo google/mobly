@@ -22,6 +22,7 @@ import tempfile
 from future.tests.base import unittest
 
 from mobly import utils
+from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib.services import logcat
@@ -152,6 +153,35 @@ class LogcatTest(unittest.TestCase):
         logcat_service.resume()
         self.assertTrue(logcat_service.is_alive)
         clear_adb_mock.assert_not_called()
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch(
+        'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    def test_logcat_service_create_excerpt(self, clear_adb_mock,
+                                           stop_proc_mock, start_proc_mock,
+                                           FastbootProxy, MockAdbProxy):
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        logcat_service = logcat.Logcat(ad)
+        logcat_service.start()
+        test_output_dir = os.path.join(self.tmp_dir, 'test_foo')
+        mock_record = mock.MagicMock()
+        mock_record.begin_time = 123
+        test_run_info = runtime_test_info.RuntimeTestInfo(
+            'test_foo', test_output_dir, mock_record)
+        logcat_service.create_per_test_excerpt(test_run_info)
+        expected_path = os.path.join(test_output_dir, 'test_foo-123',
+                                     'adblog,fakemodel,1.txt')
+        self.assertTrue(os.path.exists(expected_path))
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
