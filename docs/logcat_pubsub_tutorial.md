@@ -16,28 +16,35 @@ logcat subscriber and using the logcat event context manager.
 
 You can create your own subclass of LogcatSubscriber and register that
 subscriber with the publisher service. For example, suppose you had a service
-that was dumping out logcat lines such as:
+that was tracking the battery voltage of a BLE speaker with a sampling rate of
+once every 20 seconds.
 
 ```
-01-02 03:45:02.300  2000  2001 I MyService: metric_a=20 metric_b=80
+01-02 03:45:02.300  2000  2001 I SpeakerBattery: voltage=4.7859
+01-02 03:45:22.350  2000  2001 I SpeakerBattery: voltage=4.7832
+01-02 03:45:42.290  2000  2001 I SpeakerBattery: voltage=4.7810
+01-02 03:46:02.310  2000  2001 I SpeakerBattery: voltage=4.7798
 ```
 
-You can define a subclass `MyLogcatSubscriber` as such:
+You can define a subclass `SpeakerBatterySubscriber` as such:
 
 ```python
+import threading
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib.services import logcat_pubsub
 
-class MyLogcatSubscriber(logcat_pubsub.LogcatSubscriber):
+class SpeakerBatterySubscriber(logcat_pubsub.LogcatSubscriber):
+
+    LOW_VOLTAGE = 4.78
+
     def __init__(self):
-        self.metric_a = None
-        self.metric_b = None
+        self.low_voltage_event = threading.Event()
 
     def handle(self, data):
-        match = re.match('metric_a=(\d+) metric_b=(\d+)', data.message)
-        if match:
-            self.metric_a = int(match.group(1))
-            self.metric_b = int(match.group(2))
+        if data.tag == 'SpeakerBattery':
+            match = re.match('voltage=([\d\.]+)', data.message)
+            if match and float(match.group(1)) < self.LOW_VOLTAGE:
+                self.low_voltage_event.set()
 ```
 
 Before the subscriber can subscribe to a logcat stream, the publisher first
@@ -48,21 +55,22 @@ ad = android_device.AndroidDevice('0123456789')
 ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
 ```
 
-From here, we can create a new instance of `MyLogcatSubscriber` and have it
-subscribe to the publisher service.
+From here, we can create a new instance of `SpeakerBatterySubscriber` and
+have it subscribe to the publisher service.
 
 ```
-my_logcat_subscriber = MyLogcatSubscriber()
-my_logcat_subscriber.subscribe(ad.services.publisher)
+speaker_battery_subscriber = SpeakerBatterySubscriber()
+speaker_battery_subscriber.subscribe(ad.services.publisher)
 ```
 
-When the logcat line appears, the subscriber's internal state will get updated:
+When each logcat line appears, the battery voltage will be compared against
+the low battery voltage and the `low_voltage_event` will be set if the
+reported voltage drops below 4.78 volts.
 
 ```
->>> print(my_logcat_subscriber.metric_a)
-20
->>> print(my_logcat_subscriber.metric_b)
-80
+# Wait 10 minutes for battery to dip below the low voltage threshold
+if speaker_battery_subscriber.low_voltage_event.wait(10 * 60):
+    logging.info('Battery dropped below 4.78V in less than 10 minutes.')
 ```
 
 # Example 2: Logcat Event Context Manager
@@ -73,7 +81,7 @@ Mobly includes a built-in implementation of `LogcatSubscriber` called
 following log line:
 
 ```
-10-02 16:19:00.408  1463  1463 I vol.Events: writeEvent dismiss_dialog volume_controller
+10-02 16:19:00.408  1463  1463 D BluetoothManagerService: Airplane Mode change - current state:  ON
 ```
 
 The following code will spawn an context manager to trigger on the regular
@@ -84,14 +92,19 @@ until that logcat line appears.
 from mobly.controllers import android_device
 
 ad = android_device.AndroidDevice('0123456789')
-with ad.services.publisher.event(pattern='writeEvent (.*) (.*)') as event:
-   event.wait()
-   print('time: %s' % event.trigger.time)
-   print('pid: %d' % event.trigger.pid)
-   print('tid: %d' % event.trigger.tid)
-   print('tag: %s' % event.trigger.tag)
-   print('message: %s' % event.trigger.message)
-   print('regex match groups: %s' % str(event.match.groups()))
+tag = 'BluetoothManagerService'
+pattern = r'Airplane Mode change - current state:  (?P<state>[A-Z]*)'
+
+with ad.services.publisher.event(pattern=pattern, tag=tag) as event:
+    ad.adb.shell(['settings', 'put', 'global', 'airplane_mode_on', '1'])
+    event.wait()
+
+print('time: %s' % event.trigger.time)
+print('pid: %d' % event.trigger.pid)
+print('tid: %d' % event.trigger.tid)
+print('tag: %s' % event.trigger.tag)
+print('message: %s' % event.trigger.message)
+print('regex match groups: %s' % str(event.match.groups()))
 ```
 
 This will result in the output:
@@ -100,13 +113,13 @@ This will result in the output:
 time: 2018-10-02 16:19:00.408000
 pid: 1463
 tid: 1463
-tag: vol.Events
-message: writeEvent dismiss_dialog volume_controller
-regex match groups: ('dismiss_dialog', 'volume_controller')
+tag: BluetoothManagerService
+message: Airplane Mode change - current state:  ON
+regex match groups: ('ON',)
 ```
 
-This saves you from having to backtrack through the existing logcat file
-to search for the given event. In cases where the logcat line is caused by
-another test input, the context manager helps prevent race conditions since
-the test input can be scheduled after the creation of the context manager
-but before the call to the event's `wait()` method.
+Notice that the potential for a race condition between placing the device
+into airplane mode to detecting the resulting logcat line has been
+eliminated because the tracking of the logcat event happens before the
+enabling of airplane mode. Upon exiting the context manager, the event
+subscriber is automatically unsubscribed.

@@ -36,7 +36,7 @@ MOCK_LOG_LINES = [
     '--------- beginning of main\n',
     '01-02 03:45:02.300  2000  2001 I MockService: a=0 b=1 c=2.\n',
     '01-02 03:45:02.400  2000  2001 I MockService: a=4 b=5 c=6.\n',
-    '01-02 03:45:02.500  1000  1010 E MockManager: error_code=999.\n',
+    '01-02 03:45:02.500  1000  1010 E MockManager: error_code=\xcf\x80.\n',
 ]
 
 
@@ -125,7 +125,8 @@ class LogcatPubsubTest(unittest.TestCase):
 
         self.assert_event(
             event.trigger, time=parse_date('01-02 03:45:02.500'), level='E',
-            pid=1000, tid=1010, tag='MockManager', message='error_code=999.')
+            pid=1000, tid=1010, tag='MockManager',
+            message='error_code=\xcf\x80.')
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
