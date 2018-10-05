@@ -78,10 +78,7 @@ class ServiceManager(object):
             raise Error(
                 self._device,
                 'A service is already registered with alias "%s".' % alias)
-        if configs:
-            service_obj = service_class(self._device, configs)
-        else:
-            service_obj = service_class(self._device)
+        service_obj = service_class(self._device, configs)
         service_obj.start()
         self._service_objects[alias] = service_obj
 
