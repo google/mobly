@@ -48,15 +48,6 @@ class SomeError(Exception):
     """A custom exception class used for tests in this module."""
 
 
-class MockEmptyBaseTest(base_test.BaseTestClass):
-    """Stub used to test functionalities not specific to a class
-    implementation.
-    """
-
-    def test_func(self):
-        pass
-
-
 class BaseTestTest(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()

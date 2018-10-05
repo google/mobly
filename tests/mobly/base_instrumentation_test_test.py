@@ -28,9 +28,8 @@ from mobly import config_parser
 from mobly import signals
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
+from tests.lib import mock_instrumentation_test
 
-# A mock test package for instrumentation.
-MOCK_TEST_PACKAGE = 'com.my.package.test'
 # A random prefix to test that prefixes are added properly.
 MOCK_PREFIX = 'my_prefix'
 # A mock name for the instrumentation test subclass.
@@ -46,28 +45,6 @@ OK (0 tests)
 
 INSTRUMENTATION_CODE: -1
 """
-
-
-class MockInstrumentationTest(BaseInstrumentationTestClass):
-    def __init__(self, tmp_dir, user_params={}):
-        mock_test_run_configs = config_parser.TestRunConfig()
-        mock_test_run_configs.summary_writer = mock.Mock()
-        mock_test_run_configs.log_path = tmp_dir
-        mock_test_run_configs.user_params = user_params
-        mock_test_run_configs.reporter = mock.MagicMock()
-        super(MockInstrumentationTest, self).__init__(mock_test_run_configs)
-
-    def run_mock_instrumentation_test(self, instrumentation_output, prefix):
-        def fake_instrument(package, options=None, runner=None, handler=None):
-            for line in instrumentation_output.splitlines():
-                handler(line)
-            return instrumentation_output
-
-        mock_device = mock.Mock(spec=android_device.AndroidDevice)
-        mock_device.adb = mock.Mock(spec=adb.AdbProxy)
-        mock_device.adb.instrument = fake_instrument
-        return self.run_instrumentation_test(
-            mock_device, MOCK_TEST_PACKAGE, prefix=prefix)
 
 
 class InstrumentationResult(object):
@@ -87,7 +64,8 @@ class BaseInstrumentationTestTest(unittest.TestCase):
 
     def assert_parse_instrumentation_options(self, user_params,
                                              expected_instrumentation_options):
-        mit = MockInstrumentationTest(self.tmp_dir, user_params)
+        mit = mock_instrumentation_test.MockInstrumentationTest(
+            self.tmp_dir, user_params)
         instrumentation_options = mit.parse_instrumentation_options(
             mit.user_params)
         self.assertEqual(instrumentation_options,
@@ -130,7 +108,7 @@ class BaseInstrumentationTestTest(unittest.TestCase):
         )
 
     def run_instrumentation_test(self, instrumentation_output, prefix=None):
-        mit = MockInstrumentationTest(self.tmp_dir)
+        mit = mock_instrumentation_test.MockInstrumentationTest(self.tmp_dir)
         result = InstrumentationResult()
         try:
             result.completed_and_passed = mit.run_mock_instrumentation_test(
