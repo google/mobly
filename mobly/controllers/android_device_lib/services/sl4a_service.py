@@ -25,7 +25,8 @@ class Sl4aService(base_service.BaseService):
     `Sl4aClient.doFoo()`.
     """
 
-    def __init__(self, device):
+    def __init__(self, device, configs=None):
+        del configs # Never used.
         self._ad = device
         self._sl4a_client = None
 
