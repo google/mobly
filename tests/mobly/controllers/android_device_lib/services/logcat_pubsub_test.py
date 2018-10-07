@@ -17,6 +17,7 @@ import logging
 import mock
 import shutil
 import tempfile
+import threading
 
 from dateutil.parser import parse as parse_date
 from future.tests.base import unittest
@@ -50,7 +51,7 @@ class MockStream(object):
     """Mock I/O stream."""
 
     def __init__(self):
-        self._buffer = bytearray()
+        self._buffer = []
         self._read_ready = threading.Semaphore(0)
 
     def writeline(self, line):
@@ -83,7 +84,6 @@ class LogcatPubsubTest(unittest.TestCase):
         ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
         with ad.services.publisher.event(pattern='Init complete.') as event:
             list(map(process.stdout.writeline, MOCK_LOG_LINES))
-            process.stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
         self.assert_event(
@@ -108,7 +108,6 @@ class LogcatPubsubTest(unittest.TestCase):
         ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
         with ad.services.publisher.event(tag='*Serv*') as event:
             list(map(process.stdout.writeline, MOCK_LOG_LINES))
-            process.stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
         self.assert_event(
@@ -133,7 +132,6 @@ class LogcatPubsubTest(unittest.TestCase):
         ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
         with ad.services.publisher.event(level='E') as event:
             list(map(process.stdout.writeline, MOCK_LOG_LINES))
-            process.stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
         self.assert_event(
@@ -160,7 +158,6 @@ class LogcatPubsubTest(unittest.TestCase):
         pattern = 'a=(?P<a>\d+) b=(?P<b>\d+) c=(?P<c>\d+)'
         with ad.services.publisher.event(pattern=pattern) as event:
             list(map(process.stdout.writeline, MOCK_LOG_LINES))
-            process.stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
         self.assert_event(
