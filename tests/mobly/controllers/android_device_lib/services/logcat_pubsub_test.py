@@ -15,7 +15,6 @@
 import io
 import logging
 import mock
-import os
 import shutil
 import tempfile
 
@@ -42,7 +41,6 @@ MOCK_LOG_LINES = [
 
 def mock_process():
     """Create a mock process with a mock stdout stream."""
-    fd_s, fd_m = os.pipe()
     process = mock.MagicMock()
     process.stdout = MockStream()
     return process
