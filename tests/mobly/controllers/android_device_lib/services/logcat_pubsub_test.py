@@ -44,9 +44,24 @@ def mock_process():
     """Create a mock process with a mock stdout stream."""
     fd_s, fd_m = os.pipe()
     process = mock.MagicMock()
-    process.stdout = os.fdopen(fd_s, 'r')
-    process.mock_stdout = os.fdopen(fd_m, 'w')
+    process.stdout = MockStream()
     return process
+
+
+class MockStream(object):
+    """Mock I/O stream."""
+
+    def __init__(self):
+        self._buffer = bytearray()
+        self._read_ready = threading.Semaphore(0)
+
+    def writeline(self, line):
+        self._buffer.append(line)
+        self._read_ready.release()
+
+    def readline(self):
+        self._read_ready.acquire()
+        return self._buffer.pop(0)
 
 
 class LogcatPubsubTest(unittest.TestCase):
@@ -69,8 +84,8 @@ class LogcatPubsubTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
         with ad.services.publisher.event(pattern='Init complete.') as event:
-            list(map(process.mock_stdout.write, MOCK_LOG_LINES))
-            process.mock_stdout.flush()
+            list(map(process.stdout.writeline, MOCK_LOG_LINES))
+            process.stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
         self.assert_event(
@@ -94,8 +109,8 @@ class LogcatPubsubTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
         with ad.services.publisher.event(tag='*Serv*') as event:
-            list(map(process.mock_stdout.write, MOCK_LOG_LINES))
-            process.mock_stdout.flush()
+            list(map(process.stdout.writeline, MOCK_LOG_LINES))
+            process.stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
         self.assert_event(
@@ -119,8 +134,8 @@ class LogcatPubsubTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=MOCK_SERIAL)
         ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
         with ad.services.publisher.event(level='E') as event:
-            list(map(process.mock_stdout.write, MOCK_LOG_LINES))
-            process.mock_stdout.flush()
+            list(map(process.stdout.writeline, MOCK_LOG_LINES))
+            process.stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
         self.assert_event(
@@ -146,8 +161,8 @@ class LogcatPubsubTest(unittest.TestCase):
         ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
         pattern = 'a=(?P<a>\d+) b=(?P<b>\d+) c=(?P<c>\d+)'
         with ad.services.publisher.event(pattern=pattern) as event:
-            list(map(process.mock_stdout.write, MOCK_LOG_LINES))
-            process.mock_stdout.flush()
+            list(map(process.stdout.writeline, MOCK_LOG_LINES))
+            process.stdout.flush()
             self.assertTrue(event.wait(1), 'Event never detected.')
 
         self.assert_event(
