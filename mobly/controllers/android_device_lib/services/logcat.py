@@ -49,7 +49,12 @@ class Config(object):
 
 
 class Logcat(base_service.BaseService):
-    """Android logcat service for Mobly's AndroidDevice controller."""
+    """Android logcat service for Mobly's AndroidDevice controller.
+
+    Attributes:
+        adb_logcat_file_path: string, path to the file that the service writes
+            adb logcat to by default.
+    """
 
     def __init__(self, android_device, configs=None):
         super(Logcat, self).__init__(android_device, configs)
@@ -94,8 +99,9 @@ class Logcat(base_service.BaseService):
 
       This should be called in Mobly's teardown_test.
 
-      Move adb logs already collected from the device to the log dir specific to
-      the current test. Should be called in `teardown_test`.
+      Move the current content of `self.adb_logcat_file_path` to the log dir
+      specific to the current test. Should be called in `teardown_test` for
+      consistent behavior.
 
       Args:
         current_test_info: `self.current_test_info` in a Mobly test.
@@ -103,7 +109,7 @@ class Logcat(base_service.BaseService):
         self.pause()
         dest_path = current_test_info.output_path
         self._ad.log.debug('AdbLog exceprt location: %s', dest_path)
-        shutil.copy2(self.adb_logcat_file_path, dest_path)
+        shutil.move(self.adb_logcat_file_path, dest_path)
         self.resume()
 
     @property

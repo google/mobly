@@ -182,6 +182,7 @@ class LogcatTest(unittest.TestCase):
         expected_path = os.path.join(test_output_dir, 'test_foo-123',
                                      'adblog,fakemodel,1.txt')
         self.assertTrue(os.path.exists(expected_path))
+        self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
