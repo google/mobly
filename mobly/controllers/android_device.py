@@ -136,11 +136,11 @@ def _start_services_on_ads(ads):
     running_ads = []
     for ad in ads:
         running_ads.append(ad)
-        skip_logcat = getattr(ad, KEY_SKIP_LOGCAT, DEFAULT_VALUE_SKIP_LOGCAT)
-        if skip_logcat:
-            continue
+        start_logcat = not getattr(ad, KEY_SKIP_LOGCAT,
+                                   DEFAULT_VALUE_SKIP_LOGCAT)
         try:
-            ad.services.register(SERVICE_NAME_LOGCAT, logcat.Logcat)
+            ad.services.register(
+                SERVICE_NAME_LOGCAT, logcat.Logcat, start_service=start_logcat)
         except Exception:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED,
                                   DEFAULT_VALUE_DEVICE_REQUIRED)
