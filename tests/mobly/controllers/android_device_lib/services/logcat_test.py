@@ -89,7 +89,7 @@ class LogcatTest(unittest.TestCase):
         'mobly.utils.start_standing_subprocess', return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_start_and_stop(self, stop_proc_mock, start_proc_mock,
-                            creat_dir_mock, FastbootProxy, MockAdbProxy):
+                            create_dir_mock, FastbootProxy, MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
         the calls.
@@ -103,7 +103,7 @@ class LogcatTest(unittest.TestCase):
         expected_log_path = os.path.join(logging.log_path,
                                          'AndroidDevice%s' % ad.serial,
                                          'adblog,fakemodel,%s.txt' % ad.serial)
-        creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
+        create_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = '"adb" -s %s logcat -v threadtime  >> %s'
         start_proc_mock.assert_called_with(
             adb_cmd % (ad.serial, '"%s"' % expected_log_path), shell=True)
@@ -136,7 +136,7 @@ class LogcatTest(unittest.TestCase):
         'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
         return_value=mock_android_device.MockAdbProxy('1'))
     def test_pause_and_resume(self, clear_adb_mock, stop_proc_mock,
-                              start_proc_mock, creat_dir_mock, FastbootProxy,
+                              start_proc_mock, create_dir_mock, FastbootProxy,
                               MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
@@ -164,7 +164,7 @@ class LogcatTest(unittest.TestCase):
         'mobly.utils.start_standing_subprocess', return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_take_logcat_with_extra_params(self, stop_proc_mock,
-                                           start_proc_mock, creat_dir_mock,
+                                           start_proc_mock, create_dir_mock,
                                            FastbootProxy, MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
@@ -181,7 +181,7 @@ class LogcatTest(unittest.TestCase):
         expected_log_path = os.path.join(logging.log_path,
                                          'AndroidDevice%s' % ad.serial,
                                          'adblog,fakemodel,%s.txt' % ad.serial)
-        creat_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
+        create_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
         adb_cmd = '"adb" -s %s logcat -v threadtime -b radio >> %s'
         start_proc_mock.assert_called_with(
             adb_cmd % (ad.serial, '"%s"' % expected_log_path), shell=True)
