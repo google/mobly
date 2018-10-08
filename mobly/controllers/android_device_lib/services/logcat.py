@@ -56,7 +56,6 @@ class Logcat(base_service.BaseService):
         self._adb_logcat_process = None
         self.adb_logcat_file_path = None
         self._configs = configs if configs else Config()
-        self._resuming = False
 
     def _enable_logpersist(self):
         """Attempts to enable logpersist daemon to persist logs."""
