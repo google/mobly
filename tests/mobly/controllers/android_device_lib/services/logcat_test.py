@@ -79,6 +79,16 @@ class LogcatTest(unittest.TestCase):
         """
         shutil.rmtree(self.tmp_dir)
 
+    def AssertFileContains(self, content, file_path):
+        with open(file_path, 'r') as f:
+            output = f.read()
+        self.assertIn(content, output)
+
+    def AssertFileDoesNotContain(self, content, file_path):
+        with open(file_path, 'r') as f:
+            output = f.read()
+        self.assertNotIn(content, output)
+
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
         return_value=mock_android_device.MockAdbProxy('1'))
@@ -173,15 +183,35 @@ class LogcatTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad)
         logcat_service.start()
+        FILE_CONTENT = 'Some log.\n'
+        with open(logcat_service.adb_logcat_file_path, 'w') as f:
+            f.write(FILE_CONTENT)
         test_output_dir = os.path.join(self.tmp_dir, 'test_foo')
         mock_record = mock.MagicMock()
         mock_record.begin_time = 123
         test_run_info = runtime_test_info.RuntimeTestInfo(
             'test_foo', test_output_dir, mock_record)
         logcat_service.create_per_test_excerpt(test_run_info)
-        expected_path = os.path.join(test_output_dir, 'test_foo-123',
-                                     'adblog,fakemodel,1.txt')
-        self.assertTrue(os.path.exists(expected_path))
+        expected_path1 = os.path.join(test_output_dir, 'test_foo-123',
+                                      'adblog,fakemodel,1.txt')
+        self.assertTrue(os.path.exists(expected_path1))
+        self.AssertFileContains(FILE_CONTENT, expected_path1)
+        self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
+        # Generate some new logs and do another excerpt.
+        FILE_CONTENT = 'Some more logs!!!\n'
+        with open(logcat_service.adb_logcat_file_path, 'w') as f:
+            f.write(FILE_CONTENT)
+        test_output_dir = os.path.join(self.tmp_dir, 'test_bar')
+        mock_record = mock.MagicMock()
+        mock_record.begin_time = 456
+        test_run_info = runtime_test_info.RuntimeTestInfo(
+            'test_bar', test_output_dir, mock_record)
+        logcat_service.create_per_test_excerpt(test_run_info)
+        expected_path2 = os.path.join(test_output_dir, 'test_bar-456',
+                                      'adblog,fakemodel,1.txt')
+        self.assertTrue(os.path.exists(expected_path2))
+        self.AssertFileContains(FILE_CONTENT, expected_path2)
+        self.AssertFileDoesNotContain(FILE_CONTENT, expected_path1)
         self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
 
     @mock.patch(

@@ -108,6 +108,7 @@ class Logcat(base_service.BaseService):
       """
         self.pause()
         dest_path = current_test_info.output_path
+        utils.create_dir(dest_path)
         self._ad.log.debug('AdbLog exceprt location: %s', dest_path)
         shutil.move(self.adb_logcat_file_path, dest_path)
         self.resume()
@@ -204,13 +205,12 @@ class Logcat(base_service.BaseService):
     def _start(self):
         """The actual logic of starting logcat."""
         self._enable_logpersist()
-
-        utils.create_dir(self._ad.log_path)
         logcat_file_path = self._configs.output_file_path
         if not logcat_file_path:
             f_name = 'adblog,%s,%s.txt' % (self._ad.model,
                                            self._ad._normalized_serial)
             logcat_file_path = os.path.join(self._ad.log_path, f_name)
+        utils.create_dir(os.path.dirname(logcat_file_path))
         cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (
             adb.ADB, self._ad.serial, self._configs.logcat_params,
             logcat_file_path)
