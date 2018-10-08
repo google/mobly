@@ -198,11 +198,11 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         msg = 'Some error happened.'
         ads = mock_android_device.get_mock_ads(3)
-        ads[0].start_services = mock.MagicMock()
+        ads[0].services.register = mock.MagicMock()
         ads[0].stop_services = mock.MagicMock()
-        ads[1].start_services = mock.MagicMock()
+        ads[1].services.register = mock.MagicMock()
         ads[1].stop_services = mock.MagicMock()
-        ads[2].start_services = mock.MagicMock(
+        ads[2].services.register = mock.MagicMock(
             side_effect=android_device.Error(msg))
         ads[2].stop_services = mock.MagicMock()
         with self.assertRaisesRegex(android_device.Error, msg):
@@ -213,9 +213,9 @@ class AndroidDeviceTest(unittest.TestCase):
 
     def test_start_services_on_ads_skip_logcat(self):
         ads = mock_android_device.get_mock_ads(3)
-        ads[0].start_services = mock.MagicMock()
-        ads[1].start_services = mock.MagicMock()
-        ads[2].start_services = mock.MagicMock(
+        ads[0].services.logcat.start = mock.MagicMock()
+        ads[1].services.logcat.start = mock.MagicMock()
+        ads[2].services.logcat.start = mock.MagicMock(
             side_effect=Exception('Should not have called this.'))
         ads[2].skip_logcat = True
         android_device._start_services_on_ads(ads)
@@ -381,8 +381,6 @@ class AndroidDeviceTest(unittest.TestCase):
                                            start_proc_mock, FastbootProxy,
                                            MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.start_services()
-        ad.services.unregister('logcat')
         old_path = ad.log_path
         new_log_path = tempfile.mkdtemp()
         ad.log_path = new_log_path
@@ -438,7 +436,7 @@ class AndroidDeviceTest(unittest.TestCase):
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
             FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.start_services()
+        ad.services.register('logcat', logcat.Logcat)
         new_log_path = tempfile.mkdtemp()
         expected_msg = '.* Cannot change `log_path` when there is service running.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
@@ -500,7 +498,7 @@ class AndroidDeviceTest(unittest.TestCase):
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
             FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.start_services()
+        ad.services.register('logcat', logcat.Logcat)
         expected_msg = '.* Cannot change device serial number when there is service running.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.update_serial('2')

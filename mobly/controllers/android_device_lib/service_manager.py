@@ -56,7 +56,7 @@ class ServiceManager(object):
                 return True
         return False
 
-    def register(self, alias, service_class, configs=None):
+    def register(self, alias, service_class, configs=None, start_service=True):
         """Registers a service.
 
         This will create a service instance, starts the service, and adds the
@@ -67,6 +67,8 @@ class ServiceManager(object):
             service_class: class, the service class to instantiate.
             configs: (optional) config object to pass to the service class's
                 constructor.
+            start_service: bool, whether to start the service instance or not.
+                Default is True.
         """
         if not inspect.isclass(service_class):
             raise Error(self._device, '"%s" is not a class!' % service_class)
@@ -79,7 +81,8 @@ class ServiceManager(object):
                 self._device,
                 'A service is already registered with alias "%s".' % alias)
         service_obj = service_class(self._device, configs)
-        service_obj.start()
+        if start_service:
+            service_obj.start()
         self._service_objects[alias] = service_obj
 
     def unregister(self, alias):
