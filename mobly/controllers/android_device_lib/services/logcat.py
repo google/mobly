@@ -97,8 +97,8 @@ class Logcat(base_service.BaseService):
     def create_per_test_excerpt(self, current_test_info):
         """Convenient method for creating excerpts of adb logcat.
   
-        To use this feature, call this method at the end of `setup_class` and
-        `teardown_test`.
+        To use this feature, call this method at the end of: `setup_class`,
+        `teardown_test`, and `teardown_class`.
 
         This moves the current content of `self.adb_logcat_file_path` to the
         log directory specific to the current test.
