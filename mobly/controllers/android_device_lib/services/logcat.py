@@ -231,6 +231,10 @@ class Logcat(base_service.BaseService):
     def pause(self):
         """Pauses logcat.
 
+        Note: the service is unable to collect the logs when paused, if more
+        logs are generated on the device than the device's log buffer can hold,
+        some logs would be lost.
+
         Clears cached adb content, so that when the service resumes, we don't
         duplicate what's in the device's log buffer already. This helps
         situations like USB off.
