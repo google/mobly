@@ -213,9 +213,9 @@ class AndroidDeviceTest(unittest.TestCase):
 
     def test_start_services_on_ads_skip_logcat(self):
         ads = mock_android_device.get_mock_ads(3)
-        ads[0].services.register = mock.MagicMock()
-        ads[1].services.register = mock.MagicMock()
-        ads[2].services.register = mock.MagicMock(
+        ads[0].services.logcat.start = mock.MagicMock()
+        ads[1].services.logcat.start = mock.MagicMock()
+        ads[2].services.logcat.start = mock.MagicMock(
             side_effect=Exception('Should not have called this.'))
         ads[2].skip_logcat = True
         android_device._start_services_on_ads(ads)
