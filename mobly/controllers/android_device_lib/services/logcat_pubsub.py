@@ -46,7 +46,7 @@ class LogcatPublisher(base_service.BaseService):
         self._configs = configs
         self._subscribers = []
         self._proc = None
-        self._running = threading.Event()
+        self._proc_running = threading.Event()
         self._stopped = False
         self._thread = threading.Thread(target=self._run)
         self._thread.daemon = True
@@ -66,7 +66,7 @@ class LogcatPublisher(base_service.BaseService):
           raise Error(self._ad, 'Existing publisher process is active.')
       cmd = [adb.ADB, '-s', self._ad.serial, 'logcat', '-T', '0']
       self._proc = utils.start_standing_subprocess(cmd)
-      self._running.set()
+      self._proc_running.set()
 
     def stop(self):
       """Stop logcat monitoring."""
@@ -81,7 +81,7 @@ class LogcatPublisher(base_service.BaseService):
       """
       if not self.is_alive:
           raise Error(self._ad, 'No existing publisher process is active.')
-      self._running.clear()
+      self._proc_running.clear()
       utils.stop_standing_subprocess(self._proc)
 
     def subscribe(self, subscriber):
@@ -113,7 +113,7 @@ class LogcatPublisher(base_service.BaseService):
     def _run(self):
         """Main publisher thread task."""
         while not self._stopped:
-            self._running.wait()
+            self._proc_running.wait()
             raw = self._proc.stdout.readline()
             if raw:
                 match = self.raw_regex.match(raw)
