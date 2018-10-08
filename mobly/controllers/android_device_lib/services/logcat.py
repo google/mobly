@@ -157,22 +157,29 @@ class Logcat(base_service.BaseService):
                         if in_range:
                             break
 
+    def _assert_not_running(self):
+        """Asserts the logcat service is not running.
+
+        Raises:
+            Error, if the logcat service is running.
+        """
+        if self.is_alive:
+            raise Error(
+                self._ad,
+                'Logcat thread is already running, cannot start another one.')
+
     def start(self):
         """Starts a standing adb logcat collection.
 
         The collection runs in a separate subprocess and saves logs in a file.
         """
-        if self._adb_logcat_process:
-            raise Error(
-                self._ad,
-                'Logcat thread is already running, cannot start another one.')
-        if self._resuming:
-            # Do not clear device log when resuming. Otherwise the logs during
-            # the paused time will be lost.
-            self._resuming = False
-        elif self._configs.clear_log:
+        self._assert_not_running()
+        if self._configs.clear_log:
             self.clear_adb_log()
+        self._start()
 
+    def _start(self):
+        """The actual logic of starting logcat."""
         self._enable_logpersist()
 
         utils.create_dir(self._ad.log_path)
@@ -201,13 +208,15 @@ class Logcat(base_service.BaseService):
     def pause(self):
         """Pauses logcat for usb disconnect."""
         self.stop()
-        # Clears cached adb content, so that the next time start_adb_logcat()
-        # won't produce duplicated logs to log file.
+        # Clears cached adb content, so that the next time logcat is started,
+        # we won't produce duplicated logs to log file.
         # This helps disconnection that caused by, e.g., USB off; at the
         # cost of losing logs at disconnection caused by reboot.
         self.clear_adb_log()
 
     def resume(self):
         """Resumes a paused logcat service."""
-        self._resuming = True
-        self.start()
+        self._assert_not_running()
+        # Not clearing the log regardless of the config when resuming.
+        # Otherwise the logs during the paused time will be lost.
+        self._start()
