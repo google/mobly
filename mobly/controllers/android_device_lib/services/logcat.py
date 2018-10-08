@@ -175,11 +175,11 @@ class Logcat(base_service.BaseService):
 
         self._enable_logpersist()
 
-        f_name = 'adblog,%s,%s.txt' % (self._ad.model,
-                                       self._ad._normalized_serial)
         utils.create_dir(self._ad.log_path)
         logcat_file_path = self._configs.output_file_path
         if not logcat_file_path:
+            f_name = 'adblog,%s,%s.txt' % (self._ad.model,
+                                           self._ad._normalized_serial)
             logcat_file_path = os.path.join(self._ad.log_path, f_name)
         cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (
             adb.ADB, self._ad.serial, self._configs.logcat_params,
