@@ -95,17 +95,17 @@ class Logcat(base_service.BaseService):
         return low and high
 
     def create_per_test_excerpt(self, current_test_info):
-        """Create a excerpt for a specific test.
+        """Convenient method for creating excerpts of adb logcat.
+  
+        To use this feature, call this method at the end of `setup_class` and
+        `teardown_test`.
 
-      This should be called in Mobly's teardown_test.
-
-      Move the current content of `self.adb_logcat_file_path` to the log dir
-      specific to the current test. Should be called in `teardown_test` for
-      consistent behavior.
-
-      Args:
-        current_test_info: `self.current_test_info` in a Mobly test.
-      """
+        This moves the current content of `self.adb_logcat_file_path` to the
+        log directory specific to the current test.
+  
+        Args:
+          current_test_info: `self.current_test_info` in a Mobly test.
+        """
         self.pause()
         dest_path = current_test_info.output_path
         utils.create_dir(dest_path)
