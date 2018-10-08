@@ -54,6 +54,7 @@ DEFAULT_VALUE_DEVICE_REQUIRED = True
 # Default is False.
 KEY_SKIP_LOGCAT = 'skip_logcat'
 DEFAULT_VALUE_SKIP_LOGCAT = False
+SERVICE_NAME_LOGCAT = 'logcat'
 
 # Default Timeout to wait for boot completion
 DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
@@ -135,11 +136,11 @@ def _start_services_on_ads(ads):
     running_ads = []
     for ad in ads:
         running_ads.append(ad)
-        skip_logcat = getattr(ad, KEY_SKIP_LOGCAT, DEFAULT_VALUE_SKIP_LOGCAT)
-        if skip_logcat:
-            continue
+        start_logcat = not getattr(ad, KEY_SKIP_LOGCAT,
+                                   DEFAULT_VALUE_SKIP_LOGCAT)
         try:
-            ad.start_services()
+            ad.services.register(
+                SERVICE_NAME_LOGCAT, logcat.Logcat, start_service=start_logcat)
         except Exception:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED,
                                   DEFAULT_VALUE_DEVICE_REQUIRED)
@@ -449,7 +450,7 @@ class AndroidDevice(object):
 
     @property
     def adb_logcat_file_path(self):
-        if self.services.has_service_by_name('logcat'):
+        if self.services.has_service_by_name(SERVICE_NAME_LOGCAT):
             return self.services.logcat.adb_logcat_file_path
 
     @property
@@ -629,8 +630,6 @@ class AndroidDevice(object):
         Starts long running services on the android device, like adb logcat
         capture.
         """
-        configs = logcat.Config(clear_log=clear_log)
-        self.services.register('logcat', logcat.Logcat, configs)
         self.services.start_all()
 
     def start_adb_logcat(self, clear_log=True):
@@ -638,8 +637,7 @@ class AndroidDevice(object):
 
         Use `self.services.logcat.start` instead.
         """
-        configs = logcat.Config(clear_log=clear_log)
-        self.services.logcat.start(configs)
+        self.services.logcat.start()
 
     def stop_adb_logcat(self):
         """.. deprecated:: 1.8

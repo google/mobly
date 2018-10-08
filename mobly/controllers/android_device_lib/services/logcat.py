@@ -34,11 +34,17 @@ class Config(object):
     Attributes:
         clear_log: bool, clears the logcat before collection if True.
         logcat_params: string, extra params to be added to logcat command.
+        output_file_path: string, the path on the host to write the log file
+            to. The service will automatically generate one if not specified.
     """
 
-    def __init__(self, params=None, clear_log=True):
+    def __init__(self,
+                 logcat_params=None,
+                 clear_log=True,
+                 output_file_path=None):
         self.clear_log = clear_log
-        self.logcat_params = params if params else ''
+        self.logcat_params = logcat_params if logcat_params else ''
+        self.output_file_path = output_file_path
 
 
 class Logcat(base_service.BaseService):
@@ -87,7 +93,7 @@ class Logcat(base_service.BaseService):
         return True if self._adb_logcat_process else False
 
     def clear_adb_log(self):
-        # Clears cached adb content.
+        """Clears cached adb content."""
         try:
             self._ad.adb.logcat('-c')
         except adb.AdbError as e:
@@ -150,30 +156,40 @@ class Logcat(base_service.BaseService):
                         if in_range:
                             break
 
-    def start(self, configs=None):
-        """Starts a standing adb logcat collection.
+    def _assert_not_running(self):
+        """Asserts the logcat service is not running.
 
-        The collection runs in a separate subprocess and saves logs in a file.
-
-        Args:
-            configs: Conifg object.
+        Raises:
+            Error, if the logcat service is running.
         """
-        if self._adb_logcat_process:
+        if self.is_alive:
             raise Error(
                 self._ad,
                 'Logcat thread is already running, cannot start another one.')
-        configs = configs if configs else self._configs
-        if configs.clear_log:
-            self.clear_adb_log()
 
+    def start(self):
+        """Starts a standing adb logcat collection.
+
+        The collection runs in a separate subprocess and saves logs in a file.
+        """
+        self._assert_not_running()
+        if self._configs.clear_log:
+            self.clear_adb_log()
+        self._start()
+
+    def _start(self):
+        """The actual logic of starting logcat."""
         self._enable_logpersist()
 
-        f_name = 'adblog,%s,%s.txt' % (self._ad.model,
-                                       self._ad._normalized_serial)
         utils.create_dir(self._ad.log_path)
-        logcat_file_path = os.path.join(self._ad.log_path, f_name)
+        logcat_file_path = self._configs.output_file_path
+        if not logcat_file_path:
+            f_name = 'adblog,%s,%s.txt' % (self._ad.model,
+                                           self._ad._normalized_serial)
+            logcat_file_path = os.path.join(self._ad.log_path, f_name)
         cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (
-            adb.ADB, self._ad.serial, configs.logcat_params, logcat_file_path)
+            adb.ADB, self._ad.serial, self._configs.logcat_params,
+            logcat_file_path)
         process = utils.start_standing_subprocess(cmd, shell=True)
         self._adb_logcat_process = process
         self.adb_logcat_file_path = logcat_file_path
@@ -191,20 +207,15 @@ class Logcat(base_service.BaseService):
     def pause(self):
         """Pauses logcat for usb disconnect."""
         self.stop()
-        # Clears cached adb content, so that the next time start_adb_logcat()
-        # won't produce duplicated logs to log file.
+        # Clears cached adb content, so that the next time logcat is started,
+        # we won't produce duplicated logs to log file.
         # This helps disconnection that caused by, e.g., USB off; at the
         # cost of losing logs at disconnection caused by reboot.
         self.clear_adb_log()
 
     def resume(self):
-        """Resumes a paused logcat service.
-
-        Args:
-            configs: Not used.
-        """
-        # Do not clear device log at this time. Otherwise the log during USB
-        # disconnection will be lost.
-        resume_configs = copy.copy(self._configs)
-        resume_configs.clear_log = False
-        self.start(resume_configs)
+        """Resumes a paused logcat service."""
+        self._assert_not_running()
+        # Not clearing the log regardless of the config when resuming.
+        # Otherwise the logs during the paused time will be lost.
+        self._start()

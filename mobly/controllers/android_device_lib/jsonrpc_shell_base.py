@@ -77,7 +77,7 @@ class JsonRpcShellBase(object):
         code.interact(banner=console_banner, local=console_env)
 
         # Tear everything down
-        self._ad.stop_services()
+        self._ad.services.stop_all()
 
     def main(self, serial=None):
         try:
