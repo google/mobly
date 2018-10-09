@@ -59,10 +59,14 @@ You may need `sudo` for the above commands if your system has certain permission
 restrictions.
 
 ## Tutorials
-To get started with some simple tests, see the [Mobly tutorial](docs/tutorial.md).
+[Mobly 101](docs/tutorial.md)
+Simple test examples to get you started with Mobly.
 
-To get started running single-device Android instrumentation tests with Mobly,
-see the [instrumentation runner tutorial](docs/instrumentation_tutorial.md).
+[Mobly Instrumentation Runner Tutorial](docs/instrumentation_tutorial.md)
+How to use Mobly's Android instrumentation test runner to run Android instrumentation tests.
+
+[Mobly AndroidDevice Service](docs/android_device_service.md)
+Create custom service to attach to Mobly's `AndroidDevice` controller.
 
 ## Mobly Snippet
 The Mobly Snippet projects let users better control Android devices.
