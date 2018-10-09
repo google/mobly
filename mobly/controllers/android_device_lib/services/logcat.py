@@ -15,6 +15,7 @@ import copy
 import io
 import logging
 import os
+import shutil
 
 from mobly import logger as mobly_logger
 from mobly import utils
@@ -48,7 +49,12 @@ class Config(object):
 
 
 class Logcat(base_service.BaseService):
-    """Android logcat service for Mobly's AndroidDevice controller."""
+    """Android logcat service for Mobly's AndroidDevice controller.
+
+    Attributes:
+        adb_logcat_file_path: string, path to the file that the service writes
+            adb logcat to by default.
+    """
 
     def __init__(self, android_device, configs=None):
         super(Logcat, self).__init__(android_device, configs)
@@ -87,6 +93,25 @@ class Logcat(base_service.BaseService):
                                                         target) <= 0
         high = mobly_logger.logline_timestamp_comparator(end_time, target) >= 0
         return low and high
+
+    def create_per_test_excerpt(self, current_test_info):
+        """Convenient method for creating excerpts of adb logcat.
+  
+        To use this feature, call this method at the end of: `setup_class`,
+        `teardown_test`, and `teardown_class`.
+
+        This moves the current content of `self.adb_logcat_file_path` to the
+        log directory specific to the current test.
+  
+        Args:
+          current_test_info: `self.current_test_info` in a Mobly test.
+        """
+        self.pause()
+        dest_path = current_test_info.output_path
+        utils.create_dir(dest_path)
+        self._ad.log.debug('AdbLog exceprt location: %s', dest_path)
+        shutil.move(self.adb_logcat_file_path, dest_path)
+        self.resume()
 
     @property
     def is_alive(self):
@@ -180,13 +205,12 @@ class Logcat(base_service.BaseService):
     def _start(self):
         """The actual logic of starting logcat."""
         self._enable_logpersist()
-
-        utils.create_dir(self._ad.log_path)
         logcat_file_path = self._configs.output_file_path
         if not logcat_file_path:
             f_name = 'adblog,%s,%s.txt' % (self._ad.model,
                                            self._ad._normalized_serial)
             logcat_file_path = os.path.join(self._ad.log_path, f_name)
+        utils.create_dir(os.path.dirname(logcat_file_path))
         cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (
             adb.ADB, self._ad.serial, self._configs.logcat_params,
             logcat_file_path)
@@ -205,7 +229,16 @@ class Logcat(base_service.BaseService):
         self._adb_logcat_process = None
 
     def pause(self):
-        """Pauses logcat for usb disconnect."""
+        """Pauses logcat.
+
+        Note: the service is unable to collect the logs when paused, if more
+        logs are generated on the device than the device's log buffer can hold,
+        some logs would be lost.
+
+        Clears cached adb content, so that when the service resumes, we don't
+        duplicate what's in the device's log buffer already. This helps
+        situations like USB off.
+        """
         self.stop()
         # Clears cached adb content, so that the next time logcat is started,
         # we won't produce duplicated logs to log file.
