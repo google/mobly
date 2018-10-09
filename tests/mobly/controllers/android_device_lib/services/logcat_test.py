@@ -22,6 +22,7 @@ import tempfile
 from future.tests.base import unittest
 
 from mobly import utils
+from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib.services import logcat
@@ -77,6 +78,16 @@ class LogcatTest(unittest.TestCase):
         """Removes the temp dir.
         """
         shutil.rmtree(self.tmp_dir)
+
+    def AssertFileContains(self, content, file_path):
+        with open(file_path, 'r') as f:
+            output = f.read()
+        self.assertIn(content, output)
+
+    def AssertFileDoesNotContain(self, content, file_path):
+        with open(file_path, 'r') as f:
+            output = f.read()
+        self.assertNotIn(content, output)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -152,6 +163,56 @@ class LogcatTest(unittest.TestCase):
         logcat_service.resume()
         self.assertTrue(logcat_service.is_alive)
         clear_adb_mock.assert_not_called()
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch(
+        'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    def test_logcat_service_create_excerpt(self, clear_adb_mock,
+                                           stop_proc_mock, start_proc_mock,
+                                           FastbootProxy, MockAdbProxy):
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        logcat_service = logcat.Logcat(ad)
+        logcat_service.start()
+        FILE_CONTENT = 'Some log.\n'
+        with open(logcat_service.adb_logcat_file_path, 'w') as f:
+            f.write(FILE_CONTENT)
+        test_output_dir = os.path.join(self.tmp_dir, 'test_foo')
+        mock_record = mock.MagicMock()
+        mock_record.begin_time = 123
+        test_run_info = runtime_test_info.RuntimeTestInfo(
+            'test_foo', test_output_dir, mock_record)
+        logcat_service.create_per_test_excerpt(test_run_info)
+        expected_path1 = os.path.join(test_output_dir, 'test_foo-123',
+                                      'adblog,fakemodel,1.txt')
+        self.assertTrue(os.path.exists(expected_path1))
+        self.AssertFileContains(FILE_CONTENT, expected_path1)
+        self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
+        # Generate some new logs and do another excerpt.
+        FILE_CONTENT = 'Some more logs!!!\n'
+        with open(logcat_service.adb_logcat_file_path, 'w') as f:
+            f.write(FILE_CONTENT)
+        test_output_dir = os.path.join(self.tmp_dir, 'test_bar')
+        mock_record = mock.MagicMock()
+        mock_record.begin_time = 456
+        test_run_info = runtime_test_info.RuntimeTestInfo(
+            'test_bar', test_output_dir, mock_record)
+        logcat_service.create_per_test_excerpt(test_run_info)
+        expected_path2 = os.path.join(test_output_dir, 'test_bar-456',
+                                      'adblog,fakemodel,1.txt')
+        self.assertTrue(os.path.exists(expected_path2))
+        self.AssertFileContains(FILE_CONTENT, expected_path2)
+        self.AssertFileDoesNotContain(FILE_CONTENT, expected_path1)
+        self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
