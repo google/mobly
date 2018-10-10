@@ -71,9 +71,10 @@ ad.services.secret_service.get_my_secret() # 42
 
 When the `ad` reboots or gets destroyed, the service manager will handle the
 lifecycle changes of each service instance. So users don't have to explicitly
-write code to handle these for each service, which makes the test cumbersome.
+write code to handle device state changes for each service, which makes the
+test verbose.
 
-There are `pause` and `resume` in the service interface for services that are
-sensitive to device disconnect without reboot. For more details, see the
-docstrings of the
+The service interface also has optional methods `pause` and `resume` for
+services that are sensitive to device disconnect without reboot. For more
+details, see the docstrings of the
 [`BaseService` interface](https://github.com/google/mobly/blob/master/mobly/controllers/android_device_lib/services/base_service.py).
