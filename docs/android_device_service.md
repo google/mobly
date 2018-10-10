@@ -1,5 +1,4 @@
 # Mobly Android Device Service
-======
 
 This tutorial shows how to use the service mechanism in Mobly's `AndroidDevice`
 controller.
@@ -54,7 +53,8 @@ class MyService(base_service.BaseService):
     self._is_alive = False
 ```
 
-Once you have your service class, you can register your service with the `ServiceManager`. Let's say we already have an `AndroidDevice` instance `ad`:
+Once you have your service class, you can register your service with the
+`ServiceManager`. Let's say we already have an `AndroidDevice` instance `ad`:
 
 ```python
 ad.services.register('secret_service',
@@ -69,7 +69,10 @@ ad.services.secret_service.is_alive # True
 ad.services.secret_service.get_my_secret() # 42
 ```
 
-When the `ad` reboots or gets destroyed, the registered services will be automatically restarted or stopped.
+When the `ad` reboots or gets destroyed, the service manager will handle the
+lifecycle changes of each service instance. So users don't have to explicitly
+write code to handle these for each service, which makes the test cumbersome.
 
-There's also `pause` and `resume` in the service interface. For more details, see the docstrings of the
+There's also `pause` and `resume` in the service interface. For more details,
+see the docstrings of the
 [`BaseService` interface](https://github.com/google/mobly/blob/master/mobly/controllers/android_device_lib/services/base_service.py).
