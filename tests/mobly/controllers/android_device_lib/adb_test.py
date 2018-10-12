@@ -160,7 +160,7 @@ class AdbTest(unittest.TestCase):
     def test_exec_cmd_with_negative_timeout_value(self, mock_psutil_process,
                                                   mock_popen):
         self._mock_process(mock_psutil_process, mock_popen)
-        with self.assertRaisesRegex(adb.Error,
+        with self.assertRaisesRegex(ValueError,
                                     'Timeout is not a positive value: -1'):
             adb.AdbProxy()._exec_cmd(
                 ['fake_cmd'], shell=False, timeout=-1, stderr=None)

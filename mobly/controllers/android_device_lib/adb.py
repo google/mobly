@@ -170,7 +170,7 @@ class AdbProxy(object):
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
         process = psutil.Process(proc.pid)
         if timeout and timeout <= 0:
-            raise Error('Timeout is not a positive value: %s' % timeout)
+            raise ValueError('Timeout is not a positive value: %s' % timeout)
         if timeout and timeout > 0:
             try:
                 process.wait(timeout=timeout)
