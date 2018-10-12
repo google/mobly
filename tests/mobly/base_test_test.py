@@ -1538,7 +1538,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
         import pprint
         pprint.pprint(actual_record.to_dict())
-        on_fail_error = actual_record.extra_errors.values()[0]
+        on_fail_error = next(iter(actual_record.extra_errors.values()))
         self.assertEqual(on_fail_error.details, 'Failure in on_fail')
         self.assertEqual(on_fail_error.extras, MOCK_EXTRA)
 
