@@ -44,13 +44,17 @@ class AdbError(Error):
         stdout: byte string, the raw stdout of the command.
         stderr: byte string, the raw stderr of the command.
         ret_code: int, the return code of the command.
+        serial: string, the serial of the device the command is executed on.
+            This is an empty string if the adb command is not specific to a
+            device.
     """
 
-    def __init__(self, cmd, stdout, stderr, ret_code):
+    def __init__(self, cmd, stdout, stderr, ret_code, serial=None):
         self.cmd = cmd
         self.stdout = stdout
         self.stderr = stderr
         self.ret_code = ret_code
+        self.serial = serial
 
     def __str__(self):
         return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
@@ -179,7 +183,12 @@ class AdbProxy(object):
         if ret == 0:
             return out
         else:
-            raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
+            raise AdbError(
+                cmd=args,
+                stdout=out,
+                stderr=err,
+                ret_code=ret,
+                serial=self.serial)
 
     def _execute_and_process_stdout(self, args, shell, handler):
         """Executes adb commands and processes the stdout with a handler.
