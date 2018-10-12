@@ -292,6 +292,10 @@ class BaseTestClass(object):
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
+
+        Returns:
+            If `self.results` is returned instead of None, this means something
+            as gone wrong, and the rest of the test class would not execute.
         """
         # Setup for the class.
         class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS,

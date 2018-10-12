@@ -1510,6 +1510,38 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
 
+    def test_expect_in_setup_class_and_on_fail(self):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                expects.expect_true(
+                    False, 'Failure in setup_class', extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def test_func(self):
+                pass
+
+            def on_fail(self, record):
+                expects.expect_true(
+                    False, 'Failure in on_fail', extras=MOCK_EXTRA)
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, 'setup_class')
+        self.assertEqual(actual_record.details, 'Failure in setup_class')
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+        import pprint
+        pprint.pprint(actual_record.to_dict())
+        on_fail_error = actual_record.extra_errors.values()[0]
+        self.assertEqual(on_fail_error.details, 'Failure in on_fail')
+        self.assertEqual(on_fail_error.extras, MOCK_EXTRA)
+
     def test_expect_in_teardown_class(self):
         must_call = mock.Mock()
 
