@@ -163,6 +163,7 @@ class AdbProxy(object):
             The output of the adb command run if exit code is 0.
 
         Raises:
+            ValueError: timeout value is invalid.
             AdbError: The adb command exit code is not 0.
             AdbTimeoutError: The adb command timed out.
         """

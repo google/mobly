@@ -129,8 +129,6 @@ class AdbTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
     def test_exec_cmd_timed_out(self, mock_psutil_process, mock_popen):
         self._mock_process(mock_psutil_process, mock_popen)
-        # mock process.wait(timeout=timeout) to
-        # throw psutil.TimeoutExpired exception
         mock_psutil_process.return_value.wait.side_effect = (
             adb.psutil.TimeoutExpired('Timed out'))
         mock_serial = '1234Abcd'
@@ -146,8 +144,6 @@ class AdbTest(unittest.TestCase):
     def test_exec_cmd_timed_out_without_serial(self, mock_psutil_process,
                                                mock_popen):
         self._mock_process(mock_psutil_process, mock_popen)
-        # mock process.wait(timeout=timeout) to
-        # throw psutil.TimeoutExpired exception
         mock_psutil_process.return_value.wait.side_effect = (
             adb.psutil.TimeoutExpired('Timed out'))
         with self.assertRaisesRegex(adb.AdbTimeoutError,
