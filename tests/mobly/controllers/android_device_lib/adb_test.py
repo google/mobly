@@ -91,15 +91,29 @@ class AdbTest(unittest.TestCase):
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
-    def test_exec_cmd_error_no_timeout(self, mock_psutil_process, mock_popen):
+    def test_exec_cmd_error_with_serial(self, mock_psutil_process, mock_popen):
         self._mock_process(mock_psutil_process, mock_popen)
         # update return code to indicate command execution error
         mock_popen.return_value.returncode = 1
-
+        mock_serial = 'ABCD1234'
         with self.assertRaisesRegex(adb.AdbError,
-                                    'Error executing adb cmd .*'):
+                                    'Error executing adb cmd .*') as context:
+            adb.AdbProxy(mock_serial)._exec_cmd(
+                ['fake_cmd'], shell=False, timeout=None, stderr=None)
+        self.assertEqual(context.exception.serial, mock_serial)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
+    @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
+    def test_exec_cmd_error_without_serial(self, mock_psutil_process,
+                                           mock_popen):
+        self._mock_process(mock_psutil_process, mock_popen)
+        # update return code to indicate command execution error
+        mock_popen.return_value.returncode = 1
+        with self.assertRaisesRegex(adb.AdbError,
+                                    'Error executing adb cmd .*') as context:
             adb.AdbProxy()._exec_cmd(
                 ['fake_cmd'], shell=False, timeout=None, stderr=None)
+        self.assertFalse(context.exception.serial)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     @mock.patch('mobly.controllers.android_device_lib.adb.psutil.Process')
@@ -156,8 +170,8 @@ class AdbTest(unittest.TestCase):
         self._mock_execute_and_process_stdout_process(mock_popen)
         mock_handler = mock.MagicMock()
         mock_popen.return_value.communicate = mock.Mock(
-            return_value=(unexpected_stdout, MOCK_DEFAULT_STDERR.encode(
-                'utf-8')))
+            return_value=(unexpected_stdout,
+                          MOCK_DEFAULT_STDERR.encode('utf-8')))
 
         err = adb.AdbProxy()._execute_and_process_stdout(
             ['fake_cmd'], shell=False, handler=mock_handler)
