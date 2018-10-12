@@ -44,6 +44,9 @@ class AdbError(Error):
         stdout: byte string, the raw stdout of the command.
         stderr: byte string, the raw stderr of the command.
         ret_code: int, the return code of the command.
+        serial: string, the serial of the device the command is executed on.
+            This is an empty string if the adb command is not specific to a
+            device.
     """
 
     def __init__(self, cmd, stdout, stderr, ret_code, serial=None):
