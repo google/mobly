@@ -316,16 +316,18 @@ class BaseTestClass(object):
             logging.exception('Error in %s#setup_class.', self.TAG)
             class_record.test_error(e)
             self.results.add_class_error(class_record)
+            self._exec_procedure_func(self._on_fail, class_record)
+            class_record.update_record()
             self.summary_writer.dump(class_record.to_dict(),
                                      records.TestSummaryEntryType.RECORD)
-            self._exec_procedure_func(self._on_fail, class_record)
             self._skip_remaining_tests(e)
             return self.results
         if expects.recorder.has_error:
+            self._exec_procedure_func(self._on_fail, class_record)
+            class_record.test_error()
+            class_record.update_record()
             self.summary_writer.dump(class_record.to_dict(),
                                      records.TestSummaryEntryType.RECORD)
-            self._exec_procedure_func(self._on_fail, class_record)
-            class_record.update_record()
             self.results.add_class_error(class_record)
             self._skip_remaining_tests(
                 class_record.termination_signal.exception)

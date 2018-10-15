@@ -1485,7 +1485,8 @@ class BaseTestTest(unittest.TestCase):
         must_call.assert_called_with('ha')
         self.assertEqual(len(bt_cls.results.passed), 2)
 
-    def test_expect_in_setup_class(self):
+    @mock.patch('mobly.records.TestSummaryWriter.dump')
+    def test_expect_in_setup_class(self, mock_dump):
         must_call = mock.Mock()
         must_call2 = mock.Mock()
 
@@ -1509,8 +1510,14 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, 'setup_class')
         self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
+        # Verify the class record is written out correctly.
+        setup_class_dict = mock_dump.call_args_list[1][0][0]
+        self.assertIsNotNone(setup_class_dict['Begin Time'])
+        self.assertIsNotNone(setup_class_dict['End Time'])
+        self.assertEqual(setup_class_dict['Test Name'], 'setup_class')
 
-    def test_expect_in_setup_class_and_on_fail(self):
+    @mock.patch('mobly.records.TestSummaryWriter.dump')
+    def test_expect_in_setup_class_and_on_fail(self, mock_dump):
         must_call = mock.Mock()
         must_call2 = mock.Mock()
 
@@ -1536,11 +1543,18 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, 'setup_class')
         self.assertEqual(actual_record.details, 'Failure in setup_class')
         self.assertEqual(actual_record.extras, MOCK_EXTRA)
-        import pprint
-        pprint.pprint(actual_record.to_dict())
         on_fail_error = next(iter(actual_record.extra_errors.values()))
         self.assertEqual(on_fail_error.details, 'Failure in on_fail')
         self.assertEqual(on_fail_error.extras, MOCK_EXTRA)
+        # Verify the class record is written out correctly.
+        setup_class_dict = mock_dump.call_args_list[1][0][0]
+        self.assertIsNotNone(setup_class_dict['Begin Time'])
+        self.assertIsNotNone(setup_class_dict['End Time'])
+        self.assertEqual(setup_class_dict['Test Name'], 'setup_class')
+        # Verify the on_fail error is recorded in summary result.
+        extra_error_dict = next(
+            iter(setup_class_dict['Extra Errors'].values()))
+        self.assertEqual(extra_error_dict['Details'], 'Failure in on_fail')
 
     def test_expect_in_teardown_class(self):
         must_call = mock.Mock()
