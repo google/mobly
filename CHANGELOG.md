@@ -1,6 +1,6 @@
 # Mobly Release History
 
-## Mobly Release 1.8
+## Mobly Release 1.8: Controller Management and `AndroidDevice` Service
 
 ### New
 * Modularized controller management logic by introducing `ControllerManager`.
