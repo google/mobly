@@ -178,43 +178,43 @@ class BaseTestClass(object):
         a device, service, or equipment. To be Mobly compatible, a controller
         module needs to have the following members:
 
-        ```
-        def create(configs):
-            [Required] Creates controller objects from configurations.
+        .. code-block:: python
 
-            Args:
-                configs: A list of serialized data like string/dict. Each
-                    element of the list is a configuration for a controller
-                    object.
+            def create(configs):
+                [Required] Creates controller objects from configurations.
 
-            Returns:
-                A list of objects.
+                Args:
+                    configs: A list of serialized data like string/dict. Each
+                        element of the list is a configuration for a controller
+                        object.
 
-        def destroy(objects):
-            [Required] Destroys controller objects created by the create
-            function. Each controller object shall be properly cleaned up
-            and all the resources held should be released, e.g. memory
-            allocation, sockets, file handlers etc.
+                Returns:
+                    A list of objects.
 
-            Args:
-                A list of controller objects created by the create function.
+            def destroy(objects):
+                [Required] Destroys controller objects created by the create
+                function. Each controller object shall be properly cleaned up
+                and all the resources held should be released, e.g. memory
+                allocation, sockets, file handlers etc.
 
-        def get_info(objects):
-            [Optional] Gets info from the controller objects used in a test
-            run. The info will be included in test_summary.yaml under
-            the key 'ControllerInfo'. Such information could include unique
-            ID, version, or anything that could be useful for describing the
-            test bed and debugging.
+                Args:
+                    A list of controller objects created by the create function.
 
-            Args:
-                objects: A list of controller objects created by the create
-                    function.
+            def get_info(objects):
+                [Optional] Gets info from the controller objects used in a test
+                run. The info will be included in test_summary.yaml under
+                the key 'ControllerInfo'. Such information could include unique
+                ID, version, or anything that could be useful for describing the
+                test bed and debugging.
 
-            Returns:
-                A list of json serializable objects, each represents the
-                info of a controller object. The order of the info object
-                should follow that of the input objects.
-        ```
+                Args:
+                    objects: A list of controller objects created by the create
+                        function.
+
+                Returns:
+                    A list of json serializable objects: each represents the
+                        info of a controller object. The order of the info
+                        object should follow that of the input objects.
 
         Registering a controller module declares a test class's dependency the
         controller. If the module config exists and the module matches the
