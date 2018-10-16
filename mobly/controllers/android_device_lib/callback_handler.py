@@ -40,13 +40,16 @@ class CallbackHandler(object):
     call to an AsyncRpc method defined on the server side.
 
     The raw message representing an event looks like:
-    {
-        'callbackId': <string, callbackId>,
-        'name': <string, name of the event>,
-        'time': <long, epoch time of when the event was created on the server
-            side>,
-        'data': <dict, extra data from the callback on the server side>
-    }
+
+    .. code-block:: python
+
+        {
+            'callbackId': <string, callbackId>,
+            'name': <string, name of the event>,
+            'time': <long, epoch time of when the event was created on the
+                server side>,
+            'data': <dict, extra data from the callback on the server side>
+        }
 
     Each message is then used to create a SnippetEvent object on the client
     side.
