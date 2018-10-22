@@ -199,8 +199,10 @@ class ControllerManagerTest(unittest.TestCase):
         self.assertFalse(c_manager._controller_objects)
         self.assertFalse(c_manager._controller_modules)
 
+    @mock.patch('mobly.expects._ExpectErrorRecorder.add_error')
     @mock.patch('tests.lib.mock_controller.destroy')
-    def test_unregister_controller_error(self, mock_destroy_func):
+    def test_unregister_controller_error(self, mock_destroy_func,
+                                         mock_add_error):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
         c_manager = controller_manager.ControllerManager(
@@ -208,6 +210,9 @@ class ControllerManagerTest(unittest.TestCase):
         c_manager.register_controller(mock_controller)
         mock_destroy_func.side_effect = Exception('Failed in destroy.')
         c_manager.unregister_controllers()
+        mock_add_error.assert_called_once()
+        error_record = mock_add_error.call_args[0][0]
+        self.assertIn('Failed in destroy.', error_record.stacktrace)
         self.assertFalse(c_manager._controller_objects)
         self.assertFalse(c_manager._controller_modules)
 
