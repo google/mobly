@@ -41,6 +41,7 @@ STAGE_NAME_SETUP_CLASS = 'setup_class'
 STAGE_NAME_SETUP_TEST = 'setup_test'
 STAGE_NAME_TEARDOWN_TEST = 'teardown_test'
 STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
+STAGE_NAME_CLEAN_UP = 'clean_up'
 
 
 class Error(Exception):
@@ -374,9 +375,7 @@ class BaseTestClass(object):
                 self.summary_writer.dump(record.to_dict(),
                                          records.TestSummaryEntryType.RECORD)
         finally:
-            # Write controller info and summary to summary file.
-            self._record_controller_info()
-            self._controller_manager.unregister_controllers()
+            self._clean_up()
 
     def teardown_class(self):
         """Teardown function that will be called after all the selected tests in
@@ -846,10 +845,36 @@ class BaseTestClass(object):
             logging.info('Summary for test class %s: %s', self.TAG,
                          self.results.summary_str())
 
+    def _clean_up(self):
+        """The final stage of a test class execution."""
+        stage_name = STAGE_NAME_CLEAN_UP
+        record = records.TestResultRecord(stage_name, self.TAG)
+        record.test_begin()
+        self.current_test_info = runtime_test_info.RuntimeTestInfo(
+            stage_name, self.log_path, record)
+        expects.recorder.reset_internal_states(record)
+        with self._log_test_stage(stage_name):
+            # Write controller info and summary to summary file.
+            self._record_controller_info()
+            self._controller_manager.unregister_controllers()
+            if expects.recorder.has_error:
+                record.test_error()
+                record.update_record()
+                self.results.add_class_error(record)
+                self.summary_writer.dump(record.to_dict(),
+                                         records.TestSummaryEntryType.RECORD)
+
     def clean_up(self):
-        """A function that is executed upon completion of all tests selected in
+        """.. deprecated:: 1.8.1
+
+        Use `teardown_class` instead.
+
+        A function that is executed upon completion of all tests selected in
         the test class.
 
         This function should clean up objects initialized in the constructor by
         user.
+
+        Generally this should not be used as nothing should be instantiated
+        from the constructor of a test class.
         """
