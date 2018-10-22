@@ -50,7 +50,7 @@ def verify_controller_module(module):
 
 
 class ControllerManager(object):
-    """Manages the controller objects for Mobly.
+    """Manages the controller objects for Mobly tests.
 
     This manages the life cycles and info retrieval of all controller objects
     used in a test.

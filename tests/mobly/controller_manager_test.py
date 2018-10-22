@@ -150,8 +150,10 @@ class ControllerManagerTest(unittest.TestCase):
         self.assertEqual(record.test_class, 'SomeClass')
         self.assertEqual(record.controller_name, 'MagicDevice')
 
+    @mock.patch('mobly.expects._ExpectErrorRecorder.add_error')
     @mock.patch('tests.lib.mock_controller.get_info')
-    def test_get_controller_info_records_error(self, mock_get_info_func):
+    def test_get_controller_info_records_error(self, mock_get_info_func,
+                                               mock_add_error):
         mock_get_info_func.side_effect = Exception('Record info failed.')
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         controller_configs = {mock_ctrlr_config_name: ['magic1', 'magic2']}
@@ -159,6 +161,9 @@ class ControllerManagerTest(unittest.TestCase):
             'SomeClass', controller_configs)
         c_manager.register_controller(mock_controller)
         self.assertFalse(c_manager.get_controller_info_records())
+        mock_add_error.assert_called_once()
+        error_record = mock_add_error.call_args[0][0]
+        self.assertIn('Record info failed.', error_record.stacktrace)
 
     def test_get_controller_info_records(self):
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
