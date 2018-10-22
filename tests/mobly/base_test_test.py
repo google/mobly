@@ -2001,6 +2001,53 @@ class BaseTestTest(unittest.TestCase):
             }
         }])
 
+    def test_record_controller_info_fail(self):
+        mock_test_config = self.mock_test_cls_configs.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_2_config_name = mock_second_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{'serial': 'xxxx', 'magic': 'Magic'}]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs[
+            mock_ctrlr_2_config_name] = copy.copy(my_config)
+
+        class ControllerInfoTest(base_test.BaseTestClass):
+            """Registers two different controller types and modifies controller
+            info at runtime.
+            """
+
+            def setup_class(self):
+                device = self.register_controller(mock_controller)[0]
+                device.who_am_i = mock.MagicMock()
+                device.who_am_i.side_effect = Exception('Some failure')
+                second_controller = self.register_controller(
+                    mock_second_controller)[0]
+                # This should appear in recorded controller info.
+                second_controller.set_magic('haha')
+
+            def test_func(self):
+                pass
+
+        bt_cls = ControllerInfoTest(mock_test_config)
+        bt_cls.run()
+        info = bt_cls.results.controller_info[0]
+        self.assertEqual(len(bt_cls.results.controller_info), 1)
+        self.assertEqual(info.test_class, 'ControllerInfoTest')
+        self.assertEqual(info.controller_name, 'AnotherMagicDevice')
+        self.assertEqual(info.controller_info, [{
+            'MyOtherMagic': {
+                'magic': 'Magic',
+                'extra_magic': 'haha'
+            }
+        }])
+        record = bt_cls.results.error[0]
+        print(record.to_dict())
+        self.assertEqual(record.test_name, 'clean_up')
+        self.assertIsNotNone(record.begin_time)
+        self.assertIsNotNone(record.end_time)
+        expected_msg = ('Failed to collect controller info from '
+                        'mock_controller: Some failure')
+        self.assertEqual(record.details, expected_msg)
+
 
 if __name__ == "__main__":
     unittest.main()
