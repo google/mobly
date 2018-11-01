@@ -31,9 +31,9 @@ You can define a subclass `SpeakerBatterySubscriber` as such:
 ```python
 import threading
 from mobly.controllers import android_device
-from mobly.controllers.android_device_lib.services import logcat_pubsub
+from mobly.controllers.android_device_lib.services import logcat
 
-class SpeakerBatterySubscriber(logcat_pubsub.LogcatSubscriber):
+class SpeakerBatterySubscriber(logcat.LogcatSubscriber):
 
     LOW_VOLTAGE = 4.78
 
@@ -47,20 +47,20 @@ class SpeakerBatterySubscriber(logcat_pubsub.LogcatSubscriber):
                 self.low_voltage_event.set()
 ```
 
-Before the subscriber can subscribe to a logcat stream, the publisher first
-needs to be registered with the `AndroidDevice` object:
+Before the subscriber can subscribe to a logcat stream, the logcat service
+must first be initialized.
 
 ```
 ad = android_device.AndroidDevice('0123456789')
-ad.services.register('publisher', logcat_pubsub.LogcatPublisher)
+ad.start_services()
 ```
 
 From here, we can create a new instance of `SpeakerBatterySubscriber` and
-have it subscribe to the publisher service.
+have it subscribe to the logcat service.
 
 ```
 speaker_battery_subscriber = SpeakerBatterySubscriber()
-speaker_battery_subscriber.subscribe(ad.services.publisher)
+speaker_battery_subscriber.subscribe(ad.services.logcat)
 ```
 
 When each logcat line appears, the battery voltage will be compared against
@@ -77,16 +77,16 @@ if speaker_battery_subscriber.low_voltage_event.wait(10 * 60):
 
 Mobly includes a built-in implementation of `LogcatSubscriber` called
 `LogcatEventSubscriber` and is created ephemerally when the user calls the
-`logcat_event` context manager. For example, a Mobly test can wait for the
-following log line:
+`event` context manager. For example, a Mobly test can wait for the following
+log line:
 
 ```
 10-02 16:19:00.408  1463  1463 D BluetoothManagerService: Airplane Mode change - current state:  ON
 ```
 
-The following code will spawn an context manager to trigger on the regular
-expression `writeEvent (.*) (.*)` and the call to `event.wait()` will block
-until that logcat line appears.
+The following code will spawn a context manager to trigger on the regular
+expression `Airplane Mode change - current state:  (?P<state>[A-Z]*)` and the
+call to `event.wait()` will block until that logcat line appears.
 
 ```python
 from mobly.controllers import android_device

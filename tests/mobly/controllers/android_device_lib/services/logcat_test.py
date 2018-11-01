@@ -21,9 +21,11 @@ import tempfile
 
 from future.tests.base import unittest
 
+from dateutil.parser import parse as parse_date
 from mobly import utils
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
+from dateutil.parser import parse as parse_date
 from mobly.controllers.android_device_lib.services import logcat
 
 from tests.lib import mock_android_device
@@ -61,6 +63,16 @@ MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR = adb.AdbError(
 MOCK_LOGPERSIST_START_MISSING_ADB_ERROR = adb.AdbError(
     'logpersist.start --clear', '',
     '/system/bin/sh: logpersist.stop: not found', 0)
+
+MOCK_PUBSUB_LOGCAT = (
+    '--------- beginning of system\n'
+    '01-02 03:45:01.100  1000  1001 I MockManager: Starting service.\n'
+    '01-02 03:45:01.200  1000  1001 I MockManager: Init complete.\n'
+    '--------- beginning of main\n'
+    '01-02 03:45:02.300  2000  2001 I MockService: a=0 b=1 c=2.\n'
+    '01-02 03:45:02.400  2000  2001 I MockService: a=4 b=5 c=6.\n'
+    '01-02 03:45:02.500  1000  1010 E MockManager: error_code=\xcf\x80.\n'
+)
 
 
 class LogcatTest(unittest.TestCase):
@@ -448,6 +460,114 @@ class LogcatTest(unittest.TestCase):
             ret_code=1)
         logcat_service = logcat.Logcat(ad)
         logcat_service.clear_adb_log()
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_logcat_event_pattern(self, FastbootProxy, AdbProxy):
+        """A test case the checks the logcat event pattern matching."""
+        ad = android_device.AndroidDevice(serial='1')
+        logcat_service = logcat.Logcat(ad)
+        logcat_service.start()
+        mock_adb_log_path = logcat_service.adb_logcat_file_path
+
+        with logcat_service.event(pattern='Init complete.') as event:
+            with open(mock_adb_log_path, 'w') as f:
+                f.write(MOCK_PUBSUB_LOGCAT)
+            self.assertTrue(event.wait(1), 'Event never detected.')
+
+        self.assert_event(
+            event.trigger, time=parse_date('01-02 03:45:01.200'), level='I',
+            pid=1000, tid=1001, tag='MockManager', message='Init complete.')
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_logcat_event_tag(self, FastbootProxy, AdbProxy):
+        """A test case that checks the logcat event tag matching."""
+        ad = android_device.AndroidDevice(serial='1')
+        logcat_service = logcat.Logcat(ad)
+        logcat_service.start()
+        mock_adb_log_path = logcat_service.adb_logcat_file_path
+
+        with logcat_service.event(tag='*Serv*') as event:
+            with open(mock_adb_log_path, 'w') as f:
+                f.write(MOCK_PUBSUB_LOGCAT)
+            self.assertTrue(event.wait(1), 'Event never detected.')
+
+        self.assert_event(
+            event.trigger, time=parse_date('01-02 03:45:02.300'), level='I',
+            pid=2000, tid=2001, tag='MockService', message='a=0 b=1 c=2.')
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_logcat_event_level(self, FastbootProxy, AdbProxy):
+        """A test case that checks the logcat event level matching."""
+        ad = android_device.AndroidDevice(serial='1')
+        logcat_service = logcat.Logcat(ad)
+        logcat_service.start()
+        mock_adb_log_path = logcat_service.adb_logcat_file_path
+
+        with logcat_service.event(level='E') as event:
+            with open(mock_adb_log_path, 'w') as f:
+                f.write(MOCK_PUBSUB_LOGCAT)
+            self.assertTrue(event.wait(1), 'Event never detected.')
+
+        self.assert_event(
+            event.trigger, time=parse_date('01-02 03:45:02.500'), level='E',
+            pid=1000, tid=1010, tag='MockManager',
+            message='error_code=\xcf\x80.')
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_logcat_event_regex(self, FastbootProxy, AdbProxy):
+        """A test case that checks the logcat event regex matching."""
+        ad = android_device.AndroidDevice(serial='1')
+        logcat_service = logcat.Logcat(ad)
+        logcat_service.start()
+        mock_adb_log_path = logcat_service.adb_logcat_file_path
+        pattern = 'a=(?P<a>\d+) b=(?P<b>\d+) c=(?P<c>\d+)'
+        with logcat_service.event(pattern=pattern) as event:
+            with open(mock_adb_log_path, 'w') as f:
+                f.write(MOCK_PUBSUB_LOGCAT)
+            self.assertTrue(event.wait(1), 'Event never detected.')
+
+        self.assert_event(
+            event.trigger, time=parse_date('01-02 03:45:02.300'), level='I',
+            pid=2000, tid=2001, tag='MockService', message='a=0 b=1 c=2.')
+        match_dict = event.match.groupdict()
+        for value, key in enumerate('abc'):
+            self.assertEqual(
+                int(match_dict[key]), value,
+                'Regex match failed. Expected {}={} but got {}.'.format(
+                    key, value, match_dict[key]))
+
+    def assert_event(self, actual_trigger, **expected_trigger_dict):
+        """Check that the actual trigger values match the expected values.
+
+        Args:
+            actual_trigger: Actual trigger.
+            exepcted_event_dict: A dictionary of the expected values.
+        """
+        for key, expected_value in expected_trigger_dict.items():
+            actual_value = getattr(actual_trigger, key)
+            error_msg = 'Expected value {} but actual value {}'.format(
+                expected_value, actual_value)
+            self.assertEqual(expected_value, actual_value, error_msg)
 
 
 if __name__ == '__main__':
