@@ -493,6 +493,7 @@ class LogcatTest(unittest.TestCase):
         """A test case the checks the logcat event pattern matching."""
         ad = android_device.AndroidDevice(serial='1')
         logcat_service = logcat.Logcat(ad)
+        logcat_service._ad._log_path = self.tmp_dir
         logcat_service.start()
         mock_adb_log_path = logcat_service.adb_logcat_file_path
 
@@ -515,6 +516,7 @@ class LogcatTest(unittest.TestCase):
         """A test case that checks the logcat event tag matching."""
         ad = android_device.AndroidDevice(serial='1')
         logcat_service = logcat.Logcat(ad)
+        logcat_service._ad._log_path = self.tmp_dir
         logcat_service.start()
         mock_adb_log_path = logcat_service.adb_logcat_file_path
 
@@ -537,6 +539,7 @@ class LogcatTest(unittest.TestCase):
         """A test case that checks the logcat event level matching."""
         ad = android_device.AndroidDevice(serial='1')
         logcat_service = logcat.Logcat(ad)
+        logcat_service._ad._log_path = self.tmp_dir
         logcat_service.start()
         mock_adb_log_path = logcat_service.adb_logcat_file_path
 
@@ -560,6 +563,7 @@ class LogcatTest(unittest.TestCase):
         """A test case that checks the logcat event regex matching."""
         ad = android_device.AndroidDevice(serial='1')
         logcat_service = logcat.Logcat(ad)
+        logcat_service._ad._log_path = self.tmp_dir
         logcat_service.start()
         mock_adb_log_path = logcat_service.adb_logcat_file_path
         pattern = 'a=(?P<a>\d+) b=(?P<b>\d+) c=(?P<c>\d+)'
