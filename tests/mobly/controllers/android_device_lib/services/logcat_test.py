@@ -71,7 +71,7 @@ MOCK_PUBSUB_LOGCAT = (
     '--------- beginning of main\n'
     '01-02 03:45:02.300  2000  2001 I MockService: a=0 b=1 c=2.\n'
     '01-02 03:45:02.400  2000  2001 I MockService: a=4 b=5 c=6.\n'
-    '01-02 03:45:02.500  1000  1010 E MockManager: error_code=\xcf\x80.\n'
+    '01-02 03:45:02.500  1000  1010 E MockManager: error_code=\u03c0.\n'
 )
 
 
@@ -526,7 +526,7 @@ class LogcatTest(unittest.TestCase):
         self.assert_event(
             event.trigger, time=parse_date('01-02 03:45:02.500'), level='E',
             pid=1000, tid=1010, tag='MockManager',
-            message='error_code=\xcf\x80.')
+            message='error_code=\u03c0.')
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -566,7 +566,7 @@ class LogcatTest(unittest.TestCase):
         for key, expected_value in expected_trigger_dict.items():
             actual_value = getattr(actual_trigger, key)
             error_msg = 'Expected value {} but actual value {}'.format(
-                expected_value, actual_value)
+                repr(expected_value), repr(actual_value))
             self.assertEqual(expected_value, actual_value, error_msg)
 
 
