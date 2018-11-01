@@ -1,5 +1,30 @@
 # Mobly Release History
 
+## Mobly Release 1.8: Controller Management and `AndroidDevice` Service
+
+### New
+* Modularized controller management logic by introducing `ControllerManager`.
+* Introduced the service mechanism in `AndroidDevice`, life cycles management
+  of long-running processes for Android devices.
+* Convenience method for creating per-test adb logcat
+  `logcat.create_per_test_excerpt`.
+* `AdbError` now has `serial` as a direct attribute.
+
+### Deprecated
+The following APIs in `AndroidDevice` are deprecated:
+* `start_services` -> `ad.services.start_all`
+* `stop_services` -> `ad.services.stop_all`
+* `start_adb_logcat` -> `ad.services.logcat_start`
+* `stop_adb_logcat` -> `ad.services.logcat_stop`
+
+### Fixes
+* `expects` APIs crashing in certain execution stages.
+* `setup_class`'s record is not recorded correctly in summary yaml.
+* Controller info recoding
+* adb logcat crashes
+
+[Full list of changes](https://github.com/google/mobly/milestone/18?closed=1)
+
 
 ## Mobly Release 1.7.5: Dependency Cleanup
 

@@ -14,8 +14,11 @@
 """Module for the manager of services."""
 # TODO(xpconanfan: move the device errors to a more generic location so
 # other device controllers like iOS can share it.
+import inspect
+
 from mobly import expects
 from mobly.controllers.android_device_lib import errors
+from mobly.controllers.android_device_lib.services import base_service
 
 
 class Error(errors.DeviceError):
@@ -33,6 +36,18 @@ class ServiceManager(object):
         self._service_objects = {}
         self._device = device
 
+    def has_service_by_name(self, name):
+        """Checks if the manager has a service registered with a specific name.
+
+        Args:
+            name: string, the name to look for.
+
+        Returns:
+            True if a service is registered with the specified name, False
+            otherwise.
+        """
+        return name in self._service_objects
+
     @property
     def is_any_alive(self):
         """True if any service is alive; False otherwise."""
@@ -41,7 +56,7 @@ class ServiceManager(object):
                 return True
         return False
 
-    def register(self, alias, service_class, configs=None):
+    def register(self, alias, service_class, configs=None, start_service=True):
         """Registers a service.
 
         This will create a service instance, starts the service, and adds the
@@ -52,13 +67,22 @@ class ServiceManager(object):
             service_class: class, the service class to instantiate.
             configs: (optional) config object to pass to the service class's
                 constructor.
+            start_service: bool, whether to start the service instance or not.
+                Default is True.
         """
+        if not inspect.isclass(service_class):
+            raise Error(self._device, '"%s" is not a class!' % service_class)
+        if not issubclass(service_class, base_service.BaseService):
+            raise Error(
+                self._device,
+                'Class %s is not a subclass of BaseService!' % service_class)
         if alias in self._service_objects:
             raise Error(
                 self._device,
                 'A service is already registered with alias "%s".' % alias)
         service_obj = service_class(self._device, configs)
-        service_obj.start()
+        if start_service:
+            service_obj.start()
         self._service_objects[alias] = service_obj
 
     def unregister(self, alias):
@@ -88,7 +112,7 @@ class ServiceManager(object):
             self.unregister(alias)
 
     def start_all(self):
-        """Pauses all active service instances."""
+        """Starts all inactive service instances."""
         for alias, service in self._service_objects.items():
             if not service.is_alive:
                 with expects.expect_no_raises(
@@ -96,7 +120,7 @@ class ServiceManager(object):
                     service.start()
 
     def stop_all(self):
-        """Resumes all paused service instances."""
+        """Stops all active service instances."""
         for alias, service in self._service_objects.items():
             if service.is_alive:
                 with expects.expect_no_raises(
@@ -104,20 +128,18 @@ class ServiceManager(object):
                     service.stop()
 
     def pause_all(self):
-        """Pauses all active service instances."""
+        """Pauses all service instances."""
         for alias, service in self._service_objects.items():
-            if service.is_alive:
-                with expects.expect_no_raises(
-                        'Failed to pause service "%s".' % alias):
-                    service.pause()
+            with expects.expect_no_raises(
+                    'Failed to pause service "%s".' % alias):
+                service.pause()
 
     def resume_all(self):
-        """Resumes all paused service instances."""
+        """Resumes all service instances."""
         for alias, service in self._service_objects.items():
-            if not service.is_alive:
-                with expects.expect_no_raises(
-                        'Failed to pause service "%s".' % alias):
-                    service.resume()
+            with expects.expect_no_raises(
+                    'Failed to pause service "%s".' % alias):
+                service.resume()
 
     def __getattr__(self, name):
         """Syntactic sugar to enable direct access of service objects by alias.
@@ -125,4 +147,6 @@ class ServiceManager(object):
         Args:
             name: string, the alias a service object was registered under.
         """
-        return self._service_objects[name]
+        if self.has_service_by_name(name):
+            return self._service_objects[name]
+        return self.__getattribute__(name)

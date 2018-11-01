@@ -104,27 +104,50 @@ class SnippetManagementService(base_service.BaseService):
         """Starts all the snippet clients under management."""
         for client in self._snippet_clients.values():
             if not client.is_alive:
+                self._device.log.debug('Starting SnippetClient<%s>.',
+                                       client.package)
                 client.start_app_and_connect()
+            else:
+                self._device.log.debug(
+                    'Not startng SnippetClient<%s> because it is already alive.',
+                    client.package)
 
     def stop(self):
         """Stops all the snippet clients under management."""
         for client in self._snippet_clients.values():
             if client.is_alive:
+                self._device.log.debug('Stopping SnippetClient<%s>.',
+                                       client.package)
                 client.stop_app()
+            else:
+                self._device.log.debug(
+                    'Not stopping SnippetClient<%s> because it is not alive.',
+                    client.package)
 
     def pause(self):
-        """Intentionally no-op.
+        """Pauses all the snippet clients under management.
 
-        No action on the client side is needed per current snippet clients
-        design. Because snippet clients do not explicitly handle temporary
-        disconnect (Issue #509).
+        This clears the host port of a client because a new port will be
+        allocated in `resume`.
         """
+        for client in self._snippet_clients.values():
+            self._device.log.debug(
+                'Clearing host port %d of SnippetClient<%s>.',
+                client.host_port, client.package)
+            client.clear_host_port()
 
     def resume(self):
         """Resumes all paused snippet clients."""
         for client in self._snippet_clients.values():
-            if not client.is_alive:
+            # Resume is only applicable if a client is alive and does not have
+            # a host port.
+            if client.is_alive and client.host_port is None:
+                self._device.log.debug('Resuming SnippetClient<%s>.',
+                                       client.package)
                 client.restore_app_connection()
+            else:
+                self._device.log.debug('Not resuming SnippetClient<%s>.',
+                                       client.package)
 
     def __getattr__(self, name):
         client = self.get_snippet_client(name)

@@ -27,7 +27,7 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import fastboot
 from mobly.controllers.android_device_lib import service_manager
-from mobly.controllers.android_device_lib import sl4a_client
+from mobly.controllers.android_device_lib.services import sl4a_service
 from mobly.controllers.android_device_lib.services import logcat
 from mobly.controllers.android_device_lib.services import snippet_management_service
 
@@ -54,6 +54,7 @@ DEFAULT_VALUE_DEVICE_REQUIRED = True
 # Default is False.
 KEY_SKIP_LOGCAT = 'skip_logcat'
 DEFAULT_VALUE_SKIP_LOGCAT = False
+SERVICE_NAME_LOGCAT = 'logcat'
 
 # Default Timeout to wait for boot completion
 DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
@@ -135,11 +136,11 @@ def _start_services_on_ads(ads):
     running_ads = []
     for ad in ads:
         running_ads.append(ad)
-        skip_logcat = getattr(ad, KEY_SKIP_LOGCAT, DEFAULT_VALUE_SKIP_LOGCAT)
-        if skip_logcat:
-            continue
+        start_logcat = not getattr(ad, KEY_SKIP_LOGCAT,
+                                   DEFAULT_VALUE_SKIP_LOGCAT)
         try:
-            ad.start_services()
+            ad.services.register(
+                SERVICE_NAME_LOGCAT, logcat.Logcat, start_service=start_logcat)
         except Exception:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED,
                                   DEFAULT_VALUE_DEVICE_REQUIRED)
@@ -401,8 +402,11 @@ class AndroidDevice(object):
     """Class representing an android device.
 
     Each object of this class represents one Android device in Mobly. This class
-    provides various ways, like adb, fastboot, sl4a, and snippets, to control an
-    Android device, whether it's a real device or an emulator instance.
+    provides various ways, like adb, fastboot, and Mobly snippets, to control
+    an Android device, whether it's a real device or an emulator instance.
+
+    You can also register your own services to the device's service manager.
+    See the docs of `service_manager` and `base_service` for details.
 
     Attributes:
         serial: A string that's the serial number of the Androi device.
@@ -417,6 +421,8 @@ class AndroidDevice(object):
         adb: An AdbProxy object used for interacting with the device via adb.
         fastboot: A FastbootProxy object used for interacting with the device
             via fastboot.
+        services: ServiceManager, the manager of long-running services on the
+            device.
     """
 
     def __init__(self, serial=''):
@@ -429,8 +435,6 @@ class AndroidDevice(object):
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
             'tag': self.debug_tag
         })
-        self.sl4a = None
-        self.ed = None
         self.adb = adb.AdbProxy(serial)
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader and self.is_rootable:
@@ -446,10 +450,8 @@ class AndroidDevice(object):
 
     @property
     def adb_logcat_file_path(self):
-        try:
+        if self.services.has_service_by_name(SERVICE_NAME_LOGCAT):
             return self.services.logcat.adb_logcat_file_path
-        except AttributeError:
-            return None
 
     @property
     def _normalized_serial(self):
@@ -491,6 +493,28 @@ class AndroidDevice(object):
         self._user_added_device_info.update({name: info})
 
     @property
+    def sl4a(self):
+        """Attribute for direct access of sl4a client.
+
+        Not recommended. This is here for backward compatibility reasons.
+
+        Preferred: directly access `ad.services.sl4a`.
+        """
+        if self.services.has_service_by_name('sl4a'):
+            return self.services.sl4a
+
+    @property
+    def ed(self):
+        """Attribute for direct access of sl4a's event dispatcher.
+
+        Not recommended. This is here for backward compatibility reasons.
+
+        Preferred: directly access `ad.services.sl4a.ed`.
+        """
+        if self.services.has_service_by_name('sl4a'):
+            return self.services.sl4a.ed
+
+    @property
     def debug_tag(self):
         """A string that represents a device object in debug info. Default value
         is the device serial.
@@ -526,7 +550,7 @@ class AndroidDevice(object):
 
         A service can be a snippet or logcat collection.
         """
-        return any([self.services.is_any_alive, self.sl4a])
+        return self.services.is_any_alive
 
     @property
     def log_path(self):
@@ -599,11 +623,13 @@ class AndroidDevice(object):
         self.fastboot.serial = new_serial
 
     def start_services(self, clear_log=True):
-        """Starts long running services on the android device, like adb logcat
+        """.. deprecated:: 1.8
+
+        Use service manager `self.services` instead.
+
+        Starts long running services on the android device, like adb logcat
         capture.
         """
-        configs = logcat.Config(clear_log=clear_log)
-        self.services.register('logcat', logcat.Logcat, configs)
         self.services.start_all()
 
     def start_adb_logcat(self, clear_log=True):
@@ -611,8 +637,7 @@ class AndroidDevice(object):
 
         Use `self.services.logcat.start` instead.
         """
-        configs = logcat.Config(clear_log=clear_log)
-        self.services.logcat.start(configs)
+        self.services.logcat.start()
 
     def stop_adb_logcat(self):
         """.. deprecated:: 1.8
@@ -622,21 +647,12 @@ class AndroidDevice(object):
         self.services.logcat.stop()
 
     def stop_services(self):
-        """Stops long running services on the Android device.
+        """.. deprecated:: 1.8
 
-        Stop adb logcat, terminate sl4a sessions if exist, terminate all
-        snippet clients.
+        Use service manager `self.services` instead.
 
-        Returns:
-            A dict containing information on the running services before they
-            are torn down. This can be used to restore these services, which
-            includes snippets and sl4a.
-        """
+        Stops long running services on the Android device."""
         self.services.stop_all()
-        service_info = {}
-        service_info['use_sl4a'] = self.sl4a is not None
-        self._terminate_sl4a()
-        return service_info
 
     @contextlib.contextmanager
     def handle_reboot(self):
@@ -649,27 +665,14 @@ class AndroidDevice(object):
 
         For sample usage, see self.reboot().
         """
-        service_info = self.stop_services()
+        self.stop_services()
         try:
             yield
         finally:
             self.wait_for_boot_completion()
             if self.is_rootable:
                 self.root_adb()
-            self._restore_services(service_info)
-
-    def _restore_services(self, service_info):
-        """Restores services after a device has come back from temporary
-        being offline.
-
-        Args:
-            service_info: A dict containing information on the services to
-                          restore, which could include snippet and sl4a.
-        """
         self.services.start_all()
-        # Restore sl4a if needed.
-        if service_info['use_sl4a']:
-            self.load_sl4a()
 
     @contextlib.contextmanager
     def handle_usb_disconnect(self):
@@ -719,23 +722,10 @@ class AndroidDevice(object):
                   ad.adb.wait_for_device(timeout=SOME_TIMEOUT)
         """
         self.services.pause_all()
-        # Only need to stop dispatcher because it continuously polling device
-        # It's not necessary to stop snippet and sl4a.
-        if self.sl4a:
-            self.sl4a.stop_event_dispatcher()
         try:
             yield
         finally:
-            self._reconnect_to_services()
-
-    def _reconnect_to_services(self):
-        """Reconnects to services after USB reconnected."""
-        self.services.resume_all()
-        # Restore sl4a if needed.
-        if self.sl4a:
-            self.sl4a.restore_app_connection()
-            # Unpack the 'ed' attribute for compatibility.
-            self.ed = self.sl4a.ed
+            self.services.resume_all()
 
     @property
     def build_info(self):
@@ -865,18 +855,21 @@ class AndroidDevice(object):
         self.services.snippets.remove_snippet_client(name)
 
     def load_sl4a(self):
-        """Start sl4a service on the Android device.
+        """.. deprecated:: 1.8
+
+        Directly register with service manager instead:
+        `self.services.register('sl4a', sl4a_service.Sl4aService)`
+
+        Register sl4a_service directly instead.
+
+        Start sl4a service on the Android device.
 
         Launch sl4a server if not already running, spin up a session on the
         server, and two connections to this session.
-
-        Creates an sl4a client (self.sl4a) with one connection, and one
-        EventDispatcher obj (self.ed) with the other connection.
         """
-        self.sl4a = sl4a_client.Sl4aClient(ad=self)
-        self.sl4a.start_app_and_connect()
-        # Unpack the 'ed' attribute for compatibility.
-        self.ed = self.sl4a.ed
+        self.log.warning('`load_sl4a` is deprecated and scheduled for removal!'
+                         ' Register sl4a as a service instead.')
+        self.services.register('sl4a', sl4a_service.Sl4aService)
 
     def take_bug_report(self,
                         test_name,
@@ -929,17 +922,6 @@ class AndroidDevice(object):
                 ' > "%s"' % full_out_path, shell=True, timeout=timeout)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
-
-    def _terminate_sl4a(self):
-        """Terminate the current sl4a session.
-
-        Send terminate signal to sl4a server; stop dispatcher associated with
-        the session. Clear corresponding droids and dispatchers from cache.
-        """
-        if self.sl4a:
-            self.sl4a.stop_app()
-            self.sl4a = None
-            self.ed = None
 
     def run_iperf_client(self, server_host, extra_args=''):
         """Start iperf client on the device.

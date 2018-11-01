@@ -44,13 +44,17 @@ class AdbError(Error):
         stdout: byte string, the raw stdout of the command.
         stderr: byte string, the raw stderr of the command.
         ret_code: int, the return code of the command.
+        serial: string, the serial of the device the command is executed on.
+            This is an empty string if the adb command is not specific to a
+            device.
     """
 
-    def __init__(self, cmd, stdout, stderr, ret_code):
+    def __init__(self, cmd, stdout, stderr, ret_code, serial=''):
         self.cmd = cmd
         self.stdout = stdout
         self.stderr = stderr
         self.ret_code = ret_code
+        self.serial = serial
 
     def __str__(self):
         return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
@@ -64,11 +68,15 @@ class AdbTimeoutError(Error):
     Args:
         cmd: list of strings, the adb command that timed out
         timeout: float, the number of seconds passed before timing out.
+        serial: string, the serial of the device the command is executed on.
+            This is an empty string if the adb command is not specific to a
+            device.
     """
 
-    def __init__(self, cmd, timeout):
+    def __init__(self, cmd, timeout, serial=''):
         self.cmd = cmd
         self.timeout = timeout
+        self.serial = serial
 
     def __str__(self):
         return 'Timed out executing command "%s" after %ss.' % (
@@ -155,6 +163,7 @@ class AdbProxy(object):
             The output of the adb command run if exit code is 0.
 
         Raises:
+            ValueError: timeout value is invalid.
             AdbError: The adb command exit code is not 0.
             AdbTimeoutError: The adb command timed out.
         """
@@ -162,13 +171,14 @@ class AdbProxy(object):
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
         process = psutil.Process(proc.pid)
         if timeout and timeout <= 0:
-            raise Error('Timeout is not a positive value: %s' % timeout)
+            raise ValueError('Timeout is not a positive value: %s' % timeout)
         if timeout and timeout > 0:
             try:
                 process.wait(timeout=timeout)
             except psutil.TimeoutExpired:
                 process.terminate()
-                raise AdbTimeoutError(cmd=args, timeout=timeout)
+                raise AdbTimeoutError(
+                    cmd=args, timeout=timeout, serial=self.serial)
 
         (out, err) = proc.communicate()
         if stderr:
@@ -179,7 +189,12 @@ class AdbProxy(object):
         if ret == 0:
             return out
         else:
-            raise AdbError(cmd=args, stdout=out, stderr=err, ret_code=ret)
+            raise AdbError(
+                cmd=args,
+                stdout=out,
+                stderr=err,
+                ret_code=ret,
+                serial=self.serial)
 
     def _execute_and_process_stdout(self, args, shell, handler):
         """Executes adb commands and processes the stdout with a handler.

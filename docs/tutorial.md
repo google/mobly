@@ -1,11 +1,10 @@
-Getting started with Mobly
-======
+# Getting started with Mobly
 
 This tutorial shows how to write and execute simple Mobly test cases. We are
 using Android devices here since they are pretty accessible. Mobly supports
 various devices and you can also use your own custom hardware/equipment.
 
-# Setup Requirements
+## Setup Requirements
 
 *   A computer with at least 2 USB ports.
 *   Mobly package and its system dependencies installed on the computer.
@@ -16,7 +15,7 @@ various devices and you can also use your own custom hardware/equipment.
     and make sure it has "USB debugging" enabled. Make sure the device shows up
     in the list printed by `adb devices`.
 
-# Example 1: Hello World!
+## Example 1: Hello World!
  
 Let's start with the simple example of posting "Hello World" on the Android
 device's screen. Create the following files:
@@ -78,7 +77,7 @@ AndroidDevice:
     label: golden_device
 ```
  
-# Example 2: Invoking specific test case
+## Example 2: Invoking specific test case
  
 We have multiple tests written in a test script, and we only want to execute
 a subset of them.
@@ -129,7 +128,7 @@ $ python hello_world_test.py -c sample_config.yml --test_case test_bye test_hell
 Toast notifications appear on your device's screen in the following order:
 "Goodbye!", "Hello World!", "Goodbye!".
  
-# Example 3: User parameters
+## Example 3: User parameters
  
 You could specify user parameters to be passed into your test class in the
 config file.
@@ -158,7 +157,7 @@ In the test script, you could access the user parameter:
       self.dut.mbs.makeToast("I'm not hungry.")
 ```
  
-# Example 4: Multiple Test Beds and Default Test Parameters
+## Example 4: Multiple Test Beds and Default Test Parameters
  
 Multiple test beds can be configured in one configuration file.
  
@@ -200,7 +199,7 @@ A "Hello World!" and a "Goodbye!" toast notification appear on your device's
 screen.
  
  
-# Example 5: Test with Multiple Android devices
+## Example 5: Test with Multiple Android devices
  
 In this example, we use one Android device to discover another Android device
 via bluetooth. This test demonstrates several essential elements in test
@@ -303,7 +302,7 @@ and asynchronous calls, see the [snippet lib examples]
 (https://github.com/google/mobly-snippet-lib/tree/master/examples).
 
 
-# Example 6: Generated Tests
+## Example 6: Generated Tests
 
 A common use case in writing tests is to execute the same test logic multiple
 times, each time with a different set of parameters. Instead of duplicating the

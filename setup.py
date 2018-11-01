@@ -40,7 +40,7 @@ class PyTest(test.test):
 
     def finalize_options(self):
         test.test.finalize_options(self)
-        self.test_args = ['-x', "tests"]
+        self.test_args = ['-x', "tests/mobly"]
         self.test_suite = True
 
     def run_tests(self):
@@ -52,13 +52,13 @@ class PyTest(test.test):
 def main():
     setuptools.setup(
         name='mobly',
-        version='1.7.5',
+        version='1.8',
         maintainer='Ang Li',
         maintainer_email='mobly-github@googlegroups.com',
         description='Automation framework for special end-to-end test cases',
         license='Apache2.0',
         url='https://github.com/google/mobly',
-        download_url='https://github.com/google/mobly/tarball/1.7.5',
+        download_url='https://github.com/google/mobly/tarball/1.8',
         packages=setuptools.find_packages(),
         include_package_data=False,
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
