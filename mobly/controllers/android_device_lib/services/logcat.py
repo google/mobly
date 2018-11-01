@@ -351,6 +351,8 @@ class Logcat(base_service.BaseService):
     def _publisher_task(self):
         """Main publisher thread task."""
         for line in iter(self._publisher_process.stdout.readline, ''):
+            if self._publisher_process.returncode is not None:
+                break
             line = line.decode('utf-8')
             match = self.line_regex.match(line)
             if match is None:

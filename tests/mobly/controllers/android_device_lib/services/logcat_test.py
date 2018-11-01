@@ -505,6 +505,7 @@ class LogcatTest(unittest.TestCase):
         self.assert_event(
             event.trigger, time=parse_date('01-02 03:45:01.200'), level='I',
             pid=1000, tid=1001, tag='MockManager', message='Init complete.')
+        logcat_service.stop()
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -528,6 +529,7 @@ class LogcatTest(unittest.TestCase):
         self.assert_event(
             event.trigger, time=parse_date('01-02 03:45:02.300'), level='I',
             pid=2000, tid=2001, tag='MockService', message='a=0 b=1 c=2.')
+        logcat_service.stop()
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -552,6 +554,7 @@ class LogcatTest(unittest.TestCase):
             event.trigger, time=parse_date('01-02 03:45:02.500'), level='E',
             pid=1000, tid=1010, tag='MockManager',
             message='error_code=\u03c0.')
+        logcat_service.stop()
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -581,6 +584,7 @@ class LogcatTest(unittest.TestCase):
                 int(match_dict[key]), value,
                 'Regex match failed. Expected {}={} but got {}.'.format(
                     key, value, match_dict[key]))
+        logcat_service.stop()
 
     def assert_event(self, actual_trigger, **expected_trigger_dict):
         """Check that the actual trigger values match the expected values.
