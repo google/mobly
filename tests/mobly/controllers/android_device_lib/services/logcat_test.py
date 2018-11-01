@@ -495,7 +495,8 @@ class LogcatTest(unittest.TestCase):
         logcat_service = logcat.Logcat(ad)
         logcat_service._ad._log_path = self.tmp_dir
         logcat_service.start()
-        mock_adb_log_path = logcat_service.adb_logcat_file_path
+        mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
+                                         (ad.model, ad.serial))
 
         with logcat_service.event(pattern='Init complete.') as event:
             with open(mock_adb_log_path, 'w') as f:
@@ -519,7 +520,8 @@ class LogcatTest(unittest.TestCase):
         logcat_service = logcat.Logcat(ad)
         logcat_service._ad._log_path = self.tmp_dir
         logcat_service.start()
-        mock_adb_log_path = logcat_service.adb_logcat_file_path
+        mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
+                                         (ad.model, ad.serial))
 
         with logcat_service.event(tag='*Serv*') as event:
             with open(mock_adb_log_path, 'w') as f:
@@ -543,7 +545,8 @@ class LogcatTest(unittest.TestCase):
         logcat_service = logcat.Logcat(ad)
         logcat_service._ad._log_path = self.tmp_dir
         logcat_service.start()
-        mock_adb_log_path = logcat_service.adb_logcat_file_path
+        mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
+                                         (ad.model, ad.serial))
 
         with logcat_service.event(level='E') as event:
             with open(mock_adb_log_path, 'w') as f:
@@ -568,7 +571,8 @@ class LogcatTest(unittest.TestCase):
         logcat_service = logcat.Logcat(ad)
         logcat_service._ad._log_path = self.tmp_dir
         logcat_service.start()
-        mock_adb_log_path = logcat_service.adb_logcat_file_path
+        mock_adb_log_path = os.path.join(ad.log_path, 'adblog,%s,%s.txt' %
+                                         (ad.model, ad.serial))
         pattern = 'a=(?P<a>\d+) b=(?P<b>\d+) c=(?P<c>\d+)'
         with logcat_service.event(pattern=pattern) as event:
             with open(mock_adb_log_path, 'w') as f:
