@@ -4,9 +4,9 @@
 
 ### Fixes
 * Errors from the final clean up stage are now properly recorded.
-  NOTE: this may expose errors that have long existed in your tests. They are
-  usually caused by your test interrupting controller object life cycle
-  management. Fixing these issues would help keep your test env clean.
+  * NOTE: This may expose errors that have long existed in your tests. They are
+    usually caused by your test interrupting controller object life cycle
+    management. Fixing these issues would help keep your test env clean.
 * Fixed docs config so `http://mobly.readthedocs.io` show all the classes
   properly.
 
