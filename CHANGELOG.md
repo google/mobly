@@ -1,5 +1,16 @@
 # Mobly Release History
 
+## Mobly Release 1.8.1: Fix Final Cleanup Stage Error Capture
+
+### Fixes
+* Errors from the final clean up stage are now properly recorded.
+  * NOTE: This may expose errors that have long existed in your tests. They are
+    usually caused by your test interrupting controller object life cycle
+    management. Fixing these issues would help keep your test env clean.
+* Fixed docs config so `http://mobly.readthedocs.io` show all the classes
+  properly.
+
+
 ## Mobly Release 1.8: Controller Management and `AndroidDevice` Service
 
 ### New
