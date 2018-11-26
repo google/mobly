@@ -41,15 +41,15 @@ class MyService(base_service.BaseService):
 
   @property
   def is_alive(self):
-    """Override base class"""
+    """Override base class."""
     return self._is_alive
-    
+
   def start(self):
-    """Override base class"""
+    """Override base class."""
     self._is_alive = True
-  
+
   def stop(self):
-    """Override base class"""
+    """Override base class."""
     self._is_alive = False
 ```
 
