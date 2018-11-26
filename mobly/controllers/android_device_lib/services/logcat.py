@@ -109,7 +109,7 @@ class Logcat(base_service.BaseService):
         self.pause()
         dest_path = current_test_info.output_path
         utils.create_dir(dest_path)
-        self._ad.log.debug('AdbLog exceprt location: %s', dest_path)
+        self._ad.log.debug('AdbLog excerpt location: %s', dest_path)
         shutil.move(self.adb_logcat_file_path, dest_path)
         self.resume()
 
