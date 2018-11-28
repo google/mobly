@@ -34,18 +34,6 @@ from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
 
-def _patch_print_rpc(snippet, name):
-    """Creates a closure for redicting the rpc output to the print function.
-
-    This is mainly to so that newlines do not get escapted on the console.
-    """
-
-    def print_rpc_closure(*args):
-        print(snippet._rpc(name, *args))
-
-    setattr(snippet, name, print_rpc_closure)
-
-
 class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
     def __init__(self, package):
         self._package = package
@@ -53,11 +41,6 @@ class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
     def _start_services(self, console_env):
         """Overrides superclass."""
         self._ad.load_snippet(name='snippet', package=self._package)
-
-        # Patch the help() RPC to display newlines properly.
-        _patch_print_rpc(self._ad.snippet, 'help')
-
-        # Set the convenince variables for the console.
         console_env['snippet'] = self._ad.snippet
         console_env['s'] = self._ad.snippet
 
