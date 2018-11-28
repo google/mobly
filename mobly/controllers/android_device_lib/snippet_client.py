@@ -13,6 +13,8 @@
 # limitations under the License.
 """JSON RPC interface to Mobly Snippet Lib."""
 
+from __future__ import print_function
+
 import re
 import time
 
@@ -178,8 +180,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
         # Yaaay! We're done!
         self.log.debug('Snippet %s started after %.1fs on host port %s',
-                       self.package,
-                       time.time() - start_time, self.host_port)
+                       self.package, time.time() - start_time, self.host_port)
 
     def restore_app_connection(self, port=None):
         """Restores the app after device got reconnected.
@@ -336,3 +337,23 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             'at the same time performs USB disconnection may fail',
             _SETSID_COMMAND, _NOHUP_COMMAND)
         return ''
+
+    def help(self, print_output=True):
+        """Calls the help RPC, which returns the list of RPC calls available.
+
+        This RPC should normally be used in an interactive console environment
+        where the output should be printed instead of returned. Otherwise,
+        newlines will be escaped, which will make the output difficult to read.
+
+        Args:
+            print_output: A bool for whether the output should be printed.
+
+        Returns:
+            A str containing the help output otherwise None if print_output
+                wasn't set.
+        """
+        help_text = self._rpc('help')
+        if print_output:
+            print(help_text)
+        else:
+            return help_text
