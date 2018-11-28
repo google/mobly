@@ -339,7 +339,11 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         return ''
 
     def help(self, print_output=True):
-        """Calls the help RPC, which returns list of RPC calls available.
+        """Calls the help RPC, which returns the list of RPC calls available.
+
+        This RPC should normally be used in an interactive console environment
+        where the output should be printed instead of returned. Otherwise,
+        newlines will be escaped, which will make the output difficult to read.
 
         Args:
             print_output: A bool for whether the output should be printed.
