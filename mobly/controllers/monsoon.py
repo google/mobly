@@ -526,7 +526,7 @@ class MonsoonData(object):
         hz_str = lines[4].split()[2]
         hz = int(hz_str[:-2])
         voltage_str = lines[2].split()[1]
-        voltage = int(voltage[:-1])
+        voltage = int(voltage_str[:-1])
         lines = lines[6:]
         t = []
         v = []
@@ -690,7 +690,7 @@ class Monsoon(object):
                 prevent tripping Monsoon overvoltage.
         """
         if ramp:
-            self.mon.RampVoltage(mon.start_voltage, volt)
+            self.mon.RampVoltage(self.mon.start_voltage, volt)
         else:
             self.mon.SetVoltage(volt)
 
