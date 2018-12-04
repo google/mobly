@@ -55,7 +55,7 @@ def create(configs):
         # Configs is a list of ints representing serials.
         objs = get_instances(configs)
     else:
-        raise Error('No valid config found in: %s' % configs)
+        raise Exception('No valid config found in: %s' % configs)
     return objs
 
 
