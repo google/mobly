@@ -17,6 +17,7 @@ import copy
 import logging
 import yaml
 
+from mobly import expects
 from mobly import records
 from mobly import signals
 
@@ -49,7 +50,7 @@ def verify_controller_module(module):
 
 
 class ControllerManager(object):
-    """Manages the controller objects for Mobly.
+    """Manages the controller objects for Mobly tests.
 
     This manages the life cycles and info retrieval of all controller objects
     used in a test.
@@ -152,10 +153,9 @@ class ControllerManager(object):
         # logging them.
         for name, module in self._controller_modules.items():
             logging.debug('Destroying %s.', name)
-            try:
+            with expects.expect_no_raises(
+                    'Exception occurred destroying %s.' % name):
                 module.destroy(self._controller_objects[name])
-            except:
-                logging.exception('Exception occurred destroying %s.', name)
         self._controller_objects = collections.OrderedDict()
         self._controller_modules = {}
 
@@ -204,8 +204,11 @@ class ControllerManager(object):
         """
         info_records = []
         for controller_module_name in self._controller_objects.keys():
-            record = self._create_controller_info_record(
-                controller_module_name)
-            if record:
-                info_records.append(record)
+            with expects.expect_no_raises(
+                    'Failed to collect controller info from %s' %
+                    controller_module_name):
+                record = self._create_controller_info_record(
+                    controller_module_name)
+                if record:
+                    info_records.append(record)
         return info_records

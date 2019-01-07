@@ -41,6 +41,7 @@ STAGE_NAME_SETUP_CLASS = 'setup_class'
 STAGE_NAME_SETUP_TEST = 'setup_test'
 STAGE_NAME_TEARDOWN_TEST = 'teardown_test'
 STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
+STAGE_NAME_CLEAN_UP = 'clean_up'
 
 
 class Error(Exception):
@@ -178,43 +179,43 @@ class BaseTestClass(object):
         a device, service, or equipment. To be Mobly compatible, a controller
         module needs to have the following members:
 
-        ```
-        def create(configs):
-            [Required] Creates controller objects from configurations.
+        .. code-block:: python
 
-            Args:
-                configs: A list of serialized data like string/dict. Each
-                    element of the list is a configuration for a controller
-                    object.
+            def create(configs):
+                [Required] Creates controller objects from configurations.
 
-            Returns:
-                A list of objects.
+                Args:
+                    configs: A list of serialized data like string/dict. Each
+                        element of the list is a configuration for a controller
+                        object.
 
-        def destroy(objects):
-            [Required] Destroys controller objects created by the create
-            function. Each controller object shall be properly cleaned up
-            and all the resources held should be released, e.g. memory
-            allocation, sockets, file handlers etc.
+                Returns:
+                    A list of objects.
 
-            Args:
-                A list of controller objects created by the create function.
+            def destroy(objects):
+                [Required] Destroys controller objects created by the create
+                function. Each controller object shall be properly cleaned up
+                and all the resources held should be released, e.g. memory
+                allocation, sockets, file handlers etc.
 
-        def get_info(objects):
-            [Optional] Gets info from the controller objects used in a test
-            run. The info will be included in test_summary.yaml under
-            the key 'ControllerInfo'. Such information could include unique
-            ID, version, or anything that could be useful for describing the
-            test bed and debugging.
+                Args:
+                    A list of controller objects created by the create function.
 
-            Args:
-                objects: A list of controller objects created by the create
-                    function.
+            def get_info(objects):
+                [Optional] Gets info from the controller objects used in a test
+                run. The info will be included in test_summary.yaml under
+                the key 'ControllerInfo'. Such information could include unique
+                ID, version, or anything that could be useful for describing the
+                test bed and debugging.
 
-            Returns:
-                A list of json serializable objects, each represents the
-                info of a controller object. The order of the info object
-                should follow that of the input objects.
-        ```
+                Args:
+                    objects: A list of controller objects created by the create
+                        function.
+
+                Returns:
+                    A list of json serializable objects: each represents the
+                        info of a controller object. The order of the info
+                        object should follow that of the input objects.
 
         Registering a controller module declares a test class's dependency the
         controller. If the module config exists and the module matches the
@@ -292,15 +293,54 @@ class BaseTestClass(object):
     def _setup_class(self):
         """Proxy function to guarantee the base implementation of setup_class
         is called.
+
+        Returns:
+            If `self.results` is returned instead of None, this means something
+            has gone wrong, and the rest of the test class should not execute.
         """
-        with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
-            self.setup_class()
+        # Setup for the class.
+        class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS,
+                                                self.TAG)
+        class_record.test_begin()
+        self.current_test_info = runtime_test_info.RuntimeTestInfo(
+            STAGE_NAME_SETUP_CLASS, self.log_path, class_record)
+        expects.recorder.reset_internal_states(class_record)
+        try:
+            with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
+                self.setup_class()
+        except signals.TestAbortSignal:
+            # Throw abort signals to outer try block for handling.
+            raise
+        except Exception as e:
+            # Setup class failed for unknown reasons.
+            # Fail the class and skip all tests.
+            logging.exception('Error in %s#setup_class.', self.TAG)
+            class_record.test_error(e)
+            self.results.add_class_error(class_record)
+            self._exec_procedure_func(self._on_fail, class_record)
+            class_record.update_record()
+            self.summary_writer.dump(class_record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
+            self._skip_remaining_tests(e)
+            return self.results
+        if expects.recorder.has_error:
+            self._exec_procedure_func(self._on_fail, class_record)
+            class_record.test_error()
+            class_record.update_record()
+            self.summary_writer.dump(class_record.to_dict(),
+                                     records.TestSummaryEntryType.RECORD)
+            self.results.add_class_error(class_record)
+            self._skip_remaining_tests(
+                class_record.termination_signal.exception)
+            return self.results
 
     def setup_class(self):
         """Setup function that will be called before executing any test in the
         class.
 
         To signal setup failure, use asserts or raise your own exception.
+
+        Errors raised from `setup_class` will trigger `on_fail`.
 
         Implementation is optional.
         """
@@ -314,6 +354,7 @@ class BaseTestClass(object):
         record.test_begin()
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
             stage_name, self.log_path, record)
+        expects.recorder.reset_internal_states(record)
         try:
             with self._log_test_stage(stage_name):
                 self.teardown_class()
@@ -327,14 +368,20 @@ class BaseTestClass(object):
             self.results.add_class_error(record)
             self.summary_writer.dump(record.to_dict(),
                                      records.TestSummaryEntryType.RECORD)
+        else:
+            if expects.recorder.has_error:
+                record.update_record()
+                self.results.add_class_error(record)
+                self.summary_writer.dump(record.to_dict(),
+                                         records.TestSummaryEntryType.RECORD)
         finally:
-            # Write controller info and summary to summary file.
-            self._record_controller_info()
-            self._controller_manager.unregister_controllers()
+            self._clean_up()
 
     def teardown_class(self):
         """Teardown function that will be called after all the selected tests in
         the test class have been executed.
+
+        Errors raised from `teardown_class` do not trigger `on_fail`.
 
         Implementation is optional.
         """
@@ -775,28 +822,9 @@ class BaseTestClass(object):
                                  records.TestSummaryEntryType.TEST_NAME_LIST)
         tests = self._get_test_methods(test_names)
         try:
-            # Setup for the class.
-            class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS,
-                                                    self.TAG)
-            class_record.test_begin()
-            self.current_test_info = runtime_test_info.RuntimeTestInfo(
-                STAGE_NAME_SETUP_CLASS, self.log_path, class_record)
-            try:
-                self._setup_class()
-            except signals.TestAbortSignal:
-                # Throw abort signals to outer try block for handling.
-                raise
-            except Exception as e:
-                # Setup class failed for unknown reasons.
-                # Fail the class and skip all tests.
-                logging.exception('Error in %s#setup_class.', self.TAG)
-                class_record.test_error(e)
-                self.results.add_class_error(class_record)
-                self.summary_writer.dump(class_record.to_dict(),
-                                         records.TestSummaryEntryType.RECORD)
-                self._exec_procedure_func(self._on_fail, class_record)
-                self._skip_remaining_tests(e)
-                return self.results
+            setup_class_result = self._setup_class()
+            if setup_class_result:
+                return setup_class_result
             # Run tests in order.
             for test_name, test_method in tests:
                 self.exec_one_test(test_name, test_method)
@@ -817,10 +845,36 @@ class BaseTestClass(object):
             logging.info('Summary for test class %s: %s', self.TAG,
                          self.results.summary_str())
 
+    def _clean_up(self):
+        """The final stage of a test class execution."""
+        stage_name = STAGE_NAME_CLEAN_UP
+        record = records.TestResultRecord(stage_name, self.TAG)
+        record.test_begin()
+        self.current_test_info = runtime_test_info.RuntimeTestInfo(
+            stage_name, self.log_path, record)
+        expects.recorder.reset_internal_states(record)
+        with self._log_test_stage(stage_name):
+            # Write controller info and summary to summary file.
+            self._record_controller_info()
+            self._controller_manager.unregister_controllers()
+            if expects.recorder.has_error:
+                record.test_error()
+                record.update_record()
+                self.results.add_class_error(record)
+                self.summary_writer.dump(record.to_dict(),
+                                         records.TestSummaryEntryType.RECORD)
+
     def clean_up(self):
-        """A function that is executed upon completion of all tests selected in
+        """.. deprecated:: 1.8.1
+
+        Use `teardown_class` instead.
+
+        A function that is executed upon completion of all tests selected in
         the test class.
 
         This function should clean up objects initialized in the constructor by
         user.
+
+        Generally this should not be used as nothing should be instantiated
+        from the constructor of a test class.
         """

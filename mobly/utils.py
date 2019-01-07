@@ -283,7 +283,7 @@ def concurrent_exec(func, param_list):
         return return_vals
 
 
-def start_standing_subprocess(cmd, shell=False):
+def start_standing_subprocess(cmd, shell=False, env=None):
     """Starts a long-running subprocess.
 
     This is not a blocking call and the subprocess started by it should be
@@ -296,6 +296,9 @@ def start_standing_subprocess(cmd, shell=False):
         cmd: string, the command to start the subprocess with.
         shell: bool, True to run this command through the system shell,
             False to invoke it directly. See subprocess.Proc() docs.
+        env: dict, a custom environment to run the standing subprocess. If not
+            specified, inherits the current environment. See subprocess.Popen()
+            docs.
 
     Returns:
         The subprocess that was started.
@@ -306,7 +309,8 @@ def start_standing_subprocess(cmd, shell=False):
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        shell=shell)
+        shell=shell,
+        env=env)
     # Leaving stdin open causes problems for input, e.g. breaking the
     # code.inspect() shell (http://stackoverflow.com/a/25512460/1612937), so
     # explicitly close it assuming it is not needed for standing subprocesses.
@@ -316,7 +320,7 @@ def start_standing_subprocess(cmd, shell=False):
     return proc
 
 
-def stop_standing_subprocess(proc, kill_signal=signal.SIGTERM):
+def stop_standing_subprocess(proc):
     """Stops a subprocess started by start_standing_subprocess.
 
     Before killing the process, we check if the process is running, if it has

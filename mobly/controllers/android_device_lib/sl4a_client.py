@@ -120,8 +120,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
             self._adb.shell('am force-stop com.googlecode.android_scripting')
         finally:
             # Always clean up the adb port
-            if self.host_port:
-                self._adb.forward(['--remove', 'tcp:%d' % self.host_port])
+            self.clear_host_port()
 
     def stop_event_dispatcher(self):
         # Close Event Dispatcher

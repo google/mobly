@@ -16,6 +16,7 @@ from builtins import str
 from builtins import bytes
 
 import mock
+import sys
 from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import adb
@@ -26,6 +27,18 @@ from tests.lib import jsonrpc_client_test_base
 MOCK_PACKAGE_NAME = 'some.package.name'
 MOCK_MISSING_PACKAGE_NAME = 'not.installed'
 JSONRPC_BASE_CLASS = 'mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase'
+
+
+def get_print_function_name():
+    """Gets the name of the print function for mocking.
+
+    Returns:
+        A str representing the print function to mock.
+    """
+    if sys.version_info >= (3, 0):
+        return 'builtins.print'
+    else:
+        return '__builtin__.print'
 
 
 class MockAdbProxy(object):
@@ -448,6 +461,28 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                     'Unexpected EOF waiting for app to start'):
             client.start_app_and_connect()
+
+    @mock.patch(get_print_function_name())
+    def test_help_rpc_when_printing_by_default(self, mock_print):
+        client = self._make_client()
+        mock_rpc = mock.MagicMock()
+        client._rpc = mock_rpc
+
+        result = client.help()
+        mock_rpc.assert_called_once_with('help')
+        self.assertEqual(None, result)
+        mock_print.assert_called_once_with(mock_rpc.return_value)
+
+    @mock.patch(get_print_function_name())
+    def test_help_rpc_when_not_printing(self, mock_print):
+        client = self._make_client()
+        mock_rpc = mock.MagicMock()
+        client._rpc = mock_rpc
+
+        result = client.help(print_output=False)
+        mock_rpc.assert_called_once_with('help')
+        self.assertEqual(mock_rpc.return_value, result)
+        mock_print.assert_not_called()
 
     def _make_client(self, adb_proxy=None):
         adb_proxy = adb_proxy or MockAdbProxy()
