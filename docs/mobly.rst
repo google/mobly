@@ -19,6 +19,14 @@ mobly.asserts module
     :undoc-members:
     :show-inheritance:
 
+mobly.base_instrumentation_test module
+--------------------------------------
+
+.. automodule:: mobly.base_instrumentation_test
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 mobly.base_test module
 ----------------------
 
@@ -35,8 +43,16 @@ mobly.config_parser module
     :undoc-members:
     :show-inheritance:
 
+mobly.controller_manager module
+-------------------------------
+
+.. automodule:: mobly.controller_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 mobly.expects module
---------------------------
+--------------------
 
 .. automodule:: mobly.expects
     :members:

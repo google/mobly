@@ -83,7 +83,8 @@ exclude_patterns = ['_build',
     'Thumbs.db',
     '.DS_Store',
     'tutorial.md',
-    'instrumentation_tutorial.md']
+    'instrumentation_tutorial.md',
+    'android_device_service.md']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'

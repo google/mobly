@@ -53,6 +53,31 @@ class UtilsTest(unittest.TestCase):
             p.stderr.close()
             p.wait()
 
+    @mock.patch('subprocess.Popen')
+    def test_start_standing_subproc_without_env(self, mock_Popen):
+        p = utils.start_standing_subprocess(self.sleep_cmd)
+        mock_Popen.assert_called_with(
+            self.sleep_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            env=None,
+        )
+
+    @mock.patch('subprocess.Popen')
+    def test_start_standing_subproc_with_custom_env(self, mock_Popen):
+        mock_env = mock.MagicMock(spec=dict)
+        p = utils.start_standing_subprocess(self.sleep_cmd, env=mock_env)
+        mock_Popen.assert_called_with(
+            self.sleep_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            env=mock_env,
+        )
+
     def test_stop_standing_subproc(self):
         p = utils.start_standing_subprocess([self.sleep_cmd, '4'])
         p1 = psutil.Process(p.pid)

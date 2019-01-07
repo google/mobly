@@ -23,6 +23,10 @@ class BaseService(object):
     def __init__(self, device, configs=None):
         """Constructor of the class.
 
+        The constructor is the only place to pass in a config. If you need to
+        change the config later, you should unregister the service instance
+        from `ServiceManager` and register again with the new config.
+
         Args:
           device: the device object this service is associated with.
           config: optional configuration defined by the author of the service
@@ -36,12 +40,8 @@ class BaseService(object):
         """True if the service is active; False otherwise."""
         raise NotImplementedError('"is_alive" is a required service property.')
 
-    def start(self, configs=None):
-        """Starts the service.
-
-        Args:
-            configs: optional configs to be passed for startup.
-        """
+    def start(self):
+        """Starts the service."""
         raise NotImplementedError('"start" is a required service method.')
 
     def stop(self):
@@ -84,4 +84,4 @@ class BaseService(object):
         If not implemented, we assume the service is not sensitive to device
         disconnect, and `start` will be called by default.
         """
-        self.start(configs=self._configs)
+        self.start()

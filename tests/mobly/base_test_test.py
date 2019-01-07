@@ -48,15 +48,6 @@ class SomeError(Exception):
     """A custom exception class used for tests in this module."""
 
 
-class MockEmptyBaseTest(base_test.BaseTestClass):
-    """Stub used to test functionalities not specific to a class
-    implementation.
-    """
-
-    def test_func(self):
-        pass
-
-
 class BaseTestTest(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
@@ -1494,6 +1485,122 @@ class BaseTestTest(unittest.TestCase):
         must_call.assert_called_with('ha')
         self.assertEqual(len(bt_cls.results.passed), 2)
 
+    @mock.patch('mobly.records.TestSummaryWriter.dump')
+    def test_expect_in_setup_class(self, mock_dump):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def test_func(self):
+                pass
+
+            def on_fail(self, record):
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, 'setup_class')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+        # Verify the class record is written out correctly.
+        setup_class_dict = mock_dump.call_args_list[1][0][0]
+        self.assertIsNotNone(setup_class_dict['Begin Time'])
+        self.assertIsNotNone(setup_class_dict['End Time'])
+        self.assertEqual(setup_class_dict['Test Name'], 'setup_class')
+
+    @mock.patch('mobly.records.TestSummaryWriter.dump')
+    def test_expect_in_setup_class_and_on_fail(self, mock_dump):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_class(self):
+                expects.expect_true(
+                    False, 'Failure in setup_class', extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def test_func(self):
+                pass
+
+            def on_fail(self, record):
+                expects.expect_true(
+                    False, 'Failure in on_fail', extras=MOCK_EXTRA)
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, 'setup_class')
+        self.assertEqual(actual_record.details, 'Failure in setup_class')
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+        on_fail_error = next(iter(actual_record.extra_errors.values()))
+        self.assertEqual(on_fail_error.details, 'Failure in on_fail')
+        self.assertEqual(on_fail_error.extras, MOCK_EXTRA)
+        # Verify the class record is written out correctly.
+        setup_class_dict = mock_dump.call_args_list[1][0][0]
+        self.assertIsNotNone(setup_class_dict['Begin Time'])
+        self.assertIsNotNone(setup_class_dict['End Time'])
+        self.assertEqual(setup_class_dict['Test Name'], 'setup_class')
+        # Verify the on_fail error is recorded in summary result.
+        extra_error_dict = next(
+            iter(setup_class_dict['Extra Errors'].values()))
+        self.assertEqual(extra_error_dict['Details'], 'Failure in on_fail')
+
+    def test_expect_in_teardown_class(self):
+        must_call = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                pass
+
+            def teardown_class(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        must_call.assert_called_once_with('ha')
+        actual_record = bt_cls.results.error[0]
+        self.assertEqual(actual_record.test_name, 'teardown_class')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
+    def test_expect_in_setup_test(self):
+        must_call = mock.Mock()
+        must_call2 = mock.Mock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_test(self):
+                expects.expect_true(
+                    False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+                must_call('ha')
+
+            def test_func(self):
+                pass
+
+            def on_fail(self, record):
+                must_call2('on_fail')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        must_call.assert_called_once_with('ha')
+        must_call2.assert_called_once_with('on_fail')
+        actual_record = bt_cls.results.failed[0]
+        self.assertEqual(actual_record.test_name, 'test_func')
+        self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+        self.assertEqual(actual_record.extras, MOCK_EXTRA)
+
     def test_expect_in_teardown_test(self):
         must_call = mock.Mock()
         must_call2 = mock.Mock()
@@ -1893,6 +2000,53 @@ class BaseTestTest(unittest.TestCase):
                 'extra_magic': 'haha'
             }
         }])
+
+    def test_record_controller_info_fail(self):
+        mock_test_config = self.mock_test_cls_configs.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        mock_ctrlr_2_config_name = mock_second_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{'serial': 'xxxx', 'magic': 'Magic'}]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        mock_test_config.controller_configs[
+            mock_ctrlr_2_config_name] = copy.copy(my_config)
+
+        class ControllerInfoTest(base_test.BaseTestClass):
+            """Registers two different controller types and modifies controller
+            info at runtime.
+            """
+
+            def setup_class(self):
+                device = self.register_controller(mock_controller)[0]
+                device.who_am_i = mock.MagicMock()
+                device.who_am_i.side_effect = Exception('Some failure')
+                second_controller = self.register_controller(
+                    mock_second_controller)[0]
+                # This should appear in recorded controller info.
+                second_controller.set_magic('haha')
+
+            def test_func(self):
+                pass
+
+        bt_cls = ControllerInfoTest(mock_test_config)
+        bt_cls.run()
+        info = bt_cls.results.controller_info[0]
+        self.assertEqual(len(bt_cls.results.controller_info), 1)
+        self.assertEqual(info.test_class, 'ControllerInfoTest')
+        self.assertEqual(info.controller_name, 'AnotherMagicDevice')
+        self.assertEqual(info.controller_info, [{
+            'MyOtherMagic': {
+                'magic': 'Magic',
+                'extra_magic': 'haha'
+            }
+        }])
+        record = bt_cls.results.error[0]
+        print(record.to_dict())
+        self.assertEqual(record.test_name, 'clean_up')
+        self.assertIsNotNone(record.begin_time)
+        self.assertIsNotNone(record.end_time)
+        expected_msg = ('Failed to collect controller info from '
+                        'mock_controller: Some failure')
+        self.assertEqual(record.details, expected_msg)
 
 
 if __name__ == "__main__":
