@@ -21,7 +21,7 @@ Implement your service per the
 
 Here is a dummy service example:
 
-`my_service.py`
+**my_service.py**
 
 ```python
 class Configs(object):
