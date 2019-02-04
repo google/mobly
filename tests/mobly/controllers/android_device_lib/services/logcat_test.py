@@ -465,8 +465,8 @@ class LogcatTest(unittest.TestCase):
         ad.adb.logcat = mock.MagicMock()
         ad.adb.logcat.side_effect = adb.AdbError(
             cmd='cmd',
-            stdout='',
-            stderr='failed to clear "main" log',
+            stdout=b'',
+            stderr=b'failed to clear "main" log',
             ret_code=1)
         logcat_service = logcat.Logcat(ad)
         logcat_service.clear_adb_log()
