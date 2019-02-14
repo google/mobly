@@ -33,6 +33,9 @@ ADB_PORT_LOCK = threading.Lock()
 # Qualified class name of the default instrumentation test runner.
 DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
 
+# Adb getprop call should never take too long
+DEFAULT_GETPROP_TIMEOUT_SEC = 5
+
 
 class Error(Exception):
     """Base error type for adb proxy module."""
@@ -302,7 +305,9 @@ class AdbProxy(object):
             A string that is the value of the property, or None if the property
             doesn't exist.
         """
-        return self.shell('getprop %s' % prop_name).decode('utf-8').strip()
+        return self.shell(
+            ['getprop', 'prop_name'],
+            timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
 
     def has_shell_command(self, command):
         """Checks to see if a given check command exists on the device.
