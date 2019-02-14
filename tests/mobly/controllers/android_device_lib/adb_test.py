@@ -447,7 +447,7 @@ class AdbTest(unittest.TestCase):
     def test_getprop(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = b'blah'
-            self.assertEqual(adb.AdbProxy().getprop('haha'), b'blah')
+            self.assertEqual(adb.AdbProxy().getprop('haha'), 'blah')
 
     def test_forward(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
