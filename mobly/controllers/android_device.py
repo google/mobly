@@ -987,13 +987,12 @@ class AndroidDevice(object):
     def reboot(self):
         """Reboots the device.
 
-        Terminate all sl4a sessions, reboot the device, wait for device to
-        complete booting, and restart an sl4a session.
+        Generally one should use this method to reboot the device instead of
+        directly calling `adb.reboot`. Because this method gracefully handles
+        the teardown and restoration of running services.
 
-        This is a blocking method.
-
-        This is probably going to print some error messages in console. Only
-        use if there's no other option.
+        This method is blocking and only returns when the reboot has completed
+        and the services restored.
 
         Raises:
             Error: Waiting for completion timed out.
