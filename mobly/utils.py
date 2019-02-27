@@ -452,7 +452,7 @@ def wait_for_standing_subprocess(proc, timeout=None):
 
     If the corresponding subprocess command generates a large amount of output
     and this method is called with a timeout value, then the command can hang
-    indefinitely.
+    indefinitely. See http://go/pylib/subprocess.html#subprocess.Popen.wait
 
     Args:
         p: Subprocess to wait for.
