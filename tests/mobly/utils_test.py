@@ -62,22 +62,46 @@ class UtilsTest(unittest.TestCase):
 
     @mock.patch('threading.Timer')
     @mock.patch('psutil.Popen')
-    def test_run_command_with_custom_params(self, mock_Popen, mock_Timer):
+    def test_run_command_with_default_params(self, mock_Popen, mock_Timer):
         mock_command = mock.MagicMock(spec=dict)
-        mock_timeout = 1234
-        mock_shell = mock.MagicMock(spec=bool)
-        mock_env = mock.MagicMock(spec=dict)
         mock_proc = mock_Popen.return_value
-        mock_proc.pid = 81234
         mock_proc.communicate.return_value = ('fake_out', 'fake_err')
-        mock_proc.returncode = 127
-        out = utils.run_command(
-            mock_command, shell=mock_shell, timeout=mock_timeout, env=mock_env)
-        self.assertEqual(out, (127, 'fake_out', 'fake_err'))
+        mock_proc.returncode = 0
+        out = utils.run_command(mock_command)
+        self.assertEqual(out, (0, 'fake_out', 'fake_err'))
         mock_Popen.assert_called_with(
             mock_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            shell=False,
+            env=None,
+        )
+        mock_Timer.assert_not_called()
+
+    @mock.patch('threading.Timer')
+    @mock.patch('psutil.Popen')
+    def test_run_command_with_custom_params(self, mock_Popen, mock_Timer):
+        mock_command = mock.MagicMock(spec=dict)
+        mock_stdout = mock.MagicMock(spec=int)
+        mock_stderr = mock.MagicMock(spec=int)
+        mock_shell = mock.MagicMock(spec=bool)
+        mock_timeout = 1234
+        mock_env = mock.MagicMock(spec=dict)
+        mock_proc = mock_Popen.return_value
+        mock_proc.communicate.return_value = ('fake_out', 'fake_err')
+        mock_proc.returncode = 127
+        out = utils.run_command(
+            mock_command,
+            stdout=mock_stdout,
+            stderr=mock_stderr,
+            shell=mock_shell,
+            timeout=mock_timeout,
+            env=mock_env)
+        self.assertEqual(out, (127, 'fake_out', 'fake_err'))
+        mock_Popen.assert_called_with(
+            mock_command,
+            stdout=mock_stdout,
+            stderr=mock_stderr,
             shell=mock_shell,
             env=mock_env,
         )

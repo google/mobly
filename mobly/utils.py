@@ -284,7 +284,12 @@ def concurrent_exec(func, param_list):
         return return_vals
 
 
-def run_command(cmd, shell=False, timeout=None, env=None):
+def run_command(cmd,
+                stdout=None,
+                stderr=None,
+                shell=False,
+                timeout=None,
+                env=None):
     """Runs a command in a subprocess.
 
     This function is very similar to subprocess.check_output. The main
@@ -294,6 +299,8 @@ def run_command(cmd, shell=False, timeout=None, env=None):
     Args:
         cmd: string or list of strings, the command to run.
             See subprocess.Popen() documentation.
+        stdout: file handle, the file handle to write std out to. If None is given, then subprocess.PIPE is used. See subprocess.Popen() documentation.
+        stdee: file handle, the file handle to write std err to. If None is given, then subprocess.PIPE is used. See subprocess.Popen() documentation.
         shell: bool, True to run this command through the system shell,
             False to invoke it directly. See subprocess.Popen() docs.
         timeout: float, the number of seconds to wait before timing out.
@@ -310,12 +317,12 @@ def run_command(cmd, shell=False, timeout=None, env=None):
     # psutil may cause import error in certain env. This way the utils module
     # doesn't crash upon import.
     import psutil
+    if stdout is None:
+        stdout = subprocess.PIPE
+    if stderr is None:
+        stderr = subprocess.PIPE
     process = psutil.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=shell,
-        env=env)
+        cmd, stdout=stdout, stderr=stderr, shell=shell, env=env)
     timer = None
     timer_triggered = threading.Event()
     if timeout and timeout > 0:
