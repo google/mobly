@@ -43,13 +43,21 @@ class UtilsTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
+    @unittest.skipIf(platform.system() == 'Windows',
+                     'Windows timeout command errors.')
     def test_run_command(self):
         (ret, out, err) = utils.run_command([self.sleep_cmd, '0.01'])
         self.assertEqual(ret, 0)
 
+    @unittest.skipIf(platform.system() == 'Windows',
+                     'Windows timeout command errors.')
     def test_run_command_with_timeout(self):
-        _ = utils.run_command([self.sleep_cmd, '0.01'], timeout=4)
+        (ret, out, err) = utils.run_command(
+            [self.sleep_cmd, '0.01'], timeout=4)
+        self.assertEqual(ret, 0)
 
+    @unittest.skipIf(platform.system() == 'Windows',
+                     'Windows timeout command errors.')
     def test_run_command_with_timeout_expired(self):
         with self.assertRaises(psutil.TimeoutExpired):
             _ = utils.run_command([self.sleep_cmd, '4'], timeout=0.01)
