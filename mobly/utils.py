@@ -450,8 +450,9 @@ def wait_for_standing_subprocess(proc, timeout=None):
     wait_for_standing_subprocess() to keep waiting for it to terminate on its
     own.
 
-    If the corresponding command generates a large amount of output, then this
-    function can hang indefinitely.
+    If the corresponding subprocess command generates a large amount of output
+    and this method is called with a timeout value, then the command can hang
+    indefinitely.
 
     Args:
         p: Subprocess to wait for.
