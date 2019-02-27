@@ -25,6 +25,7 @@ import re
 import signal
 import string
 import subprocess
+import threading
 import time
 import traceback
 
@@ -281,6 +282,61 @@ def concurrent_exec(func, param_list):
                     params, traceback.format_exc()))
                 return_vals.append(exc)
         return return_vals
+
+
+def run_command(cmd, shell=False, timeout=None, env=None):
+    """Runs a command in a subprocess.
+
+    This function is very similar to subprocess.check_output. The main
+    difference is that it returns the return code and std error output as well
+    as supporting a timeout parameter.
+
+    Args:
+        cmd: string or list of strings, the command to run.
+            See subprocess.Popen() documentation.
+        shell: bool, True to run this command through the system shell,
+            False to invoke it directly. See subprocess.Popen() docs.
+        timeout: float, the number of seconds to wait before timing out.
+            If not specified, no timeout takes effect.
+
+    Returns:
+        A 3-tuple of the consisting of the return code, the std output, and the
+            std error.
+
+    Raises:
+        psutil.TimeoutExpired: The command timed out.
+    """
+    # Only import psutil when actually needed.
+    # psutil may cause import error in certain env. This way the utils module
+    # doesn't crash upon import.
+    import psutil
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=shell,
+        env=env)
+    process = psutil.Process(proc.pid)
+    timer = None
+    timer_triggered = threading.Event()
+    if timeout and timeout > 0:
+        # The wait method on proc will hang when used with PIPEs with large
+        # outputs, so use a timer thread instead.
+
+        def timeout_expired():
+            timer_triggered.set()
+            process.terminate()
+
+        timer = threading.Timer(timeout, timeout_expired)
+        timer.start()
+    # If the command takes longer than the timeout, then the timer thread
+    # will kill the subprocess, which will make it terminate.
+    (out, err) = proc.communicate()
+    if timer is not None:
+        timer.cancel()
+    if timer_triggered.is_set():
+        raise psutil.TimeoutExpired(timeout, pid=proc.pid)
+    return (proc.returncode, out, err)
 
 
 def start_standing_subprocess(cmd, shell=False, env=None):

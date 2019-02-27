@@ -43,6 +43,45 @@ class UtilsTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
+    def test_run_command(self):
+        (ret, out, err) = utils.run_command([self.sleep_cmd, '0.01'])
+        self.assertEqual(ret, 0)
+
+    def test_run_command_with_timeout(self):
+        _ = utils.run_command([self.sleep_cmd, '0.01'], timeout=4)
+
+    def test_run_command_with_timeout_expired(self):
+        with self.assertRaises(psutil.TimeoutExpired):
+            _ = utils.run_command([self.sleep_cmd, '4'], timeout=0.01)
+
+    @mock.patch('threading.Timer')
+    @mock.patch('subprocess.Popen')
+    @mock.patch('psutil.Process')
+    def test_run_command_with_custom_params(self, mock_Process, mock_Popen,
+                                            mock_Timer):
+        mock_timeout = 1234
+        mock_shell = mock.MagicMock(spec=bool)
+        mock_env = mock.MagicMock(spec=dict)
+        mock_proc = mock_Popen.return_value
+        mock_proc.pid = 81234
+        mock_proc.communicate.return_value = ('fake_out', 'fake_err')
+        mock_proc.returncode = 127
+        out = utils.run_command(
+            [self.sleep_cmd, '0.01'],
+            shell=mock_shell,
+            timeout=mock_timeout,
+            env=mock_env)
+        self.assertEqual(out, (127, 'fake_out', 'fake_err'))
+        mock_Popen.assert_called_with(
+            [self.sleep_cmd, '0.01'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=mock_shell,
+            env=mock_env,
+        )
+        mock_Process.assert_called_with(81234)
+        mock_Timer.assert_called_with(1234, mock.ANY)
+
     def test_start_standing_subproc(self):
         try:
             p = utils.start_standing_subprocess([self.sleep_cmd, '0.1'])
