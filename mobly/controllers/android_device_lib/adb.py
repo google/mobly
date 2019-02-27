@@ -21,6 +21,8 @@ import psutil
 import subprocess
 import threading
 
+from mobly import utils
+
 # Command to use for running ADB commands.
 ADB = 'adb'
 
@@ -167,23 +169,17 @@ class AdbProxy(object):
             AdbError: The adb command exit code is not 0.
             AdbTimeoutError: The adb command timed out.
         """
-        proc = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
-        process = psutil.Process(proc.pid)
         if timeout and timeout <= 0:
             raise ValueError('Timeout is not a positive value: %s' % timeout)
-        if timeout and timeout > 0:
-            try:
-                process.wait(timeout=timeout)
-            except psutil.TimeoutExpired:
-                process.terminate()
-                raise AdbTimeoutError(
-                    cmd=args, timeout=timeout, serial=self.serial)
+        try:
+            (ret, out, err) = utils.run_command(
+                args, shell=shell, timeout=timeout)
+        except psutil.TimeoutExpired:
+            raise AdbTimeoutError(
+                cmd=args, timeout=timeout, serial=self.serial)
 
-        (out, err) = proc.communicate()
         if stderr:
             stderr.write(err)
-        ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
                       cli_cmd_to_string(args), out, err, ret)
         if ret == 0:
