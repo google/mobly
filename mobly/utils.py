@@ -299,8 +299,12 @@ def run_command(cmd,
     Args:
         cmd: string or list of strings, the command to run.
             See subprocess.Popen() documentation.
-        stdout: file handle, the file handle to write std out to. If None is given, then subprocess.PIPE is used. See subprocess.Popen() documentation.
-        stdee: file handle, the file handle to write std err to. If None is given, then subprocess.PIPE is used. See subprocess.Popen() documentation.
+        stdout: file handle, the file handle to write std out to. If None is
+            given, then subprocess.PIPE is used. See subprocess.Popen()
+            documentation.
+        stdee: file handle, the file handle to write std err to. If None is
+            given, then subprocess.PIPE is used. See subprocess.Popen()
+            documentation.
         shell: bool, True to run this command through the system shell,
             False to invoke it directly. See subprocess.Popen() docs.
         timeout: float, the number of seconds to wait before timing out.
