@@ -25,6 +25,7 @@ import re
 import signal
 import string
 import subprocess
+import threading
 import time
 import traceback
 
@@ -283,6 +284,71 @@ def concurrent_exec(func, param_list):
         return return_vals
 
 
+def run_command(cmd,
+                stdout=None,
+                stderr=None,
+                shell=False,
+                timeout=None,
+                env=None):
+    """Runs a command in a subprocess.
+
+    This function is very similar to subprocess.check_output. The main
+    difference is that it returns the return code and std error output as well
+    as supporting a timeout parameter.
+
+    Args:
+        cmd: string or list of strings, the command to run.
+            See subprocess.Popen() documentation.
+        stdout: file handle, the file handle to write std out to. If None is
+            given, then subprocess.PIPE is used. See subprocess.Popen()
+            documentation.
+        stdee: file handle, the file handle to write std err to. If None is
+            given, then subprocess.PIPE is used. See subprocess.Popen()
+            documentation.
+        shell: bool, True to run this command through the system shell,
+            False to invoke it directly. See subprocess.Popen() docs.
+        timeout: float, the number of seconds to wait before timing out.
+            If not specified, no timeout takes effect.
+
+    Returns:
+        A 3-tuple of the consisting of the return code, the std output, and the
+            std error.
+
+    Raises:
+        psutil.TimeoutExpired: The command timed out.
+    """
+    # Only import psutil when actually needed.
+    # psutil may cause import error in certain env. This way the utils module
+    # doesn't crash upon import.
+    import psutil
+    if stdout is None:
+        stdout = subprocess.PIPE
+    if stderr is None:
+        stderr = subprocess.PIPE
+    process = psutil.Popen(
+        cmd, stdout=stdout, stderr=stderr, shell=shell, env=env)
+    timer = None
+    timer_triggered = threading.Event()
+    if timeout and timeout > 0:
+        # The wait method on process will hang when used with PIPEs with large
+        # outputs, so use a timer thread instead.
+
+        def timeout_expired():
+            timer_triggered.set()
+            process.terminate()
+
+        timer = threading.Timer(timeout, timeout_expired)
+        timer.start()
+    # If the command takes longer than the timeout, then the timer thread
+    # will kill the subprocess, which will make it terminate.
+    (out, err) = process.communicate()
+    if timer is not None:
+        timer.cancel()
+    if timer_triggered.is_set():
+        raise psutil.TimeoutExpired(timeout, pid=process.pid)
+    return (process.returncode, out, err)
+
+
 def start_standing_subprocess(cmd, shell=False, env=None):
     """Starts a long-running subprocess.
 
@@ -394,6 +460,12 @@ def wait_for_standing_subprocess(proc, timeout=None):
     terminate. Either call stop_standing_subprocess() to kill it, or call
     wait_for_standing_subprocess() to keep waiting for it to terminate on its
     own.
+
+    If the corresponding subprocess command generates a large amount of output
+    and this method is called with a timeout value, then the command can hang
+    indefinitely. See http://go/pylib/subprocess.html#subprocess.Popen.wait
+
+    This function does not support Python 2.
 
     Args:
         p: Subprocess to wait for.
