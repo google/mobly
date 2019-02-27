@@ -310,17 +310,16 @@ def run_command(cmd, shell=False, timeout=None, env=None):
     # psutil may cause import error in certain env. This way the utils module
     # doesn't crash upon import.
     import psutil
-    proc = subprocess.Popen(
+    process = psutil.Popen(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=shell,
         env=env)
-    process = psutil.Process(proc.pid)
     timer = None
     timer_triggered = threading.Event()
     if timeout and timeout > 0:
-        # The wait method on proc will hang when used with PIPEs with large
+        # The wait method on process will hang when used with PIPEs with large
         # outputs, so use a timer thread instead.
 
         def timeout_expired():
@@ -331,12 +330,12 @@ def run_command(cmd, shell=False, timeout=None, env=None):
         timer.start()
     # If the command takes longer than the timeout, then the timer thread
     # will kill the subprocess, which will make it terminate.
-    (out, err) = proc.communicate()
+    (out, err) = process.communicate()
     if timer is not None:
         timer.cancel()
     if timer_triggered.is_set():
-        raise psutil.TimeoutExpired(timeout, pid=proc.pid)
-    return (proc.returncode, out, err)
+        raise psutil.TimeoutExpired(timeout, pid=process.pid)
+    return (process.returncode, out, err)
 
 
 def start_standing_subprocess(cmd, shell=False, env=None):

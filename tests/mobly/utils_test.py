@@ -61,10 +61,8 @@ class UtilsTest(unittest.TestCase):
             _ = utils.run_command(self.sleep_cmd(4000), timeout=0.01)
 
     @mock.patch('threading.Timer')
-    @mock.patch('subprocess.Popen')
-    @mock.patch('psutil.Process')
-    def test_run_command_with_custom_params(self, mock_Process, mock_Popen,
-                                            mock_Timer):
+    @mock.patch('psutil.Popen')
+    def test_run_command_with_custom_params(self, mock_Popen, mock_Timer):
         mock_command = mock.MagicMock(spec=dict)
         mock_timeout = 1234
         mock_shell = mock.MagicMock(spec=bool)
@@ -83,7 +81,6 @@ class UtilsTest(unittest.TestCase):
             shell=mock_shell,
             env=mock_env,
         )
-        mock_Process.assert_called_with(81234)
         mock_Timer.assert_called_with(1234, mock.ANY)
 
     def test_start_standing_subproc(self):
