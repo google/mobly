@@ -44,7 +44,7 @@ class UtilsTest(unittest.TestCase):
 
     def sleep_cmd(self, wait_millis):
         if platform.system() == 'Windows':
-            return ['ping', 'localhost', '-n', '1', '-w', wait_millis]
+            return ['ping', 'localhost', '-n', '1', '-w', str(wait_millis)]
         else:
             return ['sleep', str(wait_millis / 1000.0)]
 
