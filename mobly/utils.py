@@ -458,7 +458,12 @@ def wait_for_standing_subprocess(proc, timeout=None):
         p: Subprocess to wait for.
         timeout: An integer number of seconds to wait before timing out.
     """
-    proc.wait(timeout)
+    # Only import psutil when actually needed.
+    # psutil may cause import error in certain env. This way the utils module
+    # doesn't crash upon import.
+    import psutil
+    process = psutil.Process(proc.pid)
+    process.wait(timeout)
 
 
 def get_available_host_port():

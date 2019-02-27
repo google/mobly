@@ -37,56 +37,35 @@ class UtilsTest(unittest.TestCase):
 
     def setUp(self):
         system = platform.system()
-        self.sleep_cmd = 'timeout' if system == 'Windows' else 'sleep'
         self.tmp_dir = tempfile.mkdtemp()
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
-    @unittest.skipIf(platform.system() == 'Windows',
-                     'Windows timeout command errors.')
+    def sleep_cmd(self, wait_millis):
+        if platform.system() == 'Windows':
+            return ['ping', 'localhost', '-n', '1', '-w', wait_millis]
+        else:
+            return ['sleep', str(wait_millis / 1000.0)]
+
     def test_run_command(self):
-        (ret, out, err) = utils.run_command([self.sleep_cmd, '0.01'])
+        (ret, out, err) = utils.run_command(self.sleep_cmd(10))
         self.assertEqual(ret, 0)
 
-    @unittest.skipIf(platform.system() == 'Windows',
-                     'Windows timeout command errors.')
     def test_run_command_with_timeout(self):
-        (ret, out, err) = utils.run_command(
-            [self.sleep_cmd, '0.01'], timeout=4)
+        (ret, out, err) = utils.run_command(self.sleep_cmd(10), timeout=4)
         self.assertEqual(ret, 0)
 
-    @unittest.skipIf(platform.system() == 'Windows',
-                     'Windows timeout command errors.')
     def test_run_command_with_timeout_expired(self):
         with self.assertRaises(psutil.TimeoutExpired):
-            _ = utils.run_command([self.sleep_cmd, '4'], timeout=0.01)
-
-    @unittest.skipUnless(platform.system() == 'Windows',
-                         'Windows-specific shell test.')
-    def test_run_command_on_windows(self):
-        (ret, out, err) = utils.run_command(
-            'ping localhost -n 1 -w 10', shell=True)
-        self.assertEqual(ret, 0)
-
-    @unittest.skipUnless(platform.system() == 'Windows',
-                         'Windows-specific shell test.')
-    def test_run_command_with_timeout_on_windows(self):
-        (ret, out, err) = utils.run_command(
-            'ping localhost -n 1 -w 10', timeout=4)
-        self.assertEqual(ret, 0)
-
-    @unittest.skipUnless(platform.system() == 'Windows',
-                         'Windows-specific shell test.')
-    def test_run_command_with_timeout_expired_on_windows(self):
-        with self.assertRaises(psutil.TimeoutExpired):
-            _ = utils.run_command('ping localhost -n 1 -w 4000', timeout=0.01)
+            _ = utils.run_command(self.sleep_cmd(4000), timeout=0.01)
 
     @mock.patch('threading.Timer')
     @mock.patch('subprocess.Popen')
     @mock.patch('psutil.Process')
     def test_run_command_with_custom_params(self, mock_Process, mock_Popen,
                                             mock_Timer):
+        mock_command = mock.MagicMock(spec=dict)
         mock_timeout = 1234
         mock_shell = mock.MagicMock(spec=bool)
         mock_env = mock.MagicMock(spec=dict)
@@ -95,13 +74,10 @@ class UtilsTest(unittest.TestCase):
         mock_proc.communicate.return_value = ('fake_out', 'fake_err')
         mock_proc.returncode = 127
         out = utils.run_command(
-            [self.sleep_cmd, '0.01'],
-            shell=mock_shell,
-            timeout=mock_timeout,
-            env=mock_env)
+            mock_command, shell=mock_shell, timeout=mock_timeout, env=mock_env)
         self.assertEqual(out, (127, 'fake_out', 'fake_err'))
         mock_Popen.assert_called_with(
-            [self.sleep_cmd, '0.01'],
+            mock_command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=mock_shell,
@@ -112,19 +88,19 @@ class UtilsTest(unittest.TestCase):
 
     def test_start_standing_subproc(self):
         try:
-            p = utils.start_standing_subprocess([self.sleep_cmd, '0.1'])
+            p = utils.start_standing_subprocess(self.sleep_cmd(10))
             p1 = psutil.Process(p.pid)
             self.assertTrue(p1.is_running())
         finally:
             p.stdout.close()
             p.stderr.close()
-            p.wait()
+            utils.wait_for_standing_subprocess(p)
 
     @mock.patch('subprocess.Popen')
     def test_start_standing_subproc_without_env(self, mock_Popen):
-        p = utils.start_standing_subprocess(self.sleep_cmd)
+        p = utils.start_standing_subprocess(self.sleep_cmd(10))
         mock_Popen.assert_called_with(
-            self.sleep_cmd,
+            self.sleep_cmd(10),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -135,9 +111,9 @@ class UtilsTest(unittest.TestCase):
     @mock.patch('subprocess.Popen')
     def test_start_standing_subproc_with_custom_env(self, mock_Popen):
         mock_env = mock.MagicMock(spec=dict)
-        p = utils.start_standing_subprocess(self.sleep_cmd, env=mock_env)
+        p = utils.start_standing_subprocess(self.sleep_cmd(10), env=mock_env)
         mock_Popen.assert_called_with(
-            self.sleep_cmd,
+            self.sleep_cmd(10),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -146,13 +122,13 @@ class UtilsTest(unittest.TestCase):
         )
 
     def test_stop_standing_subproc(self):
-        p = utils.start_standing_subprocess([self.sleep_cmd, '4'])
+        p = utils.start_standing_subprocess(self.sleep_cmd(4000))
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
 
     def test_stop_standing_subproc_wihtout_pipe(self):
-        p = subprocess.Popen([self.sleep_cmd, '4'])
+        p = subprocess.Popen(self.sleep_cmd(4000))
         self.assertIsNone(p.stdout)
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
