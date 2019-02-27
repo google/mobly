@@ -454,16 +454,13 @@ def wait_for_standing_subprocess(proc, timeout=None):
     and this method is called with a timeout value, then the command can hang
     indefinitely. See http://go/pylib/subprocess.html#subprocess.Popen.wait
 
+    This function does not support Python 2.
+
     Args:
         p: Subprocess to wait for.
         timeout: An integer number of seconds to wait before timing out.
     """
-    # Only import psutil when actually needed.
-    # psutil may cause import error in certain env. This way the utils module
-    # doesn't crash upon import.
-    import psutil
-    process = psutil.Process(proc.pid)
-    process.wait(timeout)
+    proc.wait(timeout)
 
 
 def get_available_host_port():

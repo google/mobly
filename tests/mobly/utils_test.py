@@ -91,7 +91,7 @@ class UtilsTest(unittest.TestCase):
         finally:
             p.stdout.close()
             p.stderr.close()
-            utils.wait_for_standing_subprocess(p)
+            p.wait()
 
     @mock.patch('subprocess.Popen')
     def test_start_standing_subproc_without_env(self, mock_Popen):
