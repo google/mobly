@@ -33,7 +33,7 @@ ADB_PORT_LOCK = threading.Lock()
 # Qualified class name of the default instrumentation test runner.
 DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
 
-# Adb getprop call should never take too long
+# Adb getprop call should never take too long.
 DEFAULT_GETPROP_TIMEOUT_SEC = 5
 
 
