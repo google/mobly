@@ -62,6 +62,26 @@ class UtilsTest(unittest.TestCase):
         with self.assertRaises(psutil.TimeoutExpired):
             _ = utils.run_command([self.sleep_cmd, '4'], timeout=0.01)
 
+    @unittest.skipUnless(platform.system() == 'Windows',
+                         'Windows-specific shell test.')
+    def test_run_command_on_windows(self):
+        (ret, out, err) = utils.run_command(
+            'ping localhost -n 1 -w 10', shell=True)
+        self.assertEqual(ret, 0)
+
+    @unittest.skipUnless(platform.system() == 'Windows',
+                         'Windows-specific shell test.')
+    def test_run_command_with_timeout_on_windows(self):
+        (ret, out, err) = utils.run_command(
+            'ping localhost -n 1 -w 10', timeout=4)
+        self.assertEqual(ret, 0)
+
+    @unittest.skipUnless(platform.system() == 'Windows',
+                         'Windows-specific shell test.')
+    def test_run_command_with_timeout_expired_on_windows(self):
+        with self.assertRaises(psutil.TimeoutExpired):
+            _ = utils.run_command('ping localhost -n 1 -w 4000', timeout=0.01)
+
     @mock.patch('threading.Timer')
     @mock.patch('subprocess.Popen')
     @mock.patch('psutil.Process')
