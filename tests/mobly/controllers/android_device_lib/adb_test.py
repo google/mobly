@@ -444,6 +444,11 @@ class AdbTest(unittest.TestCase):
         self.assertEqual(MOCK_DEFAULT_STDERR,
                          stderr_redirect.getvalue().decode('utf-8'))
 
+    def test_getprop(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.return_value = b'blah'
+            self.assertEqual(adb.AdbProxy().getprop('haha'), 'blah')
+
     def test_forward(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             adb.AdbProxy().forward(MOCK_SHELL_COMMAND)
