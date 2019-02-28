@@ -174,8 +174,8 @@ class AdbTest(unittest.TestCase):
         self._mock_execute_and_process_stdout_process(mock_popen)
         mock_handler = mock.MagicMock()
         mock_popen.return_value.communicate = mock.Mock(
-            return_value=(unexpected_stdout, MOCK_DEFAULT_STDERR.encode(
-                'utf-8')))
+            return_value=(unexpected_stdout,
+                          MOCK_DEFAULT_STDERR.encode('utf-8')))
 
         err = adb.AdbProxy()._execute_and_process_stdout(
             ['fake_cmd'], shell=False, handler=mock_handler)
@@ -448,6 +448,11 @@ class AdbTest(unittest.TestCase):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = b'blah'
             self.assertEqual(adb.AdbProxy().getprop('haha'), 'blah')
+            mock_exec_cmd.assert_called_once_with(
+                ['adb', 'shell', 'getprop', 'haha'],
+                shell=False,
+                stderr=None,
+                timeout=5)
 
     def test_forward(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
