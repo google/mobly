@@ -59,7 +59,7 @@ class UtilsTest(unittest.TestCase):
 
     def test_run_command_with_timeout_expired(self):
         with self.assertRaises(psutil.TimeoutExpired):
-            print(utils.run_command(self.sleep_cmd(4), timeout=0.01))
+            _ = utils.run_command(self.sleep_cmd(4), timeout=0.01)
 
     @mock.patch('threading.Timer')
     @mock.patch('psutil.Popen')
