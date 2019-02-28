@@ -306,7 +306,7 @@ class AdbProxy(object):
             doesn't exist.
         """
         return self.shell(
-            ['getprop', 'prop_name'],
+            ['getprop', prop_name],
             timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
 
     def has_shell_command(self, command):
