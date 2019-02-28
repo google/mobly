@@ -42,23 +42,24 @@ class UtilsTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
-    def sleep_cmd(self, wait_millis):
+    def sleep_cmd(self, wait_secs):
         if platform.system() == 'Windows':
-            return ['ping', 'localhost', '-n', '1', '-w', str(wait_millis)]
+            python_code = ['import time', 'time.sleep(%s)' % wait_secs]
+            return ['python', '-c', 'exec("%s")' % r'\r\n'.join(python_code)]
         else:
-            return ['sleep', str(wait_millis / 1000.0)]
+            return ['sleep', str(wait_secs)]
 
     def test_run_command(self):
-        (ret, out, err) = utils.run_command(self.sleep_cmd(10))
+        (ret, out, err) = utils.run_command(self.sleep_cmd(0.01))
         self.assertEqual(ret, 0)
 
     def test_run_command_with_timeout(self):
-        (ret, out, err) = utils.run_command(self.sleep_cmd(10), timeout=4)
+        (ret, out, err) = utils.run_command(self.sleep_cmd(0.01), timeout=4)
         self.assertEqual(ret, 0)
 
     def test_run_command_with_timeout_expired(self):
         with self.assertRaises(psutil.TimeoutExpired):
-            _ = utils.run_command(self.sleep_cmd(4000), timeout=0.01)
+            _ = utils.run_command(self.sleep_cmd(4), timeout=0.01)
 
     @mock.patch('threading.Timer')
     @mock.patch('psutil.Popen')
@@ -109,7 +110,7 @@ class UtilsTest(unittest.TestCase):
 
     def test_start_standing_subproc(self):
         try:
-            p = utils.start_standing_subprocess(self.sleep_cmd(10))
+            p = utils.start_standing_subprocess(self.sleep_cmd(0.01))
             p1 = psutil.Process(p.pid)
             self.assertTrue(p1.is_running())
         finally:
@@ -119,9 +120,9 @@ class UtilsTest(unittest.TestCase):
 
     @mock.patch('subprocess.Popen')
     def test_start_standing_subproc_without_env(self, mock_Popen):
-        p = utils.start_standing_subprocess(self.sleep_cmd(10))
+        p = utils.start_standing_subprocess(self.sleep_cmd(0.01))
         mock_Popen.assert_called_with(
-            self.sleep_cmd(10),
+            self.sleep_cmd(0.01),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -132,9 +133,9 @@ class UtilsTest(unittest.TestCase):
     @mock.patch('subprocess.Popen')
     def test_start_standing_subproc_with_custom_env(self, mock_Popen):
         mock_env = mock.MagicMock(spec=dict)
-        p = utils.start_standing_subprocess(self.sleep_cmd(10), env=mock_env)
+        p = utils.start_standing_subprocess(self.sleep_cmd(0.01), env=mock_env)
         mock_Popen.assert_called_with(
-            self.sleep_cmd(10),
+            self.sleep_cmd(0.01),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -143,13 +144,13 @@ class UtilsTest(unittest.TestCase):
         )
 
     def test_stop_standing_subproc(self):
-        p = utils.start_standing_subprocess(self.sleep_cmd(4000))
+        p = utils.start_standing_subprocess(self.sleep_cmd(4))
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
 
     def test_stop_standing_subproc_wihtout_pipe(self):
-        p = subprocess.Popen(self.sleep_cmd(4000))
+        p = subprocess.Popen(self.sleep_cmd(4))
         self.assertIsNone(p.stdout)
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
