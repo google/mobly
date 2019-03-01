@@ -43,18 +43,16 @@ def assert_equal(first, second, msg=None, extras=None):
         extras: An optional field for extra information to be included in
             test result.
     """
+    my_msg = None
     try:
         _pyunit_proxy.assertEqual(first, second)
-    except Exception as e:
-        # We have to catch all here for py2/py3 compatibility.
-        # In py2, assertEqual throws exceptions.AssertionError, which does not
-        # exist in py3. In py3, it throws unittest.case.failureException, which
-        # does not exist in py2. To accommodate using explicit catch complicates
-        # the code like hell, so I opted to catch all instead.
+    except AssertionError as e:
         my_msg = str(e)
         if msg:
             my_msg = "%s %s" % (my_msg, msg)
-        fail(my_msg, extras=extras)
+
+    if my_msg is not None:
+        raise signals.TestFailure(my_msg, extras=extras)
 
 
 def assert_raises(expected_exception, extras=None, *args, **kwargs):

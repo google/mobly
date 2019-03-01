@@ -59,7 +59,7 @@ def main():
         license='Apache2.0',
         url='https://github.com/google/mobly',
         download_url='https://github.com/google/mobly/tarball/1.8.1',
-        packages=setuptools.find_packages(exclude=['tests']),
+        packages=setuptools.find_packages(),
         include_package_data=False,
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
         tests_require=[
