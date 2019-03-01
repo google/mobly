@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import platform
 import setuptools
 from setuptools.command import test
@@ -50,6 +51,7 @@ class PyTest(test.test):
 
 
 def main():
+    parent_dir = os.path.dirname(__file__)
     setuptools.setup(
         name='mobly',
         version='1.8.1',
@@ -59,9 +61,11 @@ def main():
         license='Apache2.0',
         url='https://github.com/google/mobly',
         download_url='https://github.com/google/mobly/tarball/1.8.1',
-        packages=setuptools.find_packages(),
+        package_dir={'mobly':'mobly'},
+        packages=setuptools.find_packages(exclude=['tests']),
         include_package_data=False,
-        scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
+        scripts=[os.path.join(parent_dir, 'tools', 'sl4a_shell.py'),
+                 os.path.join(parent_dir, 'tools', 'snippet_shell.py')],
         tests_require=[
             'mock',
             'pytest',
