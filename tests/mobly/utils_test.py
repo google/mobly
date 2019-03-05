@@ -235,6 +235,12 @@ class UtilsTest(unittest.TestCase):
             utils.load_file_to_base64_str(tmp_file_path),
             expected_base64_encoding)
 
+    def test_cli_cmd_to_string(self):
+        cmd = ['"adb"', 'a b', 'c//']
+        self.assertEqual(utils.cli_cmd_to_string(cmd), '\'"adb"\' \'a b\' c//')
+        cmd = 'adb -s meme do something ab_cd'
+        self.assertEqual(utils.cli_cmd_to_string(cmd), cmd)
+
 
 if __name__ == '__main__':
     unittest.main()

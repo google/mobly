@@ -63,7 +63,7 @@ class AdbError(Error):
 
     def __str__(self):
         return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
-                ) % (cli_cmd_to_string(self.cmd), self.ret_code, self.stdout,
+                ) % (utils.cli_cmd_to_string(self.cmd), self.ret_code, self.stdout,
                      self.stderr)
 
 
@@ -85,7 +85,7 @@ class AdbTimeoutError(Error):
 
     def __str__(self):
         return 'Timed out executing command "%s" after %ss.' % (
-            cli_cmd_to_string(self.cmd), self.timeout)
+            utils.cli_cmd_to_string(self.cmd), self.timeout)
 
 
 def list_occupied_adb_ports():
@@ -108,21 +108,6 @@ def list_occupied_adb_ports():
             continue
         used_ports.append(int(tokens[1]))
     return used_ports
-
-
-def cli_cmd_to_string(args):
-    """Converts a cmd arg list to string.
-
-    Args:
-        args: list of strings, the arguments of a command.
-
-    Returns:
-        String representation of the command.
-    """
-    if isinstance(args, basestring):
-        # Return directly if it's already a string.
-        return args
-    return ' '.join([pipes.quote(arg) for arg in args])
 
 
 class AdbProxy(object):
@@ -184,7 +169,7 @@ class AdbProxy(object):
         if stderr:
             stderr.write(err)
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
-                      cli_cmd_to_string(args), out, err, ret)
+                      utils.cli_cmd_to_string(args), out, err, ret)
         if ret == 0:
             return out
         else:
@@ -237,7 +222,7 @@ class AdbProxy(object):
 
         ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
-                      cli_cmd_to_string(args), out, err, ret)
+                      utils.cli_cmd_to_string(args), out, err, ret)
         if ret == 0:
             return err
         else:
@@ -262,7 +247,7 @@ class AdbProxy(object):
         args = args or ''
         name = raw_name.replace('_', '-')
         if shell:
-            args = cli_cmd_to_string(args)
+            args = utils.cli_cmd_to_string(args)
             # Add quotes around "adb" in case the ADB path contains spaces. This
             # is pretty common on Windows (e.g. Program Files).
             if self.serial:
