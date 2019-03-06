@@ -563,7 +563,7 @@ class BaseTestClass(object):
         self.summary_writer.dump(content,
                                  records.TestSummaryEntryType.USER_DATA)
 
-    def exec_one_test(self, test_name, test_method, args=(), **kwargs):
+    def exec_one_test(self, test_name, test_method):
         """Executes one test and update test results.
 
         Executes setup_test, the test method, and teardown_test; then creates a
@@ -571,10 +571,8 @@ class BaseTestClass(object):
         the record to the test class's test results.
 
         Args:
-            test_name: Name of the test.
-            test_method: The test method.
-            args: A tuple of params.
-            kwargs: Extra kwargs.
+            test_name: string, Name of the test.
+            test_method: function, The test method to execute.
         """
         tr_record = records.TestResultRecord(test_name, self.TAG)
         tr_record.test_begin()
@@ -591,10 +589,7 @@ class BaseTestClass(object):
                 except signals.TestFailure as e:
                     raise_with_traceback(
                         signals.TestError(e.details, e.extras))
-                if args or kwargs:
-                    test_method(*args, **kwargs)
-                else:
-                    test_method()
+                test_method()
             except signals.TestPass:
                 raise
             except Exception:
