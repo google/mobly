@@ -18,6 +18,7 @@ import datetime
 import io
 import logging
 import os
+import pipes
 import platform
 import portpicker
 import random
@@ -28,6 +29,8 @@ import subprocess
 import threading
 import time
 import traceback
+
+from past.builtins import basestring
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
@@ -517,3 +520,17 @@ def grep(regex, output):
         if re.search(regex, line):
             results.append(line.strip())
     return results
+
+def cli_cmd_to_string(args):
+    """Converts a cmd arg list to string.
+
+    Args:
+        args: list of strings, the arguments of a command.
+
+    Returns:
+        String representation of the command.
+    """
+    if isinstance(args, basestring):
+        # Return directly if it's already a string.
+        return args
+    return ' '.join([pipes.quote(arg) for arg in args])
