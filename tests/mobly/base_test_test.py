@@ -2060,11 +2060,21 @@ class BaseTestTest(unittest.TestCase):
         actual_record = bt_cls.results.passed[0]
         self.assertEqual(actual_record.UID, 'some-uid')
 
-    def test_uid(self):
+    def test_uid_not_specified(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.passed[0]
+        self.assertIsNone(actual_record.UID)
+
+    def test_uid_apply_on_non_test(self):
         with self.assertRaisesRegex(
                 records.Error,
-                'Cannot apply "uid" decorator to "not_a_test" because it is not a'
-                ' Mobly test method.'):
+                'Cannot apply "uid" decorator to "not_a_test" because it is '
+                'not a Mobly test method.'):
 
             class MockBaseTest(base_test.BaseTestClass):
                 @records.uid('some-uid')
