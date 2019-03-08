@@ -1880,8 +1880,8 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
-        self.assertEqual(bt_cls.results.passed[0].UID, 'uid-1-2')
-        self.assertEqual(bt_cls.results.passed[1].UID, 'uid-3-4')
+        self.assertEqual(bt_cls.results.passed[0].uid, 'uid-1-2')
+        self.assertEqual(bt_cls.results.passed[1].uid, 'uid-3-4')
 
     def test_generate_tests_with_none_uid(self):
         class MockBaseTest(base_test.BaseTestClass):
@@ -2105,7 +2105,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.passed[0]
-        self.assertEqual(actual_record.UID, 'some-uid')
+        self.assertEqual(actual_record.uid, 'some-uid')
 
     def test_uid_not_specified(self):
         class MockBaseTest(base_test.BaseTestClass):
@@ -2115,7 +2115,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
         actual_record = bt_cls.results.passed[0]
-        self.assertIsNone(actual_record.UID)
+        self.assertIsNone(actual_record.uid)
 
     def test_uid_apply_on_non_test(self):
         with self.assertRaisesRegex(
@@ -2129,7 +2129,7 @@ class BaseTestTest(unittest.TestCase):
                     pass
 
     def test_uid_is_none(self):
-        with self.assertRaisesRegex(records.Error, 'UID cannot be None.'):
+        with self.assertRaisesRegex(ValueError, 'UID cannot be None.'):
 
             class MockBaseTest(base_test.BaseTestClass):
                 @records.uid(None)

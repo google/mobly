@@ -563,21 +563,6 @@ class BaseTestClass(object):
         self.summary_writer.dump(content,
                                  records.TestSummaryEntryType.USER_DATA)
 
-    @staticmethod
-    def _extract_uid(test_method):
-        """Extracts a test's unique identifier (UID) specified by user.
-
-        Args:
-            test_method: function, the test method whose UID to extract.
-
-        Returns:
-            string, the UID as specified by user if one exists; None otherwise.
-        """
-        try:
-            return test_method.uid
-        except AttributeError:
-            pass
-
     def exec_one_test(self, test_name, test_method):
         """Executes one test and update test results.
 
@@ -590,7 +575,7 @@ class BaseTestClass(object):
             test_method: function, The test method to execute.
         """
         tr_record = records.TestResultRecord(test_name, self.TAG)
-        tr_record.UID = BaseTestClass._extract_uid(test_method)
+        tr_record.uid = getattr(test_method, 'uid', None)
         tr_record.test_begin()
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
             test_name, self.log_path, tr_record)
@@ -712,7 +697,7 @@ class BaseTestClass(object):
             if uid_func is not None:
                 uid = uid_func(*args)
                 if uid is None:
-                    raise Error('%s UID cannot be None.' % root_error_msg)
+                    raise ValueError('%s UID cannot be None.' % root_error_msg)
                 setattr(test_func, 'uid', uid)
             self._generated_test_table[test_name] = test_func
 

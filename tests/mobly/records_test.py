@@ -427,12 +427,12 @@ class RecordsTest(unittest.TestCase):
         self.assertEqual(tr.controller_info[0].controller_info,
                          ['magicA', 'magicB'])
 
-    @records.uid('some-uuid')
-    def test_uid_helper(self):
-        """Dummy test used by `test_uid` for testing the uid decorator."""
-
     def test_uid(self):
-        self.assertEqual(self.test_uid_helper.uid, 'some-uuid')
+        @records.uid('some-uuid')
+        def test_uid_helper():
+            """Dummy test used by `test_uid` for testing the uid decorator."""
+
+        self.assertEqual(test_uid_helper.uid, 'some-uuid')
 
 
 if __name__ == '__main__':
