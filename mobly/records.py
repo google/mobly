@@ -17,6 +17,7 @@
 import collections
 import copy
 import enum
+import functools
 import io
 import logging
 import sys
@@ -32,6 +33,38 @@ from mobly import utils
 OUTPUT_FILE_INFO_LOG = 'test_log.INFO'
 OUTPUT_FILE_DEBUG_LOG = 'test_log.DEBUG'
 OUTPUT_FILE_SUMMARY = 'test_summary.yaml'
+
+
+class Error(Exception):
+    """Raised for errors in record module members."""
+
+
+def uid(uid):
+    """Decorator specifying the unique identifier (UID) of a test case.
+
+    The UID will be recorded in the test's record when executed by Mobly.
+
+    Note a common UID system is the Universal Unitque Identifier (UUID), but
+    we are not limiting people to use UUID, hence the more generic name `UID`.
+
+    Args:
+        uid: string, the uid for the decorated test function.
+    """
+
+    def decorate(test_func):
+        func_name = test_func.__name__
+        if not func_name.startswith('test_'):
+            raise Error('Cannot apply "uid" decorator to "%s" because it is '
+                        'not a Mobly test method.' % func_name)
+
+        @functools.wraps(test_func)
+        def wrapper(*args, **kwargs):
+            return test_func(*args, **kwargs)
+
+        setattr(wrapper, 'uid', uid)
+        return wrapper
+
+    return decorate
 
 
 class TestSummaryEntryType(enum.Enum):

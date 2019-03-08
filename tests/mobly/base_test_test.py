@@ -1925,7 +1925,8 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, "setup_generated_tests")
         self.assertEqual(
             actual_record.details,
-            'Test name "ha" already exists, cannot be duplicated!')
+            'Encountered error during test generation of "logic": Test name '
+            '"ha" already exists, cannot be duplicated!')
         expected_summary = ("Error 1, Executed 0, Failed 0, Passed 0, "
                             "Requested 0, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
@@ -2047,6 +2048,28 @@ class BaseTestTest(unittest.TestCase):
         expected_msg = ('Failed to collect controller info from '
                         'mock_controller: Some failure')
         self.assertEqual(record.details, expected_msg)
+
+    def test_uid(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            @records.uid('some-uid')
+            def test_func(self):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.passed[0]
+        self.assertEqual(actual_record.UID, 'some-uid')
+
+    def test_uid(self):
+        with self.assertRaisesRegex(
+                records.Error,
+                'Cannot apply "uid" decorator to "not_a_test" because it is not a'
+                ' Mobly test method.'):
+
+            class MockBaseTest(base_test.BaseTestClass):
+                @records.uid('some-uid')
+                def not_a_test(self):
+                    pass
 
 
 if __name__ == "__main__":
