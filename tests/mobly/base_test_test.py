@@ -1855,8 +1855,55 @@ class BaseTestTest(unittest.TestCase):
         bt_cls.run()
         self.assertEqual(len(bt_cls.results.requested), 2)
         self.assertEqual(len(bt_cls.results.passed), 2)
+        self.assertIsNone(bt_cls.results.passed[0].uid)
+        self.assertIsNone(bt_cls.results.passed[1].uid)
         self.assertEqual(bt_cls.results.passed[0].test_name, 'test_1_2')
         self.assertEqual(bt_cls.results.passed[1].test_name, 'test_3_4')
+
+    def test_generate_tests_with_uid(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_generated_tests(self):
+                self.generate_tests(
+                    test_logic=self.logic,
+                    name_func=self.name_gen,
+                    uid_func=self.uid_logic,
+                    arg_sets=[(1, 2), (3, 4)])
+
+            def name_gen(self, a, b):
+                return 'test_%s_%s' % (a, b)
+
+            def uid_logic(self, a, b):
+                return 'uid-%s-%s' % (a, b)
+
+            def logic(self, a, b):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        self.assertEqual(bt_cls.results.passed[0].UID, 'uid-1-2')
+        self.assertEqual(bt_cls.results.passed[1].UID, 'uid-3-4')
+
+    def test_generate_tests_with_none_uid(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def setup_generated_tests(self):
+                self.generate_tests(
+                    test_logic=self.logic,
+                    name_func=self.name_gen,
+                    uid_func=self.uid_logic,
+                    arg_sets=[(1, 2), (3, 4)])
+
+            def name_gen(self, a, b):
+                return 'test_%s_%s' % (a, b)
+
+            def uid_logic(self, a, b):
+                return None
+
+            def logic(self, a, b):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        self.assertIn('UID cannot be None', bt_cls.results.error[0].details)
 
     def test_generate_tests_selected_run(self):
         class MockBaseTest(base_test.BaseTestClass):
@@ -2078,6 +2125,14 @@ class BaseTestTest(unittest.TestCase):
 
             class MockBaseTest(base_test.BaseTestClass):
                 @records.uid('some-uid')
+                def not_a_test(self):
+                    pass
+
+    def test_uid_is_none(self):
+        with self.assertRaisesRegex(records.Error, 'UID cannot be None.'):
+
+            class MockBaseTest(base_test.BaseTestClass):
+                @records.uid(None)
                 def not_a_test(self):
                     pass
 

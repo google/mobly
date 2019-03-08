@@ -50,6 +50,8 @@ def uid(uid):
     Args:
         uid: string, the uid for the decorated test function.
     """
+    if uid is None:
+        raise Error('UID cannot be None.')
 
     def decorate(test_func):
         func_name = test_func.__name__

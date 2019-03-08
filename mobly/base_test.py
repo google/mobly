@@ -711,6 +711,8 @@ class BaseTestClass(object):
             test_func = functools.partial(test_logic, *args)
             if uid_func is not None:
                 uid = uid_func(*args)
+                if uid is None:
+                    raise Error('%s UID cannot be None.' % root_error_msg)
                 setattr(test_func, 'uid', uid)
             self._generated_test_table[test_name] = test_func
 
