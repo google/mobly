@@ -683,10 +683,13 @@ class BaseTestClass(object):
                 the test logic function.
             arg_sets: a list of tuples, each tuple is a set of arguments to be
                 passed to the test logic function and name function.
-            uid_func: function, the fu
+            uid_func: function, a function that takes the same arguments as the
+                test logic function and returns a string that is the
+                corresponding UID.
         """
         self._assert_function_name_in_stack(STAGE_NAME_SETUP_GENERATED_TESTS)
-        root_error_msg = 'Encountered error during test generation of "%s":' % test_logic.__name__
+        root_error_msg = ('Encountered error during test generation of "%s":'
+                          ) % test_logic.__name__
         for args in arg_sets:
             test_name = name_func(*args)
             if test_name in self.get_existing_test_names():
