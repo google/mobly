@@ -51,6 +51,8 @@ def assert_equal(first, second, msg=None, extras=None):
         if msg:
             my_msg = "%s %s" % (my_msg, msg)
 
+    # This raise statement is outside of the above except statement to prevent
+    # Python3's exception message from having two tracebacks.
     if my_msg is not None:
         raise signals.TestFailure(my_msg, extras=extras)
 
