@@ -16,7 +16,6 @@ from builtins import str
 from past.builtins import basestring
 
 import logging
-import pipes
 import psutil
 import subprocess
 import threading
