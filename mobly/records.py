@@ -54,11 +54,6 @@ def uid(uid):
         raise ValueError('UID cannot be None.')
 
     def decorate(test_func):
-        func_name = test_func.__name__
-        if not func_name.startswith('test_'):
-            raise Error('Cannot apply "uid" decorator to "%s" because it is '
-                        'not a Mobly test method.' % func_name)
-
         @functools.wraps(test_func)
         def wrapper(*args, **kwargs):
             return test_func(*args, **kwargs)
