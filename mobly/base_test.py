@@ -575,6 +575,7 @@ class BaseTestClass(object):
             test_method: function, The test method to execute.
         """
         tr_record = records.TestResultRecord(test_name, self.TAG)
+        tr_record.uid = getattr(test_method, 'uid', None)
         tr_record.test_begin()
         self.current_test_info = runtime_test_info.RuntimeTestInfo(
             test_name, self.log_path, tr_record)
@@ -664,7 +665,7 @@ class BaseTestClass(object):
         raise Error('"%s" cannot be called outside of %s' %
                     (caller_frames[1][3], expected_func_name))
 
-    def generate_tests(self, test_logic, name_func, arg_sets):
+    def generate_tests(self, test_logic, name_func, arg_sets, uid_func=None):
         """Generates tests in the test class.
 
         This function has to be called inside a test class's
@@ -674,6 +675,9 @@ class BaseTestClass(object):
         parameter sets. This way we reduce code repetition and improve test
         scalability.
 
+        Users can provide an optional function to specify the UID of each test.
+        Not all generated tests are required to have UID.
+
         Args:
             test_logic: function, the common logic shared by all the generated
                 tests.
@@ -682,15 +686,26 @@ class BaseTestClass(object):
                 the test logic function.
             arg_sets: a list of tuples, each tuple is a set of arguments to be
                 passed to the test logic function and name function.
+            uid_func: function, an optional function that takes the same
+                arguments as the test logic function and returns a string that
+                is the corresponding UID.
         """
         self._assert_function_name_in_stack(STAGE_NAME_SETUP_GENERATED_TESTS)
+        root_msg = 'During test generation of "%s":' % test_logic.__name__
         for args in arg_sets:
             test_name = name_func(*args)
             if test_name in self.get_existing_test_names():
                 raise Error(
-                    'Test name "%s" already exists, cannot be duplicated!' %
-                    test_name)
+                    '%s Test name "%s" already exists, cannot be duplicated!' %
+                    (root_msg, test_name))
             test_func = functools.partial(test_logic, *args)
+            if uid_func is not None:
+                uid = uid_func(*args)
+                if uid is None:
+                    logging.warning('%s UID for arg set %s is None.', root_msg,
+                                    args)
+                else:
+                    setattr(test_func, 'uid', uid)
             self._generated_test_table[test_name] = test_func
 
     def _safe_exec_func(self, func, *args):
