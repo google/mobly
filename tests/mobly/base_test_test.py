@@ -1896,14 +1896,17 @@ class BaseTestTest(unittest.TestCase):
                 return 'test_%s_%s' % (a, b)
 
             def uid_logic(self, a, b):
-                return None
+                if a == 1:
+                    return None
+                return 'uid-3-4'
 
             def logic(self, a, b):
                 pass
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run()
-        self.assertIn('UID cannot be None', bt_cls.results.error[0].details)
+        self.assertIsNone(bt_cls.results.passed[0].uid)
+        self.assertEqual(bt_cls.results.passed[1].uid, 'uid-3-4')
 
     def test_generate_tests_selected_run(self):
         class MockBaseTest(base_test.BaseTestClass):
@@ -1972,8 +1975,8 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, "setup_generated_tests")
         self.assertEqual(
             actual_record.details,
-            'Encountered error during test generation of "logic": Test name '
-            '"ha" already exists, cannot be duplicated!')
+            'During test generation of "logic": Test name "ha" already exists'
+            ', cannot be duplicated!')
         expected_summary = ("Error 1, Executed 0, Failed 0, Passed 0, "
                             "Requested 0, Skipped 0")
         self.assertEqual(bt_cls.results.summary_str(), expected_summary)
