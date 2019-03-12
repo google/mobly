@@ -44,6 +44,9 @@ def uid(uid):
 
     The UID will be recorded in the test's record when executed by Mobly.
 
+    If you use any other decorator for the test method, you may want to use
+    this as the outer-most one.
+
     Note a common UID system is the Universal Unitque Identifier (UUID), but
     we are not limiting people to use UUID, hence the more generic name `UID`.
 
