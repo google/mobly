@@ -622,38 +622,6 @@ class AndroidDevice(object):
         self.adb.serial = new_serial
         self.fastboot.serial = new_serial
 
-    def start_services(self, clear_log=True):
-        """.. deprecated:: 1.8
-
-        Use service manager `self.services` instead.
-
-        Starts long running services on the android device, like adb logcat
-        capture.
-        """
-        self.services.start_all()
-
-    def start_adb_logcat(self, clear_log=True):
-        """.. deprecated:: 1.8
-
-        Use `self.services.logcat.start` instead.
-        """
-        self.services.logcat.start()
-
-    def stop_adb_logcat(self):
-        """.. deprecated:: 1.8
-
-        Use `self.services.logcat.stop` instead.
-        """
-        self.services.logcat.stop()
-
-    def stop_services(self):
-        """.. deprecated:: 1.8
-
-        Use service manager `self.services` instead.
-
-        Stops long running services on the Android device."""
-        self.services.stop_all()
-
     @contextlib.contextmanager
     def handle_reboot(self):
         """Properly manage the service life cycle when the device needs to
@@ -853,23 +821,6 @@ class AndroidDevice(object):
             SnippetError: The given snippet name is not registered.
         """
         self.services.snippets.remove_snippet_client(name)
-
-    def load_sl4a(self):
-        """.. deprecated:: 1.8
-
-        Directly register with service manager instead:
-        `self.services.register('sl4a', sl4a_service.Sl4aService)`
-
-        Register sl4a_service directly instead.
-
-        Start sl4a service on the Android device.
-
-        Launch sl4a server if not already running, spin up a session on the
-        server, and two connections to this session.
-        """
-        self.log.warning('`load_sl4a` is deprecated and scheduled for removal!'
-                         ' Register sl4a as a service instead.')
-        self.services.register('sl4a', sl4a_service.Sl4aService)
 
     def take_bug_report(self,
                         test_name,
