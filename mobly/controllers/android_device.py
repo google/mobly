@@ -27,7 +27,6 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import fastboot
 from mobly.controllers.android_device_lib import service_manager
-from mobly.controllers.android_device_lib.services import sl4a_service
 from mobly.controllers.android_device_lib.services import logcat
 from mobly.controllers.android_device_lib.services import snippet_management_service
 
