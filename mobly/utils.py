@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from past.builtins import basestring
+
 import base64
 import concurrent.futures
 import datetime
@@ -29,8 +31,6 @@ import subprocess
 import threading
 import time
 import traceback
-
-from past.builtins import basestring
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
