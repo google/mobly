@@ -524,20 +524,6 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
         return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch('mobly.controllers.android_device_lib.sl4a_client.Sl4aClient')
-    @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_load_sl4a(self, MockGetPort, MockSnippetClient,
-                                     MockFastboot, MockAdbProxy):
-        ad = android_device.AndroidDevice(serial='1')
-        ad.load_sl4a()
-        self.assertTrue(hasattr(ad, 'sl4a'))
-
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
@@ -666,7 +652,7 @@ class AndroidDeviceTest(unittest.TestCase):
     def test_AndroidDevice_snippet_cleanup(
             self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.start_services()
+        ad.services.start_all()
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         ad.unload_snippet('snippet')
         self.assertFalse(hasattr(ad, 'snippet'))
@@ -734,7 +720,7 @@ class AndroidDeviceTest(unittest.TestCase):
                 self.resume_called = True
 
         ad = android_device.AndroidDevice(serial='1')
-        ad.start_services()
+        ad.services.start_all()
         ad.services.register('mock_service', MockService)
         with ad.handle_usb_disconnect():
             self.assertFalse(ad.services.is_any_alive)
