@@ -199,17 +199,17 @@ class AndroidDeviceTest(unittest.TestCase):
         msg = 'Some error happened.'
         ads = mock_android_device.get_mock_ads(3)
         ads[0].services.register = mock.MagicMock()
-        ads[0].stop_services = mock.MagicMock()
+        ads[0].services.stop_all = mock.MagicMock()
         ads[1].services.register = mock.MagicMock()
-        ads[1].stop_services = mock.MagicMock()
+        ads[1].services.stop_all = mock.MagicMock()
         ads[2].services.register = mock.MagicMock(
             side_effect=android_device.Error(msg))
-        ads[2].stop_services = mock.MagicMock()
+        ads[2].services.stop_all = mock.MagicMock()
         with self.assertRaisesRegex(android_device.Error, msg):
             android_device._start_services_on_ads(ads)
-        ads[0].stop_services.assert_called_once_with()
-        ads[1].stop_services.assert_called_once_with()
-        ads[2].stop_services.assert_called_once_with()
+        ads[0].services.stop_all.assert_called_once_with()
+        ads[1].services.stop_all.assert_called_once_with()
+        ads[2].services.stop_all.assert_called_once_with()
 
     def test_start_services_on_ads_skip_logcat(self):
         ads = mock_android_device.get_mock_ads(3)
@@ -728,6 +728,51 @@ class AndroidDeviceTest(unittest.TestCase):
             self.assertFalse(ad.services.mock_service.resume_called)
         self.assertTrue(ad.services.is_any_alive)
         self.assertTrue(ad.services.mock_service.resume_called)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_handle_reboot(self, stop_proc_mock, start_proc_mock,
+                                         FastbootProxy, MockAdbProxy):
+        class MockService(base_service.BaseService):
+            def __init__(self, device, configs=None):
+                self._alive = False
+                self.pause_called = False
+                self.resume_called = False
+
+            @property
+            def is_alive(self):
+                return self._alive
+
+            def start(self, configs=None):
+                self._alive = True
+
+            def stop(self):
+                self._alive = False
+
+            def pause(self):
+                self._alive = False
+                self.pause_called = True
+
+            def resume(self):
+                self._alive = True
+                self.resume_called = True
+
+        ad = android_device.AndroidDevice(serial='1')
+        ad.services.start_all()
+        ad.services.register('mock_service', MockService)
+        with ad.handle_reboot():
+            self.assertFalse(ad.services.is_any_alive)
+            self.assertFalse(ad.services.mock_service.pause_called)
+            self.assertFalse(ad.services.mock_service.resume_called)
+        self.assertTrue(ad.services.is_any_alive)
+        self.assertFalse(ad.services.mock_service.resume_called)
 
 
 if __name__ == '__main__':

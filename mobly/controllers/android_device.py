@@ -106,7 +106,7 @@ def destroy(ads):
     """
     for ad in ads:
         try:
-            ad.stop_services()
+            ad.services.stop_all()
         except:
             ad.log.exception('Failed to clean up properly.')
 
@@ -632,7 +632,7 @@ class AndroidDevice(object):
 
         For sample usage, see self.reboot().
         """
-        self.stop_services()
+        self.services.stop_all()
         try:
             yield
         finally:
