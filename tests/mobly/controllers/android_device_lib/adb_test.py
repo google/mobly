@@ -553,12 +553,6 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 handler=mock_handler)
 
-    def test_cli_cmd_to_string(self):
-        cmd = ['"adb"', 'a b', 'c//']
-        self.assertEqual(adb.cli_cmd_to_string(cmd), '\'"adb"\' \'a b\' c//')
-        cmd = 'adb -s meme do something ab_cd'
-        self.assertEqual(adb.cli_cmd_to_string(cmd), cmd)
-
     def test_has_shell_command_called_correctly(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT

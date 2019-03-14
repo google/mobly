@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from past.builtins import basestring
+
 import base64
 import concurrent.futures
 import datetime
 import io
 import logging
 import os
+import pipes
 import platform
 import portpicker
 import random
@@ -517,3 +520,17 @@ def grep(regex, output):
         if re.search(regex, line):
             results.append(line.strip())
     return results
+
+def cli_cmd_to_string(args):
+    """Converts a cmd arg list to string.
+
+    Args:
+        args: list of strings, the arguments of a command.
+
+    Returns:
+        String representation of the command.
+    """
+    if isinstance(args, basestring):
+        # Return directly if it's already a string.
+        return args
+    return ' '.join([pipes.quote(arg) for arg in args])
