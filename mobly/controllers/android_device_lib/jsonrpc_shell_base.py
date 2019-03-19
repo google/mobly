@@ -15,6 +15,7 @@
 from __future__ import print_function
 
 import code
+import os
 import pprint
 import sys
 
@@ -28,14 +29,14 @@ class Error(Exception):
 class JsonRpcShellBase(object):
     def _start_services(self, console_env):
         """Starts the services needed by this client and adds them to console_env.
-  
+
         Must be implemented by subclasses.
         """
         raise NotImplemented()
 
     def _get_banner(self, serial):
         """Returns the user-friendly banner message to print before the console.
-  
+
         Must be implemented by subclasses.
         """
         raise NotImplemented()
@@ -43,19 +44,24 @@ class JsonRpcShellBase(object):
     def load_device(self, serial=None):
         """Creates an AndroidDevice for the given serial number.
 
-        If no serial is given, it will be read from 'adb devices' if there is
-        only one.
+        If no serial is given, it will read from the ANDROID_SERIAL
+        environmental variable. If the environmental variable is not set, then
+        it will read from 'adb devices' if there is only one.
         """
         serials = android_device.list_adb_devices()
         if not serials:
             raise Error('No adb device found!')
         # No serial provided, try to pick up the device automatically.
         if not serial:
-            if len(serials) != 1:
+            env_serial = os.environ.get('ANDROID_SERIAL', None)
+            if env_serial is not None:
+                serial = env_serial
+            elif len(serials) == 1:
+                serial = serials[0]
+            else:
                 raise Error(
-                    'Expected one phone, but %d found. Use the -s flag.' %
-                    len(serials))
-            serial = serials[0]
+                    'Expected one phone, but %d found. Use the -s flag or '
+                    'specify ANDROID_SERIAL.' % len(serials))
         if serial not in serials:
             raise Error('Device "%s" is not found by adb.' % serial)
         ads = android_device.get_instances([serial])
