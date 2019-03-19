@@ -18,6 +18,7 @@ from past.builtins import basestring
 import contextlib
 import logging
 import os
+import re
 import shutil
 import time
 
@@ -77,6 +78,10 @@ DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
 Error = errors.Error
 DeviceError = errors.DeviceError
 SnippetError = snippet_management_service.Error
+
+# Regexes to heuristically determine if the device is an emulator.
+DEFAULT_EMULATOR_SERIAL_REGEX = re.compile(r'emulator-\d+')
+LOCALHOST_EMULATOR_SERIAL_REGEX = re.compile(r'(localhost|127\.0\.0\.1):\d+')
 
 
 def create(configs):
@@ -809,6 +814,24 @@ class AndroidDevice(object):
         if model == 'sprout':
             return model
         return self.build_info['product_name'].lower()
+
+    @property
+    def is_emulator(self):
+      """Whether this device is probably an emulator.
+
+      If the device's serial follows 'emulator-x', then it's probably an
+      emulator. Otherwise, if the serial is a localhost address, then it's
+      probably also a serial since real, local devices usually won't have
+      network serials.
+
+      Note, some cloud-based emulators will have non-localhost network address
+      serials, which this property will be inaccurate for.
+
+      Returns:
+        True if this is probably an emulator.
+      """
+      return (DEFAULT_EMULATOR_SERIAL_REGEX.match(self.serial) or
+              LOCALHOST_EMULATOR_SERIAL_REGEX.match(self.serial))
 
     def load_config(self, config):
         """Add attributes to the AndroidDevice object based on config.
