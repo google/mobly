@@ -75,6 +75,7 @@ class UtilsTest(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False,
+            cwd=None,
             env=None,
         )
         mock_Timer.assert_not_called()
@@ -104,6 +105,7 @@ class UtilsTest(unittest.TestCase):
             stdout=mock_stdout,
             stderr=mock_stderr,
             shell=mock_shell,
+            cwd=None,
             env=mock_env,
         )
         mock_Timer.assert_called_with(1234, mock.ANY)

@@ -292,6 +292,7 @@ def run_command(cmd,
                 stderr=None,
                 shell=False,
                 timeout=None,
+                cwd=None,
                 env=None):
     """Runs a command in a subprocess.
 
@@ -312,6 +313,13 @@ def run_command(cmd,
             False to invoke it directly. See subprocess.Popen() docs.
         timeout: float, the number of seconds to wait before timing out.
             If not specified, no timeout takes effect.
+        cwd: string, the path to change the child's current directory to before
+            it is executed. Note that this directory is not considered when
+            searching the executable, so you can't specify the program's path
+            relative to cwd.
+        env: dict, a mapping that defines the environment variables for the
+            new process. Default behavior is inheriting the current process'
+            environment.
 
     Returns:
         A 3-tuple of the consisting of the return code, the std output, and the
@@ -329,7 +337,7 @@ def run_command(cmd,
     if stderr is None:
         stderr = subprocess.PIPE
     process = psutil.Popen(
-        cmd, stdout=stdout, stderr=stderr, shell=shell, env=env)
+        cmd, stdout=stdout, stderr=stderr, shell=shell, cwd=cwd, env=env)
     timer = None
     timer_triggered = threading.Event()
     if timeout and timeout > 0:
@@ -520,6 +528,7 @@ def grep(regex, output):
         if re.search(regex, line):
             results.append(line.strip())
     return results
+
 
 def cli_cmd_to_string(args):
     """Converts a cmd arg list to string.
