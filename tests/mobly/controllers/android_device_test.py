@@ -220,6 +220,16 @@ class AndroidDeviceTest(unittest.TestCase):
         ads[2].skip_logcat = True
         android_device._start_services_on_ads(ads)
 
+    def test_take_bug_reports(self):
+        ads = mock_android_device.get_mock_ads(3)
+        android_device.take_bug_reports(ads, 'test_something', 'sometime')
+        ads[0].take_bug_report.assert_called_once_with(
+            'test_something', begin_time='sometime', destination=None)
+        ads[1].take_bug_report.assert_called_once_with(
+            'test_something', begin_time='sometime', destination=None)
+        ads[2].take_bug_report.assert_called_once_with(
+            'test_something', begin_time='sometime', destination=None)
+
     # Tests for android_device.AndroidDevice class.
     # These tests mock out any interaction with the OS and real android device
     # in AndroidDeivce.
@@ -309,7 +319,8 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
-        output_path = ad.take_bug_report('test_something', 'sometime')
+        output_path = ad.take_bug_report(
+            'test_something', begin_time='sometime')
         expected_path = os.path.join(
             logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
         create_dir_mock.assert_called_with(expected_path)
@@ -333,7 +344,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         expected_msg = '.* Failed to take bugreport.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
-            ad.take_bug_report('test_something', 'sometime')
+            ad.take_bug_report('test_something', begin_time='sometime')
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -364,6 +375,25 @@ class AndroidDeviceTest(unittest.TestCase):
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.utils.create_dir')
+    def test_AndroidDevice_take_bug_report_with_positional_begin_time(
+            self, create_dir_mock, FastbootProxy, MockAdbProxy):
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        output_path = ad.take_bug_report('test_something', 'sometime')
+        expected_path = os.path.join(
+            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
+        create_dir_mock.assert_called_with(expected_path)
+        self.assertEqual(output_path,
+                         os.path.join(expected_path,
+                                      'test_something,sometime,1.zip'))
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
         return_value=mock_android_device.MockAdbProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
@@ -375,7 +405,7 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         dest = tempfile.gettempdir()
         output_path = ad.take_bug_report(
-            "test_something", "sometime", destination=dest)
+            "test_something", begin_time="sometime", destination=dest)
         expected_path = os.path.join(dest)
         create_dir_mock.assert_called_with(expected_path)
         self.assertEqual(output_path,
@@ -397,7 +427,8 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
-        output_path = ad.take_bug_report('test_something', 'sometime')
+        output_path = ad.take_bug_report(
+            'test_something', begin_time='sometime')
         expected_path = os.path.join(
             logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
         create_dir_mock.assert_called_with(expected_path)
