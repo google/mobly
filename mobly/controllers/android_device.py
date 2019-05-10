@@ -391,7 +391,8 @@ def take_bug_reports(ads, test_name, begin_time, destination=None):
     begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
 
     def take_br(test_name, begin_time, ad, destination):
-        ad.take_bug_report(test_name, begin_time, destination=destination)
+        ad.take_bug_report(
+            test_name, begin_time=begin_time, destination=destination)
 
     args = [(test_name, begin_time, ad, destination) for ad in ads]
     utils.concurrent_exec(take_br, args)
@@ -823,19 +824,29 @@ class AndroidDevice(object):
 
     def take_bug_report(self,
                         test_name,
-                        begin_time,
+                        begin_time=None,
                         timeout=300,
                         destination=None):
         """Takes a bug report on the device and stores it in a file.
 
         Args:
             test_name: Name of the test method that triggered this bug report.
-            begin_time: Timestamp of when the test started.
+            begin_time: Timestamp of when the test started. If not set, then
+                this will default to the current time.
             timeout: float, the number of seconds to wait for bugreport to
                 complete, default is 5min.
             destination: string, path to the directory where the bugreport
                 should be saved.
+
+        Returns:
+          A string containing the absolute path to the bug report on the host
+          machine.
         """
+        if begin_time is None:
+            epoch_time = utils.get_current_epoch_time()
+            timestamp = mobly_logger.epoch_to_log_line_timestamp(epoch_time)
+            begin_time = mobly_logger.normalize_log_line_timestamp(timestamp)
+
         new_br = True
         try:
             stdout = self.adb.shell('bugreportz -v').decode('utf-8')
@@ -872,6 +883,7 @@ class AndroidDevice(object):
                 ' > "%s"' % full_out_path, shell=True, timeout=timeout)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
+        return full_out_path
 
     def run_iperf_client(self, server_host, extra_args=''):
         """Start iperf client on the device.
