@@ -309,10 +309,13 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
-        ad.take_bug_report('test_something', 'sometime')
+        output_path = ad.take_bug_report('test_something', 'sometime')
         expected_path = os.path.join(
             logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
         create_dir_mock.assert_called_with(expected_path)
+        self.assertEqual(output_path,
+                         os.path.join(expected_path,
+                                      'test_something,sometime,1.zip'))
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -339,14 +342,41 @@ class AndroidDeviceTest(unittest.TestCase):
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
         return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
+    @mock.patch('mobly.utils.get_current_epoch_time')
+    def test_AndroidDevice_take_bug_report_without_begin_time(
+            self, get_current_epoch_time_mock, create_dir_mock, FastbootProxy,
+            MockAdbProxy):
+        get_current_epoch_time_mock.return_value = 1557446629606
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        output_path = ad.take_bug_report('test_something')
+        expected_path = os.path.join(
+            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
+        create_dir_mock.assert_called_with(expected_path)
+        self.assertEqual(
+            output_path,
+            os.path.join(expected_path,
+                         'test_something,05-09_17-03-49.606,1.zip'))
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.create_dir')
     def test_AndroidDevice_take_bug_report_with_destination(
             self, create_dir_mock, FastbootProxy, MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         dest = tempfile.gettempdir()
-        ad.take_bug_report("test_something", "sometime", destination=dest)
+        output_path = ad.take_bug_report(
+            "test_something", "sometime", destination=dest)
         expected_path = os.path.join(dest)
         create_dir_mock.assert_called_with(expected_path)
+        self.assertEqual(output_path,
+                         os.path.join(expected_path,
+                                      'test_something,sometime,1.zip'))
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -363,10 +393,13 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
-        ad.take_bug_report('test_something', 'sometime')
+        output_path = ad.take_bug_report('test_something', 'sometime')
         expected_path = os.path.join(
             logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
         create_dir_mock.assert_called_with(expected_path)
+        self.assertEqual(output_path,
+                         os.path.join(expected_path,
+                                      'test_something,sometime,1.txt'))
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
