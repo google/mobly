@@ -343,16 +343,20 @@ class AndroidDeviceTest(unittest.TestCase):
         return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
     @mock.patch('mobly.utils.get_current_epoch_time')
+    @mock.patch('mobly.logger.epoch_to_log_line_timestamp')
     def test_AndroidDevice_take_bug_report_without_begin_time(
-            self, get_current_epoch_time_mock, create_dir_mock, FastbootProxy,
+            self, epoch_to_log_line_timestamp_mock,
+            get_current_epoch_time_mock, create_dir_mock, FastbootProxy,
             MockAdbProxy):
         get_current_epoch_time_mock.return_value = 1557446629606
+        epoch_to_log_line_timestamp_mock.return_value = '05-09 17:03:49.606'
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         output_path = ad.take_bug_report('test_something')
         expected_path = os.path.join(
             logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
         create_dir_mock.assert_called_with(expected_path)
+        epoch_to_log_line_timestamp_mock.assert_called_once_with(1557446629606)
         self.assertEqual(
             output_path,
             os.path.join(expected_path,
