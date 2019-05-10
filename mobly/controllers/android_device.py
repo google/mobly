@@ -838,7 +838,7 @@ class AndroidDevice(object):
                 should be saved.
 
         Returns:
-          A string containing absolute path to the bug report on the host
+          A string containing the absolute path to the bug report on the host
           machine.
         """
         if begin_time is None:
