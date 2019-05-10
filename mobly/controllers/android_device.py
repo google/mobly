@@ -838,7 +838,8 @@ class AndroidDevice(object):
                 should be saved.
 
         Returns:
-          The absolute path to the bug report on the host machine.
+          A string containing absolute path to the bug report on the host
+          machine.
         """
         if begin_time is None:
             epoch_time = utils.get_current_epoch_time()
