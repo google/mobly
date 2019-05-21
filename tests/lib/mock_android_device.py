@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -68,6 +68,13 @@ class MockAdbProxy(object):
         self.serial = serial
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
+        self.mock_properties = {
+            "ro.build.id": "AB42",
+            "ro.build.type": "userdebug",
+            "ro.build.product": "FakeModel",
+            "ro.product.name": "FakeModel",
+            "sys.boot_completed": "1"
+        }
 
     def shell(self, params, timeout=None):
         if params == "id -u":
@@ -82,14 +89,14 @@ class MockAdbProxy(object):
             return b'1.1'
 
     def getprop(self, params):
-        if params == "ro.build.id":
-            return "AB42"
-        elif params == "ro.build.type":
-            return "userdebug"
-        elif params == "ro.build.product" or params == "ro.product.name":
-            return "FakeModel"
-        elif params == "sys.boot_completed":
-            return "1"
+        if params in self.mock_properties:
+            return self.mock_properties[params]
+
+    def getprops(self, params):
+        results = []
+        for param in params:
+            results.append(self.mock_properties[param])
+        return results
 
     def bugreport(self, args, shell=False, timeout=None):
         expected = os.path.join(logging.log_path,

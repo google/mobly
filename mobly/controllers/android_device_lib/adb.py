@@ -62,8 +62,8 @@ class AdbError(Error):
 
     def __str__(self):
         return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
-                ) % (utils.cli_cmd_to_string(self.cmd), self.ret_code, self.stdout,
-                     self.stderr)
+                ) % (utils.cli_cmd_to_string(self.cmd), self.ret_code,
+                     self.stdout, self.stderr)
 
 
 class AdbTimeoutError(Error):
@@ -277,10 +277,29 @@ class AdbProxy(object):
             adb_cmd, shell=shell, handler=handler)
         return out
 
+    def _parse_getprop_output(self, output):
+        """Parses the raw output of `adb shell getprop` into a dictionary.
+
+        Args:
+            output: byte str, the raw output of the `adb shell getprop` call.
+
+        Returns:
+            dict, name-value pairs of the properties.
+        """
+        output = output.decode('utf-8').strip()
+        clean_output = output.replace('[', '').replace(']', '')
+        print(clean_output)
+        results = {}
+        for line in clean_output.split('\n'):
+            if line:
+                name, value = line.split(': ')
+                results[name] = value
+        return results
+
     def getprop(self, prop_name):
         """Get a property of the device.
 
-        This is a convenience wrapper for "adb shell getprop xxx".
+        This is a convenience wrapper for `adb shell getprop xxx`.
 
         Args:
             prop_name: A string that is the name of the property to get.
@@ -292,6 +311,32 @@ class AdbProxy(object):
         return self.shell(
             ['getprop', prop_name],
             timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
+
+    def getprops(self, prop_names):
+        """Get multiple properties of the device.
+
+        This is a convenience wrapper for `adb shell getprop`. Use this to
+        reduce the number of adb calls when getting multiple properties.
+
+        Args:
+            prop_names: list of strings, the names of the properties to get.
+
+        Returns:
+            A list of strings that are the values of the properties requested,
+            in the order of the input. If a property doesn't exist, `None` will
+            be placed in its place.
+        """
+        raw_output = self.shell(
+            ['getprop'], timeout=DEFAULT_GETPROP_TIMEOUT_SEC)
+        properties = self._parse_getprop_output(raw_output)
+        results = []
+        print('results: ##%s', properties)
+        for name in prop_names:
+            if name in properties:
+                results.append(properties[name])
+            else:
+                results.append(None)
+        return results
 
     def has_shell_command(self, command):
         """Checks to see if a given check command exists on the device.

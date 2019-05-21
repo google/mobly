@@ -452,7 +452,43 @@ class AdbTest(unittest.TestCase):
                 ['adb', 'shell', 'getprop', 'haha'],
                 shell=False,
                 stderr=None,
-                timeout=5)
+                timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
+
+    def test_getprops(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.return_value = b'''
+selinux.restorecon_recursive]: [/data/misc_ce/10]
+sendbug.preferred.domain]: [google.com]
+service.bootanim.exit]: [1]
+sys.boot_completed]: [1]
+sys.dvr.performance]: [idle]
+sys.logbootcomplete]: [1]
+sys.oem_unlock_allowed]: [1]
+sys.rescue_boot_count]: [1]
+sys.retaildemo.enabled]: [0]
+sys.sysctl.extra_free_kbytes]: [27337]
+sys.sysctl.tcp_def_init_rwnd]: [60]
+sys.uidcpupower]: []
+sys.usb.config]: [adb]
+sys.usb.configfs]: [2]
+sys.usb.controller]: [a600000.dwc3]
+sys.usb.ffs.ready]: [1]
+sys.usb.mtp.device_type]: [3]
+sys.user.0.ce_available]: [true]
+sys.wifitracing.started]: [1]
+telephony.lteOnCdmaDevice]: [1]'''
+            actual_output = adb.AdbProxy().getprops([
+                'sys.wifitracing.started',  # "numeric" value
+                'sys.uidcpupower',  # empty value
+                'sendbug.preferred.domain',  # string value
+                'nonExistentProp'
+            ])
+            self.assertEqual(actual_output, ['1', '', 'google.com', None])
+            mock_exec_cmd.assert_called_once_with(
+                ['adb', 'shell', 'getprop'],
+                shell=False,
+                stderr=None,
+                timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
 
     def test_forward(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
