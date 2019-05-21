@@ -132,7 +132,7 @@ class TestRunnerTest(unittest.TestCase):
         summary_path = os.path.join(logging.log_path,
                                     records.OUTPUT_FILE_SUMMARY)
         with io.open(summary_path, 'r', encoding='utf-8') as f:
-            summary_entries = list(yaml.load_all(f))
+            summary_entries = list(yaml.safe_load_all(f))
         self.assertEqual(len(summary_entries), 4)
         # Verify the first entry is the list of test names.
         self.assertEqual(summary_entries[0]['Type'],

@@ -152,7 +152,7 @@ def _load_config_file(path):
         A dict that represents info in the config file.
     """
     with io.open(utils.abs_path(path), 'r', encoding='utf-8') as f:
-        conf = yaml.load(f)
+        conf = yaml.safe_load(f)
         return conf
 
 
