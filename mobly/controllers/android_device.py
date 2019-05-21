@@ -27,7 +27,6 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import fastboot
 from mobly.controllers.android_device_lib import service_manager
-from mobly.controllers.android_device_lib.services import sl4a_service
 from mobly.controllers.android_device_lib.services import logcat
 from mobly.controllers.android_device_lib.services import snippet_management_service
 
@@ -107,7 +106,7 @@ def destroy(ads):
     """
     for ad in ads:
         try:
-            ad.stop_services()
+            ad.services.stop_all()
         except:
             ad.log.exception('Failed to clean up properly.')
 
@@ -392,7 +391,8 @@ def take_bug_reports(ads, test_name, begin_time, destination=None):
     begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
 
     def take_br(test_name, begin_time, ad, destination):
-        ad.take_bug_report(test_name, begin_time, destination=destination)
+        ad.take_bug_report(
+            test_name, begin_time=begin_time, destination=destination)
 
     args = [(test_name, begin_time, ad, destination) for ad in ads]
     utils.concurrent_exec(take_br, args)
@@ -622,38 +622,6 @@ class AndroidDevice(object):
         self.adb.serial = new_serial
         self.fastboot.serial = new_serial
 
-    def start_services(self, clear_log=True):
-        """.. deprecated:: 1.8
-
-        Use service manager `self.services` instead.
-
-        Starts long running services on the android device, like adb logcat
-        capture.
-        """
-        self.services.start_all()
-
-    def start_adb_logcat(self, clear_log=True):
-        """.. deprecated:: 1.8
-
-        Use `self.services.logcat.start` instead.
-        """
-        self.services.logcat.start()
-
-    def stop_adb_logcat(self):
-        """.. deprecated:: 1.8
-
-        Use `self.services.logcat.stop` instead.
-        """
-        self.services.logcat.stop()
-
-    def stop_services(self):
-        """.. deprecated:: 1.8
-
-        Use service manager `self.services` instead.
-
-        Stops long running services on the Android device."""
-        self.services.stop_all()
-
     @contextlib.contextmanager
     def handle_reboot(self):
         """Properly manage the service life cycle when the device needs to
@@ -665,7 +633,7 @@ class AndroidDevice(object):
 
         For sample usage, see self.reboot().
         """
-        self.stop_services()
+        self.services.stop_all()
         try:
             yield
         finally:
@@ -854,38 +822,31 @@ class AndroidDevice(object):
         """
         self.services.snippets.remove_snippet_client(name)
 
-    def load_sl4a(self):
-        """.. deprecated:: 1.8
-
-        Directly register with service manager instead:
-        `self.services.register('sl4a', sl4a_service.Sl4aService)`
-
-        Register sl4a_service directly instead.
-
-        Start sl4a service on the Android device.
-
-        Launch sl4a server if not already running, spin up a session on the
-        server, and two connections to this session.
-        """
-        self.log.warning('`load_sl4a` is deprecated and scheduled for removal!'
-                         ' Register sl4a as a service instead.')
-        self.services.register('sl4a', sl4a_service.Sl4aService)
-
     def take_bug_report(self,
                         test_name,
-                        begin_time,
+                        begin_time=None,
                         timeout=300,
                         destination=None):
         """Takes a bug report on the device and stores it in a file.
 
         Args:
             test_name: Name of the test method that triggered this bug report.
-            begin_time: Timestamp of when the test started.
+            begin_time: Timestamp of when the test started. If not set, then
+                this will default to the current time.
             timeout: float, the number of seconds to wait for bugreport to
                 complete, default is 5min.
             destination: string, path to the directory where the bugreport
                 should be saved.
+
+        Returns:
+          A string containing the absolute path to the bug report on the host
+          machine.
         """
+        if begin_time is None:
+            epoch_time = utils.get_current_epoch_time()
+            timestamp = mobly_logger.epoch_to_log_line_timestamp(epoch_time)
+            begin_time = mobly_logger.normalize_log_line_timestamp(timestamp)
+
         new_br = True
         try:
             stdout = self.adb.shell('bugreportz -v').decode('utf-8')
@@ -922,6 +883,7 @@ class AndroidDevice(object):
                 ' > "%s"' % full_out_path, shell=True, timeout=timeout)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
+        return full_out_path
 
     def run_iperf_client(self, server_host, extra_args=''):
         """Start iperf client on the device.
@@ -987,13 +949,12 @@ class AndroidDevice(object):
     def reboot(self):
         """Reboots the device.
 
-        Terminate all sl4a sessions, reboot the device, wait for device to
-        complete booting, and restart an sl4a session.
+        Generally one should use this method to reboot the device instead of
+        directly calling `adb.reboot`. Because this method gracefully handles
+        the teardown and restoration of running services.
 
-        This is a blocking method.
-
-        This is probably going to print some error messages in console. Only
-        use if there's no other option.
+        This method is blocking and only returns when the reboot has completed
+        and the services restored.
 
         Raises:
             Error: Waiting for completion timed out.

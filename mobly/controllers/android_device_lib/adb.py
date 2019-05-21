@@ -16,10 +16,11 @@ from builtins import str
 from past.builtins import basestring
 
 import logging
-import pipes
 import psutil
 import subprocess
 import threading
+
+from mobly import utils
 
 # Command to use for running ADB commands.
 ADB = 'adb'
@@ -30,6 +31,9 @@ ADB_PORT_LOCK = threading.Lock()
 
 # Qualified class name of the default instrumentation test runner.
 DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
+
+# Adb getprop call should never take too long.
+DEFAULT_GETPROP_TIMEOUT_SEC = 5
 
 
 class Error(Exception):
@@ -58,7 +62,7 @@ class AdbError(Error):
 
     def __str__(self):
         return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
-                ) % (cli_cmd_to_string(self.cmd), self.ret_code, self.stdout,
+                ) % (utils.cli_cmd_to_string(self.cmd), self.ret_code, self.stdout,
                      self.stderr)
 
 
@@ -80,7 +84,7 @@ class AdbTimeoutError(Error):
 
     def __str__(self):
         return 'Timed out executing command "%s" after %ss.' % (
-            cli_cmd_to_string(self.cmd), self.timeout)
+            utils.cli_cmd_to_string(self.cmd), self.timeout)
 
 
 def list_occupied_adb_ports():
@@ -103,21 +107,6 @@ def list_occupied_adb_ports():
             continue
         used_ports.append(int(tokens[1]))
     return used_ports
-
-
-def cli_cmd_to_string(args):
-    """Converts a cmd arg list to string.
-
-    Args:
-        args: list of strings, the arguments of a command.
-
-    Returns:
-        String representation of the command.
-    """
-    if isinstance(args, basestring):
-        # Return directly if it's already a string.
-        return args
-    return ' '.join([pipes.quote(arg) for arg in args])
 
 
 class AdbProxy(object):
@@ -167,25 +156,19 @@ class AdbProxy(object):
             AdbError: The adb command exit code is not 0.
             AdbTimeoutError: The adb command timed out.
         """
-        proc = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
-        process = psutil.Process(proc.pid)
         if timeout and timeout <= 0:
             raise ValueError('Timeout is not a positive value: %s' % timeout)
-        if timeout and timeout > 0:
-            try:
-                process.wait(timeout=timeout)
-            except psutil.TimeoutExpired:
-                process.terminate()
-                raise AdbTimeoutError(
-                    cmd=args, timeout=timeout, serial=self.serial)
+        try:
+            (ret, out, err) = utils.run_command(
+                args, shell=shell, timeout=timeout)
+        except psutil.TimeoutExpired:
+            raise AdbTimeoutError(
+                cmd=args, timeout=timeout, serial=self.serial)
 
-        (out, err) = proc.communicate()
         if stderr:
             stderr.write(err)
-        ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
-                      cli_cmd_to_string(args), out, err, ret)
+                      utils.cli_cmd_to_string(args), out, err, ret)
         if ret == 0:
             return out
         else:
@@ -238,7 +221,7 @@ class AdbProxy(object):
 
         ret = proc.returncode
         logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
-                      cli_cmd_to_string(args), out, err, ret)
+                      utils.cli_cmd_to_string(args), out, err, ret)
         if ret == 0:
             return err
         else:
@@ -263,7 +246,7 @@ class AdbProxy(object):
         args = args or ''
         name = raw_name.replace('_', '-')
         if shell:
-            args = cli_cmd_to_string(args)
+            args = utils.cli_cmd_to_string(args)
             # Add quotes around "adb" in case the ADB path contains spaces. This
             # is pretty common on Windows (e.g. Program Files).
             if self.serial:
@@ -306,7 +289,9 @@ class AdbProxy(object):
             A string that is the value of the property, or None if the property
             doesn't exist.
         """
-        return self.shell('getprop %s' % prop_name).decode('utf-8').strip()
+        return self.shell(
+            ['getprop', prop_name],
+            timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
 
     def has_shell_command(self, command):
         """Checks to see if a given check command exists on the device.

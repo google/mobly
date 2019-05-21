@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from past.builtins import basestring
+
 import base64
 import concurrent.futures
 import datetime
 import io
 import logging
 import os
+import pipes
 import platform
 import portpicker
 import random
@@ -25,6 +28,7 @@ import re
 import signal
 import string
 import subprocess
+import threading
 import time
 import traceback
 
@@ -283,6 +287,79 @@ def concurrent_exec(func, param_list):
         return return_vals
 
 
+def run_command(cmd,
+                stdout=None,
+                stderr=None,
+                shell=False,
+                timeout=None,
+                cwd=None,
+                env=None):
+    """Runs a command in a subprocess.
+
+    This function is very similar to subprocess.check_output. The main
+    difference is that it returns the return code and std error output as well
+    as supporting a timeout parameter.
+
+    Args:
+        cmd: string or list of strings, the command to run.
+            See subprocess.Popen() documentation.
+        stdout: file handle, the file handle to write std out to. If None is
+            given, then subprocess.PIPE is used. See subprocess.Popen()
+            documentation.
+        stdee: file handle, the file handle to write std err to. If None is
+            given, then subprocess.PIPE is used. See subprocess.Popen()
+            documentation.
+        shell: bool, True to run this command through the system shell,
+            False to invoke it directly. See subprocess.Popen() docs.
+        timeout: float, the number of seconds to wait before timing out.
+            If not specified, no timeout takes effect.
+        cwd: string, the path to change the child's current directory to before
+            it is executed. Note that this directory is not considered when
+            searching the executable, so you can't specify the program's path
+            relative to cwd.
+        env: dict, a mapping that defines the environment variables for the
+            new process. Default behavior is inheriting the current process'
+            environment.
+
+    Returns:
+        A 3-tuple of the consisting of the return code, the std output, and the
+            std error.
+
+    Raises:
+        psutil.TimeoutExpired: The command timed out.
+    """
+    # Only import psutil when actually needed.
+    # psutil may cause import error in certain env. This way the utils module
+    # doesn't crash upon import.
+    import psutil
+    if stdout is None:
+        stdout = subprocess.PIPE
+    if stderr is None:
+        stderr = subprocess.PIPE
+    process = psutil.Popen(
+        cmd, stdout=stdout, stderr=stderr, shell=shell, cwd=cwd, env=env)
+    timer = None
+    timer_triggered = threading.Event()
+    if timeout and timeout > 0:
+        # The wait method on process will hang when used with PIPEs with large
+        # outputs, so use a timer thread instead.
+
+        def timeout_expired():
+            timer_triggered.set()
+            process.terminate()
+
+        timer = threading.Timer(timeout, timeout_expired)
+        timer.start()
+    # If the command takes longer than the timeout, then the timer thread
+    # will kill the subprocess, which will make it terminate.
+    (out, err) = process.communicate()
+    if timer is not None:
+        timer.cancel()
+    if timer_triggered.is_set():
+        raise psutil.TimeoutExpired(timeout, pid=process.pid)
+    return (process.returncode, out, err)
+
+
 def start_standing_subprocess(cmd, shell=False, env=None):
     """Starts a long-running subprocess.
 
@@ -395,6 +472,12 @@ def wait_for_standing_subprocess(proc, timeout=None):
     wait_for_standing_subprocess() to keep waiting for it to terminate on its
     own.
 
+    If the corresponding subprocess command generates a large amount of output
+    and this method is called with a timeout value, then the command can hang
+    indefinitely. See http://go/pylib/subprocess.html#subprocess.Popen.wait
+
+    This function does not support Python 2.
+
     Args:
         p: Subprocess to wait for.
         timeout: An integer number of seconds to wait before timing out.
@@ -445,3 +528,18 @@ def grep(regex, output):
         if re.search(regex, line):
             results.append(line.strip())
     return results
+
+
+def cli_cmd_to_string(args):
+    """Converts a cmd arg list to string.
+
+    Args:
+        args: list of strings, the arguments of a command.
+
+    Returns:
+        String representation of the command.
+    """
+    if isinstance(args, basestring):
+        # Return directly if it's already a string.
+        return args
+    return ' '.join([pipes.quote(arg) for arg in args])

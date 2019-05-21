@@ -124,7 +124,7 @@ class Logcat(base_service.BaseService):
         except adb.AdbError as e:
             # On Android O, the clear command fails due to a known bug.
             # Catching this so we don't crash from this Android issue.
-            if "failed to clear" in e.stderr:
+            if b'failed to clear' in e.stderr:
                 self._ad.log.warning(
                     'Encountered known Android error to clear logcat.')
             else:

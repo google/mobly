@@ -37,15 +37,82 @@ class UtilsTest(unittest.TestCase):
 
     def setUp(self):
         system = platform.system()
-        self.sleep_cmd = 'timeout' if system == 'Windows' else 'sleep'
         self.tmp_dir = tempfile.mkdtemp()
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
+    def sleep_cmd(self, wait_secs):
+        if platform.system() == 'Windows':
+            python_code = ['import time', 'time.sleep(%s)' % wait_secs]
+            return ['python', '-c', 'exec("%s")' % r'\r\n'.join(python_code)]
+        else:
+            return ['sleep', str(wait_secs)]
+
+    def test_run_command(self):
+        (ret, out, err) = utils.run_command(self.sleep_cmd(0.01))
+        self.assertEqual(ret, 0)
+
+    def test_run_command_with_timeout(self):
+        (ret, out, err) = utils.run_command(self.sleep_cmd(0.01), timeout=4)
+        self.assertEqual(ret, 0)
+
+    def test_run_command_with_timeout_expired(self):
+        with self.assertRaises(psutil.TimeoutExpired):
+            _ = utils.run_command(self.sleep_cmd(4), timeout=0.01)
+
+    @mock.patch('threading.Timer')
+    @mock.patch('psutil.Popen')
+    def test_run_command_with_default_params(self, mock_Popen, mock_Timer):
+        mock_command = mock.MagicMock(spec=dict)
+        mock_proc = mock_Popen.return_value
+        mock_proc.communicate.return_value = ('fake_out', 'fake_err')
+        mock_proc.returncode = 0
+        out = utils.run_command(mock_command)
+        self.assertEqual(out, (0, 'fake_out', 'fake_err'))
+        mock_Popen.assert_called_with(
+            mock_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            cwd=None,
+            env=None,
+        )
+        mock_Timer.assert_not_called()
+
+    @mock.patch('threading.Timer')
+    @mock.patch('psutil.Popen')
+    def test_run_command_with_custom_params(self, mock_Popen, mock_Timer):
+        mock_command = mock.MagicMock(spec=dict)
+        mock_stdout = mock.MagicMock(spec=int)
+        mock_stderr = mock.MagicMock(spec=int)
+        mock_shell = mock.MagicMock(spec=bool)
+        mock_timeout = 1234
+        mock_env = mock.MagicMock(spec=dict)
+        mock_proc = mock_Popen.return_value
+        mock_proc.communicate.return_value = ('fake_out', 'fake_err')
+        mock_proc.returncode = 127
+        out = utils.run_command(
+            mock_command,
+            stdout=mock_stdout,
+            stderr=mock_stderr,
+            shell=mock_shell,
+            timeout=mock_timeout,
+            env=mock_env)
+        self.assertEqual(out, (127, 'fake_out', 'fake_err'))
+        mock_Popen.assert_called_with(
+            mock_command,
+            stdout=mock_stdout,
+            stderr=mock_stderr,
+            shell=mock_shell,
+            cwd=None,
+            env=mock_env,
+        )
+        mock_Timer.assert_called_with(1234, mock.ANY)
+
     def test_start_standing_subproc(self):
         try:
-            p = utils.start_standing_subprocess([self.sleep_cmd, '0.1'])
+            p = utils.start_standing_subprocess(self.sleep_cmd(0.01))
             p1 = psutil.Process(p.pid)
             self.assertTrue(p1.is_running())
         finally:
@@ -55,9 +122,9 @@ class UtilsTest(unittest.TestCase):
 
     @mock.patch('subprocess.Popen')
     def test_start_standing_subproc_without_env(self, mock_Popen):
-        p = utils.start_standing_subprocess(self.sleep_cmd)
+        p = utils.start_standing_subprocess(self.sleep_cmd(0.01))
         mock_Popen.assert_called_with(
-            self.sleep_cmd,
+            self.sleep_cmd(0.01),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -68,9 +135,9 @@ class UtilsTest(unittest.TestCase):
     @mock.patch('subprocess.Popen')
     def test_start_standing_subproc_with_custom_env(self, mock_Popen):
         mock_env = mock.MagicMock(spec=dict)
-        p = utils.start_standing_subprocess(self.sleep_cmd, env=mock_env)
+        p = utils.start_standing_subprocess(self.sleep_cmd(0.01), env=mock_env)
         mock_Popen.assert_called_with(
-            self.sleep_cmd,
+            self.sleep_cmd(0.01),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -79,13 +146,13 @@ class UtilsTest(unittest.TestCase):
         )
 
     def test_stop_standing_subproc(self):
-        p = utils.start_standing_subprocess([self.sleep_cmd, '4'])
+        p = utils.start_standing_subprocess(self.sleep_cmd(4))
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
 
     def test_stop_standing_subproc_wihtout_pipe(self):
-        p = subprocess.Popen([self.sleep_cmd, '4'])
+        p = subprocess.Popen(self.sleep_cmd(4))
         self.assertIsNone(p.stdout)
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
@@ -169,6 +236,12 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(
             utils.load_file_to_base64_str(tmp_file_path),
             expected_base64_encoding)
+
+    def test_cli_cmd_to_string(self):
+        cmd = ['"adb"', 'a b', 'c//']
+        self.assertEqual(utils.cli_cmd_to_string(cmd), '\'"adb"\' \'a b\' c//')
+        cmd = 'adb -s meme do something ab_cd'
+        self.assertEqual(utils.cli_cmd_to_string(cmd), cmd)
 
 
 if __name__ == '__main__':

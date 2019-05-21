@@ -23,6 +23,9 @@ While developed by Googlers, Mobly is not an official Google product.
 
 Mobly is compatible with both *python 3.4+* and *python 2.7*.
 
+NOTE: As part of the bigger [communitiy initiative](https://python3statement.org/),
+we are planning to drop Python 2.7 support at the end of 2019.
+
 Mobly tests could run on the following platforms:
   - Ubuntu 14.04+
   - MacOS 10.6+
