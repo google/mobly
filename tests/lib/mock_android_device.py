@@ -93,10 +93,7 @@ class MockAdbProxy(object):
             return self.mock_properties[params]
 
     def getprops(self, params):
-        results = []
-        for param in params:
-            results.append(self.mock_properties[param])
-        return results
+        return self.mock_properties
 
     def bugreport(self, args, shell=False, timeout=None):
         expected = os.path.join(logging.log_path,

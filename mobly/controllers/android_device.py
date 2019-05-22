@@ -712,8 +712,8 @@ class AndroidDevice(object):
             return
         info = {}
         build_info = self.adb.getprops(['ro.build.id', 'ro.build.type'])
-        info['build_id'] = build_info[0]
-        info['build_type'] = build_info[1]
+        info['build_id'] = build_info['ro.build.id']
+        info['build_type'] = build_info['ro.build.type']
         return info
 
     @property
