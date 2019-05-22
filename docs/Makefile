@@ -51,8 +51,9 @@ help:
 clean:
 	rm -rf $(BUILDDIR)/*
 
+.PHONY: autodoc
 autodoc:
-	$(SPHINXAPIDOC) -f -o ./ ../mobly
+	$(SPHINXAPIDOC) -f -o $(BUILDDIR) ../mobly
 
 .PHONY: html
 html: autodoc
