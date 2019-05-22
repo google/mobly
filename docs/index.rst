@@ -33,7 +33,6 @@ While developed by Googlers, Mobly is not an official Google product.
    tutorial
    android_device_service
    instrumentation_tutorial
-   mobly
 
 License
 -------
