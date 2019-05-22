@@ -232,7 +232,7 @@ class OutputTest(unittest.TestCase):
          info_log_path) = self.assert_output_logs_exist(output_dir)
         summary_entries = []
         with io.open(summary_file_path, 'r', encoding='utf-8') as f:
-            for entry in yaml.load_all(f):
+            for entry in yaml.safe_load_all(f):
                 self.assertTrue(entry['Type'])
                 summary_entries.append(entry)
         self.assert_log_contents(debug_log_path, whitelist=['DEBUG', 'INFO'])
@@ -255,7 +255,7 @@ class OutputTest(unittest.TestCase):
         with io.open(summary_file_path, 'r', encoding='utf-8') as f:
             raw_content = f.read()
             f.seek(0)
-            for entry in yaml.load_all(f):
+            for entry in yaml.safe_load_all(f):
                 if (entry['Type'] == 'Record'
                         and entry[records.TestResultEnums.RECORD_NAME] ==
                         'teardown_class'):

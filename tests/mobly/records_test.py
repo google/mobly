@@ -361,7 +361,7 @@ class RecordsTest(unittest.TestCase):
         writer = records.TestSummaryWriter(dump_path)
         writer.dump(record1.to_dict(), records.TestSummaryEntryType.RECORD)
         with io.open(dump_path, 'r', encoding='utf-8') as f:
-            content = yaml.load(f)
+            content = yaml.safe_load(f)
             self.assertEqual(content['Type'],
                              records.TestSummaryEntryType.RECORD.value)
             self.assertEqual(content[records.TestResultEnums.RECORD_DETAILS],
@@ -380,7 +380,7 @@ class RecordsTest(unittest.TestCase):
         writer = records.TestSummaryWriter(dump_path)
         writer.dump(record1.to_dict(), records.TestSummaryEntryType.RECORD)
         with io.open(dump_path, 'r', encoding='utf-8') as f:
-            content = yaml.load(f)
+            content = yaml.safe_load(f)
             self.assertEqual(content['Type'],
                              records.TestSummaryEntryType.RECORD.value)
             self.assertEqual(content[records.TestResultEnums.RECORD_DETAILS],
@@ -398,7 +398,7 @@ class RecordsTest(unittest.TestCase):
             writer.dump(data, records.TestSummaryEntryType.USER_DATA)
         with io.open(dump_path, 'r', encoding='utf-8') as f:
             contents = []
-            for c in yaml.load_all(f):
+            for c in yaml.safe_load_all(f):
                 contents.append(c)
         for content in contents:
             self.assertEqual(content['Type'],

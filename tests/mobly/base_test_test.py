@@ -148,8 +148,8 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         expected_msg = (
-            'Test method name not_a_test_something does not follow '
-            'naming convention test_\*, abort.')
+            r'Test method name not_a_test_something does not follow '
+            r'naming convention test_\*, abort.')
         with self.assertRaisesRegex(base_test.Error, expected_msg):
             bt_cls.run()
 
@@ -186,8 +186,8 @@ class BaseTestTest(unittest.TestCase):
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         expected_msg = (
-            'Test method name not_a_test_something does not follow '
-            'naming convention test_\*, abort.')
+            r'Test method name not_a_test_something does not follow '
+            r'naming convention test_\*, abort.')
         with self.assertRaisesRegex(base_test.Error, expected_msg):
             bt_cls.run(test_names=["not_a_test_something"])
 
@@ -1994,7 +1994,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(actual_record.test_name, "test_something")
         hit = False
         with io.open(self.summary_file, 'r', encoding='utf-8') as f:
-            for c in yaml.load_all(f):
+            for c in yaml.safe_load_all(f):
                 if c['Type'] != records.TestSummaryEntryType.USER_DATA.value:
                     continue
                 hit = True
