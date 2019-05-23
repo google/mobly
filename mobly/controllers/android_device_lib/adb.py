@@ -287,12 +287,16 @@ class AdbProxy(object):
             dict, name-value pairs of the properties.
         """
         output = output.decode('utf-8').strip()
-        clean_output = output.replace('[', '').replace(']', '')
         results = {}
-        for line in clean_output.split('\n'):
+        for line in output.split(']\n'):
             if line:
                 name, value = line.split(': ')
-                results[name] = value
+                name = name.strip()[1:-1]
+                if value[0] == '[':
+                    value = value[1:]
+                if value and value[-1] == ']':
+                    value = value[:-1]
+                results[name] = value.strip()
         return results
 
     def getprop(self, prop_name):
@@ -328,6 +332,7 @@ class AdbProxy(object):
             ['getprop'], timeout=DEFAULT_GETPROP_TIMEOUT_SEC)
         properties = self._parse_getprop_output(raw_output)
         results = {}
+        print(properties)
         for name in prop_names:
             if name in properties:
                 results[name] = properties[name]
