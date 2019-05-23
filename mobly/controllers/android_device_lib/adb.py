@@ -286,7 +286,7 @@ class AdbProxy(object):
         Returns:
             dict, name-value pairs of the properties.
         """
-        output = output.decode('utf-8').strip()
+        output = output.decode('utf-8', errors='ignore')
         results = {}
         for line in output.split(']\n'):
             if not line:
@@ -298,12 +298,9 @@ class AdbProxy(object):
                 continue
             name = name.strip()[1:-1]
             # Remove any square bracket from either end of the value string.
-            value = value.strip()
             if value and value[0] == '[':
                 value = value[1:]
-            if value and value[-1] == ']':
-                value = value[:-1]
-            results[name] = value.strip()
+            results[name] = value
         return results
 
     def getprop(self, prop_name):

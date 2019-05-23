@@ -454,7 +454,7 @@ class AdbTest(unittest.TestCase):
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
 
-    def test__parse_getprop_output_special_output(self):
+    def test__parse_getprop_output_special_values(self):
         mock_adb_output = (
             b'[selinux.restorecon_recursive]: [/data/misc_ce/10]\n'
             b'[selinux.abc]: [key: value]\n'  # "key: value" as value
@@ -462,7 +462,10 @@ class AdbTest(unittest.TestCase):
             b'reboot,factory_reset,1558483886\n'  # multi-line value
             b'reboot,1558483823]\n'
             b'[persist.something]: [haha\n'
-            b']')
+            b']\n'
+            b'[[wrapped.key]]: [[wrapped value]]\n'
+            b'[persist.byte]: [J\xaa\x8bb\xab\x9dP\x0f]\n'  # non-decodable
+        )
         parsed_props = adb.AdbProxy()._parse_getprop_output(mock_adb_output)
         expected_output = {
             'persist.sys.boot.reason.history':
@@ -471,9 +474,13 @@ class AdbTest(unittest.TestCase):
             'selinux.abc':
             'key: value',
             'persist.something':
-            'haha',
+            'haha\n',
             'selinux.restorecon_recursive':
-            '/data/misc_ce/10'
+            '/data/misc_ce/10',
+            '[wrapped.key]':
+            '[wrapped value]',
+            'persist.byte':
+            'JbP\x0f',
         }
         self.assertEqual(parsed_props, expected_output)
 
