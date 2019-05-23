@@ -307,8 +307,8 @@ class AdbTest(unittest.TestCase):
 
     def test_construct_adb_cmd_with_special_characters(self):
         adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', ['a b', '"blah"', '\/\/'], shell=False)
-        self.assertEqual(adb_cmd, ['adb', 'shell', 'a b', '"blah"', "\/\/"])
+            'shell', ['a b', '"blah"', r'\/\/'], shell=False)
+        self.assertEqual(adb_cmd, ['adb', 'shell', 'a b', '"blah"', r"\/\/"])
 
     def test_construct_adb_cmd_with_serial(self):
         adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
@@ -348,7 +348,7 @@ class AdbTest(unittest.TestCase):
 
     def test_construct_adb_cmd_with_shell_true_with_auto_quotes(self):
         adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', ['a b', '"blah"', '\/\/'], shell=True)
+            'shell', ['a b', '"blah"', r'\/\/'], shell=True)
         self.assertEqual(adb_cmd, '"adb" shell \'a b\' \'"blah"\' \'\\/\\/\'')
 
     def test_construct_adb_cmd_with_shell_true_with_serial(self):
