@@ -481,13 +481,13 @@ class AdbTest(unittest.TestCase):
 
     def test_getprops_malformat_adb_output(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = b'''
-[selinux.restorecon_recursive]: [/data/misc_ce/10]
-[persist.sys.boot.reason.history]: [reboot,adb,1558549857
-reboot,factory_reset,1558483886
-reboot,1558483823]
-[persist.something]: [haha
-]'''
+            mock_exec_cmd.return_value = (
+                b'[selinux.restorecon_recursive]: [/data/misc_ce/10]\n'
+                b'[persist.sys.boot.reason.history]: [reboot,adb,1558549857\n'
+                b'reboot,factory_reset,1558483886\n'
+                b'reboot,1558483823]\n'
+                b'[persist.something]: [haha\n'
+                b']')
             actual_output = adb.AdbProxy().getprops([
                 'selinux.restorecon_recursive',
                 'persist.sys.boot.reason.history',
@@ -498,9 +498,8 @@ reboot,1558483823]
                     'selinux.restorecon_recursive':
                     '/data/misc_ce/10',
                     'persist.sys.boot.reason.history':
-                    '''reboot,adb,1558549857
-reboot,factory_reset,1558483886
-reboot,1558483823''',
+                    ('reboot,adb,1558549857\nreboot,factory_reset,1558483886\n'
+                     'reboot,1558483823'),
                     'persist.something':
                     'haha'
                 })
