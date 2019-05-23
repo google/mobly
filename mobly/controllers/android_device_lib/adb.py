@@ -286,13 +286,21 @@ class AdbProxy(object):
         Returns:
             dict, name-value pairs of the properties.
         """
-        output = output.decode('utf-8').strip()
-        clean_output = output.replace('[', '').replace(']', '')
+        output = output.decode('utf-8', errors='ignore')
         results = {}
-        for line in clean_output.split('\n'):
-            if line:
-                name, value = line.split(': ')
-                results[name] = value
+        for line in output.split(']\n'):
+            if not line:
+                continue
+            try:
+                name, value = line.split(': ', 1)
+            except ValueError:
+                logging.debug('Failed to parse adb getprop line %s', line)
+                continue
+            name = name.strip()[1:-1]
+            # Remove any square bracket from either end of the value string.
+            if value and value[0] == '[':
+                value = value[1:]
+            results[name] = value
         return results
 
     def getprop(self, prop_name):

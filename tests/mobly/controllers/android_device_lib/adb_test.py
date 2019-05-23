@@ -307,8 +307,8 @@ class AdbTest(unittest.TestCase):
 
     def test_construct_adb_cmd_with_special_characters(self):
         adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', ['a b', '"blah"', '\/\/'], shell=False)
-        self.assertEqual(adb_cmd, ['adb', 'shell', 'a b', '"blah"', "\/\/"])
+            'shell', ['a b', '"blah"', r'\/\/'], shell=False)
+        self.assertEqual(adb_cmd, ['adb', 'shell', 'a b', '"blah"', r"\/\/"])
 
     def test_construct_adb_cmd_with_serial(self):
         adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
@@ -348,7 +348,7 @@ class AdbTest(unittest.TestCase):
 
     def test_construct_adb_cmd_with_shell_true_with_auto_quotes(self):
         adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', ['a b', '"blah"', '\/\/'], shell=True)
+            'shell', ['a b', '"blah"', r'\/\/'], shell=True)
         self.assertEqual(adb_cmd, '"adb" shell \'a b\' \'"blah"\' \'\\/\\/\'')
 
     def test_construct_adb_cmd_with_shell_true_with_serial(self):
@@ -454,29 +454,55 @@ class AdbTest(unittest.TestCase):
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
 
+    def test__parse_getprop_output_special_values(self):
+        mock_adb_output = (
+            b'[selinux.restorecon_recursive]: [/data/misc_ce/10]\n'
+            b'[selinux.abc]: [key: value]\n'  # "key: value" as value
+            b'[persist.sys.boot.reason.history]: [reboot,adb,1558549857\n'
+            b'reboot,factory_reset,1558483886\n'  # multi-line value
+            b'reboot,1558483823]\n'
+            b'[persist.something]: [haha\n'
+            b']\n'
+            b'[[wrapped.key]]: [[wrapped value]]\n'
+            b'[persist.byte]: [J\xaa\x8bb\xab\x9dP\x0f]\n'  # non-decodable
+        )
+        parsed_props = adb.AdbProxy()._parse_getprop_output(mock_adb_output)
+        expected_output = {
+            'persist.sys.boot.reason.history':
+            ('reboot,adb,1558549857\nreboot,factory_reset,1558483886\n'
+             'reboot,1558483823'),
+            'selinux.abc':
+            'key: value',
+            'persist.something':
+            'haha\n',
+            'selinux.restorecon_recursive':
+            '/data/misc_ce/10',
+            '[wrapped.key]':
+            '[wrapped value]',
+            'persist.byte':
+            'JbP\x0f',
+        }
+        self.assertEqual(parsed_props, expected_output)
+
+    def test__parse_getprop_output_malformat_output(self):
+        mock_adb_output = (
+            b'[selinux.restorecon_recursive][/data/misc_ce/10]\n'  # Malformat
+            b'[persist.sys.boot.reason]: [reboot,adb,1558549857]\n'
+            b'[persist.something]: [haha]\n')
+        parsed_props = adb.AdbProxy()._parse_getprop_output(mock_adb_output)
+        expected_output = {
+            'persist.sys.boot.reason': 'reboot,adb,1558549857',
+            'persist.something': 'haha'
+        }
+        self.assertEqual(parsed_props, expected_output)
+
     def test_getprops(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = b'''
-[selinux.restorecon_recursive]: [/data/misc_ce/10]
-[sendbug.preferred.domain]: [google.com]
-[service.bootanim.exit]: [1]
-[sys.boot_completed]: [1]
-[sys.dvr.performance]: [idle]
-[sys.logbootcomplete]: [1]
-[sys.oem_unlock_allowed]: [1]
-[sys.rescue_boot_count]: [1]
-[sys.retaildemo.enabled]: [0]
-[sys.sysctl.extra_free_kbytes]: [27337]
-[sys.sysctl.tcp_def_init_rwnd]: [60]
-[sys.uidcpupower]: []
-[sys.usb.config]: [adb]
-[sys.usb.configfs]: [2]
-[sys.usb.controller]: [a600000.dwc3]
-[sys.usb.ffs.ready]: [1]
-[sys.usb.mtp.device_type]: [3]
-[sys.user.0.ce_available]: [true]
-[sys.wifitracing.started]: [1]
-[telephony.lteOnCdmaDevice]: [1]'''
+            mock_exec_cmd.return_value = (
+                b'\n[sendbug.preferred.domain]: [google.com]\n'
+                b'[sys.uidcpupower]: []\n'
+                b'[sys.wifitracing.started]: [1]\n'
+                b'[telephony.lteOnCdmaDevice]: [1]\n\n')
             actual_output = adb.AdbProxy().getprops([
                 'sys.wifitracing.started',  # "numeric" value
                 'sys.uidcpupower',  # empty value
