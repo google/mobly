@@ -295,7 +295,7 @@ class AdbProxy(object):
                 logging.debug('Failed to parse adb getprop line %s', line)
                 continue
             name = name.strip()[1:-1]
-            # Remove any square bracket from the ends of the value
+            # Remove any square bracket from either end of the value string.
             value = value.strip()
             if value and value[0] == '[':
                 value = value[1:]
