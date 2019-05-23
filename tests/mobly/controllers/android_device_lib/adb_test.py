@@ -454,6 +454,38 @@ class AdbTest(unittest.TestCase):
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
 
+    def test__parse_getprop_output_multiline_adb_output(self):
+        mock_adb_output = (
+            b'[selinux.restorecon_recursive]: [/data/misc_ce/10]\n'
+            b'[persist.sys.boot.reason.history]: [reboot,adb,1558549857\n'
+            b'reboot,factory_reset,1558483886\n'
+            b'reboot,1558483823]\n'
+            b'[persist.something]: [haha\n'
+            b']')
+        parsed_props = adb.AdbProxy()._parse_getprop_output(mock_adb_output)
+        expected_output = {
+            'persist.sys.boot.reason.history':
+            ('reboot,adb,1558549857\nreboot,factory_reset,1558483886\n'
+             'reboot,1558483823'),
+            'persist.something':
+            'haha',
+            'selinux.restorecon_recursive':
+            '/data/misc_ce/10'
+        }
+        self.assertEqual(parsed_props, expected_output)
+
+    def test__parse_getprop_output_malformat_output(self):
+        mock_adb_output = (
+            b'[selinux.restorecon_recursive][/data/misc_ce/10]\n'
+            b'[persist.sys.boot.reason]: [reboot,adb,1558549857]\n'
+            b'[persist.something]: [haha]\n')
+        parsed_props = adb.AdbProxy()._parse_getprop_output(mock_adb_output)
+        expected_output = {
+            'persist.sys.boot.reason': 'reboot,adb,1558549857',
+            'persist.something': 'haha'
+        }
+        self.assertEqual(parsed_props, expected_output)
+
     def test_getprops(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = (
@@ -472,36 +504,6 @@ class AdbTest(unittest.TestCase):
                     'sys.wifitracing.started': '1',
                     'sys.uidcpupower': '',
                     'sendbug.preferred.domain': 'google.com'
-                })
-            mock_exec_cmd.assert_called_once_with(
-                ['adb', 'shell', 'getprop'],
-                shell=False,
-                stderr=None,
-                timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
-
-    def test_getprops_malformat_adb_output(self):
-        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = (
-                b'[selinux.restorecon_recursive]: [/data/misc_ce/10]\n'
-                b'[persist.sys.boot.reason.history]: [reboot,adb,1558549857\n'
-                b'reboot,factory_reset,1558483886\n'
-                b'reboot,1558483823]\n'
-                b'[persist.something]: [haha\n'
-                b']')
-            actual_output = adb.AdbProxy().getprops([
-                'selinux.restorecon_recursive',
-                'persist.sys.boot.reason.history',
-                'persist.something',
-            ])
-            self.assertEqual(
-                actual_output, {
-                    'selinux.restorecon_recursive':
-                    '/data/misc_ce/10',
-                    'persist.sys.boot.reason.history':
-                    ('reboot,adb,1558549857\nreboot,factory_reset,1558483886\n'
-                     'reboot,1558483823'),
-                    'persist.something':
-                    'haha'
                 })
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', 'getprop'],
