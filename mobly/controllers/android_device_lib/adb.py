@@ -289,6 +289,8 @@ class AdbProxy(object):
         output = output.decode('utf-8').strip()
         results = {}
         for line in output.split(']\n'):
+            if not line:
+                continue
             try:
                 name, value = line.split(': ', 1)
             except ValueError:

@@ -454,11 +454,12 @@ class AdbTest(unittest.TestCase):
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
 
-    def test__parse_getprop_output_multiline_adb_output(self):
+    def test__parse_getprop_output_special_output(self):
         mock_adb_output = (
             b'[selinux.restorecon_recursive]: [/data/misc_ce/10]\n'
+            b'[selinux.abc]: [key: value]\n'  # "key: value" as value
             b'[persist.sys.boot.reason.history]: [reboot,adb,1558549857\n'
-            b'reboot,factory_reset,1558483886\n'
+            b'reboot,factory_reset,1558483886\n'  # multi-line value
             b'reboot,1558483823]\n'
             b'[persist.something]: [haha\n'
             b']')
@@ -467,6 +468,8 @@ class AdbTest(unittest.TestCase):
             'persist.sys.boot.reason.history':
             ('reboot,adb,1558549857\nreboot,factory_reset,1558483886\n'
              'reboot,1558483823'),
+            'selinux.abc':
+            'key: value',
             'persist.something':
             'haha',
             'selinux.restorecon_recursive':
@@ -476,7 +479,7 @@ class AdbTest(unittest.TestCase):
 
     def test__parse_getprop_output_malformat_output(self):
         mock_adb_output = (
-            b'[selinux.restorecon_recursive][/data/misc_ce/10]\n'
+            b'[selinux.restorecon_recursive][/data/misc_ce/10]\n'  # Malformat
             b'[persist.sys.boot.reason]: [reboot,adb,1558549857]\n'
             b'[persist.something]: [haha]\n')
         parsed_props = adb.AdbProxy()._parse_getprop_output(mock_adb_output)
