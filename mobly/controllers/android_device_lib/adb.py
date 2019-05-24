@@ -286,7 +286,7 @@ class AdbProxy(object):
         Returns:
             dict, name-value pairs of the properties.
         """
-        output = output.decode('utf-8', errors='ignore')
+        output = output.decode('utf-8', errors='ignore').replace('\r\n', '\n')
         results = {}
         for line in output.split(']\n'):
             if not line:

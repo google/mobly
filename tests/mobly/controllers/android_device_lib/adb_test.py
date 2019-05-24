@@ -496,6 +496,18 @@ class AdbTest(unittest.TestCase):
         }
         self.assertEqual(parsed_props, expected_output)
 
+    def test__parse_getprop_output_special_line_separator(self):
+        mock_adb_output = (
+            b'[selinux.restorecon_recursive][/data/misc_ce/10]\r\n'  # Malformat
+            b'[persist.sys.boot.reason]: [reboot,adb,1558549857]\r\n'
+            b'[persist.something]: [haha]\r\n')
+        parsed_props = adb.AdbProxy()._parse_getprop_output(mock_adb_output)
+        expected_output = {
+            'persist.sys.boot.reason': 'reboot,adb,1558549857',
+            'persist.something': 'haha'
+        }
+        self.assertEqual(parsed_props, expected_output)
+
     def test_getprops(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = (
