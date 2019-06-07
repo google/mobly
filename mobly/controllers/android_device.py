@@ -819,19 +819,40 @@ class AndroidDevice(object):
     def is_emulator(self):
       """Whether this device is probably an emulator.
 
-      If the device's serial follows 'emulator-x', then it's probably an
-      emulator. Otherwise, if the serial is a localhost address, then it's
-      probably also a serial since real, local devices usually won't have
-      network serials.
-
       Note, some cloud-based emulators will have non-localhost network address
       serials, which this property will be inaccurate for.
 
       Returns:
         True if this is probably an emulator.
       """
-      return (DEFAULT_EMULATOR_SERIAL_REGEX.match(self.serial) or
-              LOCALHOST_EMULATOR_SERIAL_REGEX.match(self.serial))
+      if DEFAULT_EMULATOR_SERIAL_REGEX.match(self.serial):
+        # If the device's serial follows 'emulator-xxxx', then it's almost
+        # certainly
+        return True
+      if LOCALHOST_EMULATOR_SERIAL_REGEX.match(self.serial):
+        # If the serial is a localhost address, then it's probably an emulator.
+        # Local devices shouldn't have network serials, and networked devices
+        # shouldn't usually be on localhost.
+        #
+        # Technically, this could be a false-positive with a network ADB serial
+        # where ADB is being proxied through some local service, but this seems
+        # unlikely in the common case.
+        return True
+      if self.adb.getprop('ro.kernel.qemu') == '1':
+        # Qemu is a virtualization layer, which real devices don't need or use,
+        # so it's probably an emulator if this is set.
+        # Additionally, this is what the `BUILD.IS_EMULATOR` Android SDK
+        # property uses.
+        return True
+      if self.adb.getprop('ro.build.characteristics') == 'emulator':
+        # If the device says that it's an emulator, then it's probably an
+        # emulator although some real devices apparently report themselves as
+        # emulators.
+        #
+        # Apparently, some physical devices list themselves as 'emulator's in
+        # addition to other things, so only return True on exact match.
+        return True
+      return False
 
     def load_config(self, config):
         """Add attributes to the AndroidDevice object based on config.
