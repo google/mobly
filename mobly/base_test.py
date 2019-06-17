@@ -169,8 +169,9 @@ class BaseTestClass(object):
             if name in self.user_params:
                 setattr(self, name, self.user_params[name])
             else:
-                logging.warning('Missing optional user param "%s" in '
-                                'configuration, continue.', name)
+                logging.warning(
+                    'Missing optional user param "%s" in '
+                    'configuration, continue.', name)
 
     def register_controller(self, module, required=True, min_number=1):
         """Loads a controller module and returns its loaded devices.
@@ -403,12 +404,12 @@ class BaseTestClass(object):
         if parent_token == stage_name:
             parent_token = self.TAG
         logging.debug(
-            TEST_STAGE_BEGIN_LOG_TEMPLATE.format(
-                parent_token=parent_token, child_token=stage_name))
+            TEST_STAGE_BEGIN_LOG_TEMPLATE.format(parent_token=parent_token,
+                                                 child_token=stage_name))
         yield
         logging.debug(
-            TEST_STAGE_END_LOG_TEMPLATE.format(
-                parent_token=parent_token, child_token=stage_name))
+            TEST_STAGE_END_LOG_TEMPLATE.format(parent_token=parent_token,
+                                               child_token=stage_name))
 
     def _setup_test(self, test_name):
         """Proxy function to guarantee the base implementation of setup_test is
@@ -588,10 +589,10 @@ class BaseTestClass(object):
                 try:
                     self._setup_test(test_name)
                 except signals.TestFailure as e:
-                    raise_with_traceback(
-                        signals.TestError(e.details, e.extras))
+                    raise_with_traceback(signals.TestError(
+                        e.details, e.extras))
                 test_method()
-            except signals.TestPass:
+            except (signals.TestPass, signals.TestAbortSignal):
                 raise
             except Exception:
                 logging.exception('Exception occurred in %s.',
@@ -620,7 +621,7 @@ class BaseTestClass(object):
         except signals.TestAbortSignal as e:
             # Abort signals, pass along.
             tr_record.test_fail(e)
-            raise e
+            raise
         except signals.TestPass as e:
             # Explicit test pass.
             tr_record.test_pass(e)
@@ -772,8 +773,8 @@ class BaseTestClass(object):
             elif test_name in self._generated_test_table:
                 test_method = self._generated_test_table[test_name]
             else:
-                raise Error('%s does not have test method %s.' % (self.TAG,
-                                                                  test_name))
+                raise Error('%s does not have test method %s.' %
+                            (self.TAG, test_name))
             test_methods.append((test_name, test_method))
         return test_methods
 
