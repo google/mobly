@@ -55,6 +55,9 @@ KEY_SKIP_LOGCAT = 'skip_logcat'
 DEFAULT_VALUE_SKIP_LOGCAT = False
 SERVICE_NAME_LOGCAT = 'logcat'
 
+# Default name for bug reports taken without a specified test name.
+DEFAULT_BUG_REPORT_NAME = 'bugreport'
+
 # Default Timeout to wait for boot completion
 DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
 
@@ -392,7 +395,9 @@ def take_bug_reports(ads, test_name, begin_time, destination=None):
 
     def take_br(test_name, begin_time, ad, destination):
         ad.take_bug_report(
-            test_name, begin_time=begin_time, destination=destination)
+            test_name=test_name,
+            begin_time=begin_time,
+            destination=destination)
 
     args = [(test_name, begin_time, ad, destination) for ad in ads]
     utils.concurrent_exec(take_br, args)
@@ -824,7 +829,7 @@ class AndroidDevice(object):
         self.services.snippets.remove_snippet_client(name)
 
     def take_bug_report(self,
-                        test_name,
+                        test_name=None,
                         begin_time=None,
                         timeout=300,
                         destination=None):
@@ -832,6 +837,8 @@ class AndroidDevice(object):
 
         Args:
             test_name: Name of the test method that triggered this bug report.
+                If not set, then this will default to
+                android_device.DEFAULT_BUG_REPORT_NAME.
             begin_time: Timestamp of when the test started. If not set, then
                 this will default to the current time.
             timeout: float, the number of seconds to wait for bugreport to
@@ -843,6 +850,8 @@ class AndroidDevice(object):
           A string containing the absolute path to the bug report on the host
           machine.
         """
+        if test_name is None:
+            test_name = DEFAULT_BUG_REPORT_NAME
         if begin_time is None:
             epoch_time = utils.get_current_epoch_time()
             timestamp = mobly_logger.epoch_to_log_line_timestamp(epoch_time)
