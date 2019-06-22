@@ -23,6 +23,8 @@ import sys
 from mobly import records
 from mobly import utils
 
+LATEST_LOG_ALIAS = 'latest'
+
 log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
 # The micro seconds are added by the format string above,
 # so the time format does not include ms.
@@ -193,8 +195,10 @@ def create_latest_log_alias(actual_path):
     Args:
         actual_path: The source directory where the latest test run's logs are.
     """
-    alias_path = os.path.join(os.path.dirname(actual_path), 'latest')
-    utils.create_alias(actual_path, alias_path)
+    if LATEST_LOG_ALIAS:
+        alias_path = os.path.join(
+            os.path.dirname(actual_path), LATEST_LOG_ALIAS)
+        utils.create_alias(actual_path, alias_path)
 
 
 def setup_test_logger(log_path, prefix=None, filename=None):
