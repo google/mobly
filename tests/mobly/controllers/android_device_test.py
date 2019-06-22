@@ -188,7 +188,7 @@ class AndroidDeviceTest(unittest.TestCase):
     def test_get_device_too_many_matches(self):
         ads = mock_android_device.get_mock_ads(5)
         target_serial = ads[1].serial = ads[0].serial
-        expected_msg = "More than one device matched: \['0', '0'\]"
+        expected_msg = r"More than one device matched: \['0', '0'\]"
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             android_device.get_device(ads, serial=target_serial)
 

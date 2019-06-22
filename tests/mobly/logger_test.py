@@ -27,6 +27,18 @@ class LoggerTest(unittest.TestCase):
             1469134262116, time_zone=pytz.utc)
         self.assertEqual("07-21 20:51:02.116", actual_stamp)
 
+    def test_is_valid_logline_timestamp(self):
+        self.assertTrue(
+            logger.is_valid_logline_timestamp("06-21 17:44:42.336"))
+
+    def test_is_valid_logline_timestamp_when_wrong_lenght(self):
+        self.assertFalse(
+            logger.is_valid_logline_timestamp("  06-21 17:44:42.336"))
+
+    def test_is_valid_logline_timestamp_when_invalid_content(self):
+        self.assertFalse(
+            logger.is_valid_logline_timestamp("------------------"))
+
 
 if __name__ == "__main__":
     unittest.main()
