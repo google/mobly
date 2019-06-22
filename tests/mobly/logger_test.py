@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import mock
-import os
 import pytz
 import unittest
 
