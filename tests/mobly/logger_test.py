@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+import mock
+import os
 import pytz
+import unittest
 
 from mobly import logger
 
@@ -38,6 +40,30 @@ class LoggerTest(unittest.TestCase):
     def test_is_valid_logline_timestamp_when_invalid_content(self):
         self.assertFalse(
             logger.is_valid_logline_timestamp("------------------"))
+
+    @mock.patch('mobly.utils.create_alias')
+    def test_create_latest_log_alias(self, mock_create_alias):
+        logger.create_latest_log_alias('fake_path')
+        mock_create_alias.assert_called_with('fake_path', 'latest')
+
+    @mock.patch('mobly.utils.create_alias')
+    @mock.patch('mobly.logger.LATEST_LOG_ALIAS', None)
+    def test_create_latest_log_alias_when_none(self, mock_create_alias):
+        logger.create_latest_log_alias('fake_path')
+        mock_create_alias.assert_not_called()
+
+    @mock.patch('mobly.utils.create_alias')
+    @mock.patch('mobly.logger.LATEST_LOG_ALIAS', '')
+    def test_create_latest_log_alias_when_empty(self, mock_create_alias):
+        logger.create_latest_log_alias('fake_path')
+        mock_create_alias.assert_not_called()
+
+    @mock.patch('mobly.utils.create_alias')
+    @mock.patch('mobly.logger.LATEST_LOG_ALIAS', 'history')
+    def test_create_latest_log_alias_when_custom_value(self,
+                                                       mock_create_alias):
+        logger.create_latest_log_alias('fake_path')
+        mock_create_alias.assert_called_with('fake_path', 'history')
 
 
 if __name__ == "__main__":
