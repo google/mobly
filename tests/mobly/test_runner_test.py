@@ -259,8 +259,8 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         with self.assertRaisesRegex(
                 test_runner.Error,
-                'TestRunner\._teardown_logger\(\) called before '
-                'TestRunner\.setup_logger\(\)!'):
+                r'TestRunner\._teardown_logger\(\) called before '
+                r'TestRunner\.setup_logger\(\)!'):
             tr._teardown_logger()
 
     def test_run_no_tests(self):

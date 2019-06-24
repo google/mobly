@@ -29,7 +29,7 @@ log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
 log_line_time_format = '%m-%d %H:%M:%S'
 log_line_timestamp_len = 18
 
-logline_timestamp_re = re.compile('\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d')
+logline_timestamp_re = re.compile(r'\d\d-\d\d \d\d:\d\d:\d\d.\d\d\d')
 
 
 def _parse_logline_timestamp(t):
