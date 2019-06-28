@@ -659,11 +659,14 @@ class _InstrumentationBlockFormatter(object):
             raise signals.TestError(details=error_message, extras=extras)
 
 
-class BaseInstrumentationTestClass(base_test.BaseTestClass):
-    """Base class for all instrumentation test claseses to inherit from.
+class InstrumentationTestMixin(object):
+    """A mixin for Mobly test classes to inherit from for instrumentation tests.
 
-    This class extends the BaseTestClass to add functionality to run and parse
-    the output of instrumentation runs.
+    This class should be used in a subclass of both BaseTestClass and this class
+    in order to provide instrumentation test capabilities. This mixin is
+    explicitly for the case where the underlying BaseTestClass cannot be
+    replaced with BaseInstrumentationTestClass. In general, prefer using
+    BaseInstrumentationTestClass instead.
 
     Attributes:
         DEFAULT_INSTRUMENTATION_OPTION_PREFIX: string, the default prefix for
@@ -962,3 +965,19 @@ class BaseInstrumentationTestClass(base_test.BaseTestClass):
             handler=parse_instrumentation)
 
         return self._finish_parsing(instrumentation_block[0])
+
+
+class BaseInstrumentationTestClass(InstrumentationTestMixin,
+                                   base_test.BaseTestClass):
+    """Base class for all instrumentation test classes to inherit from.
+
+    This class extends the BaseTestClass to add functionality to run and parse
+    the output of instrumentation runs.
+
+    Attributes:
+        DEFAULT_INSTRUMENTATION_OPTION_PREFIX: string, the default prefix for
+            instrumentation params contained within user params.
+        DEFAULT_INSTRUMENTATION_ERROR_MESSAGE: string, the default error
+            message to set if something has prevented something in the
+            instrumentation test run from completing properly.
+    """
