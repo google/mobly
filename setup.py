@@ -64,7 +64,7 @@ def main():
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
         tests_require=[
             'mock',
-            'pytest',
+            'pytest<5.0.0',
             'pytz',
         ],
         install_requires=install_requires,
