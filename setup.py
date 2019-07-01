@@ -64,6 +64,7 @@ def main():
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
         tests_require=[
             'mock',
+            # Needed for supporting Python 2 because this release stopped supporting Python 2.
             'pytest<5.0.0',
             'pytz',
         ],
