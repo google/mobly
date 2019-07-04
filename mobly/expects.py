@@ -20,6 +20,8 @@ from mobly import asserts
 from mobly import records
 from mobly import signals
 
+DEFAULT_TEST_RESULT_RECORD = records.TestResultRecord('mobly', 'global')
+
 
 class _ExpectErrorRecorder(object):
     """Singleton used to store errors caught via `expect_*` functions in test.
@@ -28,8 +30,8 @@ class _ExpectErrorRecorder(object):
     to the record object for the test currently executing.
     """
 
-    def __init__(self):
-        self.reset_internal_states()
+    def __init__(self, record=None):
+        self.reset_internal_states(record=record)
 
     def reset_internal_states(self, record=None):
         """Resets the internal state of the recorder.
@@ -154,4 +156,4 @@ def expect_no_raises(message=None, extras=None):
         recorder.add_error(e_record)
 
 
-recorder = _ExpectErrorRecorder()
+recorder = _ExpectErrorRecorder(DEFAULT_TEST_RESULT_RECORD)
