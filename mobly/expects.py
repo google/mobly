@@ -20,6 +20,12 @@ from mobly import asserts
 from mobly import records
 from mobly import signals
 
+# When used outside of a `base_test.BaseTestClass` context, such as when using
+# the `android_device` controller directly, the `expects.recorder`
+# `TestResultRecord` isn't set, which causes `expects` module methods to fail
+# from the missing record, so this provides a default, globally accessible
+# record for `expects` module to use as well as providing a way to get the
+# globally recorded errors.
 DEFAULT_TEST_RESULT_RECORD = records.TestResultRecord('mobly', 'global')
 
 
