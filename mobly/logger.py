@@ -192,6 +192,12 @@ def kill_test_logger(logger):
 def create_latest_log_alias(actual_path):
     """Creates a symlink to the latest test run logs.
 
+    The latest log alias directory uses the value of `logger.LATEST_LOG_ALIAS`.
+    In order to modify this directory for a test, the value must be changed
+    before `test_runner.TestRunner.setup_logger` is called. If the value is set
+    to a falsy string value, then the latest log alias directory will not be
+    created.
+
     Args:
         actual_path: The source directory where the latest test run's logs are.
     """
