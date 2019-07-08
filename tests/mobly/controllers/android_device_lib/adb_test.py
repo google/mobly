@@ -174,8 +174,8 @@ class AdbTest(unittest.TestCase):
         self._mock_execute_and_process_stdout_process(mock_popen)
         mock_handler = mock.MagicMock()
         mock_popen.return_value.communicate = mock.Mock(
-            return_value=(unexpected_stdout,
-                          MOCK_DEFAULT_STDERR.encode('utf-8')))
+            return_value=(unexpected_stdout, MOCK_DEFAULT_STDERR.encode(
+                'utf-8')))
 
         err = adb.AdbProxy()._execute_and_process_stdout(
             ['fake_cmd'], shell=False, handler=mock_handler)
@@ -454,6 +454,19 @@ class AdbTest(unittest.TestCase):
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
 
+    def test_getprop_with_extra_attempts_succeed(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.side_effect = [b'', b'', b'blah']
+            self.assertEqual(adb.AdbProxy().getprop('haha', attempts=3),
+                             'blah')
+            self.assertEqual(mock_exec_cmd.call_count, 3)
+
+    def test_getprop_with_extra_attempts_fail(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.return_value = b''
+            self.assertEqual(adb.AdbProxy().getprop('haha', attempts=3), '')
+            self.assertEqual(mock_exec_cmd.call_count, 3)
+
     def test__parse_getprop_output_special_values(self):
         mock_adb_output = (
             b'[selinux.restorecon_recursive]: [/data/misc_ce/10]\n'
@@ -521,12 +534,11 @@ class AdbTest(unittest.TestCase):
                 'sendbug.preferred.domain',  # string value
                 'nonExistentProp'
             ])
-            self.assertEqual(
-                actual_output, {
-                    'sys.wifitracing.started': '1',
-                    'sys.uidcpupower': '',
-                    'sendbug.preferred.domain': 'google.com'
-                })
+            self.assertEqual(actual_output, {
+                'sys.wifitracing.started': '1',
+                'sys.uidcpupower': '',
+                'sendbug.preferred.domain': 'google.com'
+            })
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', 'getprop'],
                 shell=False,

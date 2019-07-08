@@ -34,7 +34,7 @@ class MockAdbProxy(object):
                 return bytes('', 'utf-8')
             return bytes('package:com.googlecode.android_scripting', 'utf-8')
 
-    def getprop(self, params):
+    def getprop(self, params, attempts=1):
         if params == 'ro.build.version.codename':
             return 'Z'
         elif params == 'ro.build.version.sdk':
@@ -82,8 +82,8 @@ class Sl4aClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.setup_mock_socket_file(mock_create_connection)
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess, resp_lines=[b'\n'])
-        client = self._make_client(adb_proxy=MockAdbProxy(
-            apk_not_installed=True))
+        client = self._make_client(
+            adb_proxy=MockAdbProxy(apk_not_installed=True))
         with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                     '.* SL4A is not installed on .*'):
             client.start_app_and_connect()

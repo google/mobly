@@ -740,7 +740,7 @@ class AndroidDevice(object):
 
     @property
     def is_rootable(self):
-        return self.adb.getprop('ro.debuggable') == '1'
+        return self.adb.getprop('ro.debuggable', attempts=3) == '1'
 
     @property
     def model(self):
@@ -757,10 +757,10 @@ class AndroidDevice(object):
                 if len(tokens) > 1:
                     return tokens[1].lower()
             return None
-        model = self.adb.getprop('ro.build.product').lower()
+        model = self.adb.getprop('ro.build.product', attempts=3).lower()
         if model == 'sprout':
             return model
-        return self.adb.getprop('ro.product.name').lower()
+        return self.adb.getprop('ro.product.name', attempts=3).lower()
 
     def load_config(self, config):
         """Add attributes to the AndroidDevice object based on config.
@@ -942,6 +942,8 @@ class AndroidDevice(object):
 
     def is_boot_completed(self):
         """Checks if device boot is completed by verifying system property."""
+        # No need to attempt multiple times because `wait_for_boot_completion`
+        # will handle empty string values properly.
         completed = self.adb.getprop('sys.boot_completed')
         if completed == '1':
             self.log.debug('Device boot completed.')

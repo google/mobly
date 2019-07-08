@@ -68,7 +68,7 @@ class MockAdbProxy(object):
         elif 'which' in params:
             return b''
 
-    def getprop(self, params):
+    def getprop(self, params, attempts=1):
         if params == 'ro.build.version.codename':
             return 'Z'
         elif params == 'ro.build.version.sdk':

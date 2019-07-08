@@ -88,7 +88,7 @@ class MockAdbProxy(object):
                 return b"/system/bin/sh: bugreportz: not found"
             return b'1.1'
 
-    def getprop(self, params):
+    def getprop(self, params, attempts=1):
         if params in self.mock_properties:
             return self.mock_properties[params]
 
