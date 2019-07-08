@@ -24,7 +24,6 @@ from mobly.controllers.android_device_lib import sl4a_client
 from tests.lib import jsonrpc_client_test_base
 from tests.lib import mock_android_device
 
-
 class Sl4aClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.sl4a_client.
     """

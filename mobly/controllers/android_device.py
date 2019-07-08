@@ -956,6 +956,8 @@ class AndroidDevice(object):
 
     def is_boot_completed(self):
         """Checks if device boot is completed by verifying system property."""
+        # No need to attempt multiple times because `wait_for_boot_completion`
+        # will handle empty string values properly.
         completed = self.adb.getprop('sys.boot_completed')
         if completed == '1':
             self.log.debug('Device boot completed.')

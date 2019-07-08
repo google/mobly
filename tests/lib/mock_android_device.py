@@ -124,7 +124,7 @@ class MockAdbProxy(object):
         elif 'which' in params:
             return b''
 
-    def getprop(self, params):
+    def getprop(self, params, attempts=1):
         if params in self.mock_properties:
             return self.mock_properties[params]
 

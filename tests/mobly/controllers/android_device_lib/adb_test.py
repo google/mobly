@@ -454,6 +454,19 @@ class AdbTest(unittest.TestCase):
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
 
+    def test_getprop_with_extra_attempts_succeed(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.side_effect = [b'', b'', b'blah']
+            self.assertEqual(adb.AdbProxy().getprop('haha', attempts=3),
+                             'blah')
+            self.assertEqual(mock_exec_cmd.call_count, 3)
+
+    def test_getprop_with_extra_attempts_fail(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.return_value = b''
+            self.assertEqual(adb.AdbProxy().getprop('haha', attempts=3), '')
+            self.assertEqual(mock_exec_cmd.call_count, 3)
+
     def test__parse_getprop_output_special_values(self):
         mock_adb_output = (
             b'[selinux.restorecon_recursive]: [/data/misc_ce/10]\n'

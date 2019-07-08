@@ -306,21 +306,32 @@ class AdbProxy(object):
             results[name] = value
         return results
 
-    def getprop(self, prop_name):
+    def getprop(self, prop_name, attempts=1):
         """Get a property of the device.
 
         This is a convenience wrapper for `adb shell getprop xxx`.
 
         Args:
-            prop_name: A string that is the name of the property to get.
+            prop_name: string, the name of the property to get.
+            attempts: int, the number of times to attempt to get the property.
+                The adb property will be tried again if empty string is
+                returned. Occasionally, getting the property of a single value
+                will return empty string spuriously, so setting an `attempts`
+                value greater than one to repeatedly try to get the value helps
+                to work around that.
 
         Returns:
-            A string that is the value of the property, or None if the property
-            doesn't exist.
+            A string that is the value of the property.
         """
-        return self.shell(
-            ['getprop', prop_name],
-            timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
+        if attempts < 1:
+            attempts = 1
+        for _ in range(attempts):
+            output = self.shell(
+                ['getprop', prop_name],
+                timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
+            if output:
+                return output
+        return ''
 
     def getprops(self, prop_names):
         """Get multiple properties of the device.
