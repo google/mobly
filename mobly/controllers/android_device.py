@@ -933,7 +933,7 @@ class AndroidDevice(object):
             try:
                 if self.is_boot_completed():
                     return
-            except adb.AdbError:
+            except (adb.AdbError, adb.AdbTimeoutError):
                 # adb shell calls may fail during certain period of booting
                 # process, which is normal. Ignoring these errors.
                 pass
