@@ -1,3 +1,4 @@
+# Contributing
 Want to contribute? Great! First, read this page (including the small print at the end).
 
 ### Before you contribute
@@ -23,5 +24,4 @@ use GitHub pull requests for this purpose.
 ### The small print
 Contributions made by corporations are covered by a different agreement than
 the one above, the
-[Software Grant and Corporate Contributor License Agreement]
-(https://cla.developers.google.com/about/google-corporate).
+[Software Grant and Corporate Contributor License Agreement](https://cla.developers.google.com/about/google-corporate).
