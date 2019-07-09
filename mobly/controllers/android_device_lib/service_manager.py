@@ -138,7 +138,7 @@ class ServiceManager(object):
         """Resumes all service instances."""
         for alias, service in self._service_objects.items():
             with expects.expect_no_raises(
-                    'Failed to pause service "%s".' % alias):
+                    'Failed to resume service "%s".' % alias):
                 service.resume()
 
     def __getattr__(self, name):
