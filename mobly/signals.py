@@ -77,4 +77,4 @@ class TestAbortAll(TestAbortSignal):
 
 
 class ControllerError(Exception):
-    """Raised when an error occured in controller classes."""
+    """Raised when an error occurred in controller classes."""

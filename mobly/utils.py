@@ -462,7 +462,7 @@ def wait_for_standing_subprocess(proc, timeout=None):
 
     Propagates the exception raised by the subprocess.wait(.) function.
     The subprocess.TimeoutExpired exception is raised if the process timed-out
-    rather then terminating.
+    rather than terminating.
 
     If no exception is raised: the subprocess terminated on its own. No need
     to call stop_standing_subprocess() to kill it.

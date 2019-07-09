@@ -25,13 +25,14 @@ from tests.lib import jsonrpc_client_test_base
 
 class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
     def __init__(self):
-        super(FakeRpcClient, self).__init__(app_name='FakeRpcClient',
-            ad=mock.Mock())
+        super(FakeRpcClient, self).__init__(
+            app_name='FakeRpcClient', ad=mock.Mock())
 
 
 class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.jsonrpc_client_base.
     """
+
     @mock.patch('socket.create_connection')
     def test_open_timeout_io_error(self, mock_create_connection):
         """Test socket timeout with io error
@@ -99,7 +100,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     def test_rpc_error_response(self, mock_create_connection):
         """Test rpc that is given an error response
 
-        Test that when an rpc recieves a reponse with an error will raised
+        Test that when an rpc receives a response with an error will raised
         an api error.
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
@@ -116,7 +117,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     def test_rpc_callback_response(self, mock_create_connection):
         """Test rpc that is given a callback response.
 
-        Test that when an rpc recieves a callback reponse, a callback object is
+        Test that when an rpc receives a callback response, a callback object is
         created correctly.
         """
         fake_file = self.setup_mock_socket_file(mock_create_connection)
@@ -152,7 +153,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     @mock.patch('socket.create_connection')
     def test_rpc_no_response(self, mock_create_connection):
-        """Test rpc that does not get a reponse
+        """Test rpc that does not get a response
 
         Test that when an rpc does not get a response it throws a protocol
         error.

@@ -346,8 +346,7 @@ class MonsoonProxy(object):
             seq, _type, x, y = struct.unpack("BBBB", _bytes[:4])
             data = [
                 struct.unpack(">hhhh", _bytes[x:x + 8])
-                for x in range(4,
-                               len(_bytes) - 8, 8)
+                for x in range(4, len(_bytes) - 8, 8)
             ]
 
             if self._last_seq and seq & 0xF != (self._last_seq + 1) & 0xF:
@@ -703,7 +702,7 @@ class Monsoon(object):
         self.mon.SetMaxCurrent(cur)
 
     def set_max_init_current(self, cur):
-        """Sets the max power-up/inital current.
+        """Sets the max power-up/initial current.
 
         Args:
             cur: The max initial current allowed in mA.

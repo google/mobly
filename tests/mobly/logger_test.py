@@ -31,7 +31,7 @@ class LoggerTest(unittest.TestCase):
         self.assertTrue(
             logger.is_valid_logline_timestamp("06-21 17:44:42.336"))
 
-    def test_is_valid_logline_timestamp_when_wrong_lenght(self):
+    def test_is_valid_logline_timestamp_when_wrong_length(self):
         self.assertFalse(
             logger.is_valid_logline_timestamp("  06-21 17:44:42.336"))
 
