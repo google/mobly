@@ -45,7 +45,7 @@ STAGE_NAME_CLEAN_UP = 'clean_up'
 
 
 class Error(Exception):
-    """Raised for exceptions that occured in BaseTestClass."""
+    """Raised for exceptions that occurred in BaseTestClass."""
 
 
 class BaseTestClass(object):

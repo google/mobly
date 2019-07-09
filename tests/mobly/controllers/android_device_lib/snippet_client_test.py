@@ -222,9 +222,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     @mock.patch('socket.create_connection')
     @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
                 'SnippetClient.disconnect')
-    def test_snippet_stop_app_raises(self, mock_disconect,
+    def test_snippet_stop_app_raises(self, mock_disconnect,
                                      mock_create_connection):
-        mock_disconect.side_effect = Exception('ha')
+        mock_disconnect.side_effect = Exception('ha')
         adb_proxy = mock.MagicMock()
         adb_proxy.shell.return_value = b'OK (0 tests)'
         client = self._make_client(adb_proxy)

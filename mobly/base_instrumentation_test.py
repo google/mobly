@@ -99,7 +99,7 @@ class _InstrumentationKnownStatusKeys(object):
 class _InstrumentationStatusCodes(object):
     """A mapping of instrumentation status codes to test method results.
 
-    When instrumentation runs, at various points ouput is created in a serias
+    When instrumentation runs, at various points output is created in a series
     of blocks that terminate as follows:
 
     .. code-block:: none
@@ -171,7 +171,7 @@ class _InstrumentationKnownResultKeys(object):
         INSTRUMENTATION_RESULT:
 
     If something wrong happened during the instrumentation run such as an
-    application under test crash, the the line will appear similarly as thus:
+    application under test crash, the line will appear similarly as thus:
 
     .. code-block:: none
 
@@ -227,7 +227,7 @@ class _InstrumentationResultSignals(object):
 class _InstrumentationBlockStates(Enum):
     """States used for determing what the parser is currently parsing.
 
-    The parse always starts and ends a block in the UKNOWN state, which is
+    The parse always starts and ends a block in the UNKNOWN state, which is
     used to indicate that either a method or a result block (matching the
     METHOD and RESULT states respectively) are valid follow ups, which means
     that parser should be checking for a structure prefix that indicates which
@@ -273,7 +273,7 @@ class _InstrumentationBlock(object):
 
     Because these keys are poentially very long, constant string contatention
     is potentially inefficent. Instead, this class builds up a buffer to store
-    the raw ouput until it is processed into an actual test result by the
+    the raw output until it is processed into an actual test result by the
     _InstrumentationBlockFormatter class.
 
     Additionally, this class also serves to store the parser state, which
@@ -396,7 +396,7 @@ class _InstrumentationBlock(object):
         Args:
             structure_prefix: string, the structure prefix that was matched
                 and that needs to be removed.
-            key_line: string, the raw instrumentation ouput line that contains
+            key_line: string, the raw instrumentation output line that contains
                 the key-value pair.
         """
         self._empty = False
@@ -447,7 +447,7 @@ class _InstrumentationBlock(object):
             A new instrumentation block set to the new state, representing
             the start of parsing a new instrumentation test method.
             Alternatively, if the current instrumentation block represents the
-            start of parsing a new instrumentation block (state UKNOWN), then
+            start of parsing a new instrumentation block (state UNKNOWN), then
             this returns the current instrumentation block set to the now
             known parsing state.
         """
@@ -528,7 +528,7 @@ class _InstrumentationBlockFormatter(object):
         return '#'.join(filter(None, full_name_parts))
 
     def _get_details(self):
-        """Gets the ouput for the detail section of the TestResultRecord.
+        """Gets the output for the detail section of the TestResultRecord.
 
         Returns:
             A string to set for a TestResultRecord's details.
@@ -754,7 +754,7 @@ class InstrumentationTestMixin(object):
 
         Returns:
             The new instrumentation block to use for storing parsed
-            instrumentation ouput.
+            instrumentation output.
         """
         formatters = self._create_formatters(instrumentation_block, new_state)
         for formatter in formatters:
@@ -855,7 +855,7 @@ class InstrumentationTestMixin(object):
             return instrumentation_block
 
     def _parse_line(self, instrumentation_block, line):
-        """Parses an arbitary line from the instrumentation output based upon
+        """Parses an arbitrary line from the instrumentation output based upon
         the current parser state.
 
         Args:

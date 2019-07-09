@@ -778,7 +778,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertIsNone(actual_record.extras)
 
     def test_promote_extra_errors_to_termination_signal(self):
-        """If no termination singal is specified, use the first extra error as
+        """If no termination signal is specified, use the first extra error as
         the termination signal.
         """
         expected_extra_error = Exception('teardown_test Exception.')
