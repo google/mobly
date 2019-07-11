@@ -904,13 +904,15 @@ class AndroidDeviceTest(unittest.TestCase):
         return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device.AndroidDevice.is_boot_completed',
-        side_effect=[False, False, adb.AdbTimeoutError(['adb', 'shell', 'getprop sys.boot_completed'], timeout=5,serial=1), True])
+        side_effect=[False, False, adb.AdbTimeoutError(['adb', 'shell', 'getprop sys.boot_completed'], timeout=5, serial=1), True])
     def test_AndroidDevice_wait_for_completion(self, is_boot_completed, FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
-        ad.wait_for_boot_completion()
-        # self.asserFalse(ad.isbootloader)
-
-        print('test_AndroidDevice_wait_for_completion_0')
+        raised = False
+        try:
+            ad.wait_for_boot_completion()
+        except (adb.AdbError, adb.AdbTimeoutError):
+            raised = True
+        self.assertFalse(raised, 'adb.AdbError or adb.AdbTimeoutError exception raised but not handled.')
 
 
 if __name__ == '__main__':
