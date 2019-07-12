@@ -174,8 +174,8 @@ class AdbTest(unittest.TestCase):
         self._mock_execute_and_process_stdout_process(mock_popen)
         mock_handler = mock.MagicMock()
         mock_popen.return_value.communicate = mock.Mock(
-            return_value=(unexpected_stdout,
-                          MOCK_DEFAULT_STDERR.encode('utf-8')))
+            return_value=(unexpected_stdout, MOCK_DEFAULT_STDERR.encode(
+                'utf-8')))
 
         err = adb.AdbProxy()._execute_and_process_stdout(
             ['fake_cmd'], shell=False, handler=mock_handler)
@@ -521,13 +521,41 @@ class AdbTest(unittest.TestCase):
                 'sendbug.preferred.domain',  # string value
                 'nonExistentProp'
             ])
-            self.assertEqual(
-                actual_output, {
-                    'sys.wifitracing.started': '1',
-                    'sys.uidcpupower': '',
-                    'sendbug.preferred.domain': 'google.com'
-                })
+            self.assertEqual(actual_output, {
+                'sys.wifitracing.started': '1',
+                'sys.uidcpupower': '',
+                'sendbug.preferred.domain': 'google.com'
+            })
             mock_exec_cmd.assert_called_once_with(
+                ['adb', 'shell', 'getprop'],
+                shell=False,
+                stderr=None,
+                timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
+
+    def test_getprops_when_empty_string_randomly_returned(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.side_effect = [
+                b'', (b'\n[ro.build.id]: [AB42]\n'
+                      b'[ro.build.type]: [userdebug]\n\n')
+            ]
+            actual_output = adb.AdbProxy().getprops(['ro.build.id'])
+            self.assertEqual(actual_output, {
+                'ro.build.id': 'AB42',
+            })
+            self.assertEqual(mock_exec_cmd.call_count, 2)
+            mock_exec_cmd.assert_called_with(
+                ['adb', 'shell', 'getprop'],
+                shell=False,
+                stderr=None,
+                timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
+
+    def test_getprops_when_empty_string_always_returned(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.return_value = b''
+            actual_output = adb.AdbProxy().getprops(['ro.build.id'])
+            self.assertEqual(actual_output, {})
+            self.assertEqual(mock_exec_cmd.call_count, 3)
+            mock_exec_cmd.assert_called_with(
                 ['adb', 'shell', 'getprop'],
                 shell=False,
                 stderr=None,
