@@ -327,8 +327,8 @@ class JsonRpcClientBase(object):
 
     def disable_hidden_api_blacklist(self):
         """If necessary and possible, disables hidden api blacklist."""
-        version_codename = self._ad.adb.getprop('ro.build.version.codename')
-        sdk_version = int(self._ad.adb.getprop('ro.build.version.sdk'))
+        version_codename = self._ad.build_info['build_version_codename']
+        sdk_version = int(self._ad.build_info['build_version_sdk'])
         # we check version_codename in addition to sdk_version because P builds
         # in development report sdk_version 27, but still enforce the blacklist.
         if self._ad.is_rootable and (sdk_version >= 28

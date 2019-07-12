@@ -66,6 +66,11 @@ class Sl4aClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             installed_packages=['com.googlecode.android_scripting'])
         ad = mock.Mock()
         ad.adb = adb_proxy
+        ad.build_info = {
+            'build_version_codename':
+            ad.adb.getprop('ro.build.version.codename'),
+            'build_version_sdk': ad.adb.getprop('ro.build.version.sdk'),
+        }
         return sl4a_client.Sl4aClient(ad=ad)
 
     def _setup_mock_instrumentation_cmd(self, mock_start_standing_subprocess,

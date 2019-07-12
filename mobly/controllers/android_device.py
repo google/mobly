@@ -716,9 +716,23 @@ class AndroidDevice(object):
                            'info.')
             return
         info = {}
-        build_info = self.adb.getprops(['ro.build.id', 'ro.build.type'])
+        build_info = self.adb.getprops([
+            'ro.build.id',
+            'ro.build.type',
+            'ro.build.version.codename',
+            'ro.build.version.sdk',
+            'ro.build.product',
+            'ro.debuggable',
+            'ro.product.name',
+        ])
         info['build_id'] = build_info['ro.build.id']
         info['build_type'] = build_info['ro.build.type']
+        info['build_version_codename'] = build_info.get(
+            'ro.build.version.codename', '')
+        info['build_version_sdk'] = build_info.get('ro.build.version.sdk', '')
+        info['build_product'] = build_info.get('ro.build.product', '')
+        info['debuggable'] = build_info.get('ro.debuggable', '')
+        info['product_name'] = build_info.get('ro.product.name', '')
         return info
 
     @property
@@ -740,7 +754,7 @@ class AndroidDevice(object):
 
     @property
     def is_rootable(self):
-        return self.adb.getprop('ro.debuggable') == '1'
+        return self.build_info['debuggable'] == '1'
 
     @property
     def model(self):
@@ -757,10 +771,10 @@ class AndroidDevice(object):
                 if len(tokens) > 1:
                     return tokens[1].lower()
             return None
-        model = self.adb.getprop('ro.build.product').lower()
+        model = self.build_info['build_product'].lower()
         if model == 'sprout':
             return model
-        return self.adb.getprop('ro.product.name').lower()
+        return self.build_info['product_name'].lower()
 
     def load_config(self, config):
         """Add attributes to the AndroidDevice object based on config.
