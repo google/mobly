@@ -332,13 +332,19 @@ class AdbProxy(object):
             A dict containing name-value pairs of the properties requested, if
             they exist.
         """
-        raw_output = self.shell(
-            ['getprop'], timeout=DEFAULT_GETPROP_TIMEOUT_SEC)
-        properties = self._parse_getprop_output(raw_output)
         results = {}
-        for name in prop_names:
-            if name in properties:
-                results[name] = properties[name]
+        for _ in range(3):
+            # The ADB getprop command can randomly return empty string, so try
+            # multiple times. This value should always be non-empty if the device
+            # in a working state.
+            raw_output = self.shell(
+                ['getprop'], timeout=DEFAULT_GETPROP_TIMEOUT_SEC)
+            properties = self._parse_getprop_output(raw_output)
+            if properties:
+                for name in prop_names:
+                    if name in properties:
+                        results[name] = properties[name]
+                break
         return results
 
     def has_shell_command(self, command):
