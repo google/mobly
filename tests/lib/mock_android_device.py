@@ -28,6 +28,7 @@ DEFAULT_MOCK_PROPERTIES = {
     'ro.build.version.codename': 'Z',
     'ro.build.version.sdk': '28',
     'ro.product.name': 'FakeModel',
+    'ro.debuggable': '1',
     'sys.boot_completed': "1",
 }
 
