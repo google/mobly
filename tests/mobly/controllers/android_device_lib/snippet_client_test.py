@@ -23,6 +23,7 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import snippet_client
 from tests.lib import jsonrpc_client_test_base
+from tests.lib import mock_android_device
 
 MOCK_PACKAGE_NAME = 'some.package.name'
 MOCK_MISSING_PACKAGE_NAME = 'not.installed'
@@ -41,51 +42,6 @@ def get_print_function_name():
         return '__builtin__.print'
 
 
-class MockAdbProxy(object):
-    def __init__(self, **kwargs):
-        self.apk_not_installed = kwargs.get('apk_not_installed', False)
-        self.apk_not_instrumented = kwargs.get('apk_not_instrumented', False)
-        self.target_not_installed = kwargs.get('target_not_installed', False)
-
-    def shell(self, params, shell=False):
-        if 'pm list package' in params:
-            if self.apk_not_installed:
-                return b''
-            if self.target_not_installed and MOCK_MISSING_PACKAGE_NAME in params:
-                return b''
-            return bytes('package:%s' % MOCK_PACKAGE_NAME, 'utf-8')
-        elif 'pm list instrumentation' in params:
-            if self.apk_not_instrumented:
-                return b''
-            if self.target_not_installed:
-                return bytes('instrumentation:{p}/{r} (target={mp})'.format(
-                    p=MOCK_PACKAGE_NAME,
-                    r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
-                    mp=MOCK_MISSING_PACKAGE_NAME), 'utf-8')
-            return bytes('instrumentation:{p}/{r} (target={p})'.format(
-                p=MOCK_PACKAGE_NAME,
-                r=snippet_client._INSTRUMENTATION_RUNNER_PACKAGE), 'utf-8')
-        elif 'which' in params:
-            return b''
-
-    def getprop(self, params):
-        if params == 'ro.build.version.codename':
-            return 'Z'
-        elif params == 'ro.build.version.sdk':
-            return '28'
-
-    def __getattr__(self, name):
-        """All calls to the none-existent functions in adb proxy would
-        simply return the adb command string.
-        """
-
-        def adb_call(*args):
-            arg_str = ' '.join(str(elem) for elem in args)
-            return arg_str
-
-        return adb_call
-
-
 class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.snippet_client.
     """
@@ -95,14 +51,16 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         sc._check_app_installed()
 
     def test_check_app_installed_fail_app_not_installed(self):
-        sc = self._make_client(MockAdbProxy(apk_not_installed=True))
+        sc = self._make_client(mock_android_device.MockAdbProxy())
         expected_msg = '.* %s is not installed.' % MOCK_PACKAGE_NAME
         with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
                                     expected_msg):
             sc._check_app_installed()
 
     def test_check_app_installed_fail_not_instrumented(self):
-        sc = self._make_client(MockAdbProxy(apk_not_instrumented=True))
+        sc = self._make_client(
+            mock_android_device.MockAdbProxy(
+                installed_packages=[MOCK_PACKAGE_NAME]))
         expected_msg = ('.* %s is installed, but it is not instrumented.' %
                         MOCK_PACKAGE_NAME)
         with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
@@ -110,7 +68,10 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             sc._check_app_installed()
 
     def test_check_app_installed_fail_target_not_installed(self):
-        sc = self._make_client(MockAdbProxy(target_not_installed=True))
+        sc = self._make_client(
+            mock_android_device.MockAdbProxy(instrumented_packages=[(
+                MOCK_PACKAGE_NAME, snippet_client.
+                _INSTRUMENTATION_RUNNER_PACKAGE, MOCK_MISSING_PACKAGE_NAME)]))
         expected_msg = ('.* Instrumentation target %s is not installed.' %
                         MOCK_MISSING_PACKAGE_NAME)
         with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
@@ -485,7 +446,10 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         mock_print.assert_not_called()
 
     def _make_client(self, adb_proxy=None):
-        adb_proxy = adb_proxy or MockAdbProxy()
+        adb_proxy = adb_proxy or mock_android_device.MockAdbProxy(
+            instrumented_packages=[(MOCK_PACKAGE_NAME, snippet_client.
+                                    _INSTRUMENTATION_RUNNER_PACKAGE,
+                                    MOCK_PACKAGE_NAME)])
         ad = mock.Mock()
         ad.adb = adb_proxy
         return snippet_client.SnippetClient(package=MOCK_PACKAGE_NAME, ad=ad)

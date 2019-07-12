@@ -15,9 +15,21 @@
 # This module has common mock objects and functions used in unit tests for
 # mobly.controllers.android_device module.
 
+from builtins import bytes
+
 import logging
 import mock
 import os
+
+DEFAULT_MOCK_PROPERTIES = {
+    'ro.build.id': 'AB42',
+    'ro.build.type': 'userdebug',
+    'ro.build.product': 'FakeModel',
+    'ro.build.version.codename': 'Z',
+    'ro.build.version.sdk': '28',
+    'ro.product.name': 'FakeModel',
+    'sys.boot_completed': "1",
+}
 
 
 class Error(Exception):
@@ -64,17 +76,27 @@ def list_adb_devices():
 class MockAdbProxy(object):
     """Mock class that swaps out calls to adb with mock calls."""
 
-    def __init__(self, serial, fail_br=False, fail_br_before_N=False):
+    def __init__(self,
+                 serial='',
+                 fail_br=False,
+                 fail_br_before_N=False,
+                 mock_properties=None,
+                 installed_packages=None,
+                 instrumented_packages=None):
         self.serial = serial
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
-        self.mock_properties = {
-            "ro.build.id": "AB42",
-            "ro.build.type": "userdebug",
-            "ro.build.product": "FakeModel",
-            "ro.product.name": "FakeModel",
-            "sys.boot_completed": "1"
-        }
+        if mock_properties is None:
+            self.mock_properties = DEFAULT_MOCK_PROPERTIES
+        else:
+            self.mock_properties = mock_properties
+        if installed_packages is None:
+            installed_packages = []
+        self.installed_packages = installed_packages
+        if instrumented_packages is None:
+            instrumented_packages = []
+        self.installed_packages = installed_packages
+        self.instrumented_packages = instrumented_packages
 
     def shell(self, params, timeout=None):
         if params == "id -u":
@@ -87,6 +109,19 @@ class MockAdbProxy(object):
             if self.fail_br_before_N:
                 return b"/system/bin/sh: bugreportz: not found"
             return b'1.1'
+        elif 'pm list package' in params:
+            packages = self.installed_packages + [
+                package for package, _, _ in self.instrumented_packages
+            ]
+            return bytes('\n'.join(
+                ['package:%s' % package for package in packages]), 'utf-8')
+        elif 'pm list instrumentation' in params:
+            return bytes('\n'.join([
+                'instrumentation:%s/%s (target=%s)' % (package, runner, target)
+                for package, runner, target in self.instrumented_packages
+            ]), 'utf-8')
+        elif 'which' in params:
+            return b''
 
     def getprop(self, params):
         if params in self.mock_properties:
