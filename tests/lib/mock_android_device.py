@@ -87,8 +87,9 @@ class MockAdbProxy(object):
         self.serial = serial
         self.fail_br = fail_br
         self.fail_br_before_N = fail_br_before_N
+        self.getprops_call_count = 0
         if mock_properties is None:
-            self.mock_properties = DEFAULT_MOCK_PROPERTIES
+            self.mock_properties = DEFAULT_MOCK_PROPERTIES.copy()
         else:
             self.mock_properties = mock_properties
         if installed_packages is None:
@@ -129,6 +130,7 @@ class MockAdbProxy(object):
             return self.mock_properties[params]
 
     def getprops(self, params):
+        self.getprops_call_count = self.getprops_call_count + 1
         return self.mock_properties
 
     def bugreport(self, args, shell=False, timeout=None):

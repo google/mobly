@@ -440,6 +440,8 @@ class AndroidDevice(object):
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
             'tag': self.debug_tag
         })
+        self._build_info = None
+        self._rebooting = False
         self.adb = adb.AdbProxy(serial)
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader and self.is_rootable:
@@ -639,10 +641,17 @@ class AndroidDevice(object):
         For sample usage, see self.reboot().
         """
         self.services.stop_all()
+        self._rebooting = True
+        # On rooted devices, it's possible to modify system properties, but
+        # doing so requires the device to reboot. So, invalidate the build_info
+        # cache.
+        self._build_info = None
         try:
             yield
         finally:
             self.wait_for_boot_completion()
+            self._build_info = None
+            self._rebooting = False
             if self.is_rootable:
                 self.root_adb()
         self.services.start_all()
@@ -715,25 +724,29 @@ class AndroidDevice(object):
             self.log.error('Device is in fastboot mode, could not get build '
                            'info.')
             return
-        info = {}
-        build_info = self.adb.getprops([
-            'ro.build.id',
-            'ro.build.type',
-            'ro.build.version.codename',
-            'ro.build.version.sdk',
-            'ro.build.product',
-            'ro.debuggable',
-            'ro.product.name',
-        ])
-        info['build_id'] = build_info['ro.build.id']
-        info['build_type'] = build_info['ro.build.type']
-        info['build_version_codename'] = build_info.get(
-            'ro.build.version.codename', '')
-        info['build_version_sdk'] = build_info.get('ro.build.version.sdk', '')
-        info['build_product'] = build_info.get('ro.build.product', '')
-        info['debuggable'] = build_info.get('ro.debuggable', '')
-        info['product_name'] = build_info.get('ro.product.name', '')
-        return info
+        if self._build_info is None or self._rebooting:
+            info = {}
+            build_info = self.adb.getprops([
+                'ro.build.id',
+                'ro.build.type',
+                'ro.build.version.codename',
+                'ro.build.version.sdk',
+                'ro.build.product',
+                'ro.debuggable',
+                'ro.product.name',
+            ])
+            info['build_id'] = build_info['ro.build.id']
+            info['build_type'] = build_info['ro.build.type']
+            info['build_version_codename'] = build_info.get(
+                'ro.build.version.codename', '')
+            info['build_version_sdk'] = build_info.get('ro.build.version.sdk',
+                                                       '')
+            info['build_product'] = build_info.get('ro.build.product', '')
+            info['debuggable'] = build_info.get('ro.debuggable', '')
+            info['product_name'] = build_info.get('ro.product.name', '')
+            self._build_info = info
+            return info
+        return self._build_info
 
     @property
     def is_bootloader(self):

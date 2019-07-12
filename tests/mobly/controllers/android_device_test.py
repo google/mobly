@@ -303,6 +303,22 @@ class AndroidDeviceTest(unittest.TestCase):
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice_build_info_cached(self, MockFastboot, MockAdbProxy):
+        """Verifies the AndroidDevice object's basic attributes are correctly
+        set after instantiation.
+        """
+        ad = android_device.AndroidDevice(serial='1')
+        _ = ad.build_info
+        _ = ad.build_info
+        _ = ad.build_info
+        self.assertEqual(ad.adb.getprops_call_count, 1)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
         return_value=mock_android_device.MockAdbProxy(
             '1',
             mock_properties={
@@ -957,6 +973,51 @@ class AndroidDeviceTest(unittest.TestCase):
             self.assertFalse(ad.services.mock_service.resume_called)
         self.assertTrue(ad.services.is_any_alive)
         self.assertFalse(ad.services.mock_service.resume_called)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_handle_reboot_changes_build_info(
+            self, stop_proc_mock, start_proc_mock, FastbootProxy,
+            MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='1')
+        with ad.handle_reboot():
+            ad.adb.mock_properties['ro.build.type'] = 'user'
+            ad.adb.mock_properties['ro.debuggable'] = '0'
+        self.assertEqual(ad.build_info['build_type'], 'user')
+        self.assertEqual(ad.build_info['debuggable'], '0')
+        self.assertFalse(ad.is_rootable)
+        self.assertEqual(ad.adb.getprops_call_count, 2)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch(
+        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_AndroidDevice_handle_reboot_changes_build_info_with_caching(
+            self, stop_proc_mock, start_proc_mock, FastbootProxy,
+            MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='1')  # Call getprops 1.
+        rootable_states = [ad.is_rootable]
+        with ad.handle_reboot():
+            rootable_states.append(ad.is_rootable)  # Call getprops 2.
+            ad.adb.mock_properties['ro.debuggable'] = '0'
+            rootable_states.append(ad.is_rootable)  # Call getprops 3.
+        # Call getprops 4, on context manager end.
+        rootable_states.append(ad.is_rootable)  # Cached call.
+        rootable_states.append(ad.is_rootable)  # Cached call.
+        self.assertEqual(ad.adb.getprops_call_count, 4)
+        self.assertEqual(rootable_states, [True, True, False, False, False])
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
