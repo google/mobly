@@ -508,7 +508,8 @@ class AdbTest(unittest.TestCase):
         }
         self.assertEqual(parsed_props, expected_output)
 
-    def test_getprops(self):
+    @mock.patch('time.sleep', return_value=mock.MagicMock())
+    def test_getprops(self, mock_sleep):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = (
                 b'\n[sendbug.preferred.domain]: [google.com]\n'
@@ -532,7 +533,8 @@ class AdbTest(unittest.TestCase):
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
 
-    def test_getprops_when_empty_string_randomly_returned(self):
+    @mock.patch('time.sleep', return_value=mock.MagicMock())
+    def test_getprops_when_empty_string_randomly_returned(self, mock_sleep):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.side_effect = [
                 b'', (b'\n[ro.build.id]: [AB42]\n'
@@ -548,8 +550,12 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
+            mock_sleep.assert_has_calls([
+                mock.call(1),
+            ])
 
-    def test_getprops_when_empty_string_always_returned(self):
+    @mock.patch('time.sleep', return_value=mock.MagicMock())
+    def test_getprops_when_empty_string_always_returned(self, mock_sleep):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = b''
             actual_output = adb.AdbProxy().getprops(['ro.build.id'])
@@ -560,6 +566,10 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
+            mock_sleep.assert_has_calls([
+                mock.call(1),
+                mock.call(1),
+            ])
 
     def test_forward(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
