@@ -532,6 +532,7 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
+            mock_sleep.assert_not_called()
 
     @mock.patch('time.sleep', return_value=mock.MagicMock())
     def test_getprops_when_empty_string_randomly_returned(self, mock_sleep):
@@ -550,9 +551,8 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
-            mock_sleep.assert_has_calls([
-                mock.call(1),
-            ])
+            self.assertEqual(mock_sleep.call_count, 1)
+            mock_sleep.assert_called_with(1)
 
     @mock.patch('time.sleep', return_value=mock.MagicMock())
     def test_getprops_when_empty_string_always_returned(self, mock_sleep):
@@ -566,10 +566,8 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
-            mock_sleep.assert_has_calls([
-                mock.call(1),
-                mock.call(1),
-            ])
+            self.assertEqual(mock_sleep.call_count, 2)
+            mock_sleep.assert_called_with(1)
 
     def test_forward(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:

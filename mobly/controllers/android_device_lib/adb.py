@@ -335,8 +335,9 @@ class AdbProxy(object):
             A dict containing name-value pairs of the properties requested, if
             they exist.
         """
+        attempts = DEFAULT_GETPROPS_ATTEMPTS
         results = {}
-        for _ in range(DEFAULT_GETPROPS_ATTEMPTS):
+        for attempt in range(attempts):
             # The ADB getprop command can randomly return empty string, so try
             # multiple times. This value should always be non-empty if the device
             # in a working state.
@@ -348,7 +349,9 @@ class AdbProxy(object):
                     if name in properties:
                         results[name] = properties[name]
                 break
-            time.sleep(DEFAULT_GETPROPS_RETRY_SLEEP_SEC)
+            # Don't call sleep on the last attempt.
+            if attempt < attempts - 1:
+                time.sleep(DEFAULT_GETPROPS_RETRY_SLEEP_SEC)
         return results
 
     def has_shell_command(self, command):
