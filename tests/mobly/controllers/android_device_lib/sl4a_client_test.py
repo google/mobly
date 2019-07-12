@@ -22,34 +22,7 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.controllers.android_device_lib import sl4a_client
 from tests.lib import jsonrpc_client_test_base
-
-
-class MockAdbProxy(object):
-    def __init__(self, **kwargs):
-        self.apk_not_installed = kwargs.get('apk_not_installed', False)
-
-    def shell(self, params, shell=False):
-        if 'pm list package' in params:
-            if self.apk_not_installed:
-                return bytes('', 'utf-8')
-            return bytes('package:com.googlecode.android_scripting', 'utf-8')
-
-    def getprop(self, params):
-        if params == 'ro.build.version.codename':
-            return 'Z'
-        elif params == 'ro.build.version.sdk':
-            return '28'
-
-    def __getattr__(self, name):
-        """All calls to the none-existent functions in adb proxy would
-        simply return the adb command string.
-        """
-
-        def adb_call(*args):
-            arg_str = ' '.join(str(elem) for elem in args)
-            return arg_str
-
-        return adb_call
+from tests.lib import mock_android_device
 
 
 class Sl4aClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
@@ -82,14 +55,15 @@ class Sl4aClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         self.setup_mock_socket_file(mock_create_connection)
         self._setup_mock_instrumentation_cmd(
             mock_start_standing_subprocess, resp_lines=[b'\n'])
-        client = self._make_client(adb_proxy=MockAdbProxy(
-            apk_not_installed=True))
+        client = self._make_client(
+            adb_proxy=mock_android_device.MockAdbProxy())
         with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
                                     '.* SL4A is not installed on .*'):
             client.start_app_and_connect()
 
     def _make_client(self, adb_proxy=None):
-        adb_proxy = adb_proxy or MockAdbProxy()
+        adb_proxy = adb_proxy or mock_android_device.MockAdbProxy(
+            installed_packages=['com.googlecode.android_scripting'])
         ad = mock.Mock()
         ad.adb = adb_proxy
         return sl4a_client.Sl4aClient(ad=ad)
