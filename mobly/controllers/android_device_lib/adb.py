@@ -18,6 +18,7 @@ from past.builtins import basestring
 import logging
 import psutil
 import subprocess
+import time
 import threading
 
 from mobly import utils
@@ -34,6 +35,8 @@ DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.Android
 
 # Adb getprop call should never take too long.
 DEFAULT_GETPROP_TIMEOUT_SEC = 5
+DEFAULT_GETPROPS_ATTEMPTS = 3
+DEFAULT_GETPROPS_RETRY_SLEEP_SEC = 1
 
 
 class Error(Exception):
@@ -332,13 +335,23 @@ class AdbProxy(object):
             A dict containing name-value pairs of the properties requested, if
             they exist.
         """
-        raw_output = self.shell(
-            ['getprop'], timeout=DEFAULT_GETPROP_TIMEOUT_SEC)
-        properties = self._parse_getprop_output(raw_output)
+        attempts = DEFAULT_GETPROPS_ATTEMPTS
         results = {}
-        for name in prop_names:
-            if name in properties:
-                results[name] = properties[name]
+        for attempt in range(attempts):
+            # The ADB getprop command can randomly return empty string, so try
+            # multiple times. This value should always be non-empty if the device
+            # in a working state.
+            raw_output = self.shell(
+                ['getprop'], timeout=DEFAULT_GETPROP_TIMEOUT_SEC)
+            properties = self._parse_getprop_output(raw_output)
+            if properties:
+                for name in prop_names:
+                    if name in properties:
+                        results[name] = properties[name]
+                break
+            # Don't call sleep on the last attempt.
+            if attempt < attempts - 1:
+                time.sleep(DEFAULT_GETPROPS_RETRY_SLEEP_SEC)
         return results
 
     def has_shell_command(self, command):
