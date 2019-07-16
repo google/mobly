@@ -41,6 +41,18 @@ The JSON protocol expected by this module is:
 
 from builtins import str
 
+# When the Python library `socket.create_connection` call is made, it indirectly
+# calls `import encodings.idna` through the `socket.getaddrinfo` method.
+# However, this chain of function calls is apparently not thread-safe in
+# embedded Python environments. So, pre-emptively import and cache the encoder.
+# See https://bugs.python.org/issue17305 for more details.
+try:
+    import encodings.idna
+except ImportError:
+    # Some implementations of Python (e.g. IronPython) do not support the`idna`
+    # encoding, so ignore import failures based on that.
+    pass
+
 import json
 import socket
 import threading
