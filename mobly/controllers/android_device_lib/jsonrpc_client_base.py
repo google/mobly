@@ -49,8 +49,8 @@ from builtins import str
 try:
     import encodings.idna
 except ImportError:
-    # Supposedly, some implementations of Python (e.g. IronPython) do not support
-    # the`idna` encoding, so ignore import failures based on that.
+    # ome implementations of Python (e.g. IronPython) do not support the`idna`
+    # encoding, so ignore import failures based on that.
     pass
 
 import json
