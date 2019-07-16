@@ -49,7 +49,7 @@ from builtins import str
 try:
     import encodings.idna
 except ImportError:
-    # ome implementations of Python (e.g. IronPython) do not support the`idna`
+    # Some implementations of Python (e.g. IronPython) do not support the`idna`
     # encoding, so ignore import failures based on that.
     pass
 
