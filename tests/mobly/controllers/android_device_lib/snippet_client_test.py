@@ -452,6 +452,11 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
                                     MOCK_PACKAGE_NAME)])
         ad = mock.Mock()
         ad.adb = adb_proxy
+        ad.build_info = {
+            'build_version_codename':
+            ad.adb.getprop('ro.build.version.codename'),
+            'build_version_sdk': ad.adb.getprop('ro.build.version.sdk'),
+        }
         return snippet_client.SnippetClient(package=MOCK_PACKAGE_NAME, ad=ad)
 
     def _setup_mock_instrumentation_cmd(self, mock_start_standing_subprocess,

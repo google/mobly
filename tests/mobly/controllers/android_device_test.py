@@ -272,6 +272,68 @@ class AndroidDeviceTest(unittest.TestCase):
         build_info = ad.build_info
         self.assertEqual(build_info['build_id'], 'AB42')
         self.assertEqual(build_info['build_type'], 'userdebug')
+        self.assertEqual(build_info['build_version_codename'], 'Z')
+        self.assertEqual(build_info['build_version_sdk'], '28')
+        self.assertEqual(build_info['build_product'], 'FakeModel')
+        self.assertEqual(build_info['product_name'], 'FakeModel')
+        self.assertEqual(build_info['debuggable'], '1')
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(
+            '1',
+            mock_properties={
+                'ro.build.id': 'AB42',
+                'ro.build.type': 'userdebug',
+            }))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice_build_info_with_minimal_properties(
+            self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='1')
+        build_info = ad.build_info
+        self.assertEqual(build_info['build_id'], 'AB42')
+        self.assertEqual(build_info['build_type'], 'userdebug')
+        self.assertEqual(build_info['build_version_codename'], '')
+        self.assertEqual(build_info['build_version_sdk'], '')
+        self.assertEqual(build_info['build_product'], '')
+        self.assertEqual(build_info['product_name'], '')
+        self.assertEqual(build_info['debuggable'], '')
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(
+            '1',
+            mock_properties={
+                'ro.build.id': 'AB42',
+                'ro.build.type': 'userdebug',
+                'ro.debuggable': '1',
+            }))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice_is_rootable_when_userdebug_device(
+            self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='1')
+        self.assertTrue(ad.is_rootable)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy(
+            '1',
+            mock_properties={
+                'ro.build.id': 'AB42',
+                'ro.build.type': 'user',
+                'ro.debuggable': '0',
+            }))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice_is_rootable_when_user_device(
+            self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='1')
+        self.assertFalse(ad.is_rootable)
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -904,9 +966,13 @@ class AndroidDeviceTest(unittest.TestCase):
         return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device.AndroidDevice.is_boot_completed',
-        side_effect=[False, False, adb.AdbTimeoutError(
-            ['adb', 'shell', 'getprop sys.boot_completed'],
-            timeout=5, serial=1), True])
+        side_effect=[
+            False, False,
+            adb.AdbTimeoutError(
+                ['adb', 'shell', 'getprop sys.boot_completed'],
+                timeout=5,
+                serial=1), True
+        ])
     @mock.patch('time.sleep', return_value=None)
     @mock.patch('time.time', side_effect=[0, 5, 10, 15, 20, 25, 30])
     def test_AndroidDevice_wait_for_completion_completed(
@@ -918,7 +984,10 @@ class AndroidDeviceTest(unittest.TestCase):
             ad.wait_for_boot_completion()
         except (adb.AdbError, adb.AdbTimeoutError):
             raised = True
-        self.assertFalse(raised, 'adb.AdbError or adb.AdbTimeoutError exception raised but not handled.')
+        self.assertFalse(
+            raised,
+            'adb.AdbError or adb.AdbTimeoutError exception raised but not handled.'
+        )
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -928,9 +997,13 @@ class AndroidDeviceTest(unittest.TestCase):
         return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device.AndroidDevice.is_boot_completed',
-        side_effect=[False, False, adb.AdbTimeoutError(
-            ['adb', 'shell', 'getprop sys.boot_completed'],
-            timeout=5, serial=1), False, False, False, False])
+        side_effect=[
+            False, False,
+            adb.AdbTimeoutError(
+                ['adb', 'shell', 'getprop sys.boot_completed'],
+                timeout=5,
+                serial=1), False, False, False, False
+        ])
     @mock.patch('time.sleep', return_value=None)
     @mock.patch('time.time', side_effect=[0, 5, 10, 15, 20, 25, 30])
     def test_AndroidDevice_wait_for_completion_never_boot(
@@ -943,7 +1016,10 @@ class AndroidDeviceTest(unittest.TestCase):
                 ad.wait_for_boot_completion(timeout=20)
         except (adb.AdbError, adb.AdbTimeoutError):
             raised = True
-        self.assertFalse(raised, 'adb.AdbError or adb.AdbTimeoutError exception raised but not handled.')
+        self.assertFalse(
+            raised,
+            'adb.AdbError or adb.AdbTimeoutError exception raised but not handled.'
+        )
 
 
 if __name__ == '__main__':
