@@ -35,6 +35,7 @@ DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.Android
 
 # Adb getprop call should never take too long.
 DEFAULT_GETPROP_TIMEOUT_SEC = 5
+DEFAULT_GETPROP_RETRY_SLEEP_SEC = 0.5
 DEFAULT_GETPROPS_ATTEMPTS = 3
 DEFAULT_GETPROPS_RETRY_SLEEP_SEC = 1
 
@@ -325,12 +326,15 @@ class AdbProxy(object):
         """
         if attempts < 1:
             attempts = 1
-        for _ in range(attempts):
+        for attempt in range(attempts):
             output = self.shell(
                 ['getprop', prop_name],
                 timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
             if output:
                 return output
+            # Don't call sleep on the last attempt.
+            if attempt < attempts - 1:
+                time.sleep(DEFAULT_GETPROP_RETRY_SLEEP_SEC)
         return ''
 
     def getprops(self, prop_names):

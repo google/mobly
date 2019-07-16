@@ -454,18 +454,24 @@ class AdbTest(unittest.TestCase):
                 stderr=None,
                 timeout=adb.DEFAULT_GETPROP_TIMEOUT_SEC)
 
-    def test_getprop_with_extra_attempts_succeed(self):
+    @mock.patch('time.sleep', return_value=mock.MagicMock())
+    def test_getprop_with_extra_attempts_succeed(self, mock_sleep):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.side_effect = [b'', b'', b'blah']
+            mock_exec_cmd.side_effect = [b'', b'blah']
             self.assertEqual(adb.AdbProxy().getprop('haha', attempts=3),
                              'blah')
-            self.assertEqual(mock_exec_cmd.call_count, 3)
+            self.assertEqual(mock_exec_cmd.call_count, 2)
+        self.assertEqual(mock_sleep.call_count, 1)
+        mock_sleep.assert_called_with(0.5)
 
-    def test_getprop_with_extra_attempts_fail(self):
+    @mock.patch('time.sleep', return_value=mock.MagicMock())
+    def test_getprop_with_extra_attempts_fail(self, mock_sleep):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = b''
             self.assertEqual(adb.AdbProxy().getprop('haha', attempts=3), '')
             self.assertEqual(mock_exec_cmd.call_count, 3)
+        self.assertEqual(mock_sleep.call_count, 2)
+        mock_sleep.assert_called_with(0.5)
 
     def test__parse_getprop_output_special_values(self):
         mock_adb_output = (
