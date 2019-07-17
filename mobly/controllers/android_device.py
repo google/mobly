@@ -655,12 +655,11 @@ class AndroidDevice(object):
         self.services.stop_all()
         # On rooted devices, system properties may change on reboot, so disable
         # the `build_info` cache by setting `_is_rebooting` to True and
-        # repopulated it after reboot.
+        # repopulate it after reboot.
         # Note, this logic assumes that instance variable assignment in Python
         # is atomic; otherwise, `threading` data structures would be necessary.
-        # Additionally, nesting calls to `handle_reboot` while changing
-        # read only property values during reboot will also result in stale
-        # values.
+        # Additionally, nesting calls to `handle_reboot` while changing the
+        # read-only property values during reboot will result in stale values.
         self._is_rebooting = True
         try:
             yield
@@ -668,13 +667,13 @@ class AndroidDevice(object):
             self.wait_for_boot_completion()
             # On boot completion, invalidate the `build_info` cache since any
             # value it had from before boot completion is potentially invalid.
-            # If the value gets set before the final invalidation and setting
-            # `_is_rebooting` to True, then that's okay because the device has
-            # finished rebooting at that point, and values at that point are
-            # valid.
+            # If the value gets set after the final invalidation and before
+            # setting`_is_rebooting` to True, then that's okay because the
+            # device has finished rebooting at that point, and values at that
+            # point should be valid.
             # If the reboot fails for some reason, then `_is_rebooting` is never
             # set to False, which means the `build_info` cache remains disabled
-            # until the next reboot, which is relatively okay because the
+            # until the next reboot. This is relatively okay because the
             # `build_info` cache is only minimizes adb commands.
             self._build_info = None
             self._is_rebooting = False
