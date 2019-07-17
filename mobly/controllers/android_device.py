@@ -44,6 +44,18 @@ ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = 'adb_logcat_param'
 ANDROID_DEVICE_EMPTY_CONFIG_MSG = 'Configuration is empty, abort!'
 ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 
+# System properties that are cached by the `AndroidDevice.build_info` property.
+# The only properties on this list should be read-only system properties.
+CACHED_SYSTEM_PROPS = [
+    'ro.build.id',
+    'ro.build.type',
+    'ro.build.version.codename',
+    'ro.build.version.sdk',
+    'ro.build.product',
+    'ro.debuggable',
+    'ro.product.name',
+]
+
 # Keys for attributes in configs that alternate the controller module behavior.
 # If this is False for a device, errors from that device will be ignored
 # during `create`. Default is True.
@@ -440,6 +452,8 @@ class AndroidDevice(object):
         self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
             'tag': self.debug_tag
         })
+        self._build_info = None
+        self._is_rebooting = False
         self.adb = adb.AdbProxy(serial)
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader and self.is_rootable:
@@ -639,10 +653,30 @@ class AndroidDevice(object):
         For sample usage, see self.reboot().
         """
         self.services.stop_all()
+        # On rooted devices, system properties may change on reboot, so disable
+        # the `build_info` cache by setting `_is_rebooting` to True and
+        # repopulate it after reboot.
+        # Note, this logic assumes that instance variable assignment in Python
+        # is atomic; otherwise, `threading` data structures would be necessary.
+        # Additionally, nesting calls to `handle_reboot` while changing the
+        # read-only property values during reboot will result in stale values.
+        self._is_rebooting = True
         try:
             yield
         finally:
             self.wait_for_boot_completion()
+            # On boot completion, invalidate the `build_info` cache since any
+            # value it had from before boot completion is potentially invalid.
+            # If the value gets set after the final invalidation and before
+            # setting`_is_rebooting` to True, then that's okay because the
+            # device has finished rebooting at that point, and values at that
+            # point should be valid.
+            # If the reboot fails for some reason, then `_is_rebooting` is never
+            # set to False, which means the `build_info` cache remains disabled
+            # until the next reboot. This is relatively okay because the
+            # `build_info` cache is only minimizes adb commands.
+            self._build_info = None
+            self._is_rebooting = False
             if self.is_rootable:
                 self.root_adb()
         self.services.start_all()
@@ -715,25 +749,21 @@ class AndroidDevice(object):
             self.log.error('Device is in fastboot mode, could not get build '
                            'info.')
             return
-        info = {}
-        build_info = self.adb.getprops([
-            'ro.build.id',
-            'ro.build.type',
-            'ro.build.version.codename',
-            'ro.build.version.sdk',
-            'ro.build.product',
-            'ro.debuggable',
-            'ro.product.name',
-        ])
-        info['build_id'] = build_info['ro.build.id']
-        info['build_type'] = build_info['ro.build.type']
-        info['build_version_codename'] = build_info.get(
-            'ro.build.version.codename', '')
-        info['build_version_sdk'] = build_info.get('ro.build.version.sdk', '')
-        info['build_product'] = build_info.get('ro.build.product', '')
-        info['debuggable'] = build_info.get('ro.debuggable', '')
-        info['product_name'] = build_info.get('ro.product.name', '')
-        return info
+        if self._build_info is None or self._is_rebooting:
+            info = {}
+            build_info = self.adb.getprops(CACHED_SYSTEM_PROPS)
+            info['build_id'] = build_info['ro.build.id']
+            info['build_type'] = build_info['ro.build.type']
+            info['build_version_codename'] = build_info.get(
+                'ro.build.version.codename', '')
+            info['build_version_sdk'] = build_info.get('ro.build.version.sdk',
+                                                       '')
+            info['build_product'] = build_info.get('ro.build.product', '')
+            info['debuggable'] = build_info.get('ro.debuggable', '')
+            info['product_name'] = build_info.get('ro.product.name', '')
+            self._build_info = info
+            return info
+        return self._build_info
 
     @property
     def is_bootloader(self):
