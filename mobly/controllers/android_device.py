@@ -441,7 +441,7 @@ class AndroidDevice(object):
             'tag': self.debug_tag
         })
         self._build_info = None
-        self._rebooting = False
+        self._is_rebooting = False
         self.adb = adb.AdbProxy(serial)
         self.fastboot = fastboot.FastbootProxy(serial)
         if not self.is_bootloader and self.is_rootable:
@@ -641,7 +641,7 @@ class AndroidDevice(object):
         For sample usage, see self.reboot().
         """
         self.services.stop_all()
-        self._rebooting = True
+        self._is_rebooting = True
         # On rooted devices, it's possible to modify system properties, but
         # doing so requires the device to reboot. So, invalidate the build_info
         # cache.
@@ -651,7 +651,7 @@ class AndroidDevice(object):
         finally:
             self.wait_for_boot_completion()
             self._build_info = None
-            self._rebooting = False
+            self._is_rebooting = False
             if self.is_rootable:
                 self.root_adb()
         self.services.start_all()
@@ -724,7 +724,7 @@ class AndroidDevice(object):
             self.log.error('Device is in fastboot mode, could not get build '
                            'info.')
             return
-        if self._build_info is None or self._rebooting:
+        if self._build_info is None or self._is_rebooting:
             info = {}
             build_info = self.adb.getprops([
                 'ro.build.id',
