@@ -277,6 +277,8 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(build_info['build_product'], 'FakeModel')
         self.assertEqual(build_info['product_name'], 'FakeModel')
         self.assertEqual(build_info['debuggable'], '1')
+        self.assertEqual(
+            len(build_info), len(android_device.CACHED_SYSTEM_PROPS))
 
     @mock.patch(
         'mobly.controllers.android_device_lib.adb.AdbProxy',
