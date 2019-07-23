@@ -157,8 +157,8 @@ class Logcat(base_service.BaseService):
         full_adblog_path = os.path.join(adb_excerpt_path, out_name)
         with io.open(full_adblog_path, 'w', encoding='utf-8') as out:
             in_file = self.adb_logcat_file_path
-            with io.open(
-                    in_file, 'r', encoding='utf-8', errors='replace') as f:
+            with io.open(in_file, 'r', encoding='utf-8',
+                         errors='replace') as f:
                 in_range = False
                 while True:
                     line = None

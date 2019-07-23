@@ -59,8 +59,8 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         out = self._adb.shell('pm list package')
         if not utils.grep('com.googlecode.android_scripting', out):
             raise jsonrpc_client_base.AppStartError(
-                self._ad, '%s is not installed on %s' % (_APP_NAME,
-                                                         self._adb.serial))
+                self._ad,
+                '%s is not installed on %s' % (_APP_NAME, self._adb.serial))
         self.disable_hidden_api_blacklist()
 
         # sl4a has problems connecting after disconnection, so kill the apk and
@@ -145,10 +145,9 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
                 started = True
                 break
             except:
-                self.log.debug(
-                    '%s is not yet running, retrying',
-                    self.app_name,
-                    exc_info=True)
+                self.log.debug('%s is not yet running, retrying',
+                               self.app_name,
+                               exc_info=True)
             time.sleep(1)
         if not started:
             raise jsonrpc_client_base.AppRestoreConnectionError(
@@ -161,8 +160,8 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         event_client = Sl4aClient(self._ad)
         event_client.host_port = self.host_port
         event_client.device_port = self.device_port
-        event_client.connect(
-            uid=self.uid, cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
+        event_client.connect(uid=self.uid,
+                             cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
         ed = event_dispatcher.EventDispatcher(event_client)
         ed.start()
         return ed

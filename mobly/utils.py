@@ -336,8 +336,12 @@ def run_command(cmd,
         stdout = subprocess.PIPE
     if stderr is None:
         stderr = subprocess.PIPE
-    process = psutil.Popen(
-        cmd, stdout=stdout, stderr=stderr, shell=shell, cwd=cwd, env=env)
+    process = psutil.Popen(cmd,
+                           stdout=stdout,
+                           stderr=stderr,
+                           shell=shell,
+                           cwd=cwd,
+                           env=env)
     timer = None
     timer_triggered = threading.Event()
     if timeout and timeout > 0:
@@ -381,13 +385,12 @@ def start_standing_subprocess(cmd, shell=False, env=None):
         The subprocess that was started.
     """
     logging.debug('Starting standing subprocess with: %s', cmd)
-    proc = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=shell,
-        env=env)
+    proc = subprocess.Popen(cmd,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            shell=shell,
+                            env=env)
     # Leaving stdin open causes problems for input, e.g. breaking the
     # code.inspect() shell (http://stackoverflow.com/a/25512460/1612937), so
     # explicitly close it assuming it is not needed for standing subprocesses.

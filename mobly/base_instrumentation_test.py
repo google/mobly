@@ -958,11 +958,10 @@ class InstrumentationTestMixin(object):
             instrumentation_block[0] = self._parse_line(
                 instrumentation_block[0], line)
 
-        device.adb.instrument(
-            package=package,
-            options=options,
-            runner=runner,
-            handler=parse_instrumentation)
+        device.adb.instrument(package=package,
+                              options=options,
+                              runner=runner,
+                              handler=parse_instrumentation)
 
         return self._finish_parsing(instrumentation_block[0])
 

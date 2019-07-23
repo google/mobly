@@ -42,8 +42,8 @@ _PROTOCOL_MINOR_VERSION = 0
 _LAUNCH_CMD = ('%s am instrument -w -e action start %s/' +
                _INSTRUMENTATION_RUNNER_PACKAGE)
 
-_STOP_CMD = (
-    'am instrument -w -e action stop %s/' + _INSTRUMENTATION_RUNNER_PACKAGE)
+_STOP_CMD = ('am instrument -w -e action stop %s/' +
+             _INSTRUMENTATION_RUNNER_PACKAGE)
 
 # Test that uses UiAutomation requires the shell session to be maintained while
 # test is in progress. However, this requirement does not hold for the test that
@@ -180,7 +180,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
         # Yaaay! We're done!
         self.log.debug('Snippet %s started after %.1fs on host port %s',
-                       self.package, time.time() - start_time, self.host_port)
+                       self.package,
+                       time.time() - start_time, self.host_port)
 
     def restore_app_connection(self, port=None):
         """Restores the app after device got reconnected.
@@ -210,8 +211,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             raise jsonrpc_client_base.AppRestoreConnectionError(
                 self._ad,
                 ('Failed to restore app connection for %s at host port %s, '
-                 'device port %s') % (self.package, self.host_port,
-                                      self.device_port))
+                 'device port %s') %
+                (self.package, self.host_port, self.device_port))
 
         # Because the previous connection was lost, update self._proc
         self._proc = None
@@ -265,9 +266,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                                         '%s is not installed.' % self.package)
         # Check that the app is instrumented.
         out = self._adb.shell('pm list instrumentation')
-        matched_out = utils.grep('^instrumentation:%s/%s' %
-                                 (self.package,
-                                  _INSTRUMENTATION_RUNNER_PACKAGE), out)
+        matched_out = utils.grep(
+            '^instrumentation:%s/%s' %
+            (self.package, _INSTRUMENTATION_RUNNER_PACKAGE), out)
         if not matched_out:
             raise AppStartPreCheckError(
                 self._ad,
