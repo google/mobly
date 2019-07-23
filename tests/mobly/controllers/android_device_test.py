@@ -229,6 +229,20 @@ class AndroidDeviceTest(unittest.TestCase):
             begin_time='sometime',
             destination=None)
 
+    @mock.patch('mobly.logger.get_log_file_timestamp')
+    def test_take_bug_reports_with_none_values(self,
+                                               get_log_file_timestamp_mock):
+        mock_timestamp = '07-22-2019_17-55-30-765'
+        get_log_file_timestamp_mock.return_value = mock_timestamp
+        ads = mock_android_device.get_mock_ads(3)
+        android_device.take_bug_reports(ads)
+        ads[0].take_bug_report.assert_called_once_with(
+            test_name=None, begin_time=mock_timestamp, destination=None)
+        ads[1].take_bug_report.assert_called_once_with(
+            test_name=None, begin_time=mock_timestamp, destination=None)
+        ads[2].take_bug_report.assert_called_once_with(
+            test_name=None, begin_time=mock_timestamp, destination=None)
+
     # Tests for android_device.AndroidDevice class.
     # These tests mock out any interaction with the OS and real android device
     # in AndroidDeivce.
@@ -413,39 +427,32 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
-    @mock.patch('mobly.utils.get_current_epoch_time')
-    @mock.patch('mobly.logger.epoch_to_log_line_timestamp')
+    @mock.patch('mobly.logger.get_log_file_timestamp')
     def test_AndroidDevice_take_bug_report_without_args(
-            self, epoch_to_log_line_timestamp_mock,
-            get_current_epoch_time_mock, create_dir_mock, FastbootProxy,
+            self, get_log_file_timestamp_mock, create_dir_mock, FastbootProxy,
             MockAdbProxy):
-        get_current_epoch_time_mock.return_value = 1557446629606
-        epoch_to_log_line_timestamp_mock.return_value = '05-09 17:03:49.606'
+        get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         output_path = ad.take_bug_report()
         expected_path = os.path.join(logging.log_path,
                                      'AndroidDevice%s' % ad.serial,
                                      'BugReports')
-        create_dir_mock.assert_called_with(expected_path)
-        epoch_to_log_line_timestamp_mock.assert_called_once_with(1557446629606)
         self.assertEqual(
             output_path,
-            os.path.join(expected_path, 'bugreport,05-09_17-03-49.606,1.zip'))
+            os.path.join(expected_path,
+                         'bugreport,07-22-2019_17-53-34-450,1.zip'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
                 return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
-    @mock.patch('mobly.utils.get_current_epoch_time')
-    @mock.patch('mobly.logger.epoch_to_log_line_timestamp')
+    @mock.patch('mobly.logger.get_log_file_timestamp')
     def test_AndroidDevice_take_bug_report_with_only_test_name(
-            self, epoch_to_log_line_timestamp_mock,
-            get_current_epoch_time_mock, create_dir_mock, FastbootProxy,
+            self, get_log_file_timestamp_mock, create_dir_mock, FastbootProxy,
             MockAdbProxy):
-        get_current_epoch_time_mock.return_value = 1557446629606
-        epoch_to_log_line_timestamp_mock.return_value = '05-09 17:03:49.606'
+        get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         output_path = ad.take_bug_report(test_name='test_something')
@@ -453,11 +460,10 @@ class AndroidDeviceTest(unittest.TestCase):
                                      'AndroidDevice%s' % ad.serial,
                                      'BugReports')
         create_dir_mock.assert_called_with(expected_path)
-        epoch_to_log_line_timestamp_mock.assert_called_once_with(1557446629606)
         self.assertEqual(
             output_path,
             os.path.join(expected_path,
-                         'test_something,05-09_17-03-49.606,1.zip'))
+                         'test_something,07-22-2019_17-53-34-450,1.zip'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy(1))

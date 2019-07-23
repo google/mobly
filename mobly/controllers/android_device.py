@@ -389,7 +389,7 @@ def get_device(ads, **kwargs):
         raise Error('More than one device matched: %s' % serials)
 
 
-def take_bug_reports(ads, test_name, begin_time, destination=None):
+def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
     """Takes bug reports on a list of android devices.
 
     If you want to take a bug report, call this function with a list of
@@ -400,12 +400,16 @@ def take_bug_reports(ads, test_name, begin_time, destination=None):
     Args:
         ads: A list of AndroidDevice instances.
         test_name: Name of the test method that triggered this bug report.
+            If None, the default name "bugreport" will be used.
         begin_time: timestamp taken when the test started, can be either
-            string or int.
+            string or int. If None, the current time will be used.
         destination: string, path to the directory where the bugreport
             should be saved.
     """
-    begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
+    if begin_time is None:
+        begin_time = mobly_logger.get_log_file_timestamp()
+    else:
+        begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
 
     def take_br(test_name, begin_time, ad, destination):
         ad.take_bug_report(test_name=test_name,
@@ -897,9 +901,7 @@ class AndroidDevice(object):
         if test_name is None:
             test_name = DEFAULT_BUG_REPORT_NAME
         if begin_time is None:
-            epoch_time = utils.get_current_epoch_time()
-            timestamp = mobly_logger.epoch_to_log_line_timestamp(epoch_time)
-            begin_time = mobly_logger.normalize_log_line_timestamp(timestamp)
+            begin_time = mobly_logger.get_log_file_timestamp()
 
         new_br = True
         try:
