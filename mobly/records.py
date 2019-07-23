@@ -157,12 +157,11 @@ class TestSummaryWriter(object):
             with io.open(self._path, 'a', encoding='utf-8') as f:
                 # Use safe_dump here to avoid language-specific tags in final
                 # output.
-                yaml.safe_dump(
-                    new_content,
-                    f,
-                    explicit_start=True,
-                    allow_unicode=True,
-                    indent=4)
+                yaml.safe_dump(new_content,
+                               f,
+                               explicit_start=True,
+                               allow_unicode=True,
+                               indent=4)
 
 
 class TestResultEnums(object):

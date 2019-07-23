@@ -22,11 +22,10 @@ def from_dict(event_dict):
     Returns:
         A SnippetEvent object.
     """
-    return SnippetEvent(
-        callback_id=event_dict['callbackId'],
-        name=event_dict['name'],
-        creation_time=event_dict['time'],
-        data=event_dict['data'])
+    return SnippetEvent(callback_id=event_dict['callbackId'],
+                        name=event_dict['name'],
+                        creation_time=event_dict['time'],
+                        data=event_dict['data'])
 
 
 class SnippetEvent(object):

@@ -55,14 +55,13 @@ def run_suite(test_classes, argv=None):
     """
     # Parse cli args.
     parser = argparse.ArgumentParser(description='Mobly Suite Executable.')
-    parser.add_argument(
-        '-c',
-        '--config',
-        nargs=1,
-        type=str,
-        required=True,
-        metavar='<PATH>',
-        help='Path to the test configuration file.')
+    parser.add_argument('-c',
+                        '--config',
+                        nargs=1,
+                        type=str,
+                        required=True,
+                        metavar='<PATH>',
+                        help='Path to the test configuration file.')
     parser.add_argument(
         '--tests',
         '--test_case',
@@ -79,8 +78,9 @@ def run_suite(test_classes, argv=None):
     # Check the classes that were passed in
     for test_class in test_classes:
         if not issubclass(test_class, base_test.BaseTestClass):
-            logging.error('Test class %s does not extend '
-                          'mobly.base_test.BaseTestClass', test_class)
+            logging.error(
+                'Test class %s does not extend '
+                'mobly.base_test.BaseTestClass', test_class)
             sys.exit(1)
 
     # Find the full list of tests to execute

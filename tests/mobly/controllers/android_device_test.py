@@ -60,18 +60,15 @@ class AndroidDeviceTest(unittest.TestCase):
     # Tests for android_device module functions.
     # These tests use mock AndroidDevice instances.
 
-    @mock.patch.object(
-        android_device,
-        'get_all_instances',
-        new=mock_android_device.get_all_instances)
-    @mock.patch.object(
-        android_device,
-        'list_adb_devices',
-        new=mock_android_device.list_adb_devices)
-    @mock.patch.object(
-        android_device,
-        'list_adb_devices_by_usb_id',
-        new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       'get_all_instances',
+                       new=mock_android_device.get_all_instances)
+    @mock.patch.object(android_device,
+                       'list_adb_devices',
+                       new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       'list_adb_devices_by_usb_id',
+                       new=mock_android_device.list_adb_devices)
     def test_create_with_pickup_all(self):
         pick_all_token = android_device.ANDROID_DEVICE_PICK_ALL_TOKEN
         actual_ads = android_device.create(pick_all_token)
@@ -79,50 +76,45 @@ class AndroidDeviceTest(unittest.TestCase):
                                     mock_android_device.get_mock_ads(5)):
             self.assertEqual(actual.serial, expected.serial)
 
-    @mock.patch.object(
-        android_device, 'get_instances', new=mock_android_device.get_instances)
-    @mock.patch.object(
-        android_device,
-        'list_adb_devices',
-        new=mock_android_device.list_adb_devices)
-    @mock.patch.object(
-        android_device,
-        'list_adb_devices_by_usb_id',
-        new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       'get_instances',
+                       new=mock_android_device.get_instances)
+    @mock.patch.object(android_device,
+                       'list_adb_devices',
+                       new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       'list_adb_devices_by_usb_id',
+                       new=mock_android_device.list_adb_devices)
     def test_create_with_string_list(self):
         string_list = [u'1', '2']
         actual_ads = android_device.create(string_list)
         for actual_ad, expected_serial in zip(actual_ads, ['1', '2']):
             self.assertEqual(actual_ad.serial, expected_serial)
 
-    @mock.patch.object(
-        android_device,
-        'get_instances_with_configs',
-        new=mock_android_device.get_instances_with_configs)
-    @mock.patch.object(
-        android_device,
-        'list_adb_devices',
-        new=mock_android_device.list_adb_devices)
-    @mock.patch.object(
-        android_device,
-        'list_adb_devices_by_usb_id',
-        new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       'get_instances_with_configs',
+                       new=mock_android_device.get_instances_with_configs)
+    @mock.patch.object(android_device,
+                       'list_adb_devices',
+                       new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       'list_adb_devices_by_usb_id',
+                       new=mock_android_device.list_adb_devices)
     def test_create_with_dict_list(self):
         string_list = [{'serial': '1'}, {'serial': '2'}]
         actual_ads = android_device.create(string_list)
         for actual_ad, expected_serial in zip(actual_ads, ['1', '2']):
             self.assertEqual(actual_ad.serial, expected_serial)
 
-    @mock.patch.object(
-        android_device,
-        'get_instances_with_configs',
-        new=mock_android_device.get_instances_with_configs)
-    @mock.patch.object(
-        android_device,
-        'list_adb_devices',
-        new=mock_android_device.list_adb_devices)
-    @mock.patch.object(
-        android_device, 'list_adb_devices_by_usb_id', return_value=['usb:1'])
+    @mock.patch.object(android_device,
+                       'get_instances_with_configs',
+                       new=mock_android_device.get_instances_with_configs)
+    @mock.patch.object(android_device,
+                       'list_adb_devices',
+                       new=mock_android_device.list_adb_devices)
+    @mock.patch.object(android_device,
+                       'list_adb_devices_by_usb_id',
+                       return_value=['usb:1'])
     def test_create_with_usb_id(self, mock_list_adb_devices_by_usb_id):
         string_list = [{'serial': '1'}, {'serial': '2'}, {'serial': 'usb:1'}]
         actual_ads = android_device.create(string_list)
@@ -173,8 +165,9 @@ class AndroidDeviceTest(unittest.TestCase):
         expected_serial = '1'
         expected_h_port = 5555
         ads[1].h_port = expected_h_port
-        ad = android_device.get_device(
-            ads, serial=expected_serial, h_port=expected_h_port)
+        ad = android_device.get_device(ads,
+                                       serial=expected_serial,
+                                       h_port=expected_h_port)
         self.assertEqual(ad.serial, expected_serial)
         self.assertEqual(ad.h_port, expected_h_port)
 
@@ -240,12 +233,10 @@ class AndroidDeviceTest(unittest.TestCase):
     # These tests mock out any interaction with the OS and real android device
     # in AndroidDeivce.
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test_AndroidDevice_instantiation(self, MockFastboot, MockAdbProxy):
         """Verifies the AndroidDevice object's basic attributes are correctly
         set after instantiation.
@@ -258,12 +249,10 @@ class AndroidDeviceTest(unittest.TestCase):
                                    'AndroidDevice%s' % mock_serial)
         self.assertEqual(ad.log_path, expected_lp)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test_AndroidDevice_build_info(self, MockFastboot, MockAdbProxy):
         """Verifies the AndroidDevice object's basic attributes are correctly
         set after instantiation.
@@ -277,20 +266,18 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(build_info['build_product'], 'FakeModel')
         self.assertEqual(build_info['product_name'], 'FakeModel')
         self.assertEqual(build_info['debuggable'], '1')
-        self.assertEqual(
-            len(build_info), len(android_device.CACHED_SYSTEM_PROPS))
+        self.assertEqual(len(build_info),
+                         len(android_device.CACHED_SYSTEM_PROPS))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy(
-            '1',
-            mock_properties={
-                'ro.build.id': 'AB42',
-                'ro.build.type': 'userdebug',
-            }))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(
+                    '1',
+                    mock_properties={
+                        'ro.build.id': 'AB42',
+                        'ro.build.type': 'userdebug',
+                    }))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test_AndroidDevice_build_info_with_minimal_properties(
             self, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
@@ -303,12 +290,10 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(build_info['product_name'], '')
         self.assertEqual(build_info['debuggable'], '')
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test_AndroidDevice_build_info_cached(self, MockFastboot, MockAdbProxy):
         """Verifies the AndroidDevice object's basic attributes are correctly
         set after instantiation.
@@ -319,46 +304,40 @@ class AndroidDeviceTest(unittest.TestCase):
         _ = ad.build_info
         self.assertEqual(ad.adb.getprops_call_count, 1)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy(
-            '1',
-            mock_properties={
-                'ro.build.id': 'AB42',
-                'ro.build.type': 'userdebug',
-                'ro.debuggable': '1',
-            }))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(
+                    '1',
+                    mock_properties={
+                        'ro.build.id': 'AB42',
+                        'ro.build.type': 'userdebug',
+                        'ro.debuggable': '1',
+                    }))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test_AndroidDevice_is_rootable_when_userdebug_device(
             self, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         self.assertTrue(ad.is_rootable)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy(
-            '1',
-            mock_properties={
-                'ro.build.id': 'AB42',
-                'ro.build.type': 'user',
-                'ro.debuggable': '0',
-            }))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(
+                    '1',
+                    mock_properties={
+                        'ro.build.id': 'AB42',
+                        'ro.build.type': 'user',
+                        'ro.debuggable': '0',
+                    }))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test_AndroidDevice_is_rootable_when_user_device(
             self, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         self.assertFalse(ad.is_rootable)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test_AndroidDevice_device_info(self, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial=1)
         device_info = ad.device_info
@@ -372,12 +351,10 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(device_info['user_added_info']['sim_type'], 'Fi')
         self.assertEqual(device_info['user_added_info']['build_id'], 'CD42')
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test_AndroidDevice_serial_is_valid(self, MockFastboot, MockAdbProxy):
         """Verifies that the serial is a primitive string type and serializable.
         """
@@ -391,12 +368,10 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertTrue(isinstance(ad.serial, str))
         yaml.safe_dump(ad.serial)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy(1))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.utils.create_dir')
     def test_AndroidDevice_take_bug_report(self, create_dir_mock,
                                            FastbootProxy, MockAdbProxy):
@@ -405,21 +380,21 @@ class AndroidDeviceTest(unittest.TestCase):
         """
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
-        output_path = ad.take_bug_report(
-            test_name='test_something', begin_time='sometime')
-        expected_path = os.path.join(
-            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
+        output_path = ad.take_bug_report(test_name='test_something',
+                                         begin_time='sometime')
+        expected_path = os.path.join(logging.log_path,
+                                     'AndroidDevice%s' % ad.serial,
+                                     'BugReports')
         create_dir_mock.assert_called_with(expected_path)
-        self.assertEqual(output_path,
-                         os.path.join(expected_path,
-                                      'test_something,sometime,1.zip'))
+        self.assertEqual(
+            output_path,
+            os.path.join(expected_path, 'test_something,sometime,1.zip'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1', fail_br=True))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1',
+                                                              fail_br=True))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
     def test_AndroidDevice_take_bug_report_fail(self, create_dir_mock,
                                                 FastbootProxy, MockAdbProxy):
@@ -430,15 +405,13 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         expected_msg = '.* Failed to take bugreport.'
         with self.assertRaisesRegex(android_device.Error, expected_msg):
-            ad.take_bug_report(
-                test_name='test_something', begin_time='sometime')
+            ad.take_bug_report(test_name='test_something',
+                               begin_time='sometime')
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
     @mock.patch('mobly.utils.get_current_epoch_time')
     @mock.patch('mobly.logger.epoch_to_log_line_timestamp')
@@ -451,20 +424,19 @@ class AndroidDeviceTest(unittest.TestCase):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         output_path = ad.take_bug_report()
-        expected_path = os.path.join(
-            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
+        expected_path = os.path.join(logging.log_path,
+                                     'AndroidDevice%s' % ad.serial,
+                                     'BugReports')
         create_dir_mock.assert_called_with(expected_path)
         epoch_to_log_line_timestamp_mock.assert_called_once_with(1557446629606)
-        self.assertEqual(output_path,
-                         os.path.join(expected_path,
-                                      'bugreport,05-09_17-03-49.606,1.zip'))
+        self.assertEqual(
+            output_path,
+            os.path.join(expected_path, 'bugreport,05-09_17-03-49.606,1.zip'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
     @mock.patch('mobly.utils.get_current_epoch_time')
     @mock.patch('mobly.logger.epoch_to_log_line_timestamp')
@@ -477,8 +449,9 @@ class AndroidDeviceTest(unittest.TestCase):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         output_path = ad.take_bug_report(test_name='test_something')
-        expected_path = os.path.join(
-            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
+        expected_path = os.path.join(logging.log_path,
+                                     'AndroidDevice%s' % ad.serial,
+                                     'BugReports')
         create_dir_mock.assert_called_with(expected_path)
         epoch_to_log_line_timestamp_mock.assert_called_once_with(1557446629606)
         self.assertEqual(
@@ -486,98 +459,91 @@ class AndroidDeviceTest(unittest.TestCase):
             os.path.join(expected_path,
                          'test_something,05-09_17-03-49.606,1.zip'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy(1))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.utils.create_dir')
     def test_AndroidDevice_take_bug_report_with_only_begin_time(
             self, create_dir_mock, FastbootProxy, MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         output_path = ad.take_bug_report(begin_time='sometime')
-        expected_path = os.path.join(
-            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
+        expected_path = os.path.join(logging.log_path,
+                                     'AndroidDevice%s' % ad.serial,
+                                     'BugReports')
         create_dir_mock.assert_called_with(expected_path)
-        self.assertEqual(output_path,
-                         os.path.join(expected_path,
+        self.assertEqual(
+            output_path, os.path.join(expected_path,
                                       'bugreport,sometime,1.zip'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy(1))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy(1))
     @mock.patch('mobly.utils.create_dir')
     def test_AndroidDevice_take_bug_report_with_positional_args(
             self, create_dir_mock, FastbootProxy, MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         output_path = ad.take_bug_report('test_something', 'sometime')
-        expected_path = os.path.join(
-            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
+        expected_path = os.path.join(logging.log_path,
+                                     'AndroidDevice%s' % ad.serial,
+                                     'BugReports')
         create_dir_mock.assert_called_with(expected_path)
-        self.assertEqual(output_path,
-                         os.path.join(expected_path,
-                                      'test_something,sometime,1.zip'))
+        self.assertEqual(
+            output_path,
+            os.path.join(expected_path, 'test_something,sometime,1.zip'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
     def test_AndroidDevice_take_bug_report_with_destination(
             self, create_dir_mock, FastbootProxy, MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         dest = tempfile.gettempdir()
-        output_path = ad.take_bug_report(
-            test_name="test_something",
-            begin_time="sometime",
-            destination=dest)
+        output_path = ad.take_bug_report(test_name="test_something",
+                                         begin_time="sometime",
+                                         destination=dest)
         expected_path = os.path.join(dest)
         create_dir_mock.assert_called_with(expected_path)
-        self.assertEqual(output_path,
-                         os.path.join(expected_path,
-                                      'test_something,sometime,1.zip'))
+        self.assertEqual(
+            output_path,
+            os.path.join(expected_path, 'test_something,sometime,1.zip'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy(
-            '1', fail_br_before_N=True))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(
+                    '1', fail_br_before_N=True))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
-    def test_AndroidDevice_take_bug_report_fallback(
-            self, create_dir_mock, FastbootProxy, MockAdbProxy):
+    def test_AndroidDevice_take_bug_report_fallback(self, create_dir_mock,
+                                                    FastbootProxy,
+                                                    MockAdbProxy):
         """Verifies AndroidDevice.take_bug_report falls back to traditional
         bugreport on builds that do not have bugreportz.
         """
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
-        output_path = ad.take_bug_report(
-            test_name='test_something', begin_time='sometime')
-        expected_path = os.path.join(
-            logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports')
+        output_path = ad.take_bug_report(test_name='test_something',
+                                         begin_time='sometime')
+        expected_path = os.path.join(logging.log_path,
+                                     'AndroidDevice%s' % ad.serial,
+                                     'BugReports')
         create_dir_mock.assert_called_with(expected_path)
-        self.assertEqual(output_path,
-                         os.path.join(expected_path,
-                                      'test_something,sometime,1.txt'))
+        self.assertEqual(
+            output_path,
+            os.path.join(expected_path, 'test_something,sometime,1.txt'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_change_log_path(self, stop_proc_mock,
                                            start_proc_mock, FastbootProxy,
@@ -589,14 +555,12 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertTrue(os.path.exists(new_log_path))
         self.assertFalse(os.path.exists(old_path))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_change_log_path_no_log_exists(
             self, stop_proc_mock, start_proc_mock, FastbootProxy,
@@ -608,14 +572,14 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertTrue(os.path.exists(new_log_path))
         self.assertFalse(os.path.exists(old_path))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('127.0.0.1:5557'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('127.0.0.1:5557')
+                )
     @mock.patch(
         'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
         return_value=mock_android_device.MockFastbootProxy('127.0.0.1:5557'))
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_with_reserved_character_in_serial_log_path(
             self, stop_proc_mock, start_proc_mock, FastbootProxy,
@@ -624,15 +588,13 @@ class AndroidDeviceTest(unittest.TestCase):
         base_log_path = os.path.basename(ad.log_path)
         self.assertEqual(base_log_path, 'AndroidDevice127.0.0.1-5557')
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_change_log_path_with_service(
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
@@ -644,15 +606,13 @@ class AndroidDeviceTest(unittest.TestCase):
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.log_path = new_log_path
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_change_log_path_with_existing_file(
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
@@ -666,15 +626,13 @@ class AndroidDeviceTest(unittest.TestCase):
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.log_path = new_log_path
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_update_serial(self, stop_proc_mock, start_proc_mock,
                                          creat_dir_mock, FastbootProxy,
@@ -686,15 +644,13 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(ad.adb.serial, ad.serial)
         self.assertEqual(ad.fastboot.serial, ad.serial)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch('mobly.utils.create_dir')
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_update_serial_with_service_running(
             self, stop_proc_mock, start_proc_mock, creat_dir_mock,
@@ -705,12 +661,10 @@ class AndroidDeviceTest(unittest.TestCase):
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.update_serial('2')
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
@@ -720,12 +674,10 @@ class AndroidDeviceTest(unittest.TestCase):
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         self.assertTrue(hasattr(ad, 'snippet'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
@@ -737,18 +689,18 @@ class AndroidDeviceTest(unittest.TestCase):
         actual_value = getattr(ad, 'some_attr', value)
         self.assertEqual(actual_value, value)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient',
         return_value=MockSnippetClient)
     @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_load_snippet_dup_package(
-            self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
+    def test_AndroidDevice_load_snippet_dup_package(self, MockGetPort,
+                                                    MockSnippetClient,
+                                                    MockFastboot,
+                                                    MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         expected_msg = ('Snippet package "%s" has already been loaded under '
@@ -756,12 +708,10 @@ class AndroidDeviceTest(unittest.TestCase):
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.load_snippet('snippet2', MOCK_SNIPPET_PACKAGE_NAME)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient',
         return_value=MockSnippetClient)
@@ -770,16 +720,15 @@ class AndroidDeviceTest(unittest.TestCase):
             self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
-        expected_msg = '.* Attribute "snippet" already exists, please use a different name.'
+        expected_msg = ('.* Attribute "snippet" already exists, please use a '
+                        'different name.')
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME + 'haha')
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
@@ -791,12 +740,10 @@ class AndroidDeviceTest(unittest.TestCase):
         with self.assertRaisesRegex(android_device.Error, expected_msg):
             ad.load_snippet('adb', MOCK_SNIPPET_PACKAGE_NAME)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
@@ -819,12 +766,10 @@ class AndroidDeviceTest(unittest.TestCase):
         except Exception as e:
             assertIs(e, expected_e)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
@@ -842,29 +787,26 @@ class AndroidDeviceTest(unittest.TestCase):
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         self.assertTrue(hasattr(ad, 'snippet'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_snippet_cleanup(
-            self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
+    def test_AndroidDevice_snippet_cleanup(self, MockGetPort,
+                                           MockSnippetClient, MockFastboot,
+                                           MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         ad.services.start_all()
         ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
         ad.unload_snippet('snippet')
         self.assertFalse(hasattr(ad, 'snippet'))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test_AndroidDevice_debug_tag(self, MockFastboot, MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
@@ -885,14 +827,12 @@ class AndroidDeviceTest(unittest.TestCase):
         except Exception as e:
             self.assertEqual("(<AndroidDevice|Mememe>, 'Something')", str(e))
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_handle_usb_disconnect(self, stop_proc_mock,
                                                  start_proc_mock,
@@ -931,14 +871,12 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertTrue(ad.services.is_any_alive)
         self.assertTrue(ad.services.mock_service.resume_called)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_handle_reboot(self, stop_proc_mock, start_proc_mock,
                                          FastbootProxy, MockAdbProxy):
@@ -976,14 +914,12 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertTrue(ad.services.is_any_alive)
         self.assertFalse(ad.services.mock_service.resume_called)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_handle_reboot_changes_build_info(
             self, stop_proc_mock, start_proc_mock, FastbootProxy,
@@ -997,14 +933,12 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertFalse(ad.is_rootable)
         self.assertEqual(ad.adb.getprops_call_count, 2)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch(
-        'mobly.utils.start_standing_subprocess', return_value='process')
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
     def test_AndroidDevice_handle_reboot_changes_build_info_with_caching(
             self, stop_proc_mock, start_proc_mock, FastbootProxy,
@@ -1021,20 +955,17 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(ad.adb.getprops_call_count, 4)
         self.assertEqual(rootable_states, [True, True, False, False, False])
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device.AndroidDevice.is_boot_completed',
         side_effect=[
             False, False,
-            adb.AdbTimeoutError(
-                ['adb', 'shell', 'getprop sys.boot_completed'],
-                timeout=5,
-                serial=1), True
+            adb.AdbTimeoutError(['adb', 'shell', 'getprop sys.boot_completed'],
+                                timeout=5,
+                                serial=1), True
         ])
     @mock.patch('time.sleep', return_value=None)
     @mock.patch('time.time', side_effect=[0, 5, 10, 15, 20, 25, 30])
@@ -1052,20 +983,17 @@ class AndroidDeviceTest(unittest.TestCase):
             'adb.AdbError or adb.AdbTimeoutError exception raised but not handled.'
         )
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     @mock.patch(
         'mobly.controllers.android_device.AndroidDevice.is_boot_completed',
         side_effect=[
             False, False,
-            adb.AdbTimeoutError(
-                ['adb', 'shell', 'getprop sys.boot_completed'],
-                timeout=5,
-                serial=1), False, False, False, False
+            adb.AdbTimeoutError(['adb', 'shell', 'getprop sys.boot_completed'],
+                                timeout=5,
+                                serial=1), False, False, False, False
         ])
     @mock.patch('time.sleep', return_value=None)
     @mock.patch('time.time', side_effect=[0, 5, 10, 15, 20, 25, 30])

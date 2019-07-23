@@ -107,8 +107,9 @@ def create(configs):
 
     for ad in ads:
         if ad.serial not in valid_ad_identifiers:
-            raise DeviceError(ad, 'Android device is specified in config but'
-                              ' is not attached.')
+            raise DeviceError(
+                ad, 'Android device is specified in config but is not '
+                'attached.')
     _start_services_on_ads(ads)
     return ads
 
@@ -153,8 +154,9 @@ def _start_services_on_ads(ads):
         start_logcat = not getattr(ad, KEY_SKIP_LOGCAT,
                                    DEFAULT_VALUE_SKIP_LOGCAT)
         try:
-            ad.services.register(
-                SERVICE_NAME_LOGCAT, logcat.Logcat, start_service=start_logcat)
+            ad.services.register(SERVICE_NAME_LOGCAT,
+                                 logcat.Logcat,
+                                 start_service=start_logcat)
         except Exception:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED,
                                   DEFAULT_VALUE_DEVICE_REQUIRED)
@@ -406,10 +408,9 @@ def take_bug_reports(ads, test_name, begin_time, destination=None):
     begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
 
     def take_br(test_name, begin_time, ad, destination):
-        ad.take_bug_report(
-            test_name=test_name,
-            begin_time=begin_time,
-            destination=destination)
+        ad.take_bug_report(test_name=test_name,
+                           begin_time=begin_time,
+                           destination=destination)
 
     args = [(test_name, begin_time, ad, destination) for ad in ads]
     utils.concurrent_exec(take_br, args)
@@ -449,9 +450,8 @@ class AndroidDevice(object):
         self._log_path = os.path.join(
             self._log_path_base, 'AndroidDevice%s' % self._normalized_serial)
         self._debug_tag = self._serial
-        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-            'tag': self.debug_tag
-        })
+        self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
+                                              {'tag': self.debug_tag})
         self._build_info = None
         self._is_rebooting = False
         self.adb = adb.AdbProxy(serial)
@@ -933,8 +933,9 @@ class AndroidDevice(object):
         else:
             # shell=True as this command redirects the stdout to a local file
             # using shell redirection.
-            self.adb.bugreport(
-                ' > "%s"' % full_out_path, shell=True, timeout=timeout)
+            self.adb.bugreport(' > "%s"' % full_out_path,
+                               shell=True,
+                               timeout=timeout)
         self.log.info('Bugreport for %s taken at %s.', test_name,
                       full_out_path)
         return full_out_path

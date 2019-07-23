@@ -39,8 +39,8 @@ def _validate_test_config(test_config):
     """
     required_key = keys.Config.key_testbed.value
     if required_key not in test_config:
-        raise MoblyConfigError(
-            'Required key %s missing in test config.' % required_key)
+        raise MoblyConfigError('Required key %s missing in test config.' %
+                               required_key)
 
 
 def _validate_testbed_name(name):
@@ -111,8 +111,8 @@ def load_test_config_file(test_config_path, tb_filters=None):
         if len(tbs) != len(tb_filters):
             raise MoblyConfigError(
                 'Expect to find %d test bed configs, found %d. Check if'
-                ' you have the correct test bed names.' % (len(tb_filters),
-                                                           len(tbs)))
+                ' you have the correct test bed names.' %
+                (len(tb_filters), len(tbs)))
         configs[keys.Config.key_testbed.value] = tbs
     mobly_params = configs.get(keys.Config.key_mobly_params.value, {})
     # Decide log path.

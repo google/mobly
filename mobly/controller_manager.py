@@ -153,8 +153,8 @@ class ControllerManager(object):
         # logging them.
         for name, module in self._controller_modules.items():
             logging.debug('Destroying %s.', name)
-            with expects.expect_no_raises(
-                    'Exception occurred destroying %s.' % name):
+            with expects.expect_no_raises('Exception occurred destroying %s.' %
+                                          name):
                 module.destroy(self._controller_objects[name])
         self._controller_objects = collections.OrderedDict()
         self._controller_modules = {}
@@ -178,15 +178,17 @@ class ControllerManager(object):
             controller_info = module.get_info(
                 copy.copy(self._controller_objects[controller_module_name]))
         except AttributeError:
-            logging.warning('No optional debug info found for controller '
-                            '%s. To provide it, implement `get_info`.',
-                            controller_module_name)
+            logging.warning(
+                'No optional debug info found for controller '
+                '%s. To provide it, implement `get_info`.',
+                controller_module_name)
         try:
             yaml.dump(controller_info)
         except TypeError:
-            logging.warning('The info of controller %s in class "%s" is not '
-                            'YAML serializable! Coercing it to string.',
-                            controller_module_name, self._class_name)
+            logging.warning(
+                'The info of controller %s in class "%s" is not '
+                'YAML serializable! Coercing it to string.',
+                controller_module_name, self._class_name)
             controller_info = str(controller_info)
         return records.ControllerInfoRecord(
             self._class_name, module.MOBLY_CONTROLLER_CONFIG_NAME,

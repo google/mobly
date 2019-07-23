@@ -26,7 +26,7 @@ class Sl4aService(base_service.BaseService):
     """
 
     def __init__(self, device, configs=None):
-        del configs # Never used.
+        del configs  # Never used.
         self._ad = device
         self._sl4a_client = None
 

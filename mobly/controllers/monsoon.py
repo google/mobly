@@ -346,7 +346,8 @@ class MonsoonProxy(object):
             seq, _type, x, y = struct.unpack("BBBB", _bytes[:4])
             data = [
                 struct.unpack(">hhhh", _bytes[x:x + 8])
-                for x in range(4, len(_bytes) - 8, 8)
+                for x in range(4,
+                               len(_bytes) - 8, 8)
             ]
 
             if self._last_seq and seq & 0xF != (self._last_seq + 1) & 0xF:
@@ -378,8 +379,8 @@ class MonsoonProxy(object):
 
             # See http://wiki/Main/MonsoonProtocol for details on these values.
             if self._coarse_ref != self._coarse_zero:
-                self._coarse_scale = 2.88 / (
-                    self._coarse_ref - self._coarse_zero)
+                self._coarse_scale = 2.88 / (self._coarse_ref -
+                                             self._coarse_zero)
             if self._fine_ref != self._fine_zero:
                 self._fine_scale = 0.0332 / (self._fine_ref - self._fine_zero)
 
@@ -797,12 +798,11 @@ class Monsoon(object):
             pass
         self.mon.StopDataCollection()
         try:
-            return MonsoonData(
-                current_values,
-                timestamps,
-                sample_hz,
-                voltage,
-                offset=sample_offset)
+            return MonsoonData(current_values,
+                               timestamps,
+                               sample_hz,
+                               voltage,
+                               offset=sample_offset)
         except:
             return None
 

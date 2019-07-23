@@ -101,8 +101,8 @@ class CallbackHandler(object):
                 raise TimeoutError(
                     self._ad,
                     'Timed out after waiting %ss for event "%s" triggered by'
-                    ' %s (%s).' % (timeout, event_name, self._method_name,
-                                   self._id))
+                    ' %s (%s).' %
+                    (timeout, event_name, self._method_name, self._id))
             raise
         return snippet_event.from_dict(raw_event)
 

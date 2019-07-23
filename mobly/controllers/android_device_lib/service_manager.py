@@ -115,30 +115,30 @@ class ServiceManager(object):
         """Starts all inactive service instances."""
         for alias, service in self._service_objects.items():
             if not service.is_alive:
-                with expects.expect_no_raises(
-                        'Failed to start service "%s".' % alias):
+                with expects.expect_no_raises('Failed to start service "%s".' %
+                                              alias):
                     service.start()
 
     def stop_all(self):
         """Stops all active service instances."""
         for alias, service in self._service_objects.items():
             if service.is_alive:
-                with expects.expect_no_raises(
-                        'Failed to stop service "%s".' % alias):
+                with expects.expect_no_raises('Failed to stop service "%s".' %
+                                              alias):
                     service.stop()
 
     def pause_all(self):
         """Pauses all service instances."""
         for alias, service in self._service_objects.items():
-            with expects.expect_no_raises(
-                    'Failed to pause service "%s".' % alias):
+            with expects.expect_no_raises('Failed to pause service "%s".' %
+                                          alias):
                 service.pause()
 
     def resume_all(self):
         """Resumes all service instances."""
         for alias, service in self._service_objects.items():
-            with expects.expect_no_raises(
-                    'Failed to resume service "%s".' % alias):
+            with expects.expect_no_raises('Failed to resume service "%s".' %
+                                          alias):
                 service.resume()
 
     def __getattr__(self, name):
