@@ -406,10 +406,10 @@ def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
         destination: string, path to the directory where the bugreport
             should be saved.
     """
-    if begin_time:
-        begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
-    else:
+    if begin_time is None:
         begin_time = mobly_logger.get_log_file_timestamp()
+    else:
+        begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
 
     def take_br(test_name, begin_time, ad, destination):
         ad.take_bug_report(test_name=test_name,
