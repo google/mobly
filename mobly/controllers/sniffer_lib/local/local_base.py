@@ -144,8 +144,7 @@ class SnifferLocalBase(sniffer.Sniffer):
         if self._process is None:
             raise sniffer.InvalidOperationError(
                 "Trying to stop a non-started process")
-        utils.stop_standing_subprocess(self._process,
-                                       kill_signal=signal.SIGINT)
+        utils.stop_standing_subprocess(self._process)
         self._post_process()
 
     def wait_for_capture(self, timeout=None):
