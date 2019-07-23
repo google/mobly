@@ -400,24 +400,23 @@ def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
     Args:
         ads: A list of AndroidDevice instances.
         test_name: Name of the test method that triggered this bug report.
+            If None, the default name "bugreport" will be used.
         begin_time: timestamp taken when the test started, can be either
-            string or int.
+            string or int. If None, the current time will be used.
         destination: string, path to the directory where the bugreport
             should be saved.
     """
-    _begin_time = None
     if begin_time:
-        _begin_time = mobly_logger.normalize_log_line_timestamp(
-            str(begin_time))
+        begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
     else:
-        _begin_time = mobly_logger.get_log_file_timestamp()
+        begin_time = mobly_logger.get_log_file_timestamp()
 
     def take_br(test_name, begin_time, ad, destination):
         ad.take_bug_report(test_name=test_name,
                            begin_time=begin_time,
                            destination=destination)
 
-    args = [(test_name, _begin_time, ad, destination) for ad in ads]
+    args = [(test_name, begin_time, ad, destination) for ad in ads]
     utils.concurrent_exec(take_br, args)
 
 
