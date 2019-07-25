@@ -62,6 +62,45 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(expected_info_dict['Controller Info'],
                          info.controller_info)
 
+    def test_run(self):
+        mock_test_config = self.base_mock_test_config.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{
+            'serial': 'xxxx',
+            'magic': 'Magic1'
+        }, {
+            'serial': 'xxxx',
+            'magic': 'Magic2'
+        }]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
+        tr.run()
+        self.assertTrue(
+            mock_test_config.controller_configs[mock_ctrlr_config_name][0])
+        results = tr.results.summary_dict()
+        self.assertEqual(results['Requested'], 1)
+        self.assertEqual(results['Executed'], 1)
+        self.assertEqual(results['Passed'], 1)
+        expected_info_dict = {
+            'Controller Info': [{
+                'MyMagic': {
+                    'magic': 'Magic1'
+                }
+            }, {
+                'MyMagic': {
+                    'magic': 'Magic2'
+                }
+            }],
+            'Controller Name':
+            'MagicDevice',
+            'Test Class':
+            'IntegrationTest',
+        }
+        self.assertEqual(len(tr.results.controller_info), 1)
+        self._assertControllerInfoEqual(tr.results.controller_info[0],
+                                        expected_info_dict)
+
     def test_run_twice(self):
         """Verifies that:
         1. Repeated run works properly.
@@ -81,9 +120,9 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run()
+        tr.run()
         self.assertTrue(
             mock_test_config.controller_configs[mock_ctrlr_config_name][0])
-        tr.run()
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 2)
         self.assertEqual(results['Executed'], 2)
@@ -103,12 +142,50 @@ class TestRunnerTest(unittest.TestCase):
             'Test Class':
             'IntegrationTest',
         }
+        self.assertEqual(len(tr.results.controller_info), 2)
         self._assertControllerInfoEqual(tr.results.controller_info[0],
                                         expected_info_dict)
         self._assertControllerInfoEqual(tr.results.controller_info[1],
                                         expected_info_dict)
         self.assertNotEqual(tr.results.controller_info[0],
                             tr.results.controller_info[1])
+
+    @mock.patch('mobly.logger.kill_test_logger')
+    def test_run_tears_down_logger(self, mock_kill_test_logger):
+        mock_test_config = self.base_mock_test_config.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{
+            'serial': 'xxxx',
+            'magic': 'Magic1'
+        }, {
+            'serial': 'xxxx',
+            'magic': 'Magic2'
+        }]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
+        tr.run()
+        self.assertIsNone(tr._log_path)
+        # Called once on setup and once on teardown.
+        self.assertEqual(mock_kill_test_logger.call_count, 2)
+
+    @mock.patch('mobly.logger.kill_test_logger')
+    def test_run_without_tearing_down_logger(self, mock_kill_test_logger):
+        mock_test_config = self.base_mock_test_config.copy()
+        mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
+        my_config = [{
+            'serial': 'xxxx',
+            'magic': 'Magic1'
+        }, {
+            'serial': 'xxxx',
+            'magic': 'Magic2'
+        }]
+        mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
+        tr.run(teardown_logger=False)
+        self.assertIsNotNone(tr._log_path)
+        self.assertEqual(mock_kill_test_logger.call_count, 1)
 
     def test_summary_file_entries(self):
         """Verifies the output summary's file format.
@@ -261,7 +338,7 @@ class TestRunnerTest(unittest.TestCase):
                 test_runner.Error,
                 r'TestRunner\._teardown_logger\(\) called before '
                 r'TestRunner\.setup_logger\(\)!'):
-            tr._teardown_logger()
+            tr.teardown_logger()
 
     def test_run_no_tests(self):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)

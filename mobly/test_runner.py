@@ -71,8 +71,8 @@ def main(argv=None):
     # Execute the test class with configs.
     ok = True
     for config in test_configs:
-        runner = TestRunner(log_dir=config.log_path,
-                            test_bed_name=config.test_bed_name)
+        runner = TestRunner(
+            log_dir=config.log_path, test_bed_name=config.test_bed_name)
         runner.add_test_class(config, test_class, tests)
         try:
             runner.run()
@@ -105,30 +105,33 @@ def parse_mobly_cli_args(argv):
     """
     parser = argparse.ArgumentParser(description='Mobly Test Executable.')
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-c',
-                       '--config',
-                       nargs=1,
-                       type=str,
-                       metavar='<PATH>',
-                       help='Path to the test configuration file.')
+    group.add_argument(
+        '-c',
+        '--config',
+        nargs=1,
+        type=str,
+        metavar='<PATH>',
+        help='Path to the test configuration file.')
     group.add_argument(
         '-l',
         '--list_tests',
         action='store_true',
         help='Print the names of the tests defined in a script without '
         'executing them.')
-    parser.add_argument('--tests',
-                        '--test_case',
-                        nargs='+',
-                        type=str,
-                        metavar='[test_a test_b...]',
-                        help='A list of tests in the test class to execute.')
-    parser.add_argument('-tb',
-                        '--test_bed',
-                        nargs='+',
-                        type=str,
-                        metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
-                        help='Specify which test beds to run tests on.')
+    parser.add_argument(
+        '--tests',
+        '--test_case',
+        nargs='+',
+        type=str,
+        metavar='[test_a test_b...]',
+        help='A list of tests in the test class to execute.')
+    parser.add_argument(
+        '-tb',
+        '--test_bed',
+        nargs='+',
+        type=str,
+        metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
+        help='Specify which test beds to run tests on.')
     if not argv:
         argv = sys.argv[1:]
     return parser.parse_known_args(argv)[0]
@@ -241,7 +244,7 @@ class TestRunner(object):
                                       self._start_time)
         logger.setup_test_logger(self._log_path, self._test_bed_name)
 
-    def _teardown_logger(self):
+    def teardown_logger(self):
         """Tears down logging at the end of the test run.
 
         This is called automatically in 'run', so normally, this method doesn't
@@ -279,18 +282,19 @@ class TestRunner(object):
         if self._log_dir != config.log_path:
             raise Error(
                 'TestRunner\'s log folder is "%s", but a test config with a '
-                'different log folder ("%s") was added.' %
-                (self._log_dir, config.log_path))
+                'different log folder ("%s") was added.' % (self._log_dir,
+                                                            config.log_path))
         if self._test_bed_name != config.test_bed_name:
             raise Error(
                 'TestRunner\'s test bed is "%s", but a test config with a '
                 'different test bed ("%s") was added.' %
                 (self._test_bed_name, config.test_bed_name))
         self._test_run_infos.append(
-            TestRunner._TestRunInfo(config=config,
-                                    test_class=test_class,
-                                    tests=tests,
-                                    test_class_name_suffix=name_suffix))
+            TestRunner._TestRunInfo(
+                config=config,
+                test_class=test_class,
+                tests=tests,
+                test_class_name_suffix=name_suffix))
 
     def _run_test_class(self, config, test_class, tests=None):
         """Instantiates and executes a test class.
@@ -314,12 +318,18 @@ class TestRunner(object):
                 self.results += e.results
                 raise e
 
-    def run(self):
+    def run(self, teardown_logger=True):
         """Executes tests.
 
         This will instantiate controller and test classes, execute tests, and
         print a summary.
 
+        Args:
+            teardown_logger: Determines if the test logger should be torn down
+                on the completion of this method. By default, the logger will
+                be torn down. Generally, set this to `False` if there are
+                additional actions that need to be performed after the
+                completion of the test runs, which should be logged.
         Raises:
             Error: if no tests have previously been added to this runner using
                 add_test_class(...).
@@ -338,9 +348,10 @@ class TestRunner(object):
                 test_config.summary_writer = summary_writer
                 test_config.test_class_name_suffix = test_run_info.test_class_name_suffix
                 try:
-                    self._run_test_class(config=test_config,
-                                         test_class=test_run_info.test_class,
-                                         tests=test_run_info.tests)
+                    self._run_test_class(
+                        config=test_config,
+                        test_class=test_run_info.test_class,
+                        tests=test_run_info.tests)
                 except signals.TestAbortAll as e:
                     logging.warning(
                         'Abort all subsequent test classes. Reason: %s', e)
@@ -353,4 +364,5 @@ class TestRunner(object):
                 self._test_bed_name, self._start_time,
                 self.results.summary_str())
             logging.info(msg.strip())
-            self._teardown_logger()
+            if teardown_logger:
+                self.teardown_logger()

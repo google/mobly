@@ -118,7 +118,7 @@ class OutputTest(unittest.TestCase):
             self.base_mock_test_config)
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.setup_logger()
-        tr._teardown_logger()
+        tr.teardown_logger()
         shortcut = shell.CreateShortCut(shortcut_path)
         # Normalize paths for case and truncation
         normalized_shortcut_path = os.path.normcase(
@@ -191,13 +191,13 @@ class OutputTest(unittest.TestCase):
         tr.setup_logger()
         logging.info(info_uuid1)
         logging.debug(debug_uuid1)
-        tr._teardown_logger()
+        tr.teardown_logger()
         output_dir1 = logging.log_path
 
         tr.setup_logger()
         logging.info(info_uuid2)
         logging.debug(debug_uuid2)
-        tr._teardown_logger()
+        tr.teardown_logger()
         output_dir2 = logging.log_path
 
         self.assertNotEqual(output_dir1, output_dir2)
