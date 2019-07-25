@@ -14,6 +14,8 @@
 
 import mock
 import pytz
+import shutil
+import tempfile
 import unittest
 
 from mobly import logger
@@ -22,6 +24,12 @@ from mobly import logger
 class LoggerTest(unittest.TestCase):
     """Verifies code in mobly.logger module.
     """
+
+    def setUp(self):
+        self.log_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.log_dir)
 
     def test_epoch_to_log_line_timestamp(self):
         actual_stamp = logger.epoch_to_log_line_timestamp(
@@ -43,26 +51,38 @@ class LoggerTest(unittest.TestCase):
     @mock.patch('mobly.utils.create_alias')
     def test_create_latest_log_alias(self, mock_create_alias):
         logger.create_latest_log_alias('fake_path')
-        mock_create_alias.assert_called_with('fake_path', 'latest')
+        mock_create_alias.assert_called_once_with('fake_path', 'latest')
 
     @mock.patch('mobly.utils.create_alias')
-    @mock.patch('mobly.logger.LATEST_LOG_ALIAS', None)
     def test_create_latest_log_alias_when_none(self, mock_create_alias):
-        logger.create_latest_log_alias('fake_path')
+        logger.create_latest_log_alias('fake_path', alias=None)
         mock_create_alias.assert_not_called()
 
     @mock.patch('mobly.utils.create_alias')
-    @mock.patch('mobly.logger.LATEST_LOG_ALIAS', '')
     def test_create_latest_log_alias_when_empty(self, mock_create_alias):
-        logger.create_latest_log_alias('fake_path')
+        logger.create_latest_log_alias('fake_path', alias='')
         mock_create_alias.assert_not_called()
 
     @mock.patch('mobly.utils.create_alias')
-    @mock.patch('mobly.logger.LATEST_LOG_ALIAS', 'history')
     def test_create_latest_log_alias_when_custom_value(self,
                                                        mock_create_alias):
-        logger.create_latest_log_alias('fake_path')
-        mock_create_alias.assert_called_with('fake_path', 'history')
+        logger.create_latest_log_alias('fake_path', alias='history')
+        mock_create_alias.assert_called_once_with('fake_path', 'history')
+
+    @mock.patch('mobly.logger.create_latest_log_alias')
+    def test_setup_test_logger_creates_log_alias(self,
+                                                 mock_create_latest_log_alias):
+        logger.setup_test_logger(self.log_dir)
+        mock_create_latest_log_alias.assert_called_once_with(
+            self.log_dir, alias='latest')
+
+    @mock.patch('mobly.logger.create_latest_log_alias')
+    def test_setup_test_logger_creates_log_alias_with_custom_value(
+            self, mock_create_latest_log_alias):
+        mock_alias = mock.MagicMock()
+        logger.setup_test_logger(self.log_dir, alias=mock_alias)
+        mock_create_latest_log_alias.assert_called_once_with(
+            self.log_dir, alias=mock_alias)
 
 
 if __name__ == "__main__":
