@@ -38,7 +38,6 @@ class TestRunnerTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.test_runner.
     """
-
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = config_parser.TestRunConfig()
@@ -221,18 +220,14 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(summary_entries[3]['Type'],
                          records.TestSummaryEntryType.SUMMARY.value)
 
-    @mock.patch(
-        'mobly.controllers.android_device_lib.adb.AdbProxy',
-        return_value=mock_android_device.MockAdbProxy(1))
-    @mock.patch(
-        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-        return_value=mock_android_device.MockFastbootProxy(1))
-    @mock.patch(
-        'mobly.controllers.android_device.list_adb_devices',
-        return_value=['1'])
-    @mock.patch(
-        'mobly.controllers.android_device.get_all_instances',
-        return_value=mock_android_device.get_mock_ads(1))
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.controllers.android_device.list_adb_devices',
+                return_value=['1'])
+    @mock.patch('mobly.controllers.android_device.get_all_instances',
+                return_value=mock_android_device.get_mock_ads(1))
     def test_run_two_test_classes(self, mock_get_all, mock_list_adb,
                                   mock_fastboot, mock_adb):
         """Verifies that running more than one test class in one test run works
@@ -280,14 +275,12 @@ class TestRunnerTest(unittest.TestCase):
         config2 = config1.copy()
         config2.user_params['icecream'] = 10
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        tr.add_test_class(
-            config1,
-            integration_test.IntegrationTest,
-            name_suffix='FirstConfig')
-        tr.add_test_class(
-            config2,
-            integration_test.IntegrationTest,
-            name_suffix='SecondConfig')
+        tr.add_test_class(config1,
+                          integration_test.IntegrationTest,
+                          name_suffix='FirstConfig')
+        tr.add_test_class(config2,
+                          integration_test.IntegrationTest,
+                          name_suffix='SecondConfig')
         tr.run()
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 2)
@@ -345,12 +338,10 @@ class TestRunnerTest(unittest.TestCase):
         with self.assertRaisesRegex(test_runner.Error, 'No tests to execute.'):
             tr.run()
 
-    @mock.patch(
-        'mobly.test_runner._find_test_class',
-        return_value=type('SampleTest', (), {}))
-    @mock.patch(
-        'mobly.test_runner.config_parser.load_test_config_file',
-        return_value=[config_parser.TestRunConfig()])
+    @mock.patch('mobly.test_runner._find_test_class',
+                return_value=type('SampleTest', (), {}))
+    @mock.patch('mobly.test_runner.config_parser.load_test_config_file',
+                return_value=[config_parser.TestRunConfig()])
     @mock.patch('mobly.test_runner.TestRunner', return_value=mock.MagicMock())
     def test_main_parse_args(self, mock_test_runner, mock_config,
                              mock_find_test):

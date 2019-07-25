@@ -40,7 +40,6 @@ class OutputTest(unittest.TestCase):
     """This test class has unit tests for the implementation of Mobly's output
     files.
     """
-
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = config_parser.TestRunConfig()
@@ -146,13 +145,14 @@ class OutputTest(unittest.TestCase):
         output_dir = logging.log_path
         (summary_file_path, debug_log_path,
          info_log_path) = self.assert_output_logs_exist(output_dir)
-        self.assert_log_contents(
-            debug_log_path, whitelist=[debug_uuid, info_uuid])
-        self.assert_log_contents(
-            info_log_path, whitelist=[info_uuid], blacklist=[debug_uuid])
+        self.assert_log_contents(debug_log_path,
+                                 whitelist=[debug_uuid, info_uuid])
+        self.assert_log_contents(info_log_path,
+                                 whitelist=[info_uuid],
+                                 blacklist=[debug_uuid])
 
-    @mock.patch(
-        'mobly.logger.get_log_file_timestamp', side_effect=str(time.time()))
+    @mock.patch('mobly.logger.get_log_file_timestamp',
+                side_effect=str(time.time()))
     def test_run_twice_for_two_sets_of_logs(self, mock_timestamp):
         """Verifies the expected output files from a test run.
 
@@ -172,8 +172,8 @@ class OutputTest(unittest.TestCase):
         self.assert_output_logs_exist(output_dir1)
         self.assert_output_logs_exist(output_dir2)
 
-    @mock.patch(
-        'mobly.logger.get_log_file_timestamp', side_effect=str(time.time()))
+    @mock.patch('mobly.logger.get_log_file_timestamp',
+                side_effect=str(time.time()))
     def test_teardown_erases_logs(self, mock_timestamp):
         """Verifies the expected output files from a test run.
 
@@ -207,14 +207,12 @@ class OutputTest(unittest.TestCase):
         (summary_file_path2, debug_log_path2,
          info_log_path2) = self.get_output_logs(output_dir2)
 
-        self.assert_log_contents(
-            debug_log_path1,
-            whitelist=[debug_uuid1, info_uuid1],
-            blacklist=[info_uuid2, debug_uuid2])
-        self.assert_log_contents(
-            debug_log_path2,
-            whitelist=[debug_uuid2, info_uuid2],
-            blacklist=[info_uuid1, debug_uuid1])
+        self.assert_log_contents(debug_log_path1,
+                                 whitelist=[debug_uuid1, info_uuid1],
+                                 blacklist=[info_uuid2, debug_uuid2])
+        self.assert_log_contents(debug_log_path2,
+                                 whitelist=[debug_uuid2, info_uuid2],
+                                 blacklist=[info_uuid1, debug_uuid1])
 
     def test_basic_output(self):
         """Verifies the expected output files from a test run.
@@ -236,8 +234,9 @@ class OutputTest(unittest.TestCase):
                 self.assertTrue(entry['Type'])
                 summary_entries.append(entry)
         self.assert_log_contents(debug_log_path, whitelist=['DEBUG', 'INFO'])
-        self.assert_log_contents(
-            info_log_path, whitelist=['INFO'], blacklist=['DEBUG'])
+        self.assert_log_contents(info_log_path,
+                                 whitelist=['INFO'],
+                                 blacklist=['DEBUG'])
 
     def test_teardown_class_output(self):
         """Verifies the summary file includes the failure record for
