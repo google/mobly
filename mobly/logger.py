@@ -209,7 +209,8 @@ def setup_test_logger(log_path, prefix=None, filename=None, alias='latest'):
         prefix: A prefix for each log line in terminal.
         filename: Name of the files. The default is the time the objects
             are requested.
-        alias: The name of the alias to use for the latest log directory.
+        alias: The name of the alias to use for the latest log directory. If a
+          falsy value is provided, then the alias directory will not be created.
     """
     utils.create_dir(log_path)
     _setup_test_logger(log_path, prefix)
