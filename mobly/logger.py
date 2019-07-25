@@ -23,8 +23,6 @@ import sys
 from mobly import records
 from mobly import utils
 
-LATEST_LOG_ALIAS = 'latest'
-
 log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
 # The micro seconds are added by the format string above,
 # so the time format does not include ms.
@@ -189,25 +187,21 @@ def kill_test_logger(logger):
             h.close()
 
 
-def create_latest_log_alias(actual_path):
+def create_latest_log_alias(actual_path, alias='latest'):
     """Creates a symlink to the latest test run logs.
-
-    The latest log alias directory uses the value of `logger.LATEST_LOG_ALIAS`.
-    In order to modify this directory for a test, the value must be changed
-    before `test_runner.TestRunner.setup_logger` is called. If the value is set
-    to a falsy string value, then the latest log alias directory will not be
-    created.
 
     Args:
         actual_path: The source directory where the latest test run's logs are.
+        alias: The name of the directory to contain the latest log files. If a
+            falsy string value is provided, then the alias directory will not be
+            created.
     """
-    if LATEST_LOG_ALIAS:
-        alias_path = os.path.join(
-            os.path.dirname(actual_path), LATEST_LOG_ALIAS)
+    if alias:
+        alias_path = os.path.join(os.path.dirname(actual_path), alias)
         utils.create_alias(actual_path, alias_path)
 
 
-def setup_test_logger(log_path, prefix=None, filename=None):
+def setup_test_logger(log_path, prefix=None, filename=None, alias='latest'):
     """Customizes the root logger for a test run.
 
     Args:
@@ -215,11 +209,12 @@ def setup_test_logger(log_path, prefix=None, filename=None):
         prefix: A prefix for each log line in terminal.
         filename: Name of the files. The default is the time the objects
             are requested.
+        alias: The name of the alias to use for the latest log directory.
     """
     utils.create_dir(log_path)
     _setup_test_logger(log_path, prefix)
     logging.info('Test output folder: "%s"', log_path)
-    create_latest_log_alias(log_path)
+    create_latest_log_alias(log_path, alias=alias)
 
 
 def normalize_log_line_timestamp(log_line_timestamp):
