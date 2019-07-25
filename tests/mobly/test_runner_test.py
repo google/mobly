@@ -23,6 +23,7 @@ import yaml
 from future.tests.base import unittest
 
 from mobly import config_parser
+from mobly import logger
 from mobly import records
 from mobly import signals
 from mobly import test_runner
@@ -149,8 +150,10 @@ class TestRunnerTest(unittest.TestCase):
         self.assertNotEqual(tr.results.controller_info[0],
                             tr.results.controller_info[1])
 
-    @mock.patch('mobly.logger.kill_test_logger')
-    def test_run_tears_down_logger(self, mock_kill_test_logger):
+    @mock.patch.object(logger,
+                       'kill_test_logger',
+                       wraps=logger.kill_test_logger)
+    def test_run_tears_down_logger(self, kill_test_logger_spy):
         mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         my_config = [{
@@ -164,12 +167,14 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run()
-        self.assertIsNone(tr._log_path)
         # Called once on setup and once on teardown.
-        self.assertEqual(mock_kill_test_logger.call_count, 2)
+        self.assertEqual(kill_test_logger_spy.call_count, 2)
+        self.assertIsNone(tr._log_path)
 
-    @mock.patch('mobly.logger.kill_test_logger')
-    def test_run_without_tearing_down_logger(self, mock_kill_test_logger):
+    @mock.patch.object(logger,
+                       'kill_test_logger',
+                       wraps=logger.kill_test_logger)
+    def test_run_without_tearing_down_logger(self, kill_test_logger_spy):
         mock_test_config = self.base_mock_test_config.copy()
         mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
         my_config = [{
@@ -183,8 +188,13 @@ class TestRunnerTest(unittest.TestCase):
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         tr.run(teardown_logger=False)
+        # Only called once on setup.
+        self.assertEqual(kill_test_logger_spy.call_count, 1)
         self.assertIsNotNone(tr._log_path)
-        self.assertEqual(mock_kill_test_logger.call_count, 1)
+        tr.teardown_logger()
+        # Called a second time on teardown.
+        self.assertEqual(kill_test_logger_spy.call_count, 2)
+        self.assertIsNone(tr._log_path)
 
     def test_summary_file_entries(self):
         """Verifies the output summary's file format.
