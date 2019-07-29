@@ -40,7 +40,6 @@ class OutputTest(unittest.TestCase):
     """This test class has unit tests for the implementation of Mobly's output
     files.
     """
-
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = config_parser.TestRunConfig()
@@ -101,7 +100,8 @@ class OutputTest(unittest.TestCase):
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        tr.setup_logger()
+        with tr.log():
+            pass
         symlink = os.path.join(self.log_dir, self.test_bed_name, 'latest')
         self.assertEqual(os.readlink(symlink), logging.log_path)
 
@@ -117,8 +117,8 @@ class OutputTest(unittest.TestCase):
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        tr.setup_logger()
-        tr._teardown_logger()
+        with tr.log():
+            pass
         shortcut = shell.CreateShortCut(shortcut_path)
         # Normalize paths for case and truncation
         normalized_shortcut_path = os.path.normcase(
@@ -127,7 +127,7 @@ class OutputTest(unittest.TestCase):
             win32file.GetLongPathName(logging.log_path))
         self.assertEqual(normalized_shortcut_path, normalized_logger_path)
 
-    def test_setup_logger_before_run(self):
+    def test_logging_before_run(self):
         """Verifies the expected output files from a test run.
 
         * Files are correctly created.
@@ -138,21 +138,23 @@ class OutputTest(unittest.TestCase):
         info_uuid = 'e098d4ff-4e90-4e08-b369-aa84a7ef90ec'
         debug_uuid = 'c6f1474e-960a-4df8-8305-1c5b8b905eca'
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        tr.setup_logger()
-        logging.info(info_uuid)
-        logging.debug(debug_uuid)
-        tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
-        tr.run()
+        with tr.log():
+            logging.info(info_uuid)
+            logging.debug(debug_uuid)
+            tr.add_test_class(mock_test_config,
+                              integration_test.IntegrationTest)
+            tr.run()
         output_dir = logging.log_path
         (summary_file_path, debug_log_path,
          info_log_path) = self.assert_output_logs_exist(output_dir)
-        self.assert_log_contents(
-            debug_log_path, whitelist=[debug_uuid, info_uuid])
-        self.assert_log_contents(
-            info_log_path, whitelist=[info_uuid], blacklist=[debug_uuid])
+        self.assert_log_contents(debug_log_path,
+                                 whitelist=[debug_uuid, info_uuid])
+        self.assert_log_contents(info_log_path,
+                                 whitelist=[info_uuid],
+                                 blacklist=[debug_uuid])
 
-    @mock.patch(
-        'mobly.logger.get_log_file_timestamp', side_effect=str(time.time()))
+    @mock.patch('mobly.logger.get_log_file_timestamp',
+                side_effect=str(time.time()))
     def test_run_twice_for_two_sets_of_logs(self, mock_timestamp):
         """Verifies the expected output files from a test run.
 
@@ -163,17 +165,18 @@ class OutputTest(unittest.TestCase):
             self.base_mock_test_config)
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
-        tr.setup_logger()
-        tr.run()
+        with tr.log():
+            tr.run()
         output_dir1 = logging.log_path
-        tr.run()
+        with tr.log():
+            tr.run()
         output_dir2 = logging.log_path
         self.assertNotEqual(output_dir1, output_dir2)
         self.assert_output_logs_exist(output_dir1)
         self.assert_output_logs_exist(output_dir2)
 
-    @mock.patch(
-        'mobly.logger.get_log_file_timestamp', side_effect=str(time.time()))
+    @mock.patch('mobly.logger.get_log_file_timestamp',
+                side_effect=str(time.time()))
     def test_teardown_erases_logs(self, mock_timestamp):
         """Verifies the expected output files from a test run.
 
@@ -188,16 +191,14 @@ class OutputTest(unittest.TestCase):
         debug_uuid2 = 'd564da87-c42f-49c3-b0bf-18fa97cf0218'
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
 
-        tr.setup_logger()
-        logging.info(info_uuid1)
-        logging.debug(debug_uuid1)
-        tr._teardown_logger()
+        with tr.log():
+            logging.info(info_uuid1)
+            logging.debug(debug_uuid1)
         output_dir1 = logging.log_path
 
-        tr.setup_logger()
-        logging.info(info_uuid2)
-        logging.debug(debug_uuid2)
-        tr._teardown_logger()
+        with tr.log():
+            logging.info(info_uuid2)
+            logging.debug(debug_uuid2)
         output_dir2 = logging.log_path
 
         self.assertNotEqual(output_dir1, output_dir2)
@@ -207,14 +208,12 @@ class OutputTest(unittest.TestCase):
         (summary_file_path2, debug_log_path2,
          info_log_path2) = self.get_output_logs(output_dir2)
 
-        self.assert_log_contents(
-            debug_log_path1,
-            whitelist=[debug_uuid1, info_uuid1],
-            blacklist=[info_uuid2, debug_uuid2])
-        self.assert_log_contents(
-            debug_log_path2,
-            whitelist=[debug_uuid2, info_uuid2],
-            blacklist=[info_uuid1, debug_uuid1])
+        self.assert_log_contents(debug_log_path1,
+                                 whitelist=[debug_uuid1, info_uuid1],
+                                 blacklist=[info_uuid2, debug_uuid2])
+        self.assert_log_contents(debug_log_path2,
+                                 whitelist=[debug_uuid2, info_uuid2],
+                                 blacklist=[info_uuid1, debug_uuid1])
 
     def test_basic_output(self):
         """Verifies the expected output files from a test run.
@@ -225,8 +224,10 @@ class OutputTest(unittest.TestCase):
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
-        tr.run()
+        with tr.log():
+            tr.add_test_class(mock_test_config,
+                              integration_test.IntegrationTest)
+            tr.run()
         output_dir = logging.log_path
         (summary_file_path, debug_log_path,
          info_log_path) = self.assert_output_logs_exist(output_dir)
@@ -236,8 +237,9 @@ class OutputTest(unittest.TestCase):
                 self.assertTrue(entry['Type'])
                 summary_entries.append(entry)
         self.assert_log_contents(debug_log_path, whitelist=['DEBUG', 'INFO'])
-        self.assert_log_contents(
-            info_log_path, whitelist=['INFO'], blacklist=['DEBUG'])
+        self.assert_log_contents(info_log_path,
+                                 whitelist=['INFO'],
+                                 blacklist=['DEBUG'])
 
     def test_teardown_class_output(self):
         """Verifies the summary file includes the failure record for
@@ -245,9 +247,11 @@ class OutputTest(unittest.TestCase):
         """
         mock_test_config = self.base_mock_test_config.copy()
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        tr.add_test_class(mock_test_config,
-                          teardown_class_failure_test.TearDownClassFailureTest)
-        tr.run()
+        with tr.log():
+            tr.add_test_class(
+                mock_test_config,
+                teardown_class_failure_test.TearDownClassFailureTest)
+            tr.run()
         output_dir = logging.log_path
         summary_file_path = os.path.join(output_dir,
                                          records.OUTPUT_FILE_SUMMARY)
