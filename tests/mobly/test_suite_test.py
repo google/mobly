@@ -68,7 +68,7 @@ class TestSuiteTest(unittest.TestCase):
 
         tr = test_runner.TestRunner(self.tmp_dir,
                                     test_run_config.test_bed_name)
-        with tr.log():
+        with tr.mobly_logger():
             tr.add_test_class(test_run_config, FooTest)
             tr.add_test_class(test_run_config, BarTest)
             tr.run()

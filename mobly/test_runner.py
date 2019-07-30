@@ -74,7 +74,7 @@ def main(argv=None):
     for config in test_configs:
         runner = TestRunner(log_dir=config.log_path,
                             test_bed_name=config.test_bed_name)
-        with runner.log():
+        with runner.mobly_loggger():
             runner.add_test_class(config, test_class, tests)
             try:
                 runner.run()
@@ -219,7 +219,7 @@ class TestRunner(object):
         self._log_path = None
 
     @contextlib.contextmanager
-    def log(self):
+    def mobly_logger(self):
         """Starts and stops a logging context for a Mobly test run.
 
         Yields:

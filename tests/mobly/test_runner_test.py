@@ -78,13 +78,13 @@ class TestRunnerTest(unittest.TestCase):
         }]
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with tr.log():
+        with tr.mobly_logger():
             tr.add_test_class(mock_test_config,
                               integration_test.IntegrationTest)
             tr.run()
         self.assertTrue(
             mock_test_config.controller_configs[mock_ctrlr_config_name][0])
-        with tr.log():
+        with tr.mobly_logger():
             tr.run()
         results = tr.results.summary_dict()
         self.assertEqual(results['Requested'], 2)
@@ -129,7 +129,7 @@ class TestRunnerTest(unittest.TestCase):
         }]
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with tr.log():
+        with tr.mobly_logger():
             tr.add_test_class(mock_test_config,
                               integration_test.IntegrationTest)
             tr.run()
@@ -178,7 +178,7 @@ class TestRunnerTest(unittest.TestCase):
             'serial': '1'
         }]
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with tr.log():
+        with tr.mobly_logger():
             tr.add_test_class(mock_test_config,
                               integration2_test.Integration2Test)
             tr.add_test_class(mock_test_config,
@@ -206,7 +206,7 @@ class TestRunnerTest(unittest.TestCase):
         config2 = config1.copy()
         config2.user_params['icecream'] = 10
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with tr.log():
+        with tr.mobly_logger():
             tr.add_test_class(config1,
                               integration_test.IntegrationTest,
                               name_suffix='FirstConfig')
@@ -228,7 +228,7 @@ class TestRunnerTest(unittest.TestCase):
     def test_run_with_abort_all(self):
         mock_test_config = self.base_mock_test_config.copy()
         tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
-        with tr.log():
+        with tr.mobly_logger():
             tr.add_test_class(mock_test_config,
                               integration3_test.Integration3Test)
             with self.assertRaises(signals.TestAbortAll):
