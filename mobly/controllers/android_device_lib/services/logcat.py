@@ -198,17 +198,19 @@ class Logcat(base_service.BaseService):
     def update_config(self, new_config):
         """Updates the configuration for the service.
 
-        This will completely reset the service. Previous output files may be
-        orphaned if output path is changed.
+        The service needs to be stopped before updating, and explicitly started
+        after the update.
+
+        This will reset the service. Previous output files may be orphaned if
+        output path is changed.
 
         Args:
             new_config: Config, the new config to use.
         """
-        self.stop()
+        self._assert_not_running()
         self._ad.log.info('[LogcatService] Changing config from %s to %s',
                           self._config, new_config)
         self._config = new_config
-        self.start()
 
     def start(self):
         """Starts a standing adb logcat collection.
