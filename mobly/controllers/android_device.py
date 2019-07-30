@@ -143,26 +143,23 @@ def _start_services_on_ads(ads):
     """Starts long running services on multiple AndroidDevice objects.
 
     If any one AndroidDevice object fails to start services, cleans up all
-    existing AndroidDevice objects and their services.
+    AndroidDevice objects and their services.
 
     Args:
         ads: A list of AndroidDevice objects whose services to start.
     """
-    running_ads = []
     for ad in ads:
-        running_ads.append(ad)
         start_logcat = not getattr(ad, KEY_SKIP_LOGCAT,
                                    DEFAULT_VALUE_SKIP_LOGCAT)
         try:
-            ad.services.register(SERVICE_NAME_LOGCAT,
-                                 logcat.Logcat,
-                                 start_service=start_logcat)
+            if start_logcat:
+                ad.services.logcat.start()
         except Exception:
             is_required = getattr(ad, KEY_DEVICE_REQUIRED,
                                   DEFAULT_VALUE_DEVICE_REQUIRED)
             if is_required:
                 ad.log.exception('Failed to start some services, abort!')
-                destroy(running_ads)
+                destroy(ads)
                 raise
             else:
                 ad.log.exception('Skipping this optional device because some '
@@ -463,6 +460,9 @@ class AndroidDevice(object):
         if not self.is_bootloader and self.is_rootable:
             self.root_adb()
         self.services = service_manager.ServiceManager(self)
+        self.services.register(SERVICE_NAME_LOGCAT,
+                               logcat.Logcat,
+                               start_service=False)
         self.services.register(
             'snippets', snippet_management_service.SnippetManagementService)
         # Device info cache.
