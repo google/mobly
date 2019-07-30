@@ -177,7 +177,9 @@ class LogcatTest(unittest.TestCase):
         logcat_service.start()
         new_config = logcat.Config(logcat_params='-blah',
                                    output_file_path='some/path/file.txt')
-        with self.assertRaisesRegex(logcat.Error, ''):
+        with self.assertRaisesRegex(
+                logcat.Error,
+                'Logcat thread is already running, cannot start another one'):
             logcat_service.update_config(new_config)
         self.assertTrue(logcat_service.is_alive)
 
