@@ -185,11 +185,17 @@ class ServiceManagerTest(unittest.TestCase):
         manager.register('mock_service2', MockService, start_service=False)
         service1 = manager.mock_service1
         service2 = manager.mock_service2
+        mock_call_tracker = mock.Mock()
+        mock_call_tracker.start1 = service1.start_func
+        mock_call_tracker.start2 = service2.start_func
         manager.start_all()
         self.assertTrue(service1.is_alive)
         self.assertTrue(service2.is_alive)
         self.assertEqual(service1.start_func.call_count, 1)
         self.assertEqual(service2.start_func.call_count, 1)
+        self.assertEqual(mock_call_tracker.mock_calls,
+                         [mock.call.start1(None),
+                          mock.call.start2(None)])
 
     def test_start_all_with_already_started_services(self):
         manager = service_manager.ServiceManager(mock.MagicMock())
@@ -224,9 +230,15 @@ class ServiceManagerTest(unittest.TestCase):
         manager.register('mock_service2', MockService)
         service1 = manager.mock_service1
         service2 = manager.mock_service2
+        mock_call_tracker = mock.Mock()
+        mock_call_tracker.stop1 = service1.stop_func
+        mock_call_tracker.stop2 = service2.stop_func
         manager.stop_all()
         self.assertFalse(service1.is_alive)
         self.assertFalse(service2.is_alive)
+        self.assertEqual(
+            mock_call_tracker.mock_calls,
+            [mock.call.stop2(), mock.call.stop1()])
         self.assertEqual(service1.start_func.call_count, 1)
         self.assertEqual(service2.start_func.call_count, 1)
         self.assertEqual(service1.stop_func.call_count, 1)
@@ -286,7 +298,13 @@ class ServiceManagerTest(unittest.TestCase):
         manager.register('mock_service2', MockService)
         service1 = manager.mock_service1
         service2 = manager.mock_service2
+        mock_call_tracker = mock.Mock()
+        mock_call_tracker.pause1 = service1.pause_func
+        mock_call_tracker.pause2 = service2.pause_func
         manager.pause_all()
+        self.assertEqual(
+            mock_call_tracker.mock_calls,
+            [mock.call.pause2(), mock.call.pause1()])
         self.assertEqual(service1.pause_func.call_count, 1)
         self.assertEqual(service2.pause_func.call_count, 1)
         self.assertEqual(service1.resume_func.call_count, 0)
@@ -314,8 +332,14 @@ class ServiceManagerTest(unittest.TestCase):
         manager.register('mock_service2', MockService)
         service1 = manager.mock_service1
         service2 = manager.mock_service2
+        mock_call_tracker = mock.Mock()
+        mock_call_tracker.resume1 = service1.resume_func
+        mock_call_tracker.resume2 = service2.resume_func
         manager.pause_all()
         manager.resume_all()
+        self.assertEqual(
+            mock_call_tracker.mock_calls,
+            [mock.call.resume1(), mock.call.resume2()])
         self.assertEqual(service1.pause_func.call_count, 1)
         self.assertEqual(service2.pause_func.call_count, 1)
         self.assertEqual(service1.resume_func.call_count, 1)

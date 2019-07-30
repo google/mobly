@@ -14,6 +14,7 @@
 """Module for the manager of services."""
 # TODO(xpconanfan: move the device errors to a more generic location so
 # other device controllers like iOS can share it.
+import collections
 import inspect
 
 from mobly import expects
@@ -33,7 +34,7 @@ class ServiceManager(object):
     """
 
     def __init__(self, device):
-        self._service_objects = {}
+        self._service_objects = collections.OrderedDict()
         self._device = device
 
     def has_service_by_name(self, name):
@@ -112,7 +113,10 @@ class ServiceManager(object):
             self.unregister(alias)
 
     def start_all(self):
-        """Starts all inactive service instances."""
+        """Starts all inactive service instances.
+
+        Services will be started in the order they were registered.
+        """
         for alias, service in self._service_objects.items():
             if not service.is_alive:
                 with expects.expect_no_raises('Failed to start service "%s".' %
@@ -120,22 +124,31 @@ class ServiceManager(object):
                     service.start()
 
     def stop_all(self):
-        """Stops all active service instances."""
-        for alias, service in self._service_objects.items():
+        """Stops all active service instances.
+
+        Services will be stopped in the reverse order they were registered.
+        """
+        for alias, service in reversed(self._service_objects.items()):
             if service.is_alive:
                 with expects.expect_no_raises('Failed to stop service "%s".' %
                                               alias):
                     service.stop()
 
     def pause_all(self):
-        """Pauses all service instances."""
-        for alias, service in self._service_objects.items():
+        """Pauses all service instances.
+
+        Services will be paused in the reverse order they were registered.
+        """
+        for alias, service in reversed(self._service_objects.items()):
             with expects.expect_no_raises('Failed to pause service "%s".' %
                                           alias):
                 service.pause()
 
     def resume_all(self):
-        """Resumes all service instances."""
+        """Resumes all service instances.
+
+        Services will be resumed in the order they were registered.
+        """
         for alias, service in self._service_objects.items():
             with expects.expect_no_raises('Failed to resume service "%s".' %
                                           alias):
