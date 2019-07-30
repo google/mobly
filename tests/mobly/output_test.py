@@ -93,6 +93,11 @@ class OutputTest(unittest.TestCase):
             for item in blacklist:
                 self.assertNotIn(item, content)
 
+    def test_yields_logging_path(self):
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        with tr.mobly_logger() as log_path:
+            self.assertEqual(log_path, logging.log_path)
+
     @unittest.skipIf(platform.system() == 'Windows',
                      'Symlinks are usually specific to Unix operating systems')
     def test_symlink(self):
