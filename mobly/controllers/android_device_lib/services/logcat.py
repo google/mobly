@@ -36,7 +36,8 @@ class Config(object):
         clear_log: bool, clears the logcat before collection if True.
         logcat_params: string, extra params to be added to logcat command.
         output_file_path: string, the path on the host to write the log file
-            to. The service will automatically generate one if not specified.
+            to, including the actual filename. The service will automatically
+            generate one if not specified.
     """
 
     def __init__(self,
