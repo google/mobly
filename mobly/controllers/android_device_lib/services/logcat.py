@@ -57,12 +57,14 @@ class Logcat(base_service.BaseService):
             adb logcat to by default.
     """
 
-    def __init__(self, android_device, config=None):
-        super(Logcat, self).__init__(android_device, config)
+    def __init__(self, android_device, configs=None):
+        super(Logcat, self).__init__(android_device, configs)
         self._ad = android_device
         self._adb_logcat_process = None
         self.adb_logcat_file_path = None
-        self._config = config if config else Config()
+        # Logcat service uses a single config obj, using singular internal
+        # name: `_config`.
+        self._config = configs if configs else Config()
 
     def _enable_logpersist(self):
         """Attempts to enable logpersist daemon to persist logs."""
