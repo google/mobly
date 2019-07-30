@@ -36,7 +36,8 @@ class Config(object):
         clear_log: bool, clears the logcat before collection if True.
         logcat_params: string, extra params to be added to logcat command.
         output_file_path: string, the path on the host to write the log file
-            to. The service will automatically generate one if not specified.
+            to, including the actual filename. The service will automatically
+            generate one if not specified.
     """
 
     def __init__(self,
@@ -61,7 +62,9 @@ class Logcat(base_service.BaseService):
         self._ad = android_device
         self._adb_logcat_process = None
         self.adb_logcat_file_path = None
-        self._configs = configs if configs else Config()
+        # Logcat service uses a single config obj, using singular internal
+        # name: `_config`.
+        self._config = configs if configs else Config()
 
     def _enable_logpersist(self):
         """Attempts to enable logpersist daemon to persist logs."""
@@ -192,27 +195,42 @@ class Logcat(base_service.BaseService):
                 self._ad,
                 'Logcat thread is already running, cannot start another one.')
 
+    def update_config(self, new_config):
+        """Updates the configuration for the service.
+
+        This will completely reset the service. Previous output files may be
+        orphaned if output path is changed.
+
+        Args:
+            new_config: Config, the new config to use.
+        """
+        self.stop()
+        self._ad.log.info('[LogcatService] Changing config from %s to %s',
+                          self._config, new_config)
+        self._config = new_config
+        self.start()
+
     def start(self):
         """Starts a standing adb logcat collection.
 
         The collection runs in a separate subprocess and saves logs in a file.
         """
         self._assert_not_running()
-        if self._configs.clear_log:
+        if self._config.clear_log:
             self.clear_adb_log()
         self._start()
 
     def _start(self):
         """The actual logic of starting logcat."""
         self._enable_logpersist()
-        logcat_file_path = self._configs.output_file_path
+        logcat_file_path = self._config.output_file_path
         if not logcat_file_path:
             f_name = 'adblog,%s,%s.txt' % (self._ad.model,
                                            self._ad._normalized_serial)
             logcat_file_path = os.path.join(self._ad.log_path, f_name)
         utils.create_dir(os.path.dirname(logcat_file_path))
         cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (
-            adb.ADB, self._ad.serial, self._configs.logcat_params,
+            adb.ADB, self._ad.serial, self._config.logcat_params,
             logcat_file_path)
         process = utils.start_standing_subprocess(cmd, shell=True)
         self._adb_logcat_process = process
