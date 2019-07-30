@@ -145,11 +145,13 @@ class LogcatTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad)
         logcat_service.start()
+        logcat_service.stop()
         new_log_params = '-a -b -c'
         new_file_path = 'some/path/log.txt'
         new_config = logcat.Config(logcat_params=new_log_params,
                                    output_file_path=new_file_path)
         logcat_service.update_config(new_config)
+        logcat_service.start()
         self.assertTrue(logcat_service._adb_logcat_process)
         create_dir_mock.assert_has_calls([mock.call('some/path')])
         expected_adb_cmd = ('"adb" -s 1 logcat -v threadtime -a -b -c >> '
@@ -157,6 +159,27 @@ class LogcatTest(unittest.TestCase):
         start_proc_mock.assert_called_with(expected_adb_cmd, shell=True)
         self.assertEqual(logcat_service.adb_logcat_file_path,
                          'some/path/log.txt')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.utils.create_dir')
+    @mock.patch('mobly.utils.start_standing_subprocess',
+                return_value='process')
+    @mock.patch('mobly.utils.stop_standing_subprocess')
+    def test_update_config_while_running(self, stop_proc_mock, start_proc_mock,
+                                         create_dir_mock, FastbootProxy,
+                                         MockAdbProxy):
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        logcat_service = logcat.Logcat(ad)
+        logcat_service.start()
+        new_config = logcat.Config(logcat_params='-blah',
+                                   output_file_path='some/path/file.txt')
+        with self.assertRaisesRegex(logcat.Error, ''):
+            logcat_service.update_config(new_config)
+        self.assertTrue(logcat_service.is_alive)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
