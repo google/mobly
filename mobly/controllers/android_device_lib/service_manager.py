@@ -128,6 +128,8 @@ class ServiceManager(object):
 
         Services will be stopped in the reverse order they were registered.
         """
+        # OrdereDict#items does not return a sequence in Python 3.4, so we have
+        # to do a list conversion here.
         for alias, service in reversed(list(self._service_objects.items())):
             if service.is_alive:
                 with expects.expect_no_raises('Failed to stop service "%s".' %
@@ -139,6 +141,8 @@ class ServiceManager(object):
 
         Services will be paused in the reverse order they were registered.
         """
+        # OrdereDict#items does not return a sequence in Python 3.4, so we have
+        # to do a list conversion here.
         for alias, service in reversed(list(self._service_objects.items())):
             with expects.expect_no_raises('Failed to pause service "%s".' %
                                           alias):
