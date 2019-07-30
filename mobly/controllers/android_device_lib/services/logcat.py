@@ -198,6 +198,9 @@ class Logcat(base_service.BaseService):
     def update_config(self, new_config):
         """Updates the configuration for the service.
 
+        The service needs to be stopped before updating, and explicitly started
+        after the update.
+
         This will reset the service. Previous output files may be orphaned if
         output path is changed.
 
