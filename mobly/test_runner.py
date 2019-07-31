@@ -107,33 +107,30 @@ def parse_mobly_cli_args(argv):
     """
     parser = argparse.ArgumentParser(description='Mobly Test Executable.')
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        '-c',
-        '--config',
-        nargs=1,
-        type=str,
-        metavar='<PATH>',
-        help='Path to the test configuration file.')
+    group.add_argument('-c',
+                       '--config',
+                       nargs=1,
+                       type=str,
+                       metavar='<PATH>',
+                       help='Path to the test configuration file.')
     group.add_argument(
         '-l',
         '--list_tests',
         action='store_true',
         help='Print the names of the tests defined in a script without '
         'executing them.')
-    parser.add_argument(
-        '--tests',
-        '--test_case',
-        nargs='+',
-        type=str,
-        metavar='[test_a test_b...]',
-        help='A list of tests in the test class to execute.')
-    parser.add_argument(
-        '-tb',
-        '--test_bed',
-        nargs='+',
-        type=str,
-        metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
-        help='Specify which test beds to run tests on.')
+    parser.add_argument('--tests',
+                        '--test_case',
+                        nargs='+',
+                        type=str,
+                        metavar='[test_a test_b...]',
+                        help='A list of tests in the test class to execute.')
+    parser.add_argument('-tb',
+                        '--test_bed',
+                        nargs='+',
+                        type=str,
+                        metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
+                        help='Specify which test beds to run tests on.')
     if not argv:
         argv = sys.argv[1:]
     return parser.parse_known_args(argv)[0]
@@ -265,19 +262,18 @@ class TestRunner(object):
         if self._log_dir != config.log_path:
             raise Error(
                 'TestRunner\'s log folder is "%s", but a test config with a '
-                'different log folder ("%s") was added.' % (self._log_dir,
-                                                            config.log_path))
+                'different log folder ("%s") was added.' %
+                (self._log_dir, config.log_path))
         if self._test_bed_name != config.test_bed_name:
             raise Error(
                 'TestRunner\'s test bed is "%s", but a test config with a '
                 'different test bed ("%s") was added.' %
                 (self._test_bed_name, config.test_bed_name))
         self._test_run_infos.append(
-            TestRunner._TestRunInfo(
-                config=config,
-                test_class=test_class,
-                tests=tests,
-                test_class_name_suffix=name_suffix))
+            TestRunner._TestRunInfo(config=config,
+                                    test_class=test_class,
+                                    tests=tests,
+                                    test_class_name_suffix=name_suffix))
 
     def _run_test_class(self, config, test_class, tests=None):
         """Instantiates and executes a test class.
@@ -324,10 +320,9 @@ class TestRunner(object):
                 test_config.summary_writer = summary_writer
                 test_config.test_class_name_suffix = test_run_info.test_class_name_suffix
                 try:
-                    self._run_test_class(
-                        config=test_config,
-                        test_class=test_run_info.test_class,
-                        tests=test_run_info.tests)
+                    self._run_test_class(config=test_config,
+                                         test_class=test_run_info.test_class,
+                                         tests=test_run_info.tests)
                 except signals.TestAbortAll as e:
                     logging.warning(
                         'Abort all subsequent test classes. Reason: %s', e)
