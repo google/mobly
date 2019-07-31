@@ -68,18 +68,23 @@ class LoggerTest(unittest.TestCase):
         logger.create_latest_log_alias('fake_path', alias='history')
         mock_create_alias.assert_called_once_with('fake_path', 'history')
 
+    @mock.patch('mobly.logger._setup_test_logger')
     @mock.patch('mobly.logger.create_latest_log_alias')
     def test_setup_test_logger_creates_log_alias(self,
-                                                 mock_create_latest_log_alias):
+                                                 mock_create_latest_log_alias,
+                                                 mock__setup_test_logger):
         logger.setup_test_logger(self.log_dir)
+        mock__setup_test_logger.assert_called_once_with(self.log_dir, None)
         mock_create_latest_log_alias.assert_called_once_with(self.log_dir,
                                                              alias='latest')
 
+    @mock.patch('mobly.logger._setup_test_logger')
     @mock.patch('mobly.logger.create_latest_log_alias')
     def test_setup_test_logger_creates_log_alias_with_custom_value(
-            self, mock_create_latest_log_alias):
+            self, mock_create_latest_log_alias, mock__setup_test_logger):
         mock_alias = mock.MagicMock()
         logger.setup_test_logger(self.log_dir, alias=mock_alias)
+
         mock_create_latest_log_alias.assert_called_once_with(self.log_dir,
                                                              alias=mock_alias)
 
