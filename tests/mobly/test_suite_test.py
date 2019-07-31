@@ -33,7 +33,6 @@ class TestSuiteTest(unittest.TestCase):
 
     Tests here target a combination of test_runner and base_test code.
     """
-
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.mock_test_cls_configs = config_parser.TestRunConfig()
@@ -69,9 +68,10 @@ class TestSuiteTest(unittest.TestCase):
 
         tr = test_runner.TestRunner(self.tmp_dir,
                                     test_run_config.test_bed_name)
-        tr.add_test_class(test_run_config, FooTest)
-        tr.add_test_class(test_run_config, BarTest)
-        tr.run()
+        with tr.mobly_logger():
+            tr.add_test_class(test_run_config, FooTest)
+            tr.add_test_class(test_run_config, BarTest)
+            tr.run()
         self.assertIsNot(self.controller1, self.controller2)
 
 

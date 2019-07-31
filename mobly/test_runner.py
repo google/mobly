@@ -17,6 +17,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 import argparse
+import contextlib
 import inspect
 import logging
 import os
@@ -73,16 +74,17 @@ def main(argv=None):
     for config in test_configs:
         runner = TestRunner(log_dir=config.log_path,
                             test_bed_name=config.test_bed_name)
-        runner.add_test_class(config, test_class, tests)
-        try:
-            runner.run()
-            ok = runner.results.is_all_pass and ok
-        except signals.TestAbortAll:
-            pass
-        except:
-            logging.exception('Exception when executing %s.',
-                              config.test_bed_name)
-            ok = False
+        with runner.mobly_loggger():
+            runner.add_test_class(config, test_class, tests)
+            try:
+                runner.run()
+                ok = runner.results.is_all_pass and ok
+            except signals.TestAbortAll:
+                pass
+            except:
+                logging.exception('Exception when executing %s.',
+                                  config.test_bed_name)
+                ok = False
     if not ok:
         sys.exit(1)
 
@@ -187,12 +189,10 @@ class TestRunner(object):
         self.results: The test result object used to record the results of
             this test run.
     """
-
     class _TestRunInfo(object):
         """Identifies one test class to run, which tests to run, and config to
         run it with.
         """
-
         def __init__(self,
                      config,
                      test_class,
@@ -218,45 +218,22 @@ class TestRunner(object):
 
         self._log_path = None
 
-    def setup_logger(self):
-        """Sets up logging for the next test run.
+    @contextlib.contextmanager
+    def mobly_logger(self):
+        """Starts and stops a logging context for a Mobly test run.
 
-        This is called automatically in 'run', so normally, this method doesn't
-        need to be called. Only use this method if you want to use Mobly's
-        logger before the test run starts.
-
-        .. code-block:: python
-
-            tr = TestRunner(...)
-            tr.setup_logger()
-            logging.info(...)
-            tr.run()
-
+        Yields:
+            The host file path where the logs for the test run are stored.
         """
-        if self._log_path is not None:
-            return
-
         self._start_time = logger.get_log_file_timestamp()
         self._log_path = os.path.join(self._log_dir, self._test_bed_name,
                                       self._start_time)
         logger.setup_test_logger(self._log_path, self._test_bed_name)
-
-    def _teardown_logger(self):
-        """Tears down logging at the end of the test run.
-
-        This is called automatically in 'run', so normally, this method doesn't
-        need to be called. Only use this to change the logger teardown
-        behaviour.
-
-        Raises:
-            Error: if this is called before the logger is setup.
-        """
-        if self._log_path is None:
-            raise Error('TestRunner._teardown_logger() called before '
-                        'TestRunner.setup_logger()!')
-
-        logger.kill_test_logger(logging.getLogger())
-        self._log_path = None
+        try:
+            yield self._log_path
+        finally:
+            logger.kill_test_logger(logging.getLogger())
+            self._log_path = None
 
     def add_test_class(self, config, test_class, tests=None, name_suffix=None):
         """Adds tests to the execution plan of this TestRunner.
@@ -327,7 +304,6 @@ class TestRunner(object):
         if not self._test_run_infos:
             raise Error('No tests to execute.')
 
-        self.setup_logger()
         summary_writer = records.TestSummaryWriter(
             os.path.join(self._log_path, records.OUTPUT_FILE_SUMMARY))
         try:
@@ -353,4 +329,3 @@ class TestRunner(object):
                 self._test_bed_name, self._start_time,
                 self.results.summary_str())
             logging.info(msg.strip())
-            self._teardown_logger()
