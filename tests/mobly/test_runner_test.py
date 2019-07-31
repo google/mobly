@@ -274,6 +274,41 @@ class TestRunnerTest(unittest.TestCase):
         test_runner.main(['-c', 'some/path/foo.yaml', '-b', 'hello'])
         mock_config.assert_called_with('some/path/foo.yaml', None)
 
+    @mock.patch('mobly.test_runner._find_test_class',
+                return_value=integration_test.IntegrationTest)
+    @mock.patch('sys.exit')
+    def test_main(self, mock_exit, mock_find_test):
+        tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
+        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+            f.write(u"""
+                TestBeds:
+                    # A test bed where adb will find Android devices.
+                    - Name: SampleTestBed
+                      Controllers:
+                          MagicDevice: '*'
+                      TestParams:
+                          icecream: 42
+                          extra_param: 'haha'
+            """)
+        test_runner.main(['-c', tmp_file_path])
+        mock_exit.assert_not_called()
+
+    @mock.patch('mobly.test_runner._find_test_class',
+                return_value=integration_test.IntegrationTest)
+    @mock.patch('sys.exit')
+    def test_main_with_failures(self, mock_exit, mock_find_test):
+        tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
+        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+            f.write(u"""
+                TestBeds:
+                    # A test bed where adb will find Android devices.
+                    - Name: SampleTestBed
+                      Controllers:
+                          MagicDevice: '*'
+            """)
+        test_runner.main(['-c', tmp_file_path])
+        mock_exit.assert_called_once_with(1)
+
 
 if __name__ == "__main__":
     unittest.main()
