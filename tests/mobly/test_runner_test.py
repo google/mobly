@@ -277,7 +277,7 @@ class TestRunnerTest(unittest.TestCase):
     @mock.patch('mobly.test_runner._find_test_class',
                 return_value=integration_test.IntegrationTest)
     @mock.patch('sys.exit')
-    def test_run_suite(self, mock_exit, mock_find_test):
+    def test_main(self, mock_exit, mock_find_test):
         tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
         with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u"""
@@ -296,7 +296,7 @@ class TestRunnerTest(unittest.TestCase):
     @mock.patch('mobly.test_runner._find_test_class',
                 return_value=integration_test.IntegrationTest)
     @mock.patch('sys.exit')
-    def test_run_suite_with_failures(self, mock_exit, mock_find_test):
+    def test_main_with_failures(self, mock_exit, mock_find_test):
         tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
         with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u"""
