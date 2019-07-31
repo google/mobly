@@ -90,17 +90,18 @@ def run_suite(test_classes, argv=None):
     ok = True
     for config in test_configs:
         runner = test_runner.TestRunner(config.log_path, config.test_bed_name)
-        for (test_class, tests) in selected_tests.items():
-            runner.add_test_class(config, test_class, tests)
-        try:
-            runner.run()
-            ok = runner.results.is_all_pass and ok
-        except signals.TestAbortAll:
-            pass
-        except:
-            logging.exception('Exception when executing %s.',
-                              config.test_bed_name)
-            ok = False
+        with runner.mobly_logger():
+            for (test_class, tests) in selected_tests.items():
+                runner.add_test_class(config, test_class, tests)
+            try:
+                runner.run()
+                ok = runner.results.is_all_pass and ok
+            except signals.TestAbortAll:
+                pass
+            except:
+                logging.exception('Exception when executing %s.',
+                                  config.test_bed_name)
+                ok = False
     if not ok:
         sys.exit(1)
 
