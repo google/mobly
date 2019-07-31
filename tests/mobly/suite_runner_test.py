@@ -24,7 +24,7 @@ from mobly import suite_runner
 from tests.lib import integration_test
 from tests.lib import integration2_test
 
-PASSING_CONFIG = """
+PASSING_CONFIG = u"""
 TestBeds:
     # A test bed where adb will find Android devices.
     - Name: SampleTestBed
@@ -35,7 +35,7 @@ TestBeds:
           extra_param: 'haha'
 """
 
-FAILING_CONFIG = """
+FAILING_CONFIG = u"""
 TestBeds:
     # A test bed where adb will find Android devices.
     - Name: SampleTestBed
