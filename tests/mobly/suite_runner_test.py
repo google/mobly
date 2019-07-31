@@ -24,6 +24,25 @@ from mobly import suite_runner
 from tests.lib import integration_test
 from tests.lib import integration2_test
 
+PASSING_CONFIG = """
+TestBeds:
+    # A test bed where adb will find Android devices.
+    - Name: SampleTestBed
+      Controllers:
+          MagicDevice: '*'
+      TestParams:
+          icecream: 42
+          extra_param: 'haha'
+"""
+
+FAILING_CONFIG = """
+TestBeds:
+    # A test bed where adb will find Android devices.
+    - Name: SampleTestBed
+      Controllers:
+          MagicDevice: '*'
+"""
+
 
 class SuiteRunnerTest(unittest.TestCase):
     def setUp(self):
@@ -87,14 +106,7 @@ class SuiteRunnerTest(unittest.TestCase):
     def test_run_suite(self, mock_exit):
         tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
         with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-            f.write(u'TestBeds:\n')
-            f.write(u'  # A test bed where adb will find Android devices.\n')
-            f.write(u'  - Name: SampleTestBed\n')
-            f.write(u'    Controllers:\n')
-            f.write(u'        MagicDevice: \'*\'\n')
-            f.write(u'    TestParams:\n')
-            f.write(u'        icecream: 42\n')
-            f.write(u'        extra_param: \'haha\'\n')
+            f.write(PASSING_CONFIG)
         suite_runner.run_suite([integration_test.IntegrationTest],
                                argv=['-c', tmp_file_path])
         mock_exit.assert_not_called()
@@ -103,11 +115,7 @@ class SuiteRunnerTest(unittest.TestCase):
     def test_run_suite_with_failures(self, mock_exit):
         tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
         with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-            f.write(u'TestBeds:\n')
-            f.write(u'  # A test bed where adb will find Android devices.\n')
-            f.write(u'  - Name: SampleTestBed\n')
-            f.write(u'    Controllers:\n')
-            f.write(u'        MagicDevice: \'*\'\n')
+            f.write(FAILING_CONFIG)
         suite_runner.run_suite([integration_test.IntegrationTest],
                                argv=['-c', tmp_file_path])
         mock_exit.assert_called_once_with(1)
