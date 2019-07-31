@@ -88,15 +88,15 @@ class SuiteRunnerTest(unittest.TestCase):
         tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
         with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u"""
-TestBeds:
-    # A test bed where adb will find Android devices.
-    - Name: SampleTestBed
-      Controllers:
-          MagicDevice: '*'
-      TestParams:
-          icecream: 42
-          extra_param: 'haha'
-""")
+                TestBeds:
+                    # A test bed where adb will find Android devices.
+                    - Name: SampleTestBed
+                      Controllers:
+                          MagicDevice: '*'
+                      TestParams:
+                          icecream: 42
+                          extra_param: 'haha'
+            """)
         suite_runner.run_suite([integration_test.IntegrationTest],
                                argv=['-c', tmp_file_path])
         mock_exit.assert_not_called()
@@ -106,12 +106,12 @@ TestBeds:
         tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
         with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u"""
-TestBeds:
-    # A test bed where adb will find Android devices.
-    - Name: SampleTestBed
-      Controllers:
-          MagicDevice: '*'
-""")
+                TestBeds:
+                    # A test bed where adb will find Android devices.
+                    - Name: SampleTestBed
+                      Controllers:
+                          MagicDevice: '*'
+            """)
         suite_runner.run_suite([integration_test.IntegrationTest],
                                argv=['-c', tmp_file_path])
         mock_exit.assert_called_once_with(1)
