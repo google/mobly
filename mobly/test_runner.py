@@ -74,7 +74,7 @@ def main(argv=None):
     for config in test_configs:
         runner = TestRunner(log_dir=config.log_path,
                             test_bed_name=config.test_bed_name)
-        with runner.mobly_loggger():
+        with runner.mobly_logger():
             runner.add_test_class(config, test_class, tests)
             try:
                 runner.run()
