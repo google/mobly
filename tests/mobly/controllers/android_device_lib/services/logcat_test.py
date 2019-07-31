@@ -66,7 +66,6 @@ MOCK_LOGPERSIST_START_MISSING_ADB_ERROR = adb.AdbError(
 
 class LogcatTest(unittest.TestCase):
     """Tests for Logcat service and its integration with AndroidDevice."""
-
     def setUp(self):
         # Set log_path to logging since mobly logger setup is not called.
         if not hasattr(logging, 'log_path'):
@@ -504,7 +503,8 @@ class LogcatTest(unittest.TestCase):
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock.MagicMock())
-    @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
     def test__enable_logpersist_with_missing_logpersist_start(
             self, MockFastboot, MockAdbProxy):
         def adb_shell_helper(command):
