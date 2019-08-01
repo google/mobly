@@ -49,24 +49,8 @@ class LoggerTest(unittest.TestCase):
 
     @mock.patch('mobly.utils.create_alias')
     def test_create_latest_log_alias(self, mock_create_alias):
-        logger.create_latest_log_alias('fake_path')
+        logger.create_latest_log_alias('fake_path', alias='latest')
         mock_create_alias.assert_called_once_with('fake_path', 'latest')
-
-    @mock.patch('mobly.utils.create_alias')
-    def test_create_latest_log_alias_when_none(self, mock_create_alias):
-        logger.create_latest_log_alias('fake_path', alias=None)
-        mock_create_alias.assert_not_called()
-
-    @mock.patch('mobly.utils.create_alias')
-    def test_create_latest_log_alias_when_empty(self, mock_create_alias):
-        logger.create_latest_log_alias('fake_path', alias='')
-        mock_create_alias.assert_not_called()
-
-    @mock.patch('mobly.utils.create_alias')
-    def test_create_latest_log_alias_when_custom_value(self,
-                                                       mock_create_alias):
-        logger.create_latest_log_alias('fake_path', alias='history')
-        mock_create_alias.assert_called_once_with('fake_path', 'history')
 
     @mock.patch('mobly.logger._setup_test_logger')
     @mock.patch('mobly.logger.create_latest_log_alias')
