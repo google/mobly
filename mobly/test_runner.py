@@ -223,8 +223,9 @@ class TestRunner(object):
         """Starts and stops a logging context for a Mobly test run.
 
         Args:
-          alias: The name of the latest log alias directory to create. If a
-            falsy value is specified, then the directory will not be created.
+          alias: optional string, the name of the latest log alias directory to
+              create. If a falsy value is specified, then the directory will not
+              be created.
 
         Yields:
             The host file path where the logs for the test run are stored.
