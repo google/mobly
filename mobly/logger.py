@@ -187,29 +187,36 @@ def kill_test_logger(logger):
             h.close()
 
 
-def create_latest_log_alias(actual_path):
+def create_latest_log_alias(actual_path, alias):
     """Creates a symlink to the latest test run logs.
 
     Args:
-        actual_path: The source directory where the latest test run's logs are.
+        actual_path: string, the source directory where the latest test run's
+            logs are.
+        alias: string, the name of the directory to contain the latest log
+            files.
     """
-    alias_path = os.path.join(os.path.dirname(actual_path), 'latest')
+    alias_path = os.path.join(os.path.dirname(actual_path), alias)
     utils.create_alias(actual_path, alias_path)
 
 
-def setup_test_logger(log_path, prefix=None, filename=None):
+def setup_test_logger(log_path, prefix=None, alias='latest'):
     """Customizes the root logger for a test run.
 
     Args:
-        log_path: Location of the report file.
-        prefix: A prefix for each log line in terminal.
-        filename: Name of the files. The default is the time the objects
-            are requested.
+        log_path: string, the location of the report file.
+        prefix: optional string, a prefix for each log line in terminal.
+        alias: optional string, The name of the alias to use for the latest log
+            directory. If a falsy value is provided, then the alias directory
+            will not be created, which is useful to save storage space when the
+            storage system (e.g. ZIP files) does not properly support
+            shortcut/symlinks.
     """
     utils.create_dir(log_path)
     _setup_test_logger(log_path, prefix)
     logging.info('Test output folder: "%s"', log_path)
-    create_latest_log_alias(log_path)
+    if alias:
+        create_latest_log_alias(log_path, alias=alias)
 
 
 def normalize_log_line_timestamp(log_line_timestamp):

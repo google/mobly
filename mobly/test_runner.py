@@ -219,8 +219,13 @@ class TestRunner(object):
         self._log_path = None
 
     @contextlib.contextmanager
-    def mobly_logger(self):
+    def mobly_logger(self, alias='latest'):
         """Starts and stops a logging context for a Mobly test run.
+
+        Args:
+          alias: optional string, the name of the latest log alias directory to
+              create. If a falsy value is specified, then the directory will not
+              be created.
 
         Yields:
             The host file path where the logs for the test run are stored.
@@ -228,7 +233,9 @@ class TestRunner(object):
         self._start_time = logger.get_log_file_timestamp()
         self._log_path = os.path.join(self._log_dir, self._test_bed_name,
                                       self._start_time)
-        logger.setup_test_logger(self._log_path, self._test_bed_name)
+        logger.setup_test_logger(self._log_path,
+                                 self._test_bed_name,
+                                 alias=alias)
         try:
             yield self._log_path
         finally:

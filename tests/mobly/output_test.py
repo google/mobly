@@ -132,6 +132,52 @@ class OutputTest(unittest.TestCase):
             win32file.GetLongPathName(logging.log_path))
         self.assertEqual(normalized_shortcut_path, normalized_logger_path)
 
+    @mock.patch('mobly.utils.create_alias')
+    def test_mobly_logger_with_default_latest_log_alias(
+            self, mock_create_alias):
+        mock_test_config = self.create_mock_test_config(
+            self.base_mock_test_config)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        with tr.mobly_logger():
+            pass
+        expected_alias_dir = os.path.join(self.log_dir, self.test_bed_name,
+                                          'latest')
+        mock_create_alias.assert_called_once_with(logging.log_path,
+                                                  expected_alias_dir)
+
+    @mock.patch('mobly.utils.create_alias')
+    def test_mobly_logger_with_custom_latest_log_alias(self,
+                                                       mock_create_alias):
+        mock_test_config = self.create_mock_test_config(
+            self.base_mock_test_config)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        with tr.mobly_logger(alias='history'):
+            pass
+        expected_alias_dir = os.path.join(self.log_dir, self.test_bed_name,
+                                          'history')
+        mock_create_alias.assert_called_once_with(logging.log_path,
+                                                  expected_alias_dir)
+
+    @mock.patch('mobly.utils.create_alias')
+    def test_mobly_logger_skips_latest_log_alias_when_none(
+            self, mock_create_alias):
+        mock_test_config = self.create_mock_test_config(
+            self.base_mock_test_config)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        with tr.mobly_logger(alias=None):
+            pass
+        mock_create_alias.asset_not_called()
+
+    @mock.patch('mobly.utils.create_alias')
+    def test_mobly_logger_skips_latest_log_alias_when_empty(
+            self, mock_create_alias):
+        mock_test_config = self.create_mock_test_config(
+            self.base_mock_test_config)
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        with tr.mobly_logger(alias=''):
+            pass
+        mock_create_alias.asset_not_called()
+
     def test_logging_before_run(self):
         """Verifies the expected output files from a test run.
 
