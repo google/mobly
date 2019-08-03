@@ -311,6 +311,10 @@ class TestRunner(object):
         if not self._test_run_infos:
             raise Error('No tests to execute.')
 
+        if self._log_path is None:
+            raise Error(
+                'Must call `run` from within the `mobly_logger` context.')
+
         summary_writer = records.TestSummaryWriter(
             os.path.join(self._log_path, records.OUTPUT_FILE_SUMMARY))
         try:

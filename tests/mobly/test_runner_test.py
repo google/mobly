@@ -264,6 +264,15 @@ class TestRunnerTest(unittest.TestCase):
         with self.assertRaisesRegex(test_runner.Error, 'No tests to execute.'):
             tr.run()
 
+    def test_run_no_mobly_logger_context(self):
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr.add_test_class(self.base_mock_test_config,
+                          integration_test.IntegrationTest)
+        with self.assertRaisesRegex(
+                test_runner.Error,
+                'Must call `run` from within the `mobly_logger` context.'):
+            tr.run()
+
     @mock.patch('mobly.test_runner._find_test_class',
                 return_value=type('SampleTest', (), {}))
     @mock.patch('mobly.test_runner.config_parser.load_test_config_file',
