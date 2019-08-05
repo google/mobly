@@ -28,6 +28,7 @@ from mobly import config_parser
 from mobly import logger
 from mobly import records
 from mobly import signals
+from mobly import utils
 
 
 class Error(Exception):
@@ -216,7 +217,15 @@ class TestRunner(object):
         self.results = records.TestResult()
         self._test_run_infos = []
 
-        self._log_path = None
+        # Set default logging values. Necessary if `run` is used outside of the
+        # `mobly_logger` context.
+        self._update_log_path()
+
+    def _update_log_path(self):
+        """Updates the logging values with the current timestamp."""
+        self._start_time = logger.get_log_file_timestamp()
+        self._log_path = os.path.join(self._log_dir, self._test_bed_name,
+                                      self._start_time)
 
     @contextlib.contextmanager
     def mobly_logger(self, alias='latest'):
@@ -230,9 +239,7 @@ class TestRunner(object):
         Yields:
             The host file path where the logs for the test run are stored.
         """
-        self._start_time = logger.get_log_file_timestamp()
-        self._log_path = os.path.join(self._log_dir, self._test_bed_name,
-                                      self._start_time)
+        self._update_log_path()
         logger.setup_test_logger(self._log_path,
                                  self._test_bed_name,
                                  alias=alias)
@@ -240,7 +247,6 @@ class TestRunner(object):
             yield self._log_path
         finally:
             logger.kill_test_logger(logging.getLogger())
-            self._log_path = None
 
     def add_test_class(self, config, test_class, tests=None, name_suffix=None):
         """Adds tests to the execution plan of this TestRunner.
@@ -310,6 +316,10 @@ class TestRunner(object):
         """
         if not self._test_run_infos:
             raise Error('No tests to execute.')
+
+        # Ensure the log path exists. Necessary if `run` is used outside of the
+        # `mobly_logger` context.
+        utils.create_dir(self._log_path)
 
         summary_writer = records.TestSummaryWriter(
             os.path.join(self._log_path, records.OUTPUT_FILE_SUMMARY))

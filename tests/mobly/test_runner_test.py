@@ -148,6 +148,37 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(summary_entries[3]['Type'],
                          records.TestSummaryEntryType.SUMMARY.value)
 
+    def test_run(self):
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        self.base_mock_test_config.controller_configs[
+            mock_controller.MOBLY_CONTROLLER_CONFIG_NAME] = '*'
+        with tr.mobly_logger():
+            tr.add_test_class(self.base_mock_test_config,
+                              integration_test.IntegrationTest)
+            tr.run()
+        results = tr.results.summary_dict()
+        self.assertEqual(results['Requested'], 1)
+        self.assertEqual(results['Executed'], 1)
+        self.assertEqual(results['Passed'], 1)
+        self.assertEqual(len(tr.results.executed), 1)
+        record = tr.results.executed[0]
+        self.assertEqual(record.test_class, 'IntegrationTest')
+
+    def test_run_without_mobly_logger_context(self):
+        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        self.base_mock_test_config.controller_configs[
+            mock_controller.MOBLY_CONTROLLER_CONFIG_NAME] = '*'
+        tr.add_test_class(self.base_mock_test_config,
+                          integration_test.IntegrationTest)
+        tr.run()
+        results = tr.results.summary_dict()
+        self.assertEqual(results['Requested'], 1)
+        self.assertEqual(results['Executed'], 1)
+        self.assertEqual(results['Passed'], 1)
+        self.assertEqual(len(tr.results.executed), 1)
+        record = tr.results.executed[0]
+        self.assertEqual(record.test_class, 'IntegrationTest')
+
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy(1))
     @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
@@ -188,6 +219,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Requested'], 2)
         self.assertEqual(results['Executed'], 2)
         self.assertEqual(results['Passed'], 2)
+        self.assertEqual(len(tr.results.executed), 2)
         # Tag of the test class defaults to the class name.
         record1 = tr.results.executed[0]
         record2 = tr.results.executed[1]
@@ -220,6 +252,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Passed'], 1)
         self.assertEqual(results['Failed'], 1)
         self.assertEqual(tr.results.failed[0].details, '10 != 42')
+        self.assertEqual(len(tr.results.executed), 2)
         record1 = tr.results.executed[0]
         record2 = tr.results.executed[1]
         self.assertEqual(record1.test_class, 'IntegrationTest_FirstConfig')
