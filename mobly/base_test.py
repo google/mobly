@@ -114,12 +114,6 @@ class BaseTestClass(object):
             class_name=self.TAG, controller_configs=configs.controller_configs)
         self.controller_configs = self._controller_manager.controller_configs
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        self._safe_exec_func(self.clean_up)
-
     def unpack_userparams(self,
                           req_param_names=None,
                           opt_param_names=None,
