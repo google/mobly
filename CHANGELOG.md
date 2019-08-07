@@ -1,5 +1,31 @@
 # Mobly Release History
 
+## Mobly Release 1.9: UID Support; `AndroidDevice` and General Runner Improvements
+
+### New
+* Support specifying Unique Identifier (UID) for both static and generated test
+  methods.
+
+### Breaking Changes
+* Detached logger lifecycle from `TestRunner#run`. Suite users have to
+  explicitly use the new logger context around `TestRunner#run`.
+* Removed the behavior of `BaseTestClass` as a context as it has been a no-op
+  for several releases.
+* [Deprecation] Removed `BaseTestClass#clean_up` which was deprecated in 1.8.1.
+* [Deprecation] Code path for passing args directly into a test method, which
+  was never used.
+* [Deprecation] Service-related APIs deprecated in 1.8 are now removed,
+  including `AndroidDevice#load_sl4a`.
+
+### Fixes
+* Bug fixes and reliability improvements in `AdbProxy`.
+* Improved APIs for taking bugreports
+* Improvements in `AndroidDevice` service management
+* Improvements in `AndroidDevice`'s `getprop` calls, including caching.
+
+[Full list of changes](https://github.com/google/mobly/milestone/21?closed=1)
+
+
 ## Mobly Release 1.8.1: Fix Final Cleanup Stage Error Capture
 
 ### Fixes
