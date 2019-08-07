@@ -190,10 +190,12 @@ class TestRunner(object):
         self.results: The test result object used to record the results of
             this test run.
     """
+
     class _TestRunInfo(object):
         """Identifies one test class to run, which tests to run, and config to
         run it with.
         """
+
         def __init__(self,
                      config,
                      test_class,
@@ -294,15 +296,15 @@ class TestRunner(object):
             test_class: class, test class to execute.
             tests: Optional list of test names within the class to execute.
         """
-        with test_class(config) as test_instance:
-            logging.debug('Executing test class "%s" with config: %s',
-                          test_class.__name__, config)
-            try:
-                cls_result = test_instance.run(tests)
-                self.results += cls_result
-            except signals.TestAbortAll as e:
-                self.results += e.results
-                raise e
+        test_instance = test_class(config)
+        logging.debug('Executing test class "%s" with config: %s',
+                      test_class.__name__, config)
+        try:
+            cls_result = test_instance.run(tests)
+            self.results += cls_result
+        except signals.TestAbortAll as e:
+            self.results += e.results
+            raise e
 
     def run(self):
         """Executes tests.

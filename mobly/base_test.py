@@ -114,12 +114,6 @@ class BaseTestClass(object):
             class_name=self.TAG, controller_configs=configs.controller_configs)
         self.controller_configs = self._controller_manager.controller_configs
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        self._safe_exec_func(self.clean_up)
-
     def unpack_userparams(self,
                           req_param_names=None,
                           opt_param_names=None,
@@ -874,18 +868,3 @@ class BaseTestClass(object):
                 self.results.add_class_error(record)
                 self.summary_writer.dump(record.to_dict(),
                                          records.TestSummaryEntryType.RECORD)
-
-    def clean_up(self):
-        """.. deprecated:: 1.8.1
-
-        Use `teardown_class` instead.
-
-        A function that is executed upon completion of all tests selected in
-        the test class.
-
-        This function should clean up objects initialized in the constructor by
-        user.
-
-        Generally this should not be used as nothing should be instantiated
-        from the constructor of a test class.
-        """
