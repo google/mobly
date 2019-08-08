@@ -1,9 +1,8 @@
 # Running Android instrumentation tests with Mobly
 
 This tutorial shows how to write and execute Mobly tests for running Android
-instrumentation tests. For more details about instrumentation tests, please
-refer to
-[Android Studio](https://developer.android.com/studio/test/index.html).
+instrumentation tests. For more details about instrumentation tests, please refer to
+https://developer.android.com/studio/test/index.html.
 
 ## Setup Requirements
 

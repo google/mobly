@@ -6,23 +6,22 @@ various devices and you can also use your own custom hardware/equipment.
 
 ## Setup Requirements
 
-* A computer with at least 2 USB ports.
-* Mobly package and its system dependencies installed on the computer.
-* One or two Android devices with the
-  [Mobly Bundled Snippets](https://github.com/google/mobly-bundled-snippets)
-  (MBS) installed. We will
-  use MBS to trigger actions on the Android devices.
-* A working adb setup. To check, connect one Android device to the computer
-  and make sure it has "USB debugging" enabled. Make sure the device shows up
-  in the list printed by `adb devices`.
+*   A computer with at least 2 USB ports.
+*   Mobly package and its system dependencies installed on the computer.
+*   One or two Android devices with the [Mobly Bundled Snippets]
+    (https://github.com/google/mobly-bundled-snippets) (MBS) installed. We will
+    use MBS to trigger actions on the Android devices.
+*   A working adb setup. To check, connect one Android device to the computer
+    and make sure it has "USB debugging" enabled. Make sure the device shows up
+    in the list printed by `adb devices`.
 
 ## Example 1: Hello World!
-
+ 
 Let's start with the simple example of posting "Hello World" on the Android
 device's screen. Create the following files:
-
+ 
 **sample_config.yml**
-
+ 
 ```yaml
 TestBeds:
   # A test bed where adb will find Android devices.
@@ -30,33 +29,32 @@ TestBeds:
     Controllers:
         AndroidDevice: '*'
 ```
-
+ 
 **hello_world_test.py**
-
+ 
 ```python
 from mobly import base_test
 from mobly import test_runner
 from mobly.controllers import android_device
-
-
+ 
 class HelloWorldTest(base_test.BaseTestClass):
+ 
   def setup_class(self):
     # Registering android_device controller module declares the test's
-    # dependency on Android device hardware. By default, we expect at
-    # least one object is created from this.
+    # dependency on Android device hardware. By default, we expect at least one
+    # object is created from this.
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
     # Start Mobly Bundled Snippets (MBS).
     self.dut.load_snippet('mbs', 'com.google.android.mobly.snippet.bundled')
-
+ 
   def test_hello(self):
     self.dut.mbs.makeToast('Hello World!')
-
-
+ 
 if __name__ == '__main__':
-    test_runner.main()
+  test_runner.main()
 ```
-
+ 
 To execute:
 
 ```
@@ -67,10 +65,9 @@ $ python hello_world_test.py -c sample_config.yml
 
 A "Hello World!" toast notification appears on your device's screen.
  
-Within SampleTestBed's `Controllers` section, we used `AndroidDevice: '*'`
-to tell the test runner to automatically find all connected Android devices.
-You can also specify particular devices by serial number and attach extra
-attributes to the object:
+Within SampleTestBed's `Controllers` section, we used `AndroidDevice: '*'` to tell
+the test runner to automatically find all connected Android devices. You can also
+specify particular devices by serial number and attach extra attributes to the object:
  
 ```yaml
 AndroidDevice:
@@ -91,20 +88,20 @@ a subset of them.
 from mobly import base_test
 from mobly import test_runner
 from mobly.controllers import android_device
-
+ 
 class HelloWorldTest(base_test.BaseTestClass):
-
+ 
   def setup_class(self):
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
     self.dut.load_snippet('mbs', 'com.google.android.mobly.snippet.bundled')
-
+ 
   def test_hello(self):
     self.dut.mbs.makeToast('Hello World!')
-
+ 
   def test_bye(self):
     self.dut.mbs.makeToast('Goodbye!')
-
+ 
 if __name__ == '__main__':
   test_runner.main()
 ```
@@ -136,8 +133,7 @@ Toast notifications appear on your device's screen in the following order:
 You could specify user parameters to be passed into your test class in the
 config file.
  
-In the following config, we added a parameter `favorite_food` to be used in
-the test case.
+In the following config, we added a parameter `favorite_food` to be used in the test case.
  
 **sample_config.yml**
  
@@ -207,8 +203,7 @@ screen.
  
 In this example, we use one Android device to discover another Android device
 via bluetooth. This test demonstrates several essential elements in test
-writing, like asserts, device debug tag, and general logging vs logging with
-device tag.
+writing, like asserts, device debug tag, and general logging vs logging with device tag.
  
 **sample_config.yml**
  
@@ -298,27 +293,27 @@ if __name__ == '__main__':
 There's potentially a lot more we could do in this test, e.g. check
 the hardware address, see whether we can pair devices, transfer files, etc.
 
-To learn more about the features included in MBS, go to
-[MBS repo](https://github.com/google/mobly-bundled-snippets) to see how to
-check its help menu.
+To learn more about the features included in MBS, go to [MBS repo]
+(https://github.com/google/mobly-bundled-snippets) to see how to check its help
+menu.
 
-To learn more about Mobly Snippet Lib, including features like Espresso
-support and asynchronous calls, see the
-[snippet lib examples](https://github.com/google/mobly-snippet-lib/tree/master/examples).
+To learn more about Mobly Snippet Lib, including features like Espresso support
+and asynchronous calls, see the [snippet lib examples]
+(https://github.com/google/mobly-snippet-lib/tree/master/examples).
 
 
 ## Example 6: Generated Tests
 
 A common use case in writing tests is to execute the same test logic multiple
-times, each time with a different set of parameters. Instead of duplicating
-the same test case with minor tweaks, you could use the **Generated tests**
-in Mobly.
+times, each time with a different set of parameters. Instead of duplicating the
+same test case with minor tweaks, you could use the **Generated tests** in
+Mobly.
 
 Mobly could generate test cases for you based on a list of parameters and a
 function that contains the test logic. Each generated test case is equivalent
 to an actual test case written in the class in terms of execution, procedure
-functions (`setup`, `teardown`, `on_fail`), and result collection. You could
-also select generated test cases via the `--test_case` cli arg as well.
+functions (setup/teardown/on_fail), and result collection. You could also
+select generated test cases via the `--test_case` cli arg as well.
 
 
 Here's an example of generated tests in action. We will reuse the "Example 1:
@@ -328,6 +323,7 @@ several test cases and toast a different message in each one of them.
 You could reuse the config file from Example 1.
 
 The test class would look like:
+
  
 **many_greetings_test.py**
  
