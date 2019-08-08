@@ -81,7 +81,10 @@ language = 'en'
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = ['_build',
     'Thumbs.db',
-    '.DS_Store']
+    '.DS_Store',
+    'tutorial.md',
+    'instrumentation_tutorial.md',
+    'android_device_service.md']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
