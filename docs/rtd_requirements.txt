@@ -1,6 +1,0 @@
-alabaster==0.7.9
-CommonMark==0.5.4
-recommonmark==0.4.0
-Sphinx==1.5.2
-sphinx-autobuild==0.6.0
-mobly
