@@ -1,5 +1,0 @@
-recommonmark==0.8.1
-Sphinx==2.1.2
-mobly
-python:
-  version: 3.7
