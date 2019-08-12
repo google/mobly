@@ -6,7 +6,7 @@
 Fix readthedocs documentation bug introduced in 1.9.
 Strictly documentation fix, no code change.
 
-[Full list of changes](https://github.com/google/mobly/milestone/21?closed=1)
+[Full list of changes](https://github.com/google/mobly/milestone/22?closed=1)
 
 
 ## Mobly Release 1.9: UID Support; `AndroidDevice` and General Runner Improvements
