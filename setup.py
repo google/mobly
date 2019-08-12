@@ -52,13 +52,13 @@ class PyTest(test.test):
 def main():
     setuptools.setup(
         name='mobly',
-        version='1.9',
+        version='1.9.1',
         maintainer='Ang Li',
         maintainer_email='mobly-github@googlegroups.com',
         description='Automation framework for special end-to-end test cases',
         license='Apache2.0',
         url='https://github.com/google/mobly',
-        download_url='https://github.com/google/mobly/tarball/1.9',
+        download_url='https://github.com/google/mobly/tarball/1.9.1',
         packages=setuptools.find_packages(exclude=['tests']),
         include_package_data=False,
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
