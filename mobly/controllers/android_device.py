@@ -457,7 +457,7 @@ class AndroidDevice(object):
         self._is_rebooting = False
         self.adb = adb.AdbProxy(serial)
         self.fastboot = fastboot.FastbootProxy(serial)
-        if not self.is_bootloader and self.is_rootable:
+        if self.is_rootable:
             self.root_adb()
         self.services = service_manager.ServiceManager(self)
         self.services.register(SERVICE_NAME_LOGCAT,
@@ -788,7 +788,7 @@ class AndroidDevice(object):
 
     @property
     def is_rootable(self):
-        return self.build_info['debuggable'] == '1'
+        return not self.is_bootloader and self.build_info['debuggable'] == '1'
 
     @property
     def model(self):
@@ -833,9 +833,9 @@ class AndroidDevice(object):
         If executed on a production build, adb will not be switched to root
         mode per security restrictions.
         """
-        self.adb.root()
         self.adb.wait_for_device(
             timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
+        self.adb.root()
 
     def load_snippet(self, name, package):
         """Starts the snippet apk with the given package name and connects.
