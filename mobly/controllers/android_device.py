@@ -833,11 +833,20 @@ class AndroidDevice(object):
         If executed on a production build, adb will not be switched to root
         mode per security restrictions.
         """
-        self.adb.root()
-        # `root` causes the device to temporarily disappear from adb.
-        # So we need to wait for the device to come back before proceeding.
-        self.adb.wait_for_device(
-            timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
+        attempt_time = 3
+        for idx in range(attempt_time):
+            try:
+                self.adb.root()
+                # `root` causes the device to temporarily disappear from adb.
+                # So we need to wait for the device to come back before proceeding.
+                self.adb.wait_for_device(
+                    timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
+                return
+            except adb.AdbError:
+                if idx + 1 < attempt_time:
+                    time.sleep(10)
+                else:
+                    raise
 
     def load_snippet(self, name, package):
         """Starts the snippet apk with the given package name and connects.
