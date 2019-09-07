@@ -44,7 +44,6 @@ class AndroidDeviceTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.controllers.android_device.
     """
-
     def setUp(self):
         # Set log_path to logging since mobly logger setup is not called.
         if not hasattr(logging, 'log_path'):
@@ -280,8 +279,10 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(build_info['build_version_codename'], 'Z')
         self.assertEqual(build_info['build_version_sdk'], '28')
         self.assertEqual(build_info['build_product'], 'FakeModel')
+        self.assertEqual(build_info['build_characteristics'], 'emulator,phone')
         self.assertEqual(build_info['product_name'], 'FakeModel')
         self.assertEqual(build_info['debuggable'], '1')
+        self.assertEqual(build_info['hardware'], 'marlin')
         self.assertEqual(len(build_info),
                          len(android_device.CACHED_SYSTEM_PROPS))
 
@@ -303,8 +304,10 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(build_info['build_version_codename'], '')
         self.assertEqual(build_info['build_version_sdk'], '')
         self.assertEqual(build_info['build_product'], '')
+        self.assertEqual(build_info['build_characteristics'], '')
         self.assertEqual(build_info['product_name'], '')
         self.assertEqual(build_info['debuggable'], '')
+        self.assertEqual(build_info['hardware'], '')
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -383,6 +386,95 @@ class AndroidDeviceTest(unittest.TestCase):
             self.assertFalse(isinstance(ad.serial, new_str))
         self.assertTrue(isinstance(ad.serial, str))
         yaml.safe_dump(ad.serial)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice_is_emulator_when_realish_device(
+            self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='1')
+        self.assertFalse(ad.is_emulator)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('localhost:123'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('localhost:123'))
+    def test_AndroidDevice_is_emulator_when_local_networked_device(
+            self, MockFastboot, MockAdbProxy):
+        # Although these devices are usually emulators, there might be a reason
+        # to do this with a real device.
+        ad = android_device.AndroidDevice(serial='localhost:123')
+        self.assertFalse(ad.is_emulator)
+
+    @mock.patch(
+        'mobly.controllers.android_device_lib.adb.AdbProxy',
+        return_value=mock_android_device.MockAdbProxy('example.com:123'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('example:123'))
+    def test_AndroidDevice_is_emulator_when_remote_networked_device(
+            self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='example.com:123')
+        self.assertFalse(ad.is_emulator)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(
+                    'localhost:5554',
+                    mock_properties={
+                        'ro.hardware': 'ranchu',
+                        'ro.build.id': 'AB42',
+                        'ro.build.type': 'userdebug',
+                    }))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('localhost:5554'))
+    def test_AndroidDevice_is_emulator_when_ranchu_device(
+            self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='localhost:5554')
+        self.assertTrue(ad.is_emulator)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(
+                    '1',
+                    mock_properties={
+                        'ro.build.id': 'AB42',
+                        'ro.build.type': 'userdebug',
+                        'ro.hardware': 'goldfish',
+                    }))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    def test_AndroidDevice_is_emulator_when_goldfish_device(
+            self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='1')
+        self.assertTrue(ad.is_emulator)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(
+                    'example.com:123',
+                    mock_properties={
+                        'ro.build.id': 'AB42',
+                        'ro.build.type': 'userdebug',
+                        'ro.build.characteristics': 'emulator',
+                    }))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('example.com:123'))
+    def test_AndroidDevice_is_emulator_when_emulator_characteristic(
+            self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='example.com:123')
+        self.assertTrue(ad.is_emulator)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('emulator-5554'))
+    @mock.patch(
+        'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+        return_value=mock_android_device.MockFastbootProxy('emulator-5554'))
+    def test_AndroidDevice_is_emulator_when_emulator_serial(
+            self, MockFastboot, MockAdbProxy):
+        ad = android_device.AndroidDevice(serial='emulator-5554')
+        self.assertTrue(ad.is_emulator)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy(1))
