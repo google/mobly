@@ -18,6 +18,7 @@ from past.builtins import basestring
 import contextlib
 import logging
 import os
+import re
 import shutil
 import time
 
@@ -52,8 +53,10 @@ CACHED_SYSTEM_PROPS = [
     'ro.build.version.codename',
     'ro.build.version.sdk',
     'ro.build.product',
+    'ro.build.characteristics',
     'ro.debuggable',
     'ro.product.name',
+    'ro.hardware',
 ]
 
 # Keys for attributes in configs that alternate the controller module behavior.
@@ -77,6 +80,9 @@ DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
 Error = errors.Error
 DeviceError = errors.DeviceError
 SnippetError = snippet_management_service.Error
+
+# Regex to heuristically determine if the device is an emulator.
+EMULATOR_SERIAL_REGEX = re.compile(r'emulator-\d+')
 
 
 def create(configs):
@@ -338,7 +344,6 @@ def get_devices(ads, **kwargs):
     Raises:
         Error: No devices are matched.
     """
-
     def _get_device_filter(ad):
         for k, v in kwargs.items():
             if not hasattr(ad, k):
@@ -443,7 +448,6 @@ class AndroidDevice(object):
         services: ServiceManager, the manager of long-running services on the
             device.
     """
-
     def __init__(self, serial=''):
         self._serial = str(serial)
         # logging.log_path only exists when this is used in an Mobly test run.
@@ -763,8 +767,11 @@ class AndroidDevice(object):
             info['build_version_sdk'] = build_info.get('ro.build.version.sdk',
                                                        '')
             info['build_product'] = build_info.get('ro.build.product', '')
+            info['build_characteristics'] = build_info.get(
+                'ro.build.characteristics', '')
             info['debuggable'] = build_info.get('ro.debuggable', '')
             info['product_name'] = build_info.get('ro.product.name', '')
+            info['hardware'] = build_info.get('ro.hardware', '')
             self._build_info = info
             return info
         return self._build_info
@@ -809,6 +816,31 @@ class AndroidDevice(object):
         if model == 'sprout':
             return model
         return self.build_info['product_name'].lower()
+
+    @property
+    def is_emulator(self):
+        """Whether this device is probably an emulator.
+
+        Returns:
+            True if this is probably an emulator.
+        """
+        if EMULATOR_SERIAL_REGEX.match(self.serial):
+            # If the device's serial follows 'emulator-dddd', then it's almost
+            # certainly an emulator.
+            return True
+        elif self.build_info['build_characteristics'] == 'emulator':
+            # If the device says that it's an emulator, then it's probably an
+            # emulator although some real devices apparently report themselves
+            # as emulators in addition to other things, so only return True on
+            # an exact match.
+            return True
+        elif self.build_info['hardware'] in ['ranchu', 'goldfish']:
+            # Ranchu and Goldfish are the hardware properties that the AOSP
+            # emulators report, so if the device says it's an AOSP emulator, it
+            # probably is one.
+            return True
+        else:
+            return False
 
     def load_config(self, config):
         """Add attributes to the AndroidDevice object based on config.
@@ -1049,7 +1081,6 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
     Then each log line added by my_log will have a prefix
     '[AndroidDevice|<tag>]'
     """
-
     def process(self, msg, kwargs):
         msg = _DEBUG_PREFIX_TEMPLATE % (self.extra['tag'], msg)
         return (msg, kwargs)

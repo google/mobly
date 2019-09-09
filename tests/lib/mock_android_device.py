@@ -30,6 +30,8 @@ DEFAULT_MOCK_PROPERTIES = {
     'ro.product.name': 'FakeModel',
     'ro.debuggable': '1',
     'sys.boot_completed': "1",
+    'ro.build.characteristics': 'emulator,phone',
+    'ro.hardware': 'marlin',
 }
 
 
@@ -76,7 +78,6 @@ def list_adb_devices():
 
 class MockAdbProxy(object):
     """Mock class that swaps out calls to adb with mock calls."""
-
     def __init__(self,
                  serial='',
                  fail_br=False,
@@ -115,13 +116,16 @@ class MockAdbProxy(object):
             packages = self.installed_packages + [
                 package for package, _, _ in self.instrumented_packages
             ]
-            return bytes('\n'.join(
-                ['package:%s' % package for package in packages]), 'utf-8')
+            return bytes(
+                '\n'.join(['package:%s' % package for package in packages]),
+                'utf-8')
         elif 'pm list instrumentation' in params:
-            return bytes('\n'.join([
-                'instrumentation:%s/%s (target=%s)' % (package, runner, target)
-                for package, runner, target in self.instrumented_packages
-            ]), 'utf-8')
+            return bytes(
+                '\n'.join([
+                    'instrumentation:%s/%s (target=%s)' %
+                    (package, runner, target)
+                    for package, runner, target in self.instrumented_packages
+                ]), 'utf-8')
         elif 'which' in params:
             return b''
 
@@ -144,7 +148,6 @@ class MockAdbProxy(object):
         """All calls to the none-existent functions in adb proxy would
         simply return the adb command string.
         """
-
         def adb_call(*args, **kwargs):
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
@@ -154,7 +157,6 @@ class MockAdbProxy(object):
 
 class MockFastbootProxy(object):
     """Mock class that swaps out calls to adb with mock calls."""
-
     def __init__(self, serial):
         self.serial = serial
 
