@@ -821,9 +821,9 @@ class AndroidDevice(object):
     def is_emulator(self):
         """Whether this device is probably an emulator.
 
-      Returns:
-        True if this is probably an emulator.
-      """
+        Returns:
+            True if this is probably an emulator.
+        """
         if EMULATOR_SERIAL_REGEX.match(self.serial):
             # If the device's serial follows 'emulator-dddd', then it's almost
             # certainly an emulator.
