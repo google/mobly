@@ -52,7 +52,6 @@ MOCK_ADB_SHELL_COMMAND_CHECK = 'adb shell command -v ls'
 class AdbTest(unittest.TestCase):
     """Unit tests for mobly.controllers.android_device_lib.adb.
     """
-
     def _mock_process(self, mock_psutil_process, mock_popen):
         # the created proc object in adb._exec_cmd()
         mock_proc = mock.Mock()
@@ -84,11 +83,14 @@ class AdbTest(unittest.TestCase):
         mock_run_command.return_value = (0,
                                          MOCK_DEFAULT_STDOUT.encode('utf-8'),
                                          MOCK_DEFAULT_STDERR.encode('utf-8'))
-        out = adb.AdbProxy()._exec_cmd(
-            ['fake_cmd'], shell=False, timeout=None, stderr=None)
+        out = adb.AdbProxy()._exec_cmd(['fake_cmd'],
+                                       shell=False,
+                                       timeout=None,
+                                       stderr=None)
         self.assertEqual(MOCK_DEFAULT_STDOUT, out.decode('utf-8'))
-        mock_run_command.assert_called_with(
-            ['fake_cmd'], shell=False, timeout=None)
+        mock_run_command.assert_called_with(['fake_cmd'],
+                                            shell=False,
+                                            timeout=None)
 
     @mock.patch('mobly.utils.run_command')
     def test_exec_cmd_error_with_serial(self, mock_run_command):
@@ -111,11 +113,14 @@ class AdbTest(unittest.TestCase):
                                          MOCK_DEFAULT_STDERR.encode('utf-8'))
         with self.assertRaisesRegex(adb.AdbError,
                                     'Error executing adb cmd .*') as context:
-            adb.AdbProxy()._exec_cmd(
-                ['fake_cmd'], shell=False, timeout=None, stderr=None)
+            adb.AdbProxy()._exec_cmd(['fake_cmd'],
+                                     shell=False,
+                                     timeout=None,
+                                     stderr=None)
         self.assertFalse(context.exception.serial)
-        mock_run_command.assert_called_with(
-            ['fake_cmd'], shell=False, timeout=None)
+        mock_run_command.assert_called_with(['fake_cmd'],
+                                            shell=False,
+                                            timeout=None)
 
     @mock.patch('mobly.utils.run_command')
     def test_exec_cmd_with_timeout_success(self, mock_run_command):
@@ -123,11 +128,14 @@ class AdbTest(unittest.TestCase):
                                          MOCK_DEFAULT_STDOUT.encode('utf-8'),
                                          MOCK_DEFAULT_STDERR.encode('utf-8'))
 
-        out = adb.AdbProxy()._exec_cmd(
-            ['fake_cmd'], shell=False, timeout=1, stderr=None)
+        out = adb.AdbProxy()._exec_cmd(['fake_cmd'],
+                                       shell=False,
+                                       timeout=1,
+                                       stderr=None)
         self.assertEqual(MOCK_DEFAULT_STDOUT, out.decode('utf-8'))
-        mock_run_command.assert_called_with(
-            ['fake_cmd'], shell=False, timeout=1)
+        mock_run_command.assert_called_with(['fake_cmd'],
+                                            shell=False,
+                                            timeout=1)
 
     @mock.patch('mobly.utils.run_command')
     def test_exec_cmd_timed_out(self, mock_run_command):
@@ -143,16 +151,18 @@ class AdbTest(unittest.TestCase):
     @mock.patch('mobly.utils.run_command')
     def test_exec_cmd_timed_out_without_serial(self, mock_run_command):
         mock_run_command.side_effect = adb.psutil.TimeoutExpired('Timed out')
-        with self.assertRaisesRegex(adb.AdbTimeoutError,
-                                    'Timed out executing command "adb '
-                                    'fake-cmd" after 0.01s.') as context:
+        with self.assertRaisesRegex(
+                adb.AdbTimeoutError, 'Timed out executing command "adb '
+                'fake-cmd" after 0.01s.') as context:
             adb.AdbProxy().fake_cmd(timeout=0.01)
 
     def test_exec_cmd_with_negative_timeout_value(self):
         with self.assertRaisesRegex(ValueError,
                                     'Timeout is not a positive value: -1'):
-            adb.AdbProxy()._exec_cmd(
-                ['fake_cmd'], shell=False, timeout=-1, stderr=None)
+            adb.AdbProxy()._exec_cmd(['fake_cmd'],
+                                     shell=False,
+                                     timeout=-1,
+                                     stderr=None)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
     def test_execute_and_process_stdout_reads_stdout(self, mock_popen):
@@ -160,8 +170,9 @@ class AdbTest(unittest.TestCase):
         mock_popen.return_value.stdout.readline.side_effect = ['1', '2', '']
         mock_handler = mock.MagicMock()
 
-        err = adb.AdbProxy()._execute_and_process_stdout(
-            ['fake_cmd'], shell=False, handler=mock_handler)
+        err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+                                                         shell=False,
+                                                         handler=mock_handler)
         self.assertEqual(mock_handler.call_count, 2)
         mock_handler.assert_any_call('1')
         mock_handler.assert_any_call('2')
@@ -174,11 +185,12 @@ class AdbTest(unittest.TestCase):
         self._mock_execute_and_process_stdout_process(mock_popen)
         mock_handler = mock.MagicMock()
         mock_popen.return_value.communicate = mock.Mock(
-            return_value=(unexpected_stdout, MOCK_DEFAULT_STDERR.encode(
-                'utf-8')))
+            return_value=(unexpected_stdout,
+                          MOCK_DEFAULT_STDERR.encode('utf-8')))
 
-        err = adb.AdbProxy()._execute_and_process_stdout(
-            ['fake_cmd'], shell=False, handler=mock_handler)
+        err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+                                                         shell=False,
+                                                         handler=mock_handler)
         self.assertEqual(mock_handler.call_count, 1)
         mock_handler.assert_called_with(unexpected_stdout)
 
@@ -226,8 +238,9 @@ class AdbTest(unittest.TestCase):
         ]
         mock_handler = mock.MagicMock()
 
-        err = adb.AdbProxy()._execute_and_process_stdout(
-            ['fake_cmd'], shell=False, handler=mock_handler)
+        err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+                                                         shell=False,
+                                                         handler=mock_handler)
 
         self.assertEqual(mock_handler.call_count, 3)
         mock_handler.assert_any_call('1')
@@ -242,8 +255,9 @@ class AdbTest(unittest.TestCase):
         ]
         mock_handler = mock.MagicMock()
 
-        err = adb.AdbProxy()._execute_and_process_stdout(
-            ['fake_cmd'], shell=False, handler=mock_handler)
+        err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+                                                         shell=False,
+                                                         handler=mock_handler)
 
         self.assertEqual(mock_handler.call_count, 3)
         mock_handler.assert_any_call('1')
@@ -284,8 +298,9 @@ class AdbTest(unittest.TestCase):
         mock_popen.return_value.communicate.assert_called_once_with()
 
     def test_construct_adb_cmd(self):
-        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', 'arg1', shell=False)
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd('shell',
+                                                    'arg1',
+                                                    shell=False)
         self.assertEqual(adb_cmd, ['adb', 'shell', 'arg1'])
 
     def test_construct_adb_cmd_with_one_command(self):
@@ -306,29 +321,33 @@ class AdbTest(unittest.TestCase):
                          ['adb', 'shell', 'ls /asdafsfd/asdf-asfd/asa'])
 
     def test_construct_adb_cmd_with_special_characters(self):
-        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', ['a b', '"blah"', r'\/\/'], shell=False)
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd('shell',
+                                                    ['a b', '"blah"', r'\/\/'],
+                                                    shell=False)
         self.assertEqual(adb_cmd, ['adb', 'shell', 'a b', '"blah"', r"\/\/"])
 
     def test_construct_adb_cmd_with_serial(self):
-        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
-            'shell', 'arg1', shell=False)
+        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd('shell',
+                                                           'arg1',
+                                                           shell=False)
         self.assertEqual(adb_cmd, ['adb', '-s', '12345', 'shell', 'arg1'])
 
     def test_construct_adb_cmd_with_list(self):
-        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', ['arg1', 'arg2'], shell=False)
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd('shell', ['arg1', 'arg2'],
+                                                    shell=False)
         self.assertEqual(adb_cmd, ['adb', 'shell', 'arg1', 'arg2'])
 
     def test_construct_adb_cmd_with_serial_with_list(self):
-        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
-            'shell', ['arg1', 'arg2'], shell=False)
+        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd('shell',
+                                                           ['arg1', 'arg2'],
+                                                           shell=False)
         self.assertEqual(adb_cmd,
                          ['adb', '-s', '12345', 'shell', 'arg1', 'arg2'])
 
     def test_construct_adb_cmd_with_shell_true(self):
-        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', 'arg1 arg2', shell=True)
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd('shell',
+                                                    'arg1 arg2',
+                                                    shell=True)
         self.assertEqual(adb_cmd, '"adb" shell arg1 arg2')
 
     def test_construct_adb_cmd_with_shell_true_with_one_command(self):
@@ -347,23 +366,26 @@ class AdbTest(unittest.TestCase):
         self.assertEqual(adb_cmd, '"adb" shell \'ls /asdafsfd/asdf-asfd/asa\'')
 
     def test_construct_adb_cmd_with_shell_true_with_auto_quotes(self):
-        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', ['a b', '"blah"', r'\/\/'], shell=True)
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd('shell',
+                                                    ['a b', '"blah"', r'\/\/'],
+                                                    shell=True)
         self.assertEqual(adb_cmd, '"adb" shell \'a b\' \'"blah"\' \'\\/\\/\'')
 
     def test_construct_adb_cmd_with_shell_true_with_serial(self):
-        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
-            'shell', 'arg1 arg2', shell=True)
+        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd('shell',
+                                                           'arg1 arg2',
+                                                           shell=True)
         self.assertEqual(adb_cmd, '"adb" -s "12345" shell arg1 arg2')
 
     def test_construct_adb_cmd_with_shell_true_with_list(self):
-        adb_cmd = adb.AdbProxy()._construct_adb_cmd(
-            'shell', ['arg1', 'arg2'], shell=True)
+        adb_cmd = adb.AdbProxy()._construct_adb_cmd('shell', ['arg1', 'arg2'],
+                                                    shell=True)
         self.assertEqual(adb_cmd, '"adb" shell arg1 arg2')
 
     def test_construct_adb_cmd_with_shell_true_with_serial_with_list(self):
-        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd(
-            'shell', ['arg1', 'arg2'], shell=True)
+        adb_cmd = adb.AdbProxy('12345')._construct_adb_cmd('shell',
+                                                           ['arg1', 'arg2'],
+                                                           shell=True)
         self.assertEqual(adb_cmd, '"adb" -s "12345" shell arg1 arg2')
 
     def test_exec_adb_cmd(self):
@@ -380,8 +402,10 @@ class AdbTest(unittest.TestCase):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
             adb.AdbProxy().shell('arg1 arg2', shell=True)
-            mock_exec_cmd.assert_called_once_with(
-                '"adb" shell arg1 arg2', shell=True, timeout=None, stderr=None)
+            mock_exec_cmd.assert_called_once_with('"adb" shell arg1 arg2',
+                                                  shell=True,
+                                                  timeout=None,
+                                                  stderr=None)
 
     def test_exec_adb_cmd_formats_command(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
@@ -394,10 +418,13 @@ class AdbTest(unittest.TestCase):
                 mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT
 
                 adb.AdbProxy().shell(mock_adb_args)
-                mock_construct_adb_cmd.assert_called_once_with(
-                    'shell', mock_adb_args, shell=False)
-                mock_exec_cmd.assert_called_once_with(
-                    mock_adb_cmd, shell=False, timeout=None, stderr=None)
+                mock_construct_adb_cmd.assert_called_once_with('shell',
+                                                               mock_adb_args,
+                                                               shell=False)
+                mock_exec_cmd.assert_called_once_with(mock_adb_cmd,
+                                                      shell=False,
+                                                      timeout=None,
+                                                      stderr=None)
 
     def test_exec_adb_cmd_formats_command_with_shell_true(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
@@ -409,10 +436,13 @@ class AdbTest(unittest.TestCase):
                 mock_construct_adb_cmd.return_value = mock_adb_cmd
 
                 adb.AdbProxy().shell(mock_adb_args, shell=True)
-                mock_construct_adb_cmd.assert_called_once_with(
-                    'shell', mock_adb_args, shell=True)
-                mock_exec_cmd.assert_called_once_with(
-                    mock_adb_cmd, shell=True, timeout=None, stderr=None)
+                mock_construct_adb_cmd.assert_called_once_with('shell',
+                                                               mock_adb_args,
+                                                               shell=True)
+                mock_exec_cmd.assert_called_once_with(mock_adb_cmd,
+                                                      shell=True,
+                                                      timeout=None,
+                                                      stderr=None)
 
     def test_execute_adb_and_process_stdout_formats_command(self):
         with mock.patch.object(adb.AdbProxy, '_execute_and_process_stdout'
@@ -427,8 +457,9 @@ class AdbTest(unittest.TestCase):
 
                 adb.AdbProxy()._execute_adb_and_process_stdout(
                     'shell', mock_adb_args, shell=False, handler=mock_handler)
-                mock_construct_adb_cmd.assert_called_once_with(
-                    'shell', mock_adb_args, shell=False)
+                mock_construct_adb_cmd.assert_called_once_with('shell',
+                                                               mock_adb_args,
+                                                               shell=False)
                 mock_execute_and_process_stdout.assert_called_once_with(
                     mock_adb_cmd, shell=False, handler=mock_handler)
 
@@ -438,8 +469,9 @@ class AdbTest(unittest.TestCase):
                                          MOCK_DEFAULT_STDOUT.encode('utf-8'),
                                          MOCK_DEFAULT_STDERR.encode('utf-8'))
         stderr_redirect = io.BytesIO()
-        out = adb.AdbProxy().shell(
-            'arg1 arg2', shell=True, stderr=stderr_redirect)
+        out = adb.AdbProxy().shell('arg1 arg2',
+                                   shell=True,
+                                   stderr=stderr_redirect)
         self.assertEqual(MOCK_DEFAULT_STDOUT, out.decode('utf-8'))
         self.assertEqual(MOCK_DEFAULT_STDERR,
                          stderr_redirect.getvalue().decode('utf-8'))
@@ -522,11 +554,12 @@ class AdbTest(unittest.TestCase):
                 'sendbug.preferred.domain',  # string value
                 'nonExistentProp'
             ])
-            self.assertEqual(actual_output, {
-                'sys.wifitracing.started': '1',
-                'sys.uidcpupower': '',
-                'sendbug.preferred.domain': 'google.com'
-            })
+            self.assertEqual(
+                actual_output, {
+                    'sys.wifitracing.started': '1',
+                    'sys.uidcpupower': '',
+                    'sendbug.preferred.domain': 'google.com'
+                })
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', 'getprop'],
                 shell=False,
@@ -538,8 +571,9 @@ class AdbTest(unittest.TestCase):
     def test_getprops_when_empty_string_randomly_returned(self, mock_sleep):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
             mock_exec_cmd.side_effect = [
-                b'', (b'\n[ro.build.id]: [AB42]\n'
-                      b'[ro.build.type]: [userdebug]\n\n')
+                b'',
+                (b'\n[ro.build.id]: [AB42]\n'
+                 b'[ro.build.type]: [userdebug]\n\n')
             ]
             actual_output = adb.AdbProxy().getprops(['ro.build.id'])
             self.assertEqual(actual_output, {
@@ -578,19 +612,20 @@ class AdbTest(unittest.TestCase):
         the basic case.
         """
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            adb.AdbProxy().instrument(MOCK_INSTRUMENTATION_PACKAGE)
+            output = adb.AdbProxy().instrument(MOCK_INSTRUMENTATION_PACKAGE)
             mock_exec_cmd.assert_called_once_with(
                 ['adb', 'shell', MOCK_BASIC_INSTRUMENTATION_COMMAND],
                 shell=False,
                 timeout=None,
                 stderr=None)
+            self.assertEqual(output, mock_exec_cmd.return_value)
 
     def test_instrument_with_runner(self):
         """Verifies the AndroidDevice object's instrument command is correct
         with a runner specified.
         """
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            adb.AdbProxy().instrument(
+            stdout = adb.AdbProxy().instrument(
                 MOCK_INSTRUMENTATION_PACKAGE,
                 runner=MOCK_INSTRUMENTATION_RUNNER)
             mock_exec_cmd.assert_called_once_with(
@@ -598,13 +633,14 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 timeout=None,
                 stderr=None)
+            self.assertEqual(stdout, mock_exec_cmd.return_value)
 
     def test_instrument_with_options(self):
         """Verifies the AndroidDevice object's instrument command is correct
         with options.
         """
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            adb.AdbProxy().instrument(
+            stdout = adb.AdbProxy().instrument(
                 MOCK_INSTRUMENTATION_PACKAGE,
                 options=MOCK_INSTRUMENTATION_OPTIONS)
             mock_exec_cmd.assert_called_once_with(
@@ -612,35 +648,36 @@ class AdbTest(unittest.TestCase):
                 shell=False,
                 timeout=None,
                 stderr=None)
+            self.assertEqual(stdout, mock_exec_cmd.return_value)
 
     def test_instrument_with_handler(self):
         """Verifies the AndroidDevice object's instrument command is correct
         with a handler passed in.
         """
-
         def mock_handler(raw_line):
             pass
 
         with mock.patch.object(adb.AdbProxy, '_execute_and_process_stdout'
                                ) as mock_execute_and_process_stdout:
-            adb.AdbProxy().instrument(
-                MOCK_INSTRUMENTATION_PACKAGE, handler=mock_handler)
+            stderr = adb.AdbProxy().instrument(MOCK_INSTRUMENTATION_PACKAGE,
+                                               handler=mock_handler)
             mock_execute_and_process_stdout.assert_called_once_with(
                 ['adb', 'shell', MOCK_BASIC_INSTRUMENTATION_COMMAND],
                 shell=False,
                 handler=mock_handler)
+            self.assertEqual(stderr,
+                             mock_execute_and_process_stdout.return_value)
 
     def test_instrument_with_handler_with_runner(self):
         """Verifies the AndroidDevice object's instrument command is correct
         with a handler passed in and a runner specified.
         """
-
         def mock_handler(raw_line):
             pass
 
         with mock.patch.object(adb.AdbProxy, '_execute_and_process_stdout'
                                ) as mock_execute_and_process_stdout:
-            adb.AdbProxy().instrument(
+            stderr = adb.AdbProxy().instrument(
                 MOCK_INSTRUMENTATION_PACKAGE,
                 runner=MOCK_INSTRUMENTATION_RUNNER,
                 handler=mock_handler)
@@ -648,18 +685,19 @@ class AdbTest(unittest.TestCase):
                 ['adb', 'shell', MOCK_RUNNER_INSTRUMENTATION_COMMAND],
                 shell=False,
                 handler=mock_handler)
+            self.assertEqual(stderr,
+                             mock_execute_and_process_stdout.return_value)
 
     def test_instrument_with_handler_with_options(self):
         """Verifies the AndroidDevice object's instrument command is correct
         with a handler passed in and options.
         """
-
         def mock_handler(raw_line):
             pass
 
         with mock.patch.object(adb.AdbProxy, '_execute_and_process_stdout'
                                ) as mock_execute_and_process_stdout:
-            adb.AdbProxy().instrument(
+            stderr = adb.AdbProxy().instrument(
                 MOCK_INSTRUMENTATION_PACKAGE,
                 options=MOCK_INSTRUMENTATION_OPTIONS,
                 handler=mock_handler)
@@ -667,6 +705,8 @@ class AdbTest(unittest.TestCase):
                 ['adb', 'shell', MOCK_OPTIONS_INSTRUMENTATION_COMMAND],
                 shell=False,
                 handler=mock_handler)
+            self.assertEqual(stderr,
+                             mock_execute_and_process_stdout.return_value)
 
     def test_has_shell_command_called_correctly(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
