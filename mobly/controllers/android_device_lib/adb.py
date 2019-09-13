@@ -55,7 +55,6 @@ class AdbError(Error):
             This is an empty string if the adb command is not specific to a
             device.
     """
-
     def __init__(self, cmd, stdout, stderr, ret_code, serial=''):
         self.cmd = cmd
         self.stdout = stdout
@@ -79,7 +78,6 @@ class AdbTimeoutError(Error):
             This is an empty string if the adb command is not specific to a
             device.
     """
-
     def __init__(self, cmd, timeout, serial=''):
         self.cmd = cmd
         self.timeout = timeout
@@ -134,7 +132,6 @@ class AdbProxy(object):
     possible by supplying shell=True, but try to avoid this if possible:
     >> adb.shell('cat /foo > /tmp/file', shell=True)
     """
-
     def __init__(self, serial=''):
         self.serial = serial
 
@@ -278,10 +275,10 @@ class AdbProxy(object):
 
     def _execute_adb_and_process_stdout(self, name, args, shell, handler):
         adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
-        out = self._execute_and_process_stdout(adb_cmd,
+        err = self._execute_and_process_stdout(adb_cmd,
                                                shell=shell,
                                                handler=handler)
-        return out
+        return err
 
     def _parse_getprop_output(self, output):
         """Parses the raw output of `adb shell getprop` into a dictionary.
@@ -411,8 +408,8 @@ class AdbProxy(object):
                 instrumentation is finished.
 
         Returns:
-            The stdout of instrumentation command or the stderr if the handler
-                is set.
+            The stderr of instrumentation command or the stderr if the handler
+                is set, otherwise, the stdout of the instrumentation command.
         """
         if runner is None:
             runner = DEFAULT_INSTRUMENTATION_RUNNER
@@ -430,11 +427,11 @@ class AdbProxy(object):
                      instrumentation_command)
         if handler is None:
             # Flow kept for backwards-compatibility reasons
-            self._exec_adb_cmd('shell',
-                               instrumentation_command,
-                               shell=False,
-                               timeout=None,
-                               stderr=None)
+            return self._exec_adb_cmd('shell',
+                                      instrumentation_command,
+                                      shell=False,
+                                      timeout=None,
+                                      stderr=None)
         else:
             return self._execute_adb_and_process_stdout(
                 'shell', instrumentation_command, shell=False, handler=handler)
