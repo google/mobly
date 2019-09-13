@@ -426,7 +426,6 @@ class AdbProxy(object):
         logging.info('AndroidDevice|%s: Executing adb shell %s', self.serial,
                      instrumentation_command)
         if handler is None:
-            # Flow kept for backwards-compatibility reasons
             return self._exec_adb_cmd('shell',
                                       instrumentation_command,
                                       shell=False,
