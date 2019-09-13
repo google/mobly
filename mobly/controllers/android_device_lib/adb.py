@@ -408,8 +408,8 @@ class AdbProxy(object):
                 instrumentation is finished.
 
         Returns:
-            The stderr of instrumentation command or the stderr if the handler
-                is set, otherwise, the stdout of the instrumentation command.
+            The stdout of instrumentation command or the stderr if the handler
+                is set.
         """
         if runner is None:
             runner = DEFAULT_INSTRUMENTATION_RUNNER
