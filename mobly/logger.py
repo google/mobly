@@ -23,6 +23,39 @@ import sys
 from mobly import records
 from mobly import utils
 
+# Filename sanitization mappings for Windows.
+# See https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
+WINDOWS_MAX_FILENAME_LENGTH = 260
+WINDOWS_RESERVED_CHARACTERS_REPLACEMENTS = {
+    '<':
+    '-',
+    '>':
+    '-',
+    ':':
+    '-',
+    '"':
+    '_',
+    '/':
+    '_',
+    '\\':
+    '_',
+    '|':
+    ',',
+    '?':
+    ',',
+    '*':
+    ',',
+    # Integer zero (i.e. NUL) is not a valid character.
+    # While integers 1-31 are also usually valid, they aren't sanitized because
+    # they are situationally valid.
+    chr(0):
+    '0',
+}
+# Note, although the documentation does specifcy, COM0 and LPT0 are also
+# invalid/reserved filenames.
+WINDOWS_RESERVED_FILENAME_REGEX = re.compile(
+    '^CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9]$', re.IGNORECASE)
+
 log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
 # The micro seconds are added by the format string above,
 # so the time format does not include ms.
@@ -219,6 +252,60 @@ def setup_test_logger(log_path, prefix=None, alias='latest'):
         create_latest_log_alias(log_path, alias=alias)
 
 
+def _sanitize_windows_filename(filename):
+    """Sanitizes a filename for Windows.
+
+    Refer to the following Windows documentation page for the rules:
+    https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
+
+    Args:
+      filename: string, the filename to sanitize for the Windows file system.
+
+    Returns:
+      A filename that should be safe to use on Windows.
+    """
+    if re.match(WINDOWS_RESERVED_FILENAME_REGEX, filename):
+        return '__' + filename + '__'
+
+    if len(filename) > WINDOWS_MAX_FILENAME_LENGTH:
+        filename = filename[:WINDOWS_MAX_FILENAME_LENGTH]
+
+    # In order to meet max length, none of these replacements should increase
+    # the length of the filename.
+    new_filename_chars = []
+    for char in filename:
+        if char in WINDOWS_RESERVED_CHARACTERS_REPLACEMENTS:
+            new_filename_chars.append(
+                WINDOWS_RESERVED_CHARACTERS_REPLACEMENTS[char])
+        else:
+            new_filename_chars.append(char)
+    filename = ''.join(new_filename_chars)
+    if filename.endswith('.') or filename.endswith(' '):
+        # Filenames cannot end with a period or space on Windows.
+        filename = filename[:-1] + '_'
+
+    return filename
+
+
+def sanitize_filename(filename):
+    """Sanitizes a filename for various operating systems.
+
+    Args:
+      filename: string, the filename to sanitize.
+
+    Returns:
+      A string that is safe to use as a filename on various operating systems.
+    """
+    # Split `filename` into the directory and filename in case the user
+    # accidentally passed in the full path instead of the name.
+    dirname = os.path.dirname(filename)
+    basename = os.path.basename(filename)
+    basename = _sanitize_windows_filename(basename)
+    # Replace spaces with underscores for convenience reasons.
+    basename = basename.replace(' ', '_')
+    return os.path.join(dirname, basename)
+
+
 def normalize_log_line_timestamp(log_line_timestamp):
     """Replace special characters in log line timestamp with normal characters.
 
@@ -230,6 +317,4 @@ def normalize_log_line_timestamp(log_line_timestamp):
         A string representing the same time as input timestamp, but without
         special characters.
     """
-    norm_tp = log_line_timestamp.replace(' ', '_')
-    norm_tp = norm_tp.replace(':', '-')
-    return norm_tp
+    return sanitize_filename(log_line_timestamp)

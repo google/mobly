@@ -411,7 +411,7 @@ def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
     if begin_time is None:
         begin_time = mobly_logger.get_log_file_timestamp()
     else:
-        begin_time = mobly_logger.normalize_log_line_timestamp(str(begin_time))
+        begin_time = mobly_logger.sanitize_filename(str(begin_time))
 
     def take_br(test_name, begin_time, ad, destination):
         ad.take_bug_report(test_name=test_name,
@@ -484,14 +484,12 @@ class AndroidDevice(object):
     def _normalized_serial(self):
         """Normalized serial name for usage in log filename.
 
-        Some Android emulators use ip:port as their serial names, while on 
+        Some Android emulators use ip:port as their serial names, while on
         Windows `:` is not valid in filename, it should be sanitized first.
         """
         if self._serial is None:
             return None
-        normalized_serial = self._serial.replace(' ', '_')
-        normalized_serial = normalized_serial.replace(':', '-')
-        return normalized_serial
+        return mobly_logger.sanitize_filename(self._serial)
 
     @property
     def device_info(self):

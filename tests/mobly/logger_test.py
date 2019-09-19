@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import mock
+import os
 import pytz
 import shutil
 import tempfile
@@ -71,6 +72,113 @@ class LoggerTest(unittest.TestCase):
 
         mock_create_latest_log_alias.assert_called_once_with(self.log_dir,
                                                              alias=mock_alias)
+
+    def test_sanitize_filename_when_valid(self):
+        fake_filename = 'logcat.txt'
+        expected_filename = 'logcat.txt'
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_valid_with_path(self):
+        fake_filename = os.path.join('dir', 'logs', 'logcat.txt')
+        expected_filename = os.path.join('dir', 'logs', 'logcat.txt')
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_random_spaces(self):
+        fake_filename = 'log cat file.txt'
+        expected_filename = 'log_cat_file.txt'
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_over_260_characters(self):
+        fake_filename = 'l' * 300
+        expected_filename = 'l' * 260
+        self.assertEqual(len(logger.sanitize_filename(fake_filename)), 260)
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test__sanitize_windows_filename_when_path_characters(self):
+        fake_filename = '/\\'
+        expected_filename = '__'
+        self.assertEqual(logger._sanitize_windows_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_specical_characters(self):
+        fake_filename = '<>:"|?*\x00'
+        expected_filename = '---_,,,0'
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_con(self):
+        fake_filename = 'con'
+        expected_filename = '__con__'
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_prn(self):
+        fake_filename = 'PRN'
+        expected_filename = '__PRN__'
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_aux(self):
+        fake_filename = 'aux'
+        expected_filename = '__aux__'
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_nul(self):
+        fake_filename = 'NUL'
+        expected_filename = '__NUL__'
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_com(self):
+        for fake_filename, expected_filename in [
+            ('com', 'com'),
+            ('COM0', '__COM0__'),
+            ('com1', '__com1__'),
+            ('COM2', '__COM2__'),
+            ('com3', '__com3__'),
+            ('COM4', '__COM4__'),
+            ('com5', '__com5__'),
+            ('COM6', '__COM6__'),
+            ('com7', '__com7__'),
+            ('COM8', '__COM8__'),
+            ('com9', '__com9__'),
+        ]:
+            self.assertEqual(logger.sanitize_filename(fake_filename),
+                             expected_filename)
+
+    def test_sanitize_filename_when_lpt(self):
+        for fake_filename, expected_filename in [
+            ('lpt', 'lpt'),
+            ('LPT0', '__LPT0__'),
+            ('lpt1', '__lpt1__'),
+            ('LPT2', '__LPT2__'),
+            ('lpt3', '__lpt3__'),
+            ('LPT4', '__LPT4__'),
+            ('lpt5', '__lpt5__'),
+            ('LPT6', '__LPT6__'),
+            ('lpt7', '__lpt7__'),
+            ('LPT8', '__LPT8__'),
+            ('lpt9', '__lpt9__'),
+        ]:
+            self.assertEqual(logger.sanitize_filename(fake_filename),
+                             expected_filename)
+
+    def test_sanitize_filename_when_ends_with_space(self):
+        fake_filename = 'logcat.txt '
+        expected_filename = 'logcat.txt_'
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_ends_with_period(self):
+        fake_filename = 'logcat.txt.'
+        expected_filename = 'logcat.txt_'
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
 
 
 if __name__ == "__main__":
