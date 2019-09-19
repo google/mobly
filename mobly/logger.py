@@ -54,7 +54,8 @@ WINDOWS_RESERVED_CHARACTERS_REPLACEMENTS = {
 # Note, although the documentation does not specify as such, COM0 and LPT0 are
 # also invalid/reserved filenames.
 WINDOWS_RESERVED_FILENAME_REGEX = re.compile(
-    '^CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9]$', re.IGNORECASE)
+    r'^(CON|PRN|AUX|NUL|(COM|LPT)[0-9])(\.[^.]*)?$', re.IGNORECASE)
+WINDOWS_RESERVED_FILENAME_PREFIX = 'mobly_'
 
 log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
 # The micro seconds are added by the format string above,
@@ -265,7 +266,7 @@ def _sanitize_windows_filename(filename):
       A filename that should be safe to use on Windows.
     """
     if re.match(WINDOWS_RESERVED_FILENAME_REGEX, filename):
-        return '__' + filename + '__'
+        return WINDOWS_RESERVED_FILENAME_PREFIX + filename
 
     if len(filename) > WINDOWS_MAX_FILENAME_LENGTH:
         filename = filename[:WINDOWS_MAX_FILENAME_LENGTH]
