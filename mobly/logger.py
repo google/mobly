@@ -51,8 +51,8 @@ WINDOWS_RESERVED_CHARACTERS_REPLACEMENTS = {
     chr(0):
     '0',
 }
-# Note, although the documentation does specifcy, COM0 and LPT0 are also
-# invalid/reserved filenames.
+# Note, although the documentation does not specify as such, COM0 and LPT0 are
+# also invalid/reserved filenames.
 WINDOWS_RESERVED_FILENAME_REGEX = re.compile(
     '^CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9]$', re.IGNORECASE)
 
