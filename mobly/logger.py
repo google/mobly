@@ -265,6 +265,10 @@ def _sanitize_windows_filename(filename):
     Returns:
       A filename that should be safe to use on Windows.
     """
+    # Windows has a concept of file namespaces where files that consist of
+    # specific reserved words (which mostly represent I/O devices) can't be used
+    # as filenames. Because extensions should generally be short, just add a
+    # prefix to the filename to avoid the reserved file namespace.
     if re.match(WINDOWS_RESERVED_FILENAME_REGEX, filename):
         return WINDOWS_RESERVED_FILENAME_PREFIX + filename
 
@@ -308,7 +312,7 @@ def sanitize_filename(filename):
 
 
 def normalize_log_line_timestamp(log_line_timestamp):
-    """Replace special characters in log line timestamp with normal characters.
+    """[Deprecated] Sanitie a log line timestamp with normal characters.
 
     Args:
         log_line_timestamp: A string in the log line timestamp format. Obtained
