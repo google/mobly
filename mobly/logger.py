@@ -317,7 +317,7 @@ def normalize_log_line_timestamp(log_line_timestamp):
     .. deprecated:: 1.9.2
 
         This method is obsolete with the more general `sanitize_filename` method
-        and is only kept for backwards compatibilities. In a future update, this
+        and is only kept for backwards compatibility. In a future update, this
         method may be removed.
 
     Args:
