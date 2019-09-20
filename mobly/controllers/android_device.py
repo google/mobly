@@ -23,6 +23,7 @@ import shutil
 import time
 
 from mobly import logger as mobly_logger
+from mobly import runtime_test_info
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
@@ -344,6 +345,7 @@ def get_devices(ads, **kwargs):
     Raises:
         Error: No devices are matched.
     """
+
     def _get_device_filter(ad):
         for k, v in kwargs.items():
             if not hasattr(ad, k):
@@ -448,6 +450,7 @@ class AndroidDevice(object):
         services: ServiceManager, the manager of long-running services on the
             device.
     """
+
     def __init__(self, serial=''):
         self._serial = str(serial)
         # logging.log_path only exists when this is used in an Mobly test run.
@@ -908,6 +911,46 @@ class AndroidDevice(object):
         """
         self.services.snippets.remove_snippet_client(name)
 
+    def generate_filename(self,
+                          file_type,
+                          time_identifier=None,
+                          extension_name=None):
+        """Generates a name for an output file related to this device.
+
+        The name follows the pattern:
+
+            {file type},{debug_tag},{serial},{time identifier}.{ext}
+
+        "debug_tag" is only added if it's different from the serial. "ext" is
+        added if specified by user.
+
+        Args:
+            file_type: string, type of this file, like "logcat" etc.
+            time_identifier: string or RuntimeTestInfo. If a `RuntimeTestInfo`
+                is passed in, the `signature` of the test case will be used. If
+                a string is passed in, the string itself will be used.
+                Otherwise the current timestamp will be used.
+            extension_name: string, the extension name of the file.
+
+        Returns:
+            String, the filename generated.
+        """
+        time_str = time_identifier
+        if time_identifier is None:
+            time_str = mobly_logger.get_log_file_timestamp()
+        elif isinstance(time_identifier, runtime_test_info.RuntimeTestInfo):
+            time_str = time_identifier.signature
+        filename_tokens = [file_type]
+        if self.debug_tag != self.serial:
+            filename_tokens.append(self.debug_tag)
+        filename_tokens.extend([self.serial, time_str])
+        filename_str = ','.join(filename_tokens)
+        if extension_name is not None:
+            filename_str = '%s.%s' % (filename_str, extension_name)
+        filename_str = mobly_logger.sanitize_filename(filename_str)
+        self.log.debug('Generated filename: %s', filename_str)
+        return filename_str
+
     def take_bug_report(self,
                         test_name=None,
                         begin_time=None,
@@ -1079,6 +1122,7 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
     Then each log line added by my_log will have a prefix
     '[AndroidDevice|<tag>]'
     """
+
     def process(self, msg, kwargs):
         msg = _DEBUG_PREFIX_TEMPLATE % (self.extra['tag'], msg)
         return (msg, kwargs)
