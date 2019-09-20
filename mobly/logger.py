@@ -259,6 +259,10 @@ def _sanitize_windows_filename(filename):
     Refer to the following Windows documentation page for the rules:
     https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
 
+    If the filename matches one of Window's reserved file namespaces, then the
+    `WINDOWS_RESERVED_FILENAME_PREFIX` (i.e. "mobly_") prefix will be appended
+    to the filename to convert it into a valid Windows filename.
+
     Args:
       filename: string, the filename to sanitize for the Windows file system.
 
@@ -309,6 +313,12 @@ def sanitize_filename(filename):
 
 def normalize_log_line_timestamp(log_line_timestamp):
     """Replace special characters in log line timestamp with normal characters.
+
+    .. deprecated:: 1.9.2
+
+        This method is obsolete with the more general `sanitize_filename` method
+        and is only kept for backwards compatibilities. In a future update, this
+        method may be removed.
 
     Args:
         log_line_timestamp: A string in the log line timestamp format. Obtained
