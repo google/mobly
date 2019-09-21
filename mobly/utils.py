@@ -557,7 +557,6 @@ def find_subclasses_in_module(base_classes, module):
             subclasses of in the module.
         module: module, the module to look for the subclasses in.
 
-
     Returns:
       A list of all of the subclasses found in the module.
     """
