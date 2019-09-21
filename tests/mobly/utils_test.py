@@ -25,7 +25,16 @@ from future.tests.base import unittest
 
 import portpicker
 import psutil
+from mobly import base_instrumentation_test
+
+from mobly import base_test
+from mobly import signals
+from mobly import test_runner
 from mobly import utils
+from tests.lib import integration_test
+from tests.lib import mock_controller
+from tests.lib import mock_instrumentation_test
+from tests.lib import multiple_subclasses_module
 
 MOCK_AVAILABLE_PORT = 5
 
@@ -34,7 +43,6 @@ class UtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.utils.
     """
-
     def setUp(self):
         system = platform.system()
         self.tmp_dir = tempfile.mkdtemp()
@@ -92,13 +100,12 @@ class UtilsTest(unittest.TestCase):
         mock_proc = mock_Popen.return_value
         mock_proc.communicate.return_value = ('fake_out', 'fake_err')
         mock_proc.returncode = 127
-        out = utils.run_command(
-            mock_command,
-            stdout=mock_stdout,
-            stderr=mock_stderr,
-            shell=mock_shell,
-            timeout=mock_timeout,
-            env=mock_env)
+        out = utils.run_command(mock_command,
+                                stdout=mock_stdout,
+                                stderr=mock_stderr,
+                                shell=mock_shell,
+                                timeout=mock_timeout,
+                                env=mock_env)
         self.assertEqual(out, (127, 'fake_out', 'fake_err'))
         mock_Popen.assert_called_with(
             mock_command,
@@ -215,33 +222,74 @@ class UtilsTest(unittest.TestCase):
         expected_base64_encoding = u'SGVsbG93IHdvcmxkIQ=='
         with io.open(tmp_file_path, 'wb') as f:
             f.write(b'Hellow world!')
-        self.assertEqual(
-            utils.load_file_to_base64_str(tmp_file_path),
-            expected_base64_encoding)
+        self.assertEqual(utils.load_file_to_base64_str(tmp_file_path),
+                         expected_base64_encoding)
 
     def test_load_file_to_base64_str_reads_text_file_as_base64_string(self):
         tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
         expected_base64_encoding = u'SGVsbG93IHdvcmxkIQ=='
         with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u'Hellow world!')
-        self.assertEqual(
-            utils.load_file_to_base64_str(tmp_file_path),
-            expected_base64_encoding)
+        self.assertEqual(utils.load_file_to_base64_str(tmp_file_path),
+                         expected_base64_encoding)
 
     def test_load_file_to_base64_str_reads_unicode_file_as_base64_string(self):
         tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
         expected_base64_encoding = u'6YCa'
         with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
             f.write(u'\u901a')
-        self.assertEqual(
-            utils.load_file_to_base64_str(tmp_file_path),
-            expected_base64_encoding)
+        self.assertEqual(utils.load_file_to_base64_str(tmp_file_path),
+                         expected_base64_encoding)
 
     def test_cli_cmd_to_string(self):
         cmd = ['"adb"', 'a b', 'c//']
         self.assertEqual(utils.cli_cmd_to_string(cmd), '\'"adb"\' \'a b\' c//')
         cmd = 'adb -s meme do something ab_cd'
         self.assertEqual(utils.cli_cmd_to_string(cmd), cmd)
+
+    def test_find_subclasses_in_module_when_one_subclass(self):
+        subclasses = utils.find_subclasses_in_module([base_test.BaseTestClass],
+                                                     integration_test)
+        self.assertEqual(len(subclasses), 1)
+        self.assertEqual(subclasses[0], integration_test.IntegrationTest)
+
+    def test_find_subclasses_in_module_when_indirect_subclass(self):
+        subclasses = utils.find_subclasses_in_module([base_test.BaseTestClass],
+                                                     mock_instrumentation_test)
+        self.assertEqual(len(subclasses), 1)
+        self.assertEqual(subclasses[0],
+                         mock_instrumentation_test.MockInstrumentationTest)
+
+    def test_find_subclasses_in_module_when_no_subclasses(self):
+        subclasses = utils.find_subclasses_in_module([base_test.BaseTestClass],
+                                                     mock_controller)
+        self.assertEqual(len(subclasses), 0)
+
+    def test_find_subclasses_in_module_when_multiple_subclasses(self):
+        subclasses = utils.find_subclasses_in_module(
+            [base_test.BaseTestClass], multiple_subclasses_module)
+        self.assertEqual(len(subclasses), 2)
+        self.assertIn(multiple_subclasses_module.Subclass1Test, subclasses)
+        self.assertIn(multiple_subclasses_module.Subclass2Test, subclasses)
+
+    def test_find_subclasses_in_module_when_multiple_base_classes(self):
+        subclasses = utils.find_subclasses_in_module(
+            [base_test.BaseTestClass, test_runner.TestRunner],
+            multiple_subclasses_module)
+        self.assertEqual(len(subclasses), 4)
+        self.assertIn(multiple_subclasses_module.Subclass1Test, subclasses)
+        self.assertIn(multiple_subclasses_module.Subclass2Test, subclasses)
+        self.assertIn(multiple_subclasses_module.Subclass1Runner, subclasses)
+        self.assertIn(multiple_subclasses_module.Subclass2Runner, subclasses)
+
+    def test_find_subclasses_in_module_when_only_some_base_classes_present(
+            self):
+        subclasses = utils.find_subclasses_in_module(
+            [signals.TestSignal, test_runner.TestRunner],
+            multiple_subclasses_module)
+        self.assertEqual(len(subclasses), 2)
+        self.assertIn(multiple_subclasses_module.Subclass1Runner, subclasses)
+        self.assertIn(multiple_subclasses_module.Subclass2Runner, subclasses)
 
 
 if __name__ == '__main__':
