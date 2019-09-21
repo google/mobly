@@ -25,6 +25,7 @@ import yaml
 
 from future.tests.base import unittest
 
+from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import snippet_client
@@ -44,6 +45,7 @@ class AndroidDeviceTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.controllers.android_device.
     """
+
     def setUp(self):
         # Set log_path to logging since mobly logger setup is not called.
         if not hasattr(logging, 'log_path'):
@@ -475,6 +477,93 @@ class AndroidDeviceTest(unittest.TestCase):
             self, MockFastboot, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='emulator-5554')
         self.assertTrue(ad.is_emulator)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.logger.get_log_file_timestamp')
+    def test_AndroidDevice_generate_filename_default(
+            self, get_log_file_timestamp_mock, MockFastboot, MockAdbProxy):
+        mock_serial = 1
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+        filename = ad.generate_filename('MagicLog')
+        self.assertEqual(filename, 'MagicLog,1,07-22-2019_17-53-34-450')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.logger.get_log_file_timestamp')
+    @mock.patch('mobly.logger.sanitize_filename')
+    def test_AndroidDevice_generate_filename_assert_sanitation(
+            self, sanitize_filename_mock, get_log_file_timestamp_mock,
+            MockFastboot, MockAdbProxy):
+        mock_serial = 1
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+        filename = ad.generate_filename('MagicLog')
+        sanitize_filename_mock.assert_called_with(
+            'MagicLog,1,07-22-2019_17-53-34-450')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.logger.get_log_file_timestamp')
+    def test_AndroidDevice_generate_filename_with_ext(
+            self, get_log_file_timestamp_mock, MockFastboot, MockAdbProxy):
+        mock_serial = 1
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+        filename = ad.generate_filename('MagicLog', extension_name='log')
+        self.assertEqual(filename, 'MagicLog,1,07-22-2019_17-53-34-450.log')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.logger.get_log_file_timestamp')
+    def test_AndroidDevice_generate_filename_with_debug_tag(
+            self, get_log_file_timestamp_mock, MockFastboot, MockAdbProxy):
+        mock_serial = 1
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+        ad.debug_tag = 'RoleX'
+        filename = ad.generate_filename('MagicLog')
+        self.assertEqual(filename, 'MagicLog,RoleX,1,07-22-2019_17-53-34-450')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.logger.get_log_file_timestamp')
+    def test_AndroidDevice_generate_filename_with_runtime_info(
+            self, get_log_file_timestamp_mock, MockFastboot, MockAdbProxy):
+        mock_serial = 1
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+        mock_record = mock.MagicMock(begin_time='1234567')
+        mock_test_info = runtime_test_info.RuntimeTestInfo(
+            'test_xyz', '/tmp/blah/', mock_record)
+        filename = ad.generate_filename('MagicLog',
+                                        time_identifier=mock_test_info)
+        self.assertEqual(filename, 'MagicLog,1,test_xyz-1234567')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy('1'))
+    @mock.patch('mobly.logger.get_log_file_timestamp')
+    def test_AndroidDevice_generate_filename_with_custom_timestamp(
+            self, get_log_file_timestamp_mock, MockFastboot, MockAdbProxy):
+        mock_serial = 1
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+        filename = ad.generate_filename('MagicLog',
+                                        time_identifier='my_special_time')
+        self.assertEqual(filename, 'MagicLog,1,my_special_time')
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy(1))
