@@ -145,14 +145,17 @@ def _find_test_class():
 
     Returns:
         The test class in the test module.
+
+    Raises:
+      SystemExit: Raised if the number of test classes is not exactly one.
     """
-    test_classes = utils.find_subclasses_in_module(base_test.BaseTestClass,
-                                                   sys.modules['__main__'])
-    if len(test_classes) != 1:
-        logging.error('Expected 1 test class per file, found %s.',
-                      [t.__name__ for t in test_classes])
+    try:
+        return utils.find_subclass_in_module(base_test.BaseTestClass,
+                                             sys.modules['__main__'])
+    except ValueError:
+        logging.exception('Exactly one subclass of `base_test.BaseTestClass`'
+                          ' should be in the main file.')
         sys.exit(1)
-    return test_classes[0]
 
 
 def _print_test_names(test_class):

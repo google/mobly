@@ -32,6 +32,7 @@ from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import integration2_test
 from tests.lib import integration3_test
+from tests.lib import multiple_subclasses_module
 
 
 class TestRunnerTest(unittest.TestCase):
@@ -341,6 +342,22 @@ class TestRunnerTest(unittest.TestCase):
             """)
         test_runner.main(['-c', tmp_file_path])
         mock_exit.assert_called_once_with(1)
+
+    def test__find_test_class_when_one_test_class(self):
+        with mock.patch.dict('sys.modules', __main__=integration_test):
+            test_class = test_runner._find_test_class()
+            self.assertEqual(test_class, integration_test.IntegrationTest)
+
+    def test__find_test_class_when_no_test_class(self):
+        with self.assertRaises(SystemExit):
+            with mock.patch.dict('sys.modules', __main__=mock_controller):
+                test_class = test_runner._find_test_class()
+
+    def test__find_test_class_when_multiple_test_classes(self):
+        with self.assertRaises(SystemExit):
+            with mock.patch.dict('sys.modules',
+                                 __main__=multiple_subclasses_module):
+                test_class = test_runner._find_test_class()
 
 
 if __name__ == "__main__":
