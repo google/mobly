@@ -17,6 +17,7 @@ from past.builtins import basestring
 import base64
 import concurrent.futures
 import datetime
+import inspect
 import io
 import logging
 import os
@@ -546,3 +547,23 @@ def cli_cmd_to_string(args):
         # Return directly if it's already a string.
         return args
     return ' '.join([pipes.quote(arg) for arg in args])
+
+
+def find_subclasses_in_module(base_classes, module):
+    """Finds the subclasses of the given classes in the given module.
+
+    Args:
+        base_classes: list of classes, the base classes to look for the
+            subclasses of in the module.
+        module: module, the module to look for the subclasses in.
+
+    Returns:
+      A list of all of the subclasses found in the module.
+    """
+    subclasses = []
+    for _, module_member in module.__dict__.items():
+        if inspect.isclass(module_member):
+            for base_class in base_classes:
+                if issubclass(module_member, base_class):
+                    subclasses.append(module_member)
+    return subclasses

@@ -146,12 +146,8 @@ def _find_test_class():
     Returns:
         The test class in the test module.
     """
-    test_classes = []
-    main_module_members = sys.modules['__main__']
-    for _, module_member in main_module_members.__dict__.items():
-        if inspect.isclass(module_member):
-            if issubclass(module_member, base_test.BaseTestClass):
-                test_classes.append(module_member)
+    test_classes = utils.find_subclasses_in_module(base_test.BaseTestClass,
+                                                   sys.modules['__main__'])
     if len(test_classes) != 1:
         logging.error('Expected 1 test class per file, found %s.',
                       [t.__name__ for t in test_classes])
@@ -190,12 +186,10 @@ class TestRunner(object):
         self.results: The test result object used to record the results of
             this test run.
     """
-
     class _TestRunInfo(object):
         """Identifies one test class to run, which tests to run, and config to
         run it with.
         """
-
         def __init__(self,
                      config,
                      test_class,
