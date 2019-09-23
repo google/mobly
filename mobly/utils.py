@@ -567,3 +567,24 @@ def find_subclasses_in_module(base_classes, module):
                 if issubclass(module_member, base_class):
                     subclasses.append(module_member)
     return subclasses
+
+
+def find_subclass_in_module(base_class, module):
+    """Finds the single subclass of the given base class in the given module.
+
+    Args:
+      base_class: class, the base class to look for a subclass of in the module.
+      module: module, the module to look for the single subclass in.
+
+    Returns:
+      The single subclass of the given base class.
+
+    Raises:
+      ValueError: If the number of subclasses found was not exactly one.
+    """
+    subclasses = find_subclasses_in_module([base_class], module)
+    if len(subclasses) != 1:
+        raise ValueError('Expected 1 subclass of %s per module, found %s.' %
+                         (base_class.__name__,
+                          [subclass.__name__ for subclass in subclasses]))
+    return subclasses[0]

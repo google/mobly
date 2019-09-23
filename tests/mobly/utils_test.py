@@ -291,6 +291,34 @@ class UtilsTest(unittest.TestCase):
         self.assertIn(multiple_subclasses_module.Subclass1Runner, subclasses)
         self.assertIn(multiple_subclasses_module.Subclass2Runner, subclasses)
 
+    def test_find_subclass_in_module_when_one_subclass(self):
+        subclass = utils.find_subclass_in_module(base_test.BaseTestClass,
+                                                 integration_test)
+        self.assertEqual(subclass, integration_test.IntegrationTest)
+
+    def test_find_subclass_in_module_when_indirect_subclass(self):
+        subclass = utils.find_subclass_in_module(base_test.BaseTestClass,
+                                                 mock_instrumentation_test)
+        self.assertEqual(subclass,
+                         mock_instrumentation_test.MockInstrumentationTest)
+
+    def test_find_subclass_in_module_when_no_subclasses(self):
+        with self.assertRaisesRegex(
+                ValueError,
+                '.*Expected 1 subclass of BaseTestClass per module, found'
+                r' \[\].*'):
+            _ = utils.find_subclass_in_module(base_test.BaseTestClass,
+                                              mock_controller)
+
+    def test_find_subclass_in_module_when_multiple_subclasses(self):
+        with self.assertRaisesRegex(
+                ValueError,
+                '.*Expected 1 subclass of BaseTestClass per module, found'
+                r' \[(\'Subclass1Test\', \'Subclass2Test\''
+                r'|\'Subclass2Test\', \'Subclass1Test\')\].*'):
+            _ = utils.find_subclass_in_module(base_test.BaseTestClass,
+                                              multiple_subclasses_module)
+
 
 if __name__ == '__main__':
     unittest.main()
