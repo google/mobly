@@ -14,11 +14,13 @@
 """Module for the BaseService."""
 
 
+#TODO(xpconanfan): use `abc` after py2 deprecation.
 class BaseService(object):
     """Base class of a Mobly AndroidDevice service.
 
     This class defines the interface for Mobly's AndroidDevice service.
     """
+    _alias = None
 
     def __init__(self, device, configs=None):
         """Constructor of the class.
@@ -34,6 +36,15 @@ class BaseService(object):
         """
         self._device = device
         self._configs = configs
+
+    @property
+    def alias(self):
+        """Alias used to register this service with service manager."""
+        return self._alias
+
+    @alias.setter
+    def alias(self, alias):
+        self._alias = alias
 
     @property
     def is_alive(self):
@@ -85,3 +96,25 @@ class BaseService(object):
         disconnect, and `start` will be called by default.
         """
         self.start()
+
+    def create_output_excerpts(self, test_info):
+        """Creates excerpts of the service's output files.
+
+        [Optional] This method only applies to services with output files.
+
+        For services that generates output files, calling this method would
+        create excerpts of the output files. An excerpt should contain info
+        between two calls of `create_output_excerpts` or from the start of the
+        service to the call to `create_output_excerpts`.
+
+        This is usually called at the end of: `setup_class`, `teardown_test`,
+        or `teardown_class`.
+
+        Args:
+            test_info: RuntimeTestInfo, the test info associated with the scope
+                of the excerpts.
+
+        Returns:
+            String, the absolute path to the excerpt file created.
+        """
+        pass
