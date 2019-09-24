@@ -76,6 +76,7 @@ class ServiceManagerTest(unittest.TestCase):
         self.assertTrue(service)
         self.assertTrue(service.is_alive)
         self.assertTrue(manager.is_any_alive)
+        self.assertEqual(service.alias, 'mock_service')
         self.assertEqual(service.start_func.call_count, 1)
 
     def test_register_with_configs(self):
@@ -117,6 +118,31 @@ class ServiceManagerTest(unittest.TestCase):
         msg = '.* A service is already registered with alias "mock_service"'
         with self.assertRaisesRegex(service_manager.Error, msg):
             manager.register('mock_service', MockService)
+
+    def test_for_each(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        service1 = manager.mock_service1
+        service2 = manager.mock_service2
+        service1.ha = mock.MagicMock()
+        service2.ha = mock.MagicMock()
+        manager.for_each(lambda service: service.ha())
+        service1.ha.assert_called_with()
+        service2.ha.assert_called_with()
+
+    def test_for_each_one_fail(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        service1 = manager.mock_service1
+        service2 = manager.mock_service2
+        service1.ha = mock.MagicMock()
+        service1.ha.side_effect = Exception('Failure in service1.')
+        service2.ha = mock.MagicMock()
+        manager.for_each(lambda service: service.ha())
+        service1.ha.assert_called_with()
+        service2.ha.assert_called_with()
 
     def test_unregister(self):
         manager = service_manager.ServiceManager(mock.MagicMock())

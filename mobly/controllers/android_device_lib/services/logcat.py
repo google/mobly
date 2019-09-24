@@ -100,6 +100,9 @@ class Logcat(base_service.BaseService):
     def create_per_test_excerpt(self, current_test_info):
         """Convenient method for creating excerpts of adb logcat.
 
+        .. deprecated:: 1.9.2
+           Use :func:`create_output_excerpts` instead.
+
         To use this feature, call this method at the end of: `setup_class`,
         `teardown_test`, and `teardown_class`.
 
@@ -107,14 +110,34 @@ class Logcat(base_service.BaseService):
         log directory specific to the current test.
 
         Args:
-          current_test_info: `self.current_test_info` in a Mobly test.
+            current_test_info: `self.current_test_info` in a Mobly test.
+        """
+        self.create_output_excerpts(current_test_info)
+
+    def create_output_excerpts(self, test_info):
+        """Convenient method for creating excerpts of adb logcat.
+
+        This moves the current content of `self.adb_logcat_file_path` to the
+        log directory specific to the current test.
+
+        Call this method at the end of: `setup_class`, `teardown_test`, and
+        `teardown_class`.
+
+        Args:
+            test_info: `self.current_test_info` in a Mobly test.
+
+        Returns:
+            list of strings, the absolute paths to excerpt files.
         """
         self.pause()
-        dest_path = current_test_info.output_path
+        dest_path = test_info.output_path
         utils.create_dir(dest_path)
-        self._ad.log.debug('AdbLog excerpt location: %s', dest_path)
+        filename = os.path.basename(self.adb_logcat_file_path)
         shutil.move(self.adb_logcat_file_path, dest_path)
         self.resume()
+        excerpt_file_path = os.path.join(dest_path, filename)
+        self._ad.log.debug('AdbLog excerpt created at: %s', excerpt_file_path)
+        return [excerpt_file_path]
 
     @property
     def is_alive(self):

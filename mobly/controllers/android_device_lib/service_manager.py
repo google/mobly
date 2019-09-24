@@ -82,6 +82,7 @@ class ServiceManager(object):
                 self._device,
                 'A service is already registered with alias "%s".' % alias)
         service_obj = service_class(self._device, configs)
+        service_obj.alias = alias
         if start_service:
             service_obj.start()
         self._service_objects[alias] = service_obj
@@ -102,6 +103,41 @@ class ServiceManager(object):
             with expects.expect_no_raises(
                     'Failed to stop service instance "%s".' % alias):
                 service_obj.stop()
+
+    def for_each(self, func):
+        """Executes a function with all registered services.
+
+        Args:
+            func: function, the function to execute. This function should take
+                a service object as args.
+        """
+        aliases = list(self._service_objects.keys())
+        for alias in aliases:
+            with expects.expect_no_raises(
+                    'Failed to execute "%s" for service "%s".' %
+                (func.__name__, alias)):
+                func(self._service_objects[alias])
+
+    def create_output_excerpts_all(self, test_info):
+        """Creates output excerpts from all services.
+
+        This calls `create_output_excerpts` on all registered services.
+
+        Args:
+            test_info: RuntimeTestInfo, the test info associated with the scope
+                of the excerpts.
+
+        Returns:
+            Dict, keys are the names of the services,  
+        """
+        excerpt_paths = {}
+
+        def create_output_excerpts_for_one(service):
+            path = service.create_output_excerpts(test_info)
+            excerpt_paths[service.alias] = path
+
+        self.for_each(create_output_excerpts_for_one)
+        return excerpt_paths
 
     def unregister_all(self):
         """Safely unregisters all active instances.
