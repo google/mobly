@@ -144,6 +144,21 @@ class ServiceManagerTest(unittest.TestCase):
         service1.ha.assert_called_with()
         service2.ha.assert_called_with()
 
+    def test_create_output_excerpts_all(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        service1 = manager.mock_service1
+        service2 = manager.mock_service2
+        service1.create_output_excerpts = mock.MagicMock()
+        service2.create_output_excerpts = mock.MagicMock()
+        service1.create_output_excerpts.return_value = ['path/to/1.txt']
+        service2.create_output_excerpts.return_value = ['path/to/2.txt']
+        mock_test_info = mock.MagicMock(output_path='path/to')
+        result = manager.create_output_excerpts_all(mock_test_info)
+        self.assertEqual(result['mock_service1'], ['path/to/1.txt'])
+        self.assertEqual(result['mock_service2'], ['path/to/2.txt'])
+
     def test_unregister(self):
         manager = service_manager.ServiceManager(mock.MagicMock())
         manager.register('mock_service', MockService)
