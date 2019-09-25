@@ -134,8 +134,8 @@ class ServiceManager(object):
         excerpt_paths = {}
 
         def create_output_excerpts_for_one(service):
-            path = service.create_output_excerpts(test_info)
-            excerpt_paths[service.alias] = path
+            paths = service.create_output_excerpts(test_info)
+            excerpt_paths[service.alias] = paths
 
         self.for_each(create_output_excerpts_for_one)
         return excerpt_paths
