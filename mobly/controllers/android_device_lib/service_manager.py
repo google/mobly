@@ -128,7 +128,8 @@ class ServiceManager(object):
                 of the excerpts.
 
         Returns:
-            Dict, keys are the names of the services,  
+            Dict, keys are the names of the services, values are the paths to
+                the excerpt files created by the corresponding services.
         """
         excerpt_paths = {}
 
