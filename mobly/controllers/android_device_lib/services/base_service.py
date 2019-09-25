@@ -115,6 +115,7 @@ class BaseService(object):
                 of the excerpts.
 
         Returns:
-            String, the absolute path to the excerpt file created.
+            List of strings, the absolute paths to the excerpt files created.
+                Empty list if no excerpt files are created.
         """
-        pass
+        return []

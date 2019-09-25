@@ -270,10 +270,11 @@ class LogcatTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
         return_value=mock_android_device.MockAdbProxy('1'))
-    def test_logcat_service_create_output_excerpt(self, clear_adb_mock,
-                                                  stop_proc_mock,
-                                                  start_proc_mock,
-                                                  FastbootProxy, MockAdbProxy):
+    def test_logcat_service_create_output_excerpts(self, clear_adb_mock,
+                                                   stop_proc_mock,
+                                                   start_proc_mock,
+                                                   FastbootProxy,
+                                                   MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad)
