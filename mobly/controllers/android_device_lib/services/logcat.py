@@ -127,7 +127,7 @@ class Logcat(base_service.BaseService):
             test_info: `self.current_test_info` in a Mobly test.
 
         Returns:
-            list of strings, the absolute paths to excerpt files.
+            List of strings, the absolute paths to excerpt files.
         """
         self.pause()
         dest_path = test_info.output_path
