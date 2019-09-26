@@ -39,7 +39,10 @@ class BaseService(object):
 
     @property
     def alias(self):
-        """Alias used to register this service with service manager."""
+        """String, alias used to register this service with service manager.
+
+        This can be None if the service is never registered.
+        """
         return self._alias
 
     @alias.setter
