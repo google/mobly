@@ -110,6 +110,9 @@ class BaseService(object):
         between two calls of `create_output_excerpts` or from the start of the
         service to the call to `create_output_excerpts`.
 
+        Use `AndroidDevice#generate_filename` to get the proper filenames for
+        excerpts.
+
         This is usually called at the end of: `setup_class`, `teardown_test`,
         or `teardown_class`.
 
