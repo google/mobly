@@ -131,6 +131,18 @@ class ServiceManagerTest(unittest.TestCase):
         service1.ha.assert_called_with()
         service2.ha.assert_called_with()
 
+    def test_for_each_modify_during_iteration(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        service1 = manager.mock_service1
+        service2 = manager.mock_service2
+        service1.ha = mock.MagicMock()
+        service2.ha = mock.MagicMock()
+        manager.for_each(lambda service: manager._service_objects.pop(service.
+                                                                      alias))
+        self.assertFalse(manager._service_objects)
+
     def test_for_each_one_fail(self):
         manager = service_manager.ServiceManager(mock.MagicMock())
         manager.register('mock_service1', MockService)
@@ -143,21 +155,30 @@ class ServiceManagerTest(unittest.TestCase):
         manager.for_each(lambda service: service.ha())
         service1.ha.assert_called_with()
         service2.ha.assert_called_with()
+        self.assert_recorded_one_error('Failure in service1.')
 
     def test_create_output_excerpts_all(self):
         manager = service_manager.ServiceManager(mock.MagicMock())
         manager.register('mock_service1', MockService)
         manager.register('mock_service2', MockService)
+        manager.register('mock_service3', MockService)
         service1 = manager.mock_service1
         service2 = manager.mock_service2
+        service3 = manager.mock_service3
         service1.create_output_excerpts = mock.MagicMock()
         service2.create_output_excerpts = mock.MagicMock()
+        service3.create_output_excerpts = mock.MagicMock()
         service1.create_output_excerpts.return_value = ['path/to/1.txt']
-        service2.create_output_excerpts.return_value = ['path/to/2.txt']
+        service2.create_output_excerpts.return_value = [
+            'path/to/2-1.txt', 'path/to/2-2.txt'
+        ]
+        service3.create_output_excerpts.return_value = []
         mock_test_info = mock.MagicMock(output_path='path/to')
         result = manager.create_output_excerpts_all(mock_test_info)
         self.assertEqual(result['mock_service1'], ['path/to/1.txt'])
-        self.assertEqual(result['mock_service2'], ['path/to/2.txt'])
+        self.assertEqual(result['mock_service2'],
+                         ['path/to/2-1.txt', 'path/to/2-2.txt'])
+        self.assertEqual(result['mock_service3'], [])
 
     def test_unregister(self):
         manager = service_manager.ServiceManager(mock.MagicMock())
