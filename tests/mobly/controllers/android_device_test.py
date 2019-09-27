@@ -489,7 +489,8 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
         filename = ad.generate_filename('MagicLog')
-        self.assertEqual(filename, 'MagicLog,1,07-22-2019_17-53-34-450')
+        self.assertEqual(filename,
+                         'MagicLog,1,fakemodel,07-22-2019_17-53-34-450')
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -505,7 +506,7 @@ class AndroidDeviceTest(unittest.TestCase):
         get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
         filename = ad.generate_filename('MagicLog')
         sanitize_filename_mock.assert_called_with(
-            'MagicLog,1,07-22-2019_17-53-34-450')
+            'MagicLog,1,fakemodel,07-22-2019_17-53-34-450')
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -518,7 +519,8 @@ class AndroidDeviceTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
         filename = ad.generate_filename('MagicLog', extension_name='log')
-        self.assertEqual(filename, 'MagicLog,1,07-22-2019_17-53-34-450.log')
+        self.assertEqual(filename,
+                         'MagicLog,1,fakemodel,07-22-2019_17-53-34-450.log')
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -532,7 +534,8 @@ class AndroidDeviceTest(unittest.TestCase):
         get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
         ad.debug_tag = 'RoleX'
         filename = ad.generate_filename('MagicLog')
-        self.assertEqual(filename, 'MagicLog,RoleX,1,07-22-2019_17-53-34-450')
+        self.assertEqual(filename,
+                         'MagicLog,RoleX,1,fakemodel,07-22-2019_17-53-34-450')
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -549,7 +552,7 @@ class AndroidDeviceTest(unittest.TestCase):
             'test_xyz', '/tmp/blah/', mock_record)
         filename = ad.generate_filename('MagicLog',
                                         time_identifier=mock_test_info)
-        self.assertEqual(filename, 'MagicLog,1,test_xyz-1234567')
+        self.assertEqual(filename, 'MagicLog,1,fakemodel,test_xyz-1234567')
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -563,7 +566,7 @@ class AndroidDeviceTest(unittest.TestCase):
         get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
         filename = ad.generate_filename('MagicLog',
                                         time_identifier='my_special_time')
-        self.assertEqual(filename, 'MagicLog,1,my_special_time')
+        self.assertEqual(filename, 'MagicLog,1,fakemodel,my_special_time')
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy(1))

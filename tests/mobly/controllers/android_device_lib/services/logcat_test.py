@@ -237,9 +237,10 @@ class LogcatTest(unittest.TestCase):
         mock_record.begin_time = 123
         test_run_info = runtime_test_info.RuntimeTestInfo(
             'test_foo', test_output_dir, mock_record)
-        logcat_service.create_per_test_excerpt(test_run_info)
+        actual_path1 = logcat_service.create_output_excerpts(test_run_info)[0]
         expected_path1 = os.path.join(test_output_dir, 'test_foo-123',
-                                      'adblog,fakemodel,1.txt')
+                                      'logcat,1,fakemodel,test_foo-123.txt')
+        self.assertEqual(expected_path1, actual_path1)
         self.assertTrue(os.path.exists(expected_path1))
         self.AssertFileContains(FILE_CONTENT, expected_path1)
         self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
@@ -252,9 +253,10 @@ class LogcatTest(unittest.TestCase):
         mock_record.begin_time = 456
         test_run_info = runtime_test_info.RuntimeTestInfo(
             'test_bar', test_output_dir, mock_record)
-        logcat_service.create_per_test_excerpt(test_run_info)
+        actual_path2 = logcat_service.create_output_excerpts(test_run_info)[0]
         expected_path2 = os.path.join(test_output_dir, 'test_bar-456',
-                                      'adblog,fakemodel,1.txt')
+                                      'logcat,1,fakemodel,test_bar-456.txt')
+        self.assertEqual(expected_path2, actual_path2)
         self.assertTrue(os.path.exists(expected_path2))
         self.AssertFileContains(FILE_CONTENT, expected_path2)
         self.AssertFileDoesNotContain(FILE_CONTENT, expected_path1)
@@ -289,9 +291,9 @@ class LogcatTest(unittest.TestCase):
             'test_foo', test_output_dir, mock_record)
         actual_path1 = logcat_service.create_output_excerpts(test_run_info)[0]
         expected_path1 = os.path.join(test_output_dir, 'test_foo-123',
-                                      'adblog,fakemodel,1.txt')
-        self.assertTrue(os.path.exists(expected_path1))
+                                      'logcat,1,fakemodel,test_foo-123.txt')
         self.assertEqual(actual_path1, expected_path1)
+        self.assertTrue(os.path.exists(expected_path1))
         self.AssertFileContains(FILE_CONTENT, expected_path1)
         self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
         # Generate some new logs and do another excerpt.
@@ -305,9 +307,9 @@ class LogcatTest(unittest.TestCase):
             'test_bar', test_output_dir, mock_record)
         actual_path2 = logcat_service.create_output_excerpts(test_run_info)[0]
         expected_path2 = os.path.join(test_output_dir, 'test_bar-456',
-                                      'adblog,fakemodel,1.txt')
-        self.assertTrue(os.path.exists(expected_path2))
+                                      'logcat,1,fakemodel,test_bar-456.txt')
         self.assertEqual(actual_path2, expected_path2)
+        self.assertTrue(os.path.exists(expected_path2))
         self.AssertFileContains(FILE_CONTENT, expected_path2)
         self.AssertFileDoesNotContain(FILE_CONTENT, expected_path1)
         self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
