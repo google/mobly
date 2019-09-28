@@ -919,7 +919,7 @@ class AndroidDevice(object):
 
         The name follows the pattern:
 
-            {file type},{debug_tag},{serial},{time identifier}.{ext}
+            {file type},{debug_tag},{serial},{model},{time identifier}.{ext}
 
         "debug_tag" is only added if it's different from the serial. "ext" is
         added if specified by user.
@@ -943,7 +943,7 @@ class AndroidDevice(object):
         filename_tokens = [file_type]
         if self.debug_tag != self.serial:
             filename_tokens.append(self.debug_tag)
-        filename_tokens.extend([self.serial, time_str])
+        filename_tokens.extend([self.serial, self.model, time_str])
         filename_str = ','.join(filename_tokens)
         if extension_name is not None:
             filename_str = '%s.%s' % (filename_str, extension_name)

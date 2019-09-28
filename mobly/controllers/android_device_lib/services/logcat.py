@@ -56,6 +56,7 @@ class Logcat(base_service.BaseService):
         adb_logcat_file_path: string, path to the file that the service writes
             adb logcat to by default.
     """
+    OUTPUT_FILE_TYPE = 'logcat'
 
     def __init__(self, android_device, configs=None):
         super(Logcat, self).__init__(android_device, configs)
@@ -132,11 +133,12 @@ class Logcat(base_service.BaseService):
         self.pause()
         dest_path = test_info.output_path
         utils.create_dir(dest_path)
-        filename = os.path.basename(self.adb_logcat_file_path)
-        shutil.move(self.adb_logcat_file_path, dest_path)
-        self.resume()
+        filename = self._ad.generate_filename(self.OUTPUT_FILE_TYPE, test_info,
+                                              'txt')
         excerpt_file_path = os.path.join(dest_path, filename)
-        self._ad.log.debug('AdbLog excerpt created at: %s', excerpt_file_path)
+        shutil.move(self.adb_logcat_file_path, excerpt_file_path)
+        self._ad.log.debug('logcat excerpt created at: %s', excerpt_file_path)
+        self.resume()
         return [excerpt_file_path]
 
     @property
