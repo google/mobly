@@ -23,9 +23,12 @@ import sys
 from mobly import records
 from mobly import utils
 
+LINUX_MAX_FILENAME_LENGTH = 255
 # Filename sanitization mappings for Windows.
 # See https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
-WINDOWS_MAX_FILENAME_LENGTH = 260
+# Although the documentation says that 260 (including terminating nul, so 259)
+# is the max length. From testing, the actual length seems to be lower.
+WINDOWS_MAX_FILENAME_LENGTH = 237
 WINDOWS_RESERVED_CHARACTERS_REPLACEMENTS = {
     '<':
     '-',
@@ -253,6 +256,32 @@ def setup_test_logger(log_path, prefix=None, alias='latest'):
         create_latest_log_alias(log_path, alias=alias)
 
 
+def _truncate_filename(filename, max_length):
+    """Truncates a filename while trying to preserve the extension.
+
+  Args:
+      filename: string, the filename to potentially truncate.
+
+  Returns:
+    The truncated filename that is less than or equal to the given maximum
+    length.
+  """
+    if len(filename) <= max_length:
+        return filename
+
+    if '.' in filename:
+        filename, extension = filename.rsplit('.', 1)
+        # Subtract one for the extension's period.
+        if len(extension) > max_length - 1:
+            # This is kind of a degrenerate case where the extension is extremely
+            # long, in which case, just return the truncated filename.
+            return filename[:max_length]
+        return '.'.join(
+            [filename[:max_length - len(extension) - 1], extension])
+    else:
+        return filename[:max_length]
+
+
 def _sanitize_windows_filename(filename):
     """Sanitizes a filename for Windows.
 
@@ -272,8 +301,7 @@ def _sanitize_windows_filename(filename):
     if re.match(WINDOWS_RESERVED_FILENAME_REGEX, filename):
         return WINDOWS_RESERVED_FILENAME_PREFIX + filename
 
-    if len(filename) > WINDOWS_MAX_FILENAME_LENGTH:
-        filename = filename[:WINDOWS_MAX_FILENAME_LENGTH]
+    filename = _truncate_filename(filename, WINDOWS_MAX_FILENAME_LENGTH)
 
     # In order to meet max length, none of these replacements should increase
     # the length of the filename.
@@ -296,16 +324,17 @@ def sanitize_filename(filename):
     """Sanitizes a filename for various operating systems.
 
     Args:
-      filename: string, the filename to sanitize.
+        filename: string, the filename to sanitize.
 
     Returns:
-      A string that is safe to use as a filename on various operating systems.
+        A string that is safe to use as a filename on various operating systems.
     """
     # Split `filename` into the directory and filename in case the user
     # accidentally passed in the full path instead of the name.
     dirname = os.path.dirname(filename)
     basename = os.path.basename(filename)
     basename = _sanitize_windows_filename(basename)
+    # basename = _truncate_filename(basename, LINUX_MAX_FILENAME_LENGTH)
     # Replace spaces with underscores for convenience reasons.
     basename = basename.replace(' ', '_')
     return os.path.join(dirname, basename)
