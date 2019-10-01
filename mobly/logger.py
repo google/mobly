@@ -274,8 +274,8 @@ def _truncate_filename(filename, max_length):
         filename, extension = filename.rsplit('.', 1)
         # Subtract one for the extension's period.
         if len(extension) > max_length - 1:
-            # This is kind of a degrenerate case where the extension is extremely
-            # long, in which case, just return the truncated filename.
+            # This is kind of a degrenerate case where the extension is
+            # extremely long, in which case, just return the truncated filename.
             return filename[:max_length]
         return '.'.join(
             [filename[:max_length - len(extension) - 1], extension])
