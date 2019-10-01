@@ -334,7 +334,7 @@ def sanitize_filename(filename):
     dirname = os.path.dirname(filename)
     basename = os.path.basename(filename)
     basename = _sanitize_windows_filename(basename)
-    # basename = _truncate_filename(basename, LINUX_MAX_FILENAME_LENGTH)
+    basename = _truncate_filename(basename, LINUX_MAX_FILENAME_LENGTH)
     # Replace spaces with underscores for convenience reasons.
     basename = basename.replace(' ', '_')
     return os.path.join(dirname, basename)
