@@ -91,10 +91,31 @@ class LoggerTest(unittest.TestCase):
         self.assertEqual(logger.sanitize_filename(fake_filename),
                          expected_filename)
 
-    def test_sanitize_filename_when_over_260_characters(self):
+    def test_sanitize_filename_when_over_max_characters(self):
         fake_filename = 'l' * 300
-        expected_filename = 'l' * 260
-        self.assertEqual(len(logger.sanitize_filename(fake_filename)), 260)
+        expected_filename = 'l' * 237
+        self.assertEqual(len(logger.sanitize_filename(fake_filename)), 237)
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_over_max_characters_with_extension(self):
+        fake_filename = 'l' * 300 + '.txt'
+        expected_filename = 'l' * 233 + '.txt'
+        self.assertEqual(len(logger.sanitize_filename(fake_filename)), 237)
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_extension_at_max_characters(self):
+        fake_filename = 'l' * 300 + '.' + 't' * 236
+        expected_filename = '.' + 't' * 236
+        self.assertEqual(len(logger.sanitize_filename(fake_filename)), 237)
+        self.assertEqual(logger.sanitize_filename(fake_filename),
+                         expected_filename)
+
+    def test_sanitize_filename_when_extension_over_max_characters(self):
+        fake_filename = 'l' * 300 + '.' + 't' * 300
+        expected_filename = 'l' * 237
+        self.assertEqual(len(logger.sanitize_filename(fake_filename)), 237)
         self.assertEqual(logger.sanitize_filename(fake_filename),
                          expected_filename)
 
