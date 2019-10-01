@@ -996,6 +996,7 @@ class AndroidDevice(object):
         full_out_path = os.path.join(br_path, filename)
         # in case device restarted, wait for adb interface to return
         self.wait_for_boot_completion()
+        self.log.debug('Start taking bugreport.')
         if new_br:
             out = self.adb.shell('bugreportz', timeout=timeout).decode('utf-8')
             if not out.startswith('OK'):
@@ -1008,8 +1009,7 @@ class AndroidDevice(object):
             self.adb.bugreport(' > "%s"' % full_out_path,
                                shell=True,
                                timeout=timeout)
-        self.log.info('Bugreport for %s taken at %s.', test_name,
-                      full_out_path)
+        self.log.debug('Bugreport taken at %s.', full_out_path)
         return full_out_path
 
     def run_iperf_client(self, server_host, extra_args=''):
