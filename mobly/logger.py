@@ -27,7 +27,8 @@ LINUX_MAX_FILENAME_LENGTH = 255
 # Filename sanitization mappings for Windows.
 # See https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
 # Although the documentation says that 260 (including terminating nul, so 259)
-# is the max length. From testing, the actual length seems to be lower.
+# is the max length. From manually testing on a Windows 10 machine, the actual
+# length seems to be lower.
 WINDOWS_MAX_FILENAME_LENGTH = 237
 WINDOWS_RESERVED_CHARACTERS_REPLACEMENTS = {
     '<':
