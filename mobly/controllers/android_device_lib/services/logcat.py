@@ -101,7 +101,7 @@ class Logcat(base_service.BaseService):
     def create_per_test_excerpt(self, current_test_info):
         """Convenient method for creating excerpts of adb logcat.
 
-        .. deprecated:: 1.9.2
+        .. deprecated:: 1.10
            Use :func:`create_output_excerpts` instead.
 
         To use this feature, call this method at the end of: `setup_class`,
@@ -162,10 +162,16 @@ class Logcat(base_service.BaseService):
         """Takes an excerpt of the adb logcat log from a certain time point to
         current time.
 
+        .. deprecated:: 1.10
+            Use :func:`create_output_excerpts` instead.
+
         Args:
             tag: An identifier of the time period, usualy the name of a test.
             begin_time: Logline format timestamp of the beginning of the time
                 period.
+
+        Returns:
+            String, full path to the excerpt file created.
         """
         if not self.adb_logcat_file_path:
             raise Error(
@@ -175,13 +181,8 @@ class Logcat(base_service.BaseService):
         self._ad.log.debug('Extracting adb log from logcat.')
         adb_excerpt_path = os.path.join(self._ad.log_path, 'AdbLogExcerpts')
         utils.create_dir(adb_excerpt_path)
-        f_name = os.path.basename(self.adb_logcat_file_path)
-        out_name = f_name.replace('adblog,', '').replace('.txt', '')
-        out_name = ',%s,%s.txt' % (begin_time, out_name)
-        out_name = out_name.replace(':', '-')
-        tag_len = utils.MAX_FILENAME_LEN - len(out_name)
-        tag = tag[:tag_len]
-        out_name = tag + out_name
+        out_name = '%s,%s.txt' % (tag, begin_time)
+        out_name = mobly_logger.sanitize_filename(out_name)
         full_adblog_path = os.path.join(adb_excerpt_path, out_name)
         with io.open(full_adblog_path, 'w', encoding='utf-8') as out:
             in_file = self.adb_logcat_file_path
@@ -208,6 +209,7 @@ class Logcat(base_service.BaseService):
                     else:
                         if in_range:
                             break
+        return full_adblog_path
 
     def _assert_not_running(self):
         """Asserts the logcat service is not running.
@@ -252,8 +254,8 @@ class Logcat(base_service.BaseService):
         self._enable_logpersist()
         logcat_file_path = self._config.output_file_path
         if not logcat_file_path:
-            f_name = 'adblog,%s,%s.txt' % (self._ad.model,
-                                           self._ad._normalized_serial)
+            f_name = self._ad.generate_filename(self.OUTPUT_FILE_TYPE,
+                                                extension_name='txt')
             logcat_file_path = os.path.join(self._ad.log_path, f_name)
         utils.create_dir(os.path.dirname(logcat_file_path))
         cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (

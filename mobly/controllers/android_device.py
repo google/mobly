@@ -960,8 +960,6 @@ class AndroidDevice(object):
 
         Args:
             test_name: Name of the test method that triggered this bug report.
-                If not set, then this will default to
-                android_device.DEFAULT_BUG_REPORT_NAME.
             begin_time: Timestamp of when the test started. If not set, then
                 this will default to the current time.
             timeout: float, the number of seconds to wait for bugreport to
@@ -970,11 +968,11 @@ class AndroidDevice(object):
                 should be saved.
 
         Returns:
-          A string containing the absolute path to the bug report on the host
-          machine.
+            A string that is the absolute path to the bug report on the host.
         """
-        if test_name is None:
-            test_name = DEFAULT_BUG_REPORT_NAME
+        prefix = DEFAULT_BUG_REPORT_NAME
+        if test_name:
+            prefix = '%s,%s' % (DEFAULT_BUG_REPORT_NAME, test_name)
         if begin_time is None:
             begin_time = mobly_logger.get_log_file_timestamp()
 
@@ -987,20 +985,18 @@ class AndroidDevice(object):
                 new_br = False
         except adb.AdbError:
             new_br = False
-        if destination:
-            br_path = utils.abs_path(destination)
-        else:
-            br_path = os.path.join(self.log_path, 'BugReports')
+
+        if destination is None:
+            destination = os.path.join(self.log_path, 'BugReports')
+        br_path = utils.abs_path(destination)
         utils.create_dir(br_path)
-        base_name = ',%s,%s.txt' % (begin_time, self._normalized_serial)
+        filename = self.generate_filename(prefix, begin_time, 'txt')
         if new_br:
-            base_name = base_name.replace('.txt', '.zip')
-        test_name_len = utils.MAX_FILENAME_LEN - len(base_name)
-        out_name = test_name[:test_name_len] + base_name
-        full_out_path = os.path.join(br_path, out_name.replace(' ', r'\ '))
+            filename = filename.replace('.txt', '.zip')
+        full_out_path = os.path.join(br_path, filename)
         # in case device restarted, wait for adb interface to return
         self.wait_for_boot_completion()
-        self.log.info('Taking bugreport for %s.', test_name)
+        self.log.debug('Start taking bugreport.')
         if new_br:
             out = self.adb.shell('bugreportz', timeout=timeout).decode('utf-8')
             if not out.startswith('OK'):
@@ -1013,8 +1009,7 @@ class AndroidDevice(object):
             self.adb.bugreport(' > "%s"' % full_out_path,
                                shell=True,
                                timeout=timeout)
-        self.log.info('Bugreport for %s taken at %s.', test_name,
-                      full_out_path)
+        self.log.debug('Bugreport taken at %s.', full_out_path)
         return full_out_path
 
     def run_iperf_client(self, server_host, extra_args=''):

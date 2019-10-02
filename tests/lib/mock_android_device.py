@@ -78,6 +78,7 @@ def list_adb_devices():
 
 class MockAdbProxy(object):
     """Mock class that swaps out calls to adb with mock calls."""
+
     def __init__(self,
                  serial='',
                  fail_br=False,
@@ -138,9 +139,9 @@ class MockAdbProxy(object):
         return self.mock_properties
 
     def bugreport(self, args, shell=False, timeout=None):
-        expected = os.path.join(logging.log_path,
-                                'AndroidDevice%s' % self.serial, 'BugReports',
-                                'test_something,sometime,%s' % self.serial)
+        expected = os.path.join(
+            logging.log_path, 'AndroidDevice%s' % self.serial, 'BugReports',
+            'bugreport,test_something,%s,fakemodel,sometime' % self.serial)
         if expected not in args:
             raise Error('"Expected "%s", got "%s"' % (expected, args))
 
@@ -148,6 +149,7 @@ class MockAdbProxy(object):
         """All calls to the none-existent functions in adb proxy would
         simply return the adb command string.
         """
+
         def adb_call(*args, **kwargs):
             arg_str = ' '.join(str(elem) for elem in args)
             return arg_str
@@ -157,6 +159,7 @@ class MockAdbProxy(object):
 
 class MockFastbootProxy(object):
     """Mock class that swaps out calls to adb with mock calls."""
+
     def __init__(self, serial):
         self.serial = serial
 

@@ -588,7 +588,8 @@ class AndroidDeviceTest(unittest.TestCase):
         create_dir_mock.assert_called_with(expected_path)
         self.assertEqual(
             output_path,
-            os.path.join(expected_path, 'test_something,sometime,1.zip'))
+            os.path.join(expected_path,
+                         'bugreport,test_something,1,fakemodel,sometime.zip'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1',
@@ -627,7 +628,7 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(
             output_path,
             os.path.join(expected_path,
-                         'bugreport,07-22-2019_17-53-34-450,1.zip'))
+                         'bugreport,1,fakemodel,07-22-2019_17-53-34-450.zip'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -648,8 +649,10 @@ class AndroidDeviceTest(unittest.TestCase):
         create_dir_mock.assert_called_with(expected_path)
         self.assertEqual(
             output_path,
-            os.path.join(expected_path,
-                         'test_something,07-22-2019_17-53-34-450,1.zip'))
+            os.path.join(
+                expected_path,
+                'bugreport,test_something,1,fakemodel,07-22-2019_17-53-34-450.zip'
+            ))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy(1))
@@ -666,8 +669,8 @@ class AndroidDeviceTest(unittest.TestCase):
                                      'BugReports')
         create_dir_mock.assert_called_with(expected_path)
         self.assertEqual(
-            output_path, os.path.join(expected_path,
-                                      'bugreport,sometime,1.zip'))
+            output_path,
+            os.path.join(expected_path, 'bugreport,1,fakemodel,sometime.zip'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy(1))
@@ -685,7 +688,8 @@ class AndroidDeviceTest(unittest.TestCase):
         create_dir_mock.assert_called_with(expected_path)
         self.assertEqual(
             output_path,
-            os.path.join(expected_path, 'test_something,sometime,1.zip'))
+            os.path.join(expected_path,
+                         'bugreport,test_something,1,fakemodel,sometime.zip'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -704,7 +708,8 @@ class AndroidDeviceTest(unittest.TestCase):
         create_dir_mock.assert_called_with(expected_path)
         self.assertEqual(
             output_path,
-            os.path.join(expected_path, 'test_something,sometime,1.zip'))
+            os.path.join(expected_path,
+                         'bugreport,test_something,1,fakemodel,sometime.zip'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy(
@@ -728,7 +733,8 @@ class AndroidDeviceTest(unittest.TestCase):
         create_dir_mock.assert_called_with(expected_path)
         self.assertEqual(
             output_path,
-            os.path.join(expected_path, 'test_something,sometime,1.txt'))
+            os.path.join(expected_path,
+                         'bugreport,test_something,1,fakemodel,sometime.txt'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
