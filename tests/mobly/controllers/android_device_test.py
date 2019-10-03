@@ -45,7 +45,6 @@ class AndroidDeviceTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.controllers.android_device.
     """
-
     def setUp(self):
         # Set log_path to logging since mobly logger setup is not called.
         if not hasattr(logging, 'log_path'):
@@ -229,6 +228,16 @@ class AndroidDeviceTest(unittest.TestCase):
             test_name='test_something',
             begin_time='sometime',
             destination=None)
+
+    def test_take_bug_reports_with_int_begin_time(self):
+        ads = mock_android_device.get_mock_ads(3)
+        android_device.take_bug_reports(ads, 'test_something', 123)
+        ads[0].take_bug_report.assert_called_once_with(
+            test_name='test_something', begin_time='123', destination=None)
+        ads[1].take_bug_report.assert_called_once_with(
+            test_name='test_something', begin_time='123', destination=None)
+        ads[2].take_bug_report.assert_called_once_with(
+            test_name='test_something', begin_time='123', destination=None)
 
     @mock.patch('mobly.logger.get_log_file_timestamp')
     def test_take_bug_reports_with_none_values(self,
@@ -671,6 +680,24 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(
             output_path,
             os.path.join(expected_path, 'bugreport,1,fakemodel,sometime.zip'))
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.utils.create_dir')
+    def test_AndroidDevice_take_bug_report_with_int_begin_time(
+            self, create_dir_mock, FastbootProxy, MockAdbProxy):
+        mock_serial = '1'
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        output_path = ad.take_bug_report(begin_time=123)
+        expected_path = os.path.join(logging.log_path,
+                                     'AndroidDevice%s' % ad.serial,
+                                     'BugReports')
+        create_dir_mock.assert_called_with(expected_path)
+        self.assertEqual(
+            output_path,
+            os.path.join(expected_path, 'bugreport,1,fakemodel,123.zip'))
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy(1))

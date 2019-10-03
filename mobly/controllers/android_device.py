@@ -345,7 +345,6 @@ def get_devices(ads, **kwargs):
     Raises:
         Error: No devices are matched.
     """
-
     def _get_device_filter(ad):
         for k, v in kwargs.items():
             if not hasattr(ad, k):
@@ -450,7 +449,6 @@ class AndroidDevice(object):
         services: ServiceManager, the manager of long-running services on the
             device.
     """
-
     def __init__(self, serial=''):
         self._serial = str(serial)
         # logging.log_path only exists when this is used in an Mobly test run.
@@ -990,7 +988,7 @@ class AndroidDevice(object):
             destination = os.path.join(self.log_path, 'BugReports')
         br_path = utils.abs_path(destination)
         utils.create_dir(br_path)
-        filename = self.generate_filename(prefix, begin_time, 'txt')
+        filename = self.generate_filename(prefix, str(begin_time), 'txt')
         if new_br:
             filename = filename.replace('.txt', '.zip')
         full_out_path = os.path.join(br_path, filename)
@@ -1117,7 +1115,6 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
     Then each log line added by my_log will have a prefix
     '[AndroidDevice|<tag>]'
     """
-
     def process(self, msg, kwargs):
         msg = _DEBUG_PREFIX_TEMPLATE % (self.extra['tag'], msg)
         return (msg, kwargs)
