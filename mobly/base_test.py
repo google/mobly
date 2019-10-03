@@ -400,10 +400,12 @@ class BaseTestClass(object):
         logging.debug(
             TEST_STAGE_BEGIN_LOG_TEMPLATE.format(parent_token=parent_token,
                                                  child_token=stage_name))
-        yield
-        logging.debug(
-            TEST_STAGE_END_LOG_TEMPLATE.format(parent_token=parent_token,
-                                               child_token=stage_name))
+        try:
+            yield
+        finally:
+            logging.debug(
+                TEST_STAGE_END_LOG_TEMPLATE.format(parent_token=parent_token,
+                                                   child_token=stage_name))
 
     def _setup_test(self, test_name):
         """Proxy function to guarantee the base implementation of setup_test is
