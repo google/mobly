@@ -43,7 +43,7 @@ class TestSuiteTest(unittest.TestCase):
         self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
         self.mock_test_cls_configs.reporter = mock.MagicMock()
         self.base_mock_test_config = config_parser.TestRunConfig()
-        self.base_mock_test_config.test_bed_name = 'SampleTestBed'
+        self.base_mock_test_config.testbed_name = 'SampleTestBed'
         self.base_mock_test_config.controller_configs = {}
         self.base_mock_test_config.user_params = {
             'icecream': 42,
@@ -67,7 +67,7 @@ class TestSuiteTest(unittest.TestCase):
                 self.controller2 = cls2.register_controller(mock_controller)[0]
 
         tr = test_runner.TestRunner(self.tmp_dir,
-                                    test_run_config.test_bed_name)
+                                    test_run_config.testbed_name)
         with tr.mobly_logger():
             tr.add_test_class(test_run_config, FooTest)
             tr.add_test_class(test_run_config, BarTest)
