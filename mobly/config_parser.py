@@ -162,6 +162,8 @@ class TestRunConfig(object):
     Attributes:
         log_path: string, specifies the root directory for all logs written by
             a test run.
+        test_bed_name: [Deprecated, use 'testbed_name' instead]
+            string, the name of the test bed used by a test run.
         testbed_name: string, the name of the test bed used by a test run.
         controller_configs: dict, configs used for instantiating controller
             objects.
@@ -175,6 +177,8 @@ class TestRunConfig(object):
 
     def __init__(self):
         self.log_path = None
+        # Deprecated, use 'testbed_name'
+        self.test_bed_name = None
         self.testbed_name = None
         self.controller_configs = None
         self.user_params = None

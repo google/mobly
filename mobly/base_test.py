@@ -103,7 +103,7 @@ class BaseTestClass(object):
         # Set params.
         self.log_path = configs.log_path
         # Deprecated, use 'testbed_name'
-        self.test_bed_name = configs.testbed_name
+        self.test_bed_name = configs.test_bed_name
         self.testbed_name = configs.testbed_name
         self.user_params = configs.user_params
         self.results = records.TestResult()
