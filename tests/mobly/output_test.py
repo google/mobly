@@ -43,7 +43,7 @@ class OutputTest(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = config_parser.TestRunConfig()
-        self.base_mock_test_config.test_bed_name = 'SampleTestBed'
+        self.base_mock_test_config.testbed_name = 'SampleTestBed'
         self.base_mock_test_config.controller_configs = {}
         self.base_mock_test_config.user_params = {
             'icecream': 42,
@@ -51,7 +51,7 @@ class OutputTest(unittest.TestCase):
         }
         self.base_mock_test_config.log_path = self.tmp_dir
         self.log_dir = self.base_mock_test_config.log_path
-        self.test_bed_name = self.base_mock_test_config.test_bed_name
+        self.testbed_name = self.base_mock_test_config.testbed_name
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
@@ -94,7 +94,7 @@ class OutputTest(unittest.TestCase):
                 self.assertNotIn(item, content)
 
     def test_yields_logging_path(self):
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger() as log_path:
             self.assertEqual(log_path, logging.log_path)
 
@@ -104,24 +104,24 @@ class OutputTest(unittest.TestCase):
         """Verifies the symlink is created and links properly."""
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             pass
-        symlink = os.path.join(self.log_dir, self.test_bed_name, 'latest')
+        symlink = os.path.join(self.log_dir, self.testbed_name, 'latest')
         self.assertEqual(os.readlink(symlink), logging.log_path)
 
     @unittest.skipIf(platform.system() != 'Windows',
                      'Shortcuts are specific to Windows operating systems')
     def test_shortcut(self):
         """Verifies the shortcut is created and links properly."""
-        shortcut_path = os.path.join(self.log_dir, self.test_bed_name,
+        shortcut_path = os.path.join(self.log_dir, self.testbed_name,
                                      'latest.lnk')
         shell = client.Dispatch("WScript.Shell")
         shortcut = shell.CreateShortCut(shortcut_path)
         self.assertFalse(shortcut.Targetpath)
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             pass
         shortcut = shell.CreateShortCut(shortcut_path)
@@ -137,10 +137,10 @@ class OutputTest(unittest.TestCase):
             self, mock_create_alias):
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             pass
-        expected_alias_dir = os.path.join(self.log_dir, self.test_bed_name,
+        expected_alias_dir = os.path.join(self.log_dir, self.testbed_name,
                                           'latest')
         mock_create_alias.assert_called_once_with(logging.log_path,
                                                   expected_alias_dir)
@@ -150,10 +150,10 @@ class OutputTest(unittest.TestCase):
                                                        mock_create_alias):
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger(alias='history'):
             pass
-        expected_alias_dir = os.path.join(self.log_dir, self.test_bed_name,
+        expected_alias_dir = os.path.join(self.log_dir, self.testbed_name,
                                           'history')
         mock_create_alias.assert_called_once_with(logging.log_path,
                                                   expected_alias_dir)
@@ -163,7 +163,7 @@ class OutputTest(unittest.TestCase):
             self, mock_create_alias):
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger(alias=None):
             pass
         mock_create_alias.asset_not_called()
@@ -173,7 +173,7 @@ class OutputTest(unittest.TestCase):
             self, mock_create_alias):
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger(alias=''):
             pass
         mock_create_alias.asset_not_called()
@@ -188,7 +188,7 @@ class OutputTest(unittest.TestCase):
             self.base_mock_test_config)
         info_uuid = 'e098d4ff-4e90-4e08-b369-aa84a7ef90ec'
         debug_uuid = 'c6f1474e-960a-4df8-8305-1c5b8b905eca'
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             logging.info(info_uuid)
             logging.debug(debug_uuid)
@@ -214,7 +214,7 @@ class OutputTest(unittest.TestCase):
         """
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         with tr.mobly_logger():
             tr.run()
@@ -240,7 +240,7 @@ class OutputTest(unittest.TestCase):
         debug_uuid1 = '0c3ebb06-700d-496e-b015-62652da9e451'
         info_uuid2 = '484ef7db-f2dd-4b76-a126-c2f263e3808c'
         debug_uuid2 = 'd564da87-c42f-49c3-b0bf-18fa97cf0218'
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
 
         with tr.mobly_logger():
             logging.info(info_uuid1)
@@ -274,7 +274,7 @@ class OutputTest(unittest.TestCase):
         """
         mock_test_config = self.create_mock_test_config(
             self.base_mock_test_config)
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             tr.add_test_class(mock_test_config,
                               integration_test.IntegrationTest)
@@ -297,7 +297,7 @@ class OutputTest(unittest.TestCase):
         teardown_class.
         """
         mock_test_config = self.base_mock_test_config.copy()
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             tr.add_test_class(
                 mock_test_config,

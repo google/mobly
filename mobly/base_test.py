@@ -73,7 +73,9 @@ class BaseTestClass(object):
             currently being executed.
         log_path: string, specifies the root directory for all logs written
             by a test run.
-        test_bed_name: string, the name of the test bed used by a test run.
+        test_bed_name: [Deprecated, use 'testbed_name' instead]
+            string, the name of the test bed used by a test run.
+        testbed_name: string, the name of the test bed used by a test run.
         user_params: dict, custom parameters from user, to be consumed by
             the test logic.
     """
@@ -100,7 +102,9 @@ class BaseTestClass(object):
             self.TAG = self._class_name
         # Set params.
         self.log_path = configs.log_path
+        # Deprecated, use 'testbed_name'
         self.test_bed_name = configs.test_bed_name
+        self.testbed_name = configs.testbed_name
         self.user_params = configs.user_params
         self.results = records.TestResult()
         self.summary_writer = configs.summary_writer
