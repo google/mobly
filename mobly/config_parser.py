@@ -130,6 +130,8 @@ def load_test_config_file(test_config_path, tb_filters=None):
         test_run_config = TestRunConfig()
         test_run_config.testbed_name = original_bed_config[
             keys.Config.key_testbed_name.value]
+        # Deprecated, use testbed_name
+        test_run_config.test_bed_name = test_run_config.testbed_name
         test_run_config.log_path = log_path
         test_run_config.controller_configs = original_bed_config.get(
             keys.Config.key_testbed_controllers.value, {})
