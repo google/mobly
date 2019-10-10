@@ -185,6 +185,16 @@ class TestRunConfig(object):
         self.summary_writer = None
         self.test_class_name_suffix = None
 
+    @property
+    def test_bed_name(self):
+        """Deprecated, use testbed_name directly."""
+        return self.testbed_name
+
+    @test_bed_name.setter
+    def test_bed_name(self, value):
+        """Deprecated, use testbed_name directly."""
+        self.testbed_name = value
+
     def copy(self):
         """Returns a deep copy of the current config.
         """
