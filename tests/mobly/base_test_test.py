@@ -2141,6 +2141,23 @@ class BaseTestTest(unittest.TestCase):
                 def not_a_test(self):
                     pass
 
+    def test_log_stage_always_logs_end_statement(self):
+        instance = base_test.BaseTestClass(mock.Mock())
+        instance.current_test_info = mock.Mock()
+        instance.current_test_info.name = 'TestClass'
+
+        class RecoverableError(Exception):
+            pass
+
+        with mock.patch('mobly.base_test.logging') as logging_patch:
+            try:
+                with instance._log_test_stage('stage'):
+                    raise RecoverableError('Force stage to fail.')
+            except RecoverableError:
+                pass
+
+        logging_patch.debug.assert_called_with('[TestClass]#stage <<< END <<<')
+
 
 if __name__ == "__main__":
     unittest.main()
