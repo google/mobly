@@ -43,6 +43,7 @@ class UtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.utils.
     """
+
     def setUp(self):
         system = platform.system()
         self.tmp_dir = tempfile.mkdtemp()
@@ -246,6 +247,30 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(utils.cli_cmd_to_string(cmd), '\'"adb"\' \'a b\' c//')
         cmd = 'adb -s meme do something ab_cd'
         self.assertEqual(utils.cli_cmd_to_string(cmd), cmd)
+
+    def test_get_settable_properties(self):
+        class SomeClass(object):
+            regular_attr = 'regular_attr'
+            _foo = 'foo'
+            _bar = 'bar'
+
+            @property
+            def settable_prop(self):
+                return self._foo
+
+            @settable_prop.setter
+            def settable_prop(self, new_foo):
+                self._foo = new_foo
+
+            @property
+            def readonly_prop(self):
+                return self._bar
+
+            def func(self):
+                """Func should not be considered as a settable prop."""
+
+        actual = utils.get_settable_properties(SomeClass)
+        self.assertEqual(actual, ['settable_prop'])
 
     def test_find_subclasses_in_module_when_one_subclass(self):
         subclasses = utils.find_subclasses_in_module([base_test.BaseTestClass],

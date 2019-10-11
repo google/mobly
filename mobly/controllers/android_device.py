@@ -336,6 +336,7 @@ def get_devices(ads, **kwargs):
     Raises:
         Error: No devices are matched.
     """
+
     def _get_device_filter(ad):
         for k, v in kwargs.items():
             if not hasattr(ad, k):
@@ -437,6 +438,7 @@ class AndroidDevice(object):
         services: ServiceManager, the manager of long-running services on the
             device.
     """
+
     def __init__(self, serial=''):
         self._serial = str(serial)
         # logging.log_path only exists when this is used in an Mobly test run.
@@ -839,7 +841,7 @@ class AndroidDevice(object):
             Error: The config is trying to overwrite an existing attribute.
         """
         for k, v in config.items():
-            if hasattr(self, k):
+            if hasattr(self, k) and k not in _ANDROID_DEVICE_SETTABLE_PROPS:
                 raise DeviceError(
                     self,
                     ('Attribute %s already exists with value %s, cannot set '
@@ -1089,6 +1091,11 @@ class AndroidDevice(object):
         return self.__getattribute__(name)
 
 
+# Properties in AndroidDevice that have setters.
+# This line has to live below the AndroidDevice code.
+_ANDROID_DEVICE_SETTABLE_PROPS = utils.get_settable_properties(AndroidDevice)
+
+
 class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
     """A wrapper class that adds a prefix to each log line.
 
@@ -1103,6 +1110,7 @@ class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
     Then each log line added by my_log will have a prefix
     '[AndroidDevice|<tag>]'
     """
+
     def process(self, msg, kwargs):
         msg = _DEBUG_PREFIX_TEMPLATE % (self.extra['tag'], msg)
         return (msg, kwargs)
