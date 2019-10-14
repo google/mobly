@@ -323,7 +323,7 @@ class AdbProxy(object):
         sdk_int = int(self.getprop('ro.build.version.sdk'))
         if sdk_int >= 24:
             return int(self.shell(['am', 'get-current-user']))
-        if sdk_int >= 21 and sdk_int < 24:
+        if sdk_int >= 21:
             user_info_str = self.shell(['dumpsys', 'user']).decode('utf-8')
             return int(re.findall(r'\{(\d+):', user_info_str)[0])
         # Multi-user is not supported in SDK < 21, only user 0 exists.
