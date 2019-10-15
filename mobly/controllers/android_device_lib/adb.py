@@ -317,8 +317,9 @@ class AdbProxy(object):
         Some adb commands require specifying a user ID to work properly. Use
         this to get the current user ID.
 
-        Note a "user" is not the same as an "account" in Android. See AOSP
+        Note a "user" is not the same as an "account" in Android. See AOSP's
         documentation for details.
+        https://source.android.com/devices/tech/admin/multi-user
         """
         sdk_int = int(self.getprop('ro.build.version.sdk'))
         if sdk_int >= 24:
