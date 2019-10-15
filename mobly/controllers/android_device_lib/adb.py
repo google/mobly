@@ -312,13 +312,13 @@ class AdbProxy(object):
 
     @property
     def current_user_id(self):
-        """Gets the ID of the current Android user.
+        """The integer ID of the current Android user.
 
-        Some adb commands require the current user ID to work properly.
-        This convenient method is meant for 
+        Some adb commands require specifying a user ID to work properly. Use
+        this to get the current user ID.
 
-        Returns:
-            int, the ID of the current user.
+        Note a "user" is not the same as an "account" in Android. See AOSP
+        documentation for details.
         """
         sdk_int = int(self.getprop('ro.build.version.sdk'))
         if sdk_int >= 24:
