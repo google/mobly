@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import copy
+import functools
 import io
 import os
 import mock
@@ -203,9 +204,42 @@ class BaseTestTest(unittest.TestCase):
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run(test_names=["test_something"])
+        bt_cls.run()
         actual_record = bt_cls.results.passed[0]
         self.assertEqual(actual_record.test_name, "test_something")
+
+    def test_default_execution_skip_noncallable_tests(self):
+        mock_decorated = mock.MagicMock()
+        mock_undecorated = mock.MagicMock()
+
+        class TestDecorator(object):
+            def __init__(self, func):
+                self.func = func
+
+            def __call__(self, *args, **kwargs):
+                return self.func(*args, **kwargs)
+
+            def __get__(self, instance, owner):
+                return functools.partial(self.__call__, instance)
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def __init__(self, controllers):
+                super(MockBaseTest, self).__init__(controllers)
+                self.test_noncallable = None
+
+            @TestDecorator
+            def test_decorated(self):
+                mock_decorated('test_decorated')
+
+            def test_undecorated(self):
+                mock_undecorated('test_undecorated')
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        self.assertNotIn('test_noncallable',
+                         [test.test_name for test in bt_cls.results.executed])
+        mock_decorated.assert_called_once_with('test_decorated')
+        mock_undecorated.assert_called_once_with('test_undecorated')
 
     def test_missing_requested_test_func(self):
         class MockBaseTest(base_test.BaseTestClass):
