@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import copy
+import functools
 import io
 import os
 import mock
@@ -192,7 +193,7 @@ class BaseTestTest(unittest.TestCase):
         with self.assertRaisesRegex(base_test.Error, expected_msg):
             bt_cls.run(test_names=["not_a_test_something"])
 
-    def test_default_execution_of_all_tests(self):
+    def test_default_test_selection_follow_naming_convention(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_something(self):
                 pass
@@ -203,9 +204,40 @@ class BaseTestTest(unittest.TestCase):
                 never_call()
 
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
-        bt_cls.run(test_names=["test_something"])
+        bt_cls.run()
         actual_record = bt_cls.results.passed[0]
         self.assertEqual(actual_record.test_name, "test_something")
+
+    def test_default_test_selection_include_decorated_tests(self):
+        class TestDecorator(object):
+            def __init__(self, func):
+                self.func = func
+
+            def __call__(self, *args, **kwargs):
+                return self.func(*args, **kwargs)
+
+            def __get__(self, instance, owner):
+                return functools.partial(self.__call__, instance)
+
+        class MockBaseTest(base_test.BaseTestClass):
+            @TestDecorator
+            def test_something(self):
+                pass
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        actual_record = bt_cls.results.passed[0]
+        self.assertEqual(actual_record.test_name, "test_something")
+
+    def test_default_test_selection_skip_noncallable_attributes(self):
+        class MockBaseTest(base_test.BaseTestClass):
+            def __init__(self, controllers):
+                super(MockBaseTest, self).__init__(controllers)
+                self.test_noncallable = None
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run()
+        self.assertFalse(bt_cls.results.executed)
 
     def test_missing_requested_test_func(self):
         class MockBaseTest(base_test.BaseTestClass):
