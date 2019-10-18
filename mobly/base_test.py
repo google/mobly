@@ -18,6 +18,7 @@ import copy
 import functools
 import inspect
 import logging
+import os
 
 from future.utils import raise_with_traceback
 
@@ -71,8 +72,11 @@ class BaseTestClass(object):
             test bed config.
         current_test_info: RuntimeTestInfo, runtime information on the test
             currently being executed.
-        log_path: string, specifies the root directory for all logs written
-            by a test run.
+        root_output_path: string, storage path for output files associated with
+            the entire test run. A test run can have multiple test class
+            executions. This includes the test summary and Mobly log files.
+        log_path: string, storage path for files specific to a single test
+            class execution.
         test_bed_name: [Deprecated, use 'testbed_name' instead]
             string, the name of the test bed used by a test run.
         testbed_name: string, the name of the test bed used by a test run.
@@ -94,14 +98,15 @@ class BaseTestClass(object):
             configs: A config_parser.TestRunConfig object.
         """
         self.tests = []
-        self._class_name = self.__class__.__name__
-        if configs.test_class_name_suffix and self.TAG is None:
-            self.TAG = '%s_%s' % (self._class_name,
-                                  configs.test_class_name_suffix)
-        elif self.TAG is None:
-            self.TAG = self._class_name
+        class_identifier = self.__class__.__name__
+        if configs.test_class_name_suffix:
+            class_identifier = '%s_%s' % (class_identifier,
+                                          configs.test_class_name_suffix)
+        if self.TAG is None:
+            self.TAG = class_identifier
         # Set params.
-        self.log_path = configs.log_path
+        self.root_output_path = configs.log_path
+        self.log_path = os.path.join(self.root_output_path, class_identifier)
         # Deprecated, use 'testbed_name'
         self.test_bed_name = configs.test_bed_name
         self.testbed_name = configs.testbed_name
