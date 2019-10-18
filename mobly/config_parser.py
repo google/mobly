@@ -176,8 +176,8 @@ class TestRunConfig(object):
     def __init__(self):
         self.log_path = None
         self.test_bed_name = None
-        self.controller_configs = None
-        self.user_params = None
+        self.controller_configs = {}
+        self.user_params = {}
         self.summary_writer = None
         self.test_class_name_suffix = None
 
