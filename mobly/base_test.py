@@ -107,6 +107,7 @@ class BaseTestClass(object):
         # Set params.
         self.root_output_path = configs.log_path
         self.log_path = os.path.join(self.root_output_path, class_identifier)
+        utils.create_dir(self.log_path)
         # Deprecated, use 'testbed_name'
         self.test_bed_name = configs.test_bed_name
         self.testbed_name = configs.testbed_name

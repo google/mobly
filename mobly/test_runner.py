@@ -189,10 +189,12 @@ class TestRunner(object):
         self.results: The test result object used to record the results of
             this test run.
     """
+
     class _TestRunInfo(object):
         """Identifies one test class to run, which tests to run, and config to
         run it with.
         """
+
         def __init__(self,
                      config,
                      test_class,
@@ -223,8 +225,9 @@ class TestRunner(object):
     def _update_log_path(self):
         """Updates the logging values with the current timestamp."""
         self._start_time = logger.get_log_file_timestamp()
-        self._log_path = os.path.join(self._log_dir, self._testbed_name,
-                                      self._start_time)
+        self._root_output_path = os.path.join(self._log_dir,
+                                              self._testbed_name,
+                                              self._start_time)
 
     @contextlib.contextmanager
     def mobly_logger(self, alias='latest'):
@@ -239,11 +242,11 @@ class TestRunner(object):
             The host file path where the logs for the test run are stored.
         """
         self._update_log_path()
-        logger.setup_test_logger(self._log_path,
+        logger.setup_test_logger(self._root_output_path,
                                  self._testbed_name,
                                  alias=alias)
         try:
-            yield self._log_path
+            yield self._root_output_path
         finally:
             logger.kill_test_logger(logging.getLogger())
 
@@ -318,15 +321,15 @@ class TestRunner(object):
 
         # Ensure the log path exists. Necessary if `run` is used outside of the
         # `mobly_logger` context.
-        utils.create_dir(self._log_path)
+        utils.create_dir(self._root_output_path)
 
         summary_writer = records.TestSummaryWriter(
-            os.path.join(self._log_path, records.OUTPUT_FILE_SUMMARY))
+            os.path.join(self._root_output_path, records.OUTPUT_FILE_SUMMARY))
         try:
             for test_run_info in self._test_run_infos:
                 # Set up the test-specific config
                 test_config = test_run_info.config.copy()
-                test_config.log_path = self._log_path
+                test_config.log_path = self._root_output_path
                 test_config.summary_writer = summary_writer
                 test_config.test_class_name_suffix = test_run_info.test_class_name_suffix
                 try:

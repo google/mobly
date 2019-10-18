@@ -79,6 +79,7 @@ class BaseTestTest(unittest.TestCase):
         self.assertEqual(path_checker.root_output_path, self.tmp_dir)
         expected_log_path = os.path.join(self.tmp_dir, 'MockBaseTest')
         self.assertEqual(path_checker.log_path, expected_log_path)
+        self.assertTrue(os.path.exists(path_checker.log_path))
 
     def test_current_test_name(self):
         class MockBaseTest(base_test.BaseTestClass):
