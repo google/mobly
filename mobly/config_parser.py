@@ -128,8 +128,10 @@ def load_test_config_file(test_config_path, tb_filters=None):
     test_configs = []
     for original_bed_config in configs[keys.Config.key_testbed.value]:
         test_run_config = TestRunConfig()
-        test_run_config.test_bed_name = original_bed_config[
+        test_run_config.testbed_name = original_bed_config[
             keys.Config.key_testbed_name.value]
+        # Deprecated, use testbed_name
+        test_run_config.test_bed_name = test_run_config.testbed_name
         test_run_config.log_path = log_path
         test_run_config.controller_configs = original_bed_config.get(
             keys.Config.key_testbed_controllers.value, {})
@@ -162,7 +164,9 @@ class TestRunConfig(object):
     Attributes:
         log_path: string, specifies the root directory for all logs written by
             a test run.
-        test_bed_name: string, the name of the test bed used by a test run.
+        test_bed_name: [Deprecated, use 'testbed_name' instead]
+            string, the name of the test bed used by a test run.
+        testbed_name: string, the name of the test bed used by a test run.
         controller_configs: dict, configs used for instantiating controller
             objects.
         user_params: dict, all the parameters to be consumed by the test logic.
@@ -175,7 +179,8 @@ class TestRunConfig(object):
 
     def __init__(self):
         self.log_path = None
-        self.test_bed_name = None
+        # Deprecated, use 'testbed_name'
+        self.testbed_name = None
         self.controller_configs = {}
         self.user_params = {}
         self.summary_writer = None

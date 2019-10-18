@@ -344,7 +344,7 @@ def sanitize_filename(filename):
 def normalize_log_line_timestamp(log_line_timestamp):
     """Replace special characters in log line timestamp with normal characters.
 
-    .. deprecated:: 1.9.2
+    .. deprecated:: 1.10
 
         This method is obsolete with the more general `sanitize_filename` method
         and is only kept for backwards compatibility. In a future update, this

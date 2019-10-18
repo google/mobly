@@ -74,7 +74,7 @@ def main(argv=None):
     ok = True
     for config in test_configs:
         runner = TestRunner(log_dir=config.log_path,
-                            test_bed_name=config.test_bed_name)
+                            testbed_name=config.testbed_name)
         with runner.mobly_logger():
             runner.add_test_class(config, test_class, tests)
             try:
@@ -84,7 +84,7 @@ def main(argv=None):
                 pass
             except:
                 logging.exception('Exception when executing %s.',
-                                  config.test_bed_name)
+                                  config.testbed_name)
                 ok = False
     if not ok:
         sys.exit(1)
@@ -203,15 +203,15 @@ class TestRunner(object):
             self.test_class_name_suffix = test_class_name_suffix
             self.tests = tests
 
-    def __init__(self, log_dir, test_bed_name):
+    def __init__(self, log_dir, testbed_name):
         """Constructor for TestRunner.
 
         Args:
             log_dir: string, root folder where to write logs
-            test_bed_name: string, name of the testbed to run tests on
+            testbed_name: string, name of the testbed to run tests on
         """
         self._log_dir = log_dir
-        self._test_bed_name = test_bed_name
+        self._testbed_name = testbed_name
 
         self.results = records.TestResult()
         self._test_run_infos = []
@@ -223,7 +223,7 @@ class TestRunner(object):
     def _update_log_path(self):
         """Updates the logging values with the current timestamp."""
         self._start_time = logger.get_log_file_timestamp()
-        self._log_path = os.path.join(self._log_dir, self._test_bed_name,
+        self._log_path = os.path.join(self._log_dir, self._testbed_name,
                                       self._start_time)
 
     @contextlib.contextmanager
@@ -240,7 +240,7 @@ class TestRunner(object):
         """
         self._update_log_path()
         logger.setup_test_logger(self._log_path,
-                                 self._test_bed_name,
+                                 self._testbed_name,
                                  alias=alias)
         try:
             yield self._log_path
@@ -261,7 +261,7 @@ class TestRunner(object):
                 executed with different parameters in a suite.
 
         Raises:
-            Error: if the provided config has a log_path or test_bed_name which
+            Error: if the provided config has a log_path or testbed_name which
                 differs from the arguments provided to this TestRunner's
                 constructor.
         """
@@ -270,11 +270,11 @@ class TestRunner(object):
                 'TestRunner\'s log folder is "%s", but a test config with a '
                 'different log folder ("%s") was added.' %
                 (self._log_dir, config.log_path))
-        if self._test_bed_name != config.test_bed_name:
+        if self._testbed_name != config.testbed_name:
             raise Error(
                 'TestRunner\'s test bed is "%s", but a test config with a '
                 'different test bed ("%s") was added.' %
-                (self._test_bed_name, config.test_bed_name))
+                (self._testbed_name, config.testbed_name))
         self._test_run_infos.append(
             TestRunner._TestRunInfo(config=config,
                                     test_class=test_class,
@@ -342,6 +342,6 @@ class TestRunner(object):
                                 records.TestSummaryEntryType.SUMMARY)
             # Stop and show summary.
             msg = '\nSummary for test run %s@%s: %s\n' % (
-                self._test_bed_name, self._start_time,
+                self._testbed_name, self._start_time,
                 self.results.summary_str())
             logging.info(msg.strip())

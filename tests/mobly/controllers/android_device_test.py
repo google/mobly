@@ -45,6 +45,7 @@ class AndroidDeviceTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.controllers.android_device.
     """
+
     def setUp(self):
         # Set log_path to logging since mobly logger setup is not called.
         if not hasattr(logging, 'log_path'):
@@ -274,6 +275,39 @@ class AndroidDeviceTest(unittest.TestCase):
         self.assertEqual(ad.log_path, expected_lp)
         self.assertIsNotNone(ad.services.logcat)
         self.assertIsNotNone(ad.services.snippets)
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.utils.create_dir')
+    def test_AndroidDevice_load_config(self, create_dir_mock, FastbootProxy,
+                                       MockAdbProxy):
+        mock_serial = '1'
+        config = {
+            'space': 'the final frontier',
+            'number': 1,
+            'debug_tag': 'my_tag'
+        }
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        ad.load_config(config)
+        self.assertEqual(ad.space, 'the final frontier')
+        self.assertEqual(ad.number, 1)
+        self.assertEqual(ad.debug_tag, 'my_tag')
+
+    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy(1))
+    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+                return_value=mock_android_device.MockFastbootProxy(1))
+    @mock.patch('mobly.utils.create_dir')
+    def test_AndroidDevice_load_config_dup(self, create_dir_mock,
+                                           FastbootProxy, MockAdbProxy):
+        mock_serial = '1'
+        config = {'serial': 'new_serial'}
+        ad = android_device.AndroidDevice(serial=mock_serial)
+        with self.assertRaisesRegex(android_device.DeviceError,
+                                    'Attribute serial already exists with'):
+            ad.load_config(config)
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))

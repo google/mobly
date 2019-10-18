@@ -52,6 +52,7 @@ MOCK_ADB_SHELL_COMMAND_CHECK = 'adb shell command -v ls'
 class AdbTest(unittest.TestCase):
     """Unit tests for mobly.controllers.android_device_lib.adb.
     """
+
     def _mock_process(self, mock_psutil_process, mock_popen):
         # the created proc object in adb._exec_cmd()
         mock_proc = mock.Mock()
@@ -654,6 +655,7 @@ class AdbTest(unittest.TestCase):
         """Verifies the AndroidDevice object's instrument command is correct
         with a handler passed in.
         """
+
         def mock_handler(raw_line):
             pass
 
@@ -672,6 +674,7 @@ class AdbTest(unittest.TestCase):
         """Verifies the AndroidDevice object's instrument command is correct
         with a handler passed in and a runner specified.
         """
+
         def mock_handler(raw_line):
             pass
 
@@ -692,6 +695,7 @@ class AdbTest(unittest.TestCase):
         """Verifies the AndroidDevice object's instrument command is correct
         with a handler passed in and options.
         """
+
         def mock_handler(raw_line):
             pass
 
@@ -739,6 +743,39 @@ class AdbTest(unittest.TestCase):
                 MOCK_ADB_SHELL_COMMAND_CHECK, '', '', 1)
             self.assertFalse(
                 adb.AdbProxy().has_shell_command(MOCK_SHELL_COMMAND))
+
+    @mock.patch.object(adb.AdbProxy, 'getprop')
+    @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+    def test_current_user_id_25_and_above(self, mock_exec_cmd, mock_getprop):
+        mock_getprop.return_value = b'25'
+        mock_exec_cmd.return_value = b'123'
+        user_id = adb.AdbProxy().current_user_id
+        mock_exec_cmd.assert_called_once_with(
+            ['adb', 'shell', 'am', 'get-current-user'],
+            shell=False,
+            stderr=None,
+            timeout=None)
+        self.assertEqual(user_id, 123)
+
+    @mock.patch.object(adb.AdbProxy, 'getprop')
+    @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+    def test_current_user_id_between_21_and_24(self, mock_exec_cmd,
+                                               mock_getprop):
+        mock_getprop.return_value = b'23'
+        mock_exec_cmd.return_value = (b'Users:\n'
+                                      b'UserInfo{123:Owner:13} serialNo=0\n'
+                                      b'Created: <unknown>\n'
+                                      b'Last logged in: +1h22m12s497ms ago\n'
+                                      b'UserInfo{456:Owner:14} serialNo=0\n'
+                                      b'Created: <unknown>\n'
+                                      b'Last logged in: +1h01m12s497ms ago\n')
+        user_id = adb.AdbProxy().current_user_id
+        mock_exec_cmd.assert_called_once_with(
+            ['adb', 'shell', 'dumpsys', 'user'],
+            shell=False,
+            stderr=None,
+            timeout=None)
+        self.assertEqual(user_id, 123)
 
 
 if __name__ == '__main__':

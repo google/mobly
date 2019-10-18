@@ -69,14 +69,13 @@ class BaseTestClass(object):
             the execution of tests.
         controller_configs: dict, controller configs provided by the user via
             test bed config.
-        current_test_name: [Deprecated, use `self.current_test_info.name`]
-            A string that's the name of the test method currently being
-            executed. If no test is executing, this should be None.
         current_test_info: RuntimeTestInfo, runtime information on the test
             currently being executed.
         log_path: string, specifies the root directory for all logs written
             by a test run.
-        test_bed_name: string, the name of the test bed used by a test run.
+        test_bed_name: [Deprecated, use 'testbed_name' instead]
+            string, the name of the test bed used by a test run.
+        testbed_name: string, the name of the test bed used by a test run.
         user_params: dict, custom parameters from user, to be consumed by
             the test logic.
     """
@@ -103,12 +102,12 @@ class BaseTestClass(object):
             self.TAG = self._class_name
         # Set params.
         self.log_path = configs.log_path
+        # Deprecated, use 'testbed_name'
         self.test_bed_name = configs.test_bed_name
+        self.testbed_name = configs.testbed_name
         self.user_params = configs.user_params
         self.results = records.TestResult()
         self.summary_writer = configs.summary_writer
-        # Deprecated, use `self.current_test_info.name`.
-        self.current_test_name = None
         self._generated_test_table = collections.OrderedDict()
         self._controller_manager = controller_manager.ControllerManager(
             class_name=self.TAG, controller_configs=configs.controller_configs)
@@ -411,7 +410,6 @@ class BaseTestClass(object):
         """Proxy function to guarantee the base implementation of setup_test is
         called.
         """
-        self.current_test_name = test_name
         with self._log_test_stage(STAGE_NAME_SETUP_TEST):
             self.setup_test()
 
@@ -537,7 +535,7 @@ class BaseTestClass(object):
             except Exception as e:
                 logging.exception(
                     'Exception happened when executing %s for %s.',
-                    procedure_name, self.current_test_name)
+                    procedure_name, self.current_test_info.name)
                 tr_record.add_error(procedure_name, e)
 
     def record_data(self, content):
@@ -592,7 +590,7 @@ class BaseTestClass(object):
                 raise
             except Exception:
                 logging.exception('Exception occurred in %s.',
-                                  self.current_test_name)
+                                  self.current_test_info.name)
                 raise
             finally:
                 before_count = expects.recorder.error_count
@@ -650,7 +648,6 @@ class BaseTestClass(object):
                 self.summary_writer.dump(tr_record.to_dict(),
                                          records.TestSummaryEntryType.RECORD)
                 self.current_test_info = None
-                self.current_test_name = None
 
     def _assert_function_name_in_stack(self, expected_func_name):
         """Asserts that the current stack contains the given function name."""

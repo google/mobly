@@ -17,6 +17,7 @@ from past.builtins import basestring
 
 import logging
 import psutil
+import re
 import subprocess
 import time
 import threading
@@ -55,6 +56,7 @@ class AdbError(Error):
             This is an empty string if the adb command is not specific to a
             device.
     """
+
     def __init__(self, cmd, stdout, stderr, ret_code, serial=''):
         self.cmd = cmd
         self.stdout = stdout
@@ -78,6 +80,7 @@ class AdbTimeoutError(Error):
             This is an empty string if the adb command is not specific to a
             device.
     """
+
     def __init__(self, cmd, timeout, serial=''):
         self.cmd = cmd
         self.timeout = timeout
@@ -132,6 +135,7 @@ class AdbProxy(object):
     possible by supplying shell=True, but try to avoid this if possible:
     >> adb.shell('cat /foo > /tmp/file', shell=True)
     """
+
     def __init__(self, serial=''):
         self.serial = serial
 
@@ -305,6 +309,26 @@ class AdbProxy(object):
                 value = value[1:]
             results[name] = value
         return results
+
+    @property
+    def current_user_id(self):
+        """The integer ID of the current Android user.
+
+        Some adb commands require specifying a user ID to work properly. Use
+        this to get the current user ID.
+
+        Note a "user" is not the same as an "account" in Android. See AOSP's
+        documentation for details.
+        https://source.android.com/devices/tech/admin/multi-user
+        """
+        sdk_int = int(self.getprop('ro.build.version.sdk'))
+        if sdk_int >= 24:
+            return int(self.shell(['am', 'get-current-user']))
+        if sdk_int >= 21:
+            user_info_str = self.shell(['dumpsys', 'user']).decode('utf-8')
+            return int(re.findall(r'\{(\d+):', user_info_str)[0])
+        # Multi-user is not supported in SDK < 21, only user 0 exists.
+        return 0
 
     def getprop(self, prop_name):
         """Get a property of the device.

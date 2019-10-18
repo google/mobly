@@ -549,6 +549,21 @@ def cli_cmd_to_string(args):
     return ' '.join([pipes.quote(arg) for arg in args])
 
 
+def get_settable_properties(cls):
+    """Gets the settable properties of a class.
+
+    Only returns the explicitly defined properties with setters.
+
+    Args:
+        cls: A class in Python.
+    """
+    results = []
+    for attr, value in vars(cls).items():
+        if isinstance(value, property) and value.fset is not None:
+            results.append(attr)
+    return results
+
+
 def find_subclasses_in_module(base_classes, module):
     """Finds the subclasses of the given classes in the given module.
 

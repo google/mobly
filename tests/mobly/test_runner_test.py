@@ -42,7 +42,7 @@ class TestRunnerTest(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = config_parser.TestRunConfig()
-        self.base_mock_test_config.test_bed_name = 'SampleTestBed'
+        self.base_mock_test_config.testbed_name = 'SampleTestBed'
         self.base_mock_test_config.controller_configs = {}
         self.base_mock_test_config.user_params = {
             'icecream': 42,
@@ -50,7 +50,7 @@ class TestRunnerTest(unittest.TestCase):
         }
         self.base_mock_test_config.log_path = self.tmp_dir
         self.log_dir = self.base_mock_test_config.log_path
-        self.test_bed_name = self.base_mock_test_config.test_bed_name
+        self.testbed_name = self.base_mock_test_config.testbed_name
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
@@ -78,7 +78,7 @@ class TestRunnerTest(unittest.TestCase):
             'magic': 'Magic2'
         }]
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             tr.add_test_class(mock_test_config,
                               integration_test.IntegrationTest)
@@ -129,7 +129,7 @@ class TestRunnerTest(unittest.TestCase):
             'magic': 'Magic2'
         }]
         mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             tr.add_test_class(mock_test_config,
                               integration_test.IntegrationTest)
@@ -150,7 +150,7 @@ class TestRunnerTest(unittest.TestCase):
                          records.TestSummaryEntryType.SUMMARY.value)
 
     def test_run(self):
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         self.base_mock_test_config.controller_configs[
             mock_controller.MOBLY_CONTROLLER_CONFIG_NAME] = '*'
         with tr.mobly_logger():
@@ -166,7 +166,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(record.test_class, 'IntegrationTest')
 
     def test_run_without_mobly_logger_context(self):
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         self.base_mock_test_config.controller_configs[
             mock_controller.MOBLY_CONTROLLER_CONFIG_NAME] = '*'
         tr.add_test_class(self.base_mock_test_config,
@@ -209,7 +209,7 @@ class TestRunnerTest(unittest.TestCase):
         mock_test_config.controller_configs['AndroidDevice'] = [{
             'serial': '1'
         }]
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             tr.add_test_class(mock_test_config,
                               integration2_test.Integration2Test)
@@ -238,7 +238,7 @@ class TestRunnerTest(unittest.TestCase):
             }]
         config2 = config1.copy()
         config2.user_params['icecream'] = 10
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             tr.add_test_class(config1,
                               integration_test.IntegrationTest,
@@ -261,7 +261,7 @@ class TestRunnerTest(unittest.TestCase):
 
     def test_run_with_abort_all(self):
         mock_test_config = self.base_mock_test_config.copy()
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with tr.mobly_logger():
             tr.add_test_class(mock_test_config,
                               integration3_test.Integration3Test)
@@ -274,7 +274,7 @@ class TestRunnerTest(unittest.TestCase):
         self.assertEqual(results['Failed'], 0)
 
     def test_add_test_class_mismatched_log_path(self):
-        tr = test_runner.TestRunner('/different/log/dir', self.test_bed_name)
+        tr = test_runner.TestRunner('/different/log/dir', self.testbed_name)
         with self.assertRaisesRegex(
                 test_runner.Error,
                 'TestRunner\'s log folder is "/different/log/dir", but a test '
@@ -283,18 +283,18 @@ class TestRunnerTest(unittest.TestCase):
             tr.add_test_class(self.base_mock_test_config,
                               integration_test.IntegrationTest)
 
-    def test_add_test_class_mismatched_test_bed_name(self):
+    def test_add_test_class_mismatched_testbed_name(self):
         tr = test_runner.TestRunner(self.log_dir, 'different_test_bed')
         with self.assertRaisesRegex(
                 test_runner.Error,
                 'TestRunner\'s test bed is "different_test_bed", but a test '
                 r'config with a different test bed \("%s"\) was added.' %
-                self.test_bed_name):
+                self.testbed_name):
             tr.add_test_class(self.base_mock_test_config,
                               integration_test.IntegrationTest)
 
     def test_run_no_tests(self):
-        tr = test_runner.TestRunner(self.log_dir, self.test_bed_name)
+        tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
         with self.assertRaisesRegex(test_runner.Error, 'No tests to execute.'):
             tr.run()
 

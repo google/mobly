@@ -28,6 +28,7 @@ from tests.lib import mock_android_device
 MOCK_PACKAGE_NAME = 'some.package.name'
 MOCK_MISSING_PACKAGE_NAME = 'not.installed'
 JSONRPC_BASE_CLASS = 'mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase'
+MOCK_USER_ID = 0
 
 
 def get_print_function_name():
@@ -70,8 +71,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     def test_check_app_installed_fail_target_not_installed(self):
         sc = self._make_client(
             mock_android_device.MockAdbProxy(instrumented_packages=[(
-                MOCK_PACKAGE_NAME, snippet_client.
-                _INSTRUMENTATION_RUNNER_PACKAGE, MOCK_MISSING_PACKAGE_NAME)]))
+                MOCK_PACKAGE_NAME,
+                snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
+                MOCK_MISSING_PACKAGE_NAME)]))
         expected_msg = ('.* Instrumentation target %s is not installed.' %
                         MOCK_MISSING_PACKAGE_NAME)
         with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
@@ -314,8 +316,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client = self._make_client()
         client._adb.shell = mock.Mock(return_value=b'setsid')
         client.start_app_and_connect()
-        cmd_setsid = '%s am instrument -w -e action start %s/%s' % (
-            snippet_client._SETSID_COMMAND, MOCK_PACKAGE_NAME,
+        cmd_setsid = '%s am instrument --user %s -w -e action start %s/%s' % (
+            snippet_client._SETSID_COMMAND, MOCK_USER_ID, MOCK_PACKAGE_NAME,
             snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
         mock_do_start_app.assert_has_calls([mock.call(cmd_setsid)])
 
@@ -323,8 +325,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         client = self._make_client()
         client._adb.shell = _mocked_shell
         client.start_app_and_connect()
-        cmd_nohup = '%s am instrument -w -e action start %s/%s' % (
-            snippet_client._NOHUP_COMMAND, MOCK_PACKAGE_NAME,
+        cmd_nohup = '%s am instrument --user %s -w -e action start %s/%s' % (
+            snippet_client._NOHUP_COMMAND, MOCK_USER_ID, MOCK_PACKAGE_NAME,
             snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
         mock_do_start_app.assert_has_calls(
             [mock.call(cmd_setsid),
@@ -335,8 +337,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             side_effect=adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code'))
         client = self._make_client()
         client.start_app_and_connect()
-        cmd_not_persist = ' am instrument -w -e action start %s/%s' % (
-            MOCK_PACKAGE_NAME, snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
+        cmd_not_persist = ' am instrument --user %s -w -e action start %s/%s' % (
+            MOCK_USER_ID, MOCK_PACKAGE_NAME,
+            snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
         mock_do_start_app.assert_has_calls([
             mock.call(cmd_setsid),
             mock.call(cmd_nohup),
@@ -447,11 +450,13 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     def _make_client(self, adb_proxy=None):
         adb_proxy = adb_proxy or mock_android_device.MockAdbProxy(
-            instrumented_packages=[(MOCK_PACKAGE_NAME, snippet_client.
-                                    _INSTRUMENTATION_RUNNER_PACKAGE,
-                                    MOCK_PACKAGE_NAME)])
+            instrumented_packages=[(
+                MOCK_PACKAGE_NAME,
+                snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
+                MOCK_PACKAGE_NAME)])
         ad = mock.Mock()
         ad.adb = adb_proxy
+        ad.adb.current_user_id = MOCK_USER_ID
         ad.build_info = {
             'build_version_codename':
             ad.adb.getprop('ro.build.version.codename'),

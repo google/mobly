@@ -89,7 +89,7 @@ def run_suite(test_classes, argv=None):
     # Execute the suite
     ok = True
     for config in test_configs:
-        runner = test_runner.TestRunner(config.log_path, config.test_bed_name)
+        runner = test_runner.TestRunner(config.log_path, config.testbed_name)
         with runner.mobly_logger():
             for (test_class, tests) in selected_tests.items():
                 runner.add_test_class(config, test_class, tests)
@@ -100,7 +100,7 @@ def run_suite(test_classes, argv=None):
                 pass
             except:
                 logging.exception('Exception when executing %s.',
-                                  config.test_bed_name)
+                                  config.testbed_name)
                 ok = False
     if not ok:
         sys.exit(1)
