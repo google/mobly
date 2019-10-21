@@ -182,8 +182,8 @@ class TestRunConfig(object):
         # Deprecated, use 'testbed_name'
         self.test_bed_name = None
         self.testbed_name = None
-        self.controller_configs = {}
-        self.user_params = {}
+        self.controller_configs = None
+        self.user_params = None
         self.summary_writer = None
         self.test_class_name_suffix = None
 
