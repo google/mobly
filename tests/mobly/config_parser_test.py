@@ -62,5 +62,5 @@ class OutputTest(unittest.TestCase):
         self.assertNotIn('register_controller', str(config))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
