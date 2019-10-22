@@ -61,6 +61,20 @@ class OutputTest(unittest.TestCase):
         self.assertNotIn('summary_writer', str(config))
         self.assertNotIn('register_controller', str(config))
 
+    def test_run_config_controller_configs_is_already_initialized(self):
+        config = config_parser.TestRunConfig()
+        expected_value = 'SOME_VALUE'
+        self.assertEqual(
+            config.controller_configs.get('NON_EXISTENT_KEY', expected_value),
+            expected_value)
+
+    def test_run_config_user_params_is_already_initialized(self):
+        config = config_parser.TestRunConfig()
+        expected_value = 'SOME_VALUE'
+        self.assertEqual(
+            config.user_params.get('NON_EXISTENT_KEY', expected_value),
+            expected_value)
+
 
 if __name__ == '__main__':
     unittest.main()
