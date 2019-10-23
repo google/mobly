@@ -39,6 +39,7 @@ class TestRunnerTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.test_runner.
     """
+
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = config_parser.TestRunConfig()
@@ -134,7 +135,7 @@ class TestRunnerTest(unittest.TestCase):
             tr.add_test_class(mock_test_config,
                               integration_test.IntegrationTest)
             tr.run()
-        summary_path = os.path.join(logging.log_path,
+        summary_path = os.path.join(logging.root_output_path,
                                     records.OUTPUT_FILE_SUMMARY)
         with io.open(summary_path, 'r', encoding='utf-8') as f:
             summary_entries = list(yaml.safe_load_all(f))

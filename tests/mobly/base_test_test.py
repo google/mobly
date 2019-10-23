@@ -77,6 +77,7 @@ class BaseTestTest(unittest.TestCase):
         bt_cls = MockBaseTest(self.mock_test_cls_configs)
         bt_cls.run(test_names=["test_func"])
         self.assertEqual(path_checker.root_output_path, self.tmp_dir)
+        self.assertTrue(os.path.exists(path_checker.root_output_path))
         expected_log_path = os.path.join(self.tmp_dir, 'MockBaseTest')
         self.assertEqual(path_checker.log_path, expected_log_path)
         self.assertTrue(os.path.exists(path_checker.log_path))

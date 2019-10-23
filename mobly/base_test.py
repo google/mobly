@@ -815,6 +815,7 @@ class BaseTestClass(object):
         Returns:
             The test results object of this class.
         """
+        logging.log_path = self.log_path
         # Executes pre-setup procedures, like generating test methods.
         if not self._setup_generated_tests():
             return self.results
