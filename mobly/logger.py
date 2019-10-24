@@ -211,6 +211,7 @@ def _setup_test_logger(log_path, prefix=None):
     log.addHandler(fh_debug)
     log.log_path = log_path
     logging.log_path = log_path
+    logging.root_output_path = log_path
 
 
 def kill_test_logger(logger):
@@ -240,6 +241,14 @@ def create_latest_log_alias(actual_path, alias):
 
 def setup_test_logger(log_path, prefix=None, alias='latest'):
     """Customizes the root logger for a test run.
+
+    In addition to configuring the Mobly logging handlers, this also sets two
+    attributes on the `logging` module for the output directories:
+
+    root_output_path: path to the directory for the entire test run.
+    log_path: same as `root_output_path` outside of a test class run. In the
+        context of a test class run, this is the output directory for files
+        specific to a test class.
 
     Args:
         log_path: string, the location of the report file.
