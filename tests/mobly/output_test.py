@@ -40,6 +40,7 @@ class OutputTest(unittest.TestCase):
     """This test class has unit tests for the implementation of Mobly's output
     files.
     """
+
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
         self.base_mock_test_config = config_parser.TestRunConfig()
@@ -195,7 +196,7 @@ class OutputTest(unittest.TestCase):
             tr.add_test_class(mock_test_config,
                               integration_test.IntegrationTest)
             tr.run()
-        output_dir = logging.log_path
+        output_dir = logging.root_output_path
         (summary_file_path, debug_log_path,
          info_log_path) = self.assert_output_logs_exist(output_dir)
         self.assert_log_contents(debug_log_path,
@@ -218,10 +219,10 @@ class OutputTest(unittest.TestCase):
         tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
         with tr.mobly_logger():
             tr.run()
-        output_dir1 = logging.log_path
+        output_dir1 = logging.root_output_path
         with tr.mobly_logger():
             tr.run()
-        output_dir2 = logging.log_path
+        output_dir2 = logging.root_output_path
         self.assertNotEqual(output_dir1, output_dir2)
         self.assert_output_logs_exist(output_dir1)
         self.assert_output_logs_exist(output_dir2)
@@ -279,7 +280,11 @@ class OutputTest(unittest.TestCase):
             tr.add_test_class(mock_test_config,
                               integration_test.IntegrationTest)
             tr.run()
-        output_dir = logging.log_path
+        expected_class_path = os.path.join(logging.root_output_path,
+                                           'IntegrationTest')
+        self.assertEqual(expected_class_path, logging.log_path)
+        os.path.exists(logging.log_path)
+        output_dir = logging.root_output_path
         (summary_file_path, debug_log_path,
          info_log_path) = self.assert_output_logs_exist(output_dir)
         summary_entries = []
@@ -303,7 +308,7 @@ class OutputTest(unittest.TestCase):
                 mock_test_config,
                 teardown_class_failure_test.TearDownClassFailureTest)
             tr.run()
-        output_dir = logging.log_path
+        output_dir = logging.root_output_path
         summary_file_path = os.path.join(output_dir,
                                          records.OUTPUT_FILE_SUMMARY)
         found = False

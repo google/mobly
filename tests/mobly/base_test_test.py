@@ -65,6 +65,23 @@ class BaseTestTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
+    def test_paths(self):
+        '''Checks the output paths set in `BaseTestClass`.'''
+        path_checker = mock.MagicMock()
+
+        class MockBaseTest(base_test.BaseTestClass):
+            def test_func(self):
+                path_checker.log_path = self.log_path
+                path_checker.root_output_path = self.root_output_path
+
+        bt_cls = MockBaseTest(self.mock_test_cls_configs)
+        bt_cls.run(test_names=["test_func"])
+        self.assertEqual(path_checker.root_output_path, self.tmp_dir)
+        self.assertTrue(os.path.exists(path_checker.root_output_path))
+        expected_log_path = os.path.join(self.tmp_dir, 'MockBaseTest')
+        self.assertEqual(path_checker.log_path, expected_log_path)
+        self.assertTrue(os.path.exists(path_checker.log_path))
+
     def test_current_test_name(self):
         class MockBaseTest(base_test.BaseTestClass):
             def test_func(self):
@@ -2176,7 +2193,7 @@ class BaseTestTest(unittest.TestCase):
                     pass
 
     def test_log_stage_always_logs_end_statement(self):
-        instance = base_test.BaseTestClass(mock.Mock())
+        instance = base_test.BaseTestClass(self.mock_test_cls_configs)
         instance.current_test_info = mock.Mock()
         instance.current_test_info.name = 'TestClass'
 
