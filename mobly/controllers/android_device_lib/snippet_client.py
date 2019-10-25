@@ -114,9 +114,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
         By default, `SnippetClient` operates within the current user.
 
-        For below SDK 24, we don't want to add `--user {ID}` arg to commands,
-        because Android's multi-user support is not well implemented for below
-        24.
+        We don't add the `--user {ID}` arg when Android's SDK is below 24,
+        where multi-user support is not well implemented.
 
         Returns:
             String, the command param section to be formatted into the adb
