@@ -111,9 +111,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     def _get_user_command_string(self):
         """Gets the appropriate command argument for specifying user IDs.
-        
+
         By default, `SnippetClient` operates within the current user.
-        
+
         For below SDK 24, we don't want to add `--user {ID}` arg to commands,
         because Android's multi-user support is not well implemented for below
         24.
