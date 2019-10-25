@@ -39,7 +39,6 @@ class Config(object):
             to, including the actual filename. The service will automatically
             generate one if not specified.
     """
-
     def __init__(self,
                  logcat_params=None,
                  clear_log=True,
@@ -98,6 +97,23 @@ class Logcat(base_service.BaseService):
         high = mobly_logger.logline_timestamp_comparator(end_time, target) >= 0
         return low and high
 
+    def _generate_file_path_with_test_info(self, test_info):
+        """Generates a file path based on the given test_info object.
+
+        Args:
+            test_info: runtime_test_info.RuntimeTestInfo, the test info to base
+                the generated logcat file path on.
+
+        Returns:
+            The logcat file path to use with the test_info object's context in
+            the file path
+        """
+        dest_path = test_info.output_path
+        utils.create_dir(dest_path)
+        filename = self._ad.generate_filename(self.OUTPUT_FILE_TYPE, test_info,
+                                              'txt')
+        return os.path.join(dest_path, filename)
+
     def create_per_test_excerpt(self, current_test_info):
         """Convenient method for creating excerpts of adb logcat.
 
@@ -131,15 +147,37 @@ class Logcat(base_service.BaseService):
             List of strings, the absolute paths to excerpt files.
         """
         self.pause()
-        dest_path = test_info.output_path
-        utils.create_dir(dest_path)
-        filename = self._ad.generate_filename(self.OUTPUT_FILE_TYPE, test_info,
-                                              'txt')
-        excerpt_file_path = os.path.join(dest_path, filename)
+
+        excerpt_file_path = self._generate_file_path_with_test_info(test_info)
         shutil.move(self.adb_logcat_file_path, excerpt_file_path)
         self._ad.log.debug('logcat excerpt created at: %s', excerpt_file_path)
         self.resume()
         return [excerpt_file_path]
+
+    def continue_with_test_info(self, test_info):
+        """Runs the logcat service with the given test context.
+
+        This starts or restarts the service with the `self.adb_logcat_file_path`
+        pointing to the log directory specific to the current test. If the
+        service restarts after this call, then the service will revert to using
+        the default log directory.
+
+        Call this method only at the beginning of: `setup_test`
+
+        Do not use this in conjunction with `self.create_output_excerpts`. This
+        method exists an alternative to `self.create_output_excerpts` for the
+        specific case where `on_fail` takes bugreports.
+
+        Args:
+            test_info: `self.current_test_info` in a Mobly test.
+        """
+        if self.is_alive:
+            self.pause()
+        elif self._config.clear_log:
+            self.clear_adb_log()
+
+        excerpt_file_path = self._generate_file_path_with_test_info(test_info)
+        self._start(logcat_file_path=excerpt_file_path)
 
     @property
     def is_alive(self):
@@ -249,10 +287,17 @@ class Logcat(base_service.BaseService):
             self.clear_adb_log()
         self._start()
 
-    def _start(self):
-        """The actual logic of starting logcat."""
+    def _start(self, logcat_file_path=None):
+        """The actual logic of starting logcat.
+
+        Args:
+          log_cat_file_path: optional str, the host side file path to store the
+              logcat file. If not specified, then the service will generate the
+              file path based on the device's `log_path` attribute.
+        """
         self._enable_logpersist()
-        logcat_file_path = self._config.output_file_path
+        if not logcat_file_path:
+            logcat_file_path = self._config.output_file_path
         if not logcat_file_path:
             f_name = self._ad.generate_filename(self.OUTPUT_FILE_TYPE,
                                                 extension_name='txt')
