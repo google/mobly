@@ -157,9 +157,13 @@ class Logcat(base_service.BaseService):
     def continue_with_test_info(self, test_info):
         """Runs the logcat service with the given test context.
 
-        This method exists an alternative to `self.create_output_excerpts` for
-        the specific case where `on_fail` takes bugreports to avoid losing
-        logcat logs in the bugreports. This method should not be used in
+        This method exists as an alternative to `self.create_output_excerpts`
+        for the specific case where `on_fail` takes bugreports. The problem in
+        that use case is that `self.create_output_excerpts` will clear the
+        logcat buffer before `on_fail` takes the bugreport, which results in the
+        bugreport losing most of the logcat logs. This method clears data before
+        the test runs instead of after it, which results in the logcat logs
+        being preserved in bugreports. This method should not be used in
         conjunction with `self.create_output_excerpts`.
 
         This starts or restarts the service with the `self.adb_logcat_file_path`
