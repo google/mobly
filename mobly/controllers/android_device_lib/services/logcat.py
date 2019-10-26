@@ -157,16 +157,17 @@ class Logcat(base_service.BaseService):
     def continue_with_test_info(self, test_info):
         """Runs the logcat service with the given test context.
 
+        This method exists an alternative to `self.create_output_excerpts` for
+        the specific case where `on_fail` takes bugreports to avoid losing
+        logcat logs in the bugreports. This method should not be used in
+        conjunction with `self.create_output_excerpts`.
+
         This starts or restarts the service with the `self.adb_logcat_file_path`
         pointing to the log directory specific to the current test. If the
         service restarts after this call, then the service will revert to using
         the default log directory.
 
         Call this method only at the beginning of: `setup_test`
-
-        Do not use this in conjunction with `self.create_output_excerpts`. This
-        method exists an alternative to `self.create_output_excerpts` for the
-        specific case where `on_fail` takes bugreports.
 
         Args:
             test_info: `self.current_test_info` in a Mobly test.
