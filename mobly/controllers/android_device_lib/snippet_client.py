@@ -40,10 +40,10 @@ _PROTOCOL_MAJOR_VERSION = 1
 _PROTOCOL_MINOR_VERSION = 0
 
 _LAUNCH_CMD = (
-    '{shell_cmd} am instrument --user {user} -w -e action start {snippet_package}/'
-    + _INSTRUMENTATION_RUNNER_PACKAGE)
+    '{shell_cmd} am instrument {user} -w -e action start {snippet_package}/' +
+    _INSTRUMENTATION_RUNNER_PACKAGE)
 
-_STOP_CMD = ('am instrument -w -e action stop %s/' +
+_STOP_CMD = ('am instrument {user} -w -e action stop {snippet_package}/' +
              _INSTRUMENTATION_RUNNER_PACKAGE)
 
 # Test that uses UiAutomation requires the shell session to be maintained while
@@ -109,6 +109,23 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         """
         return self._conn is not None
 
+    def _get_user_command_string(self):
+        """Gets the appropriate command argument for specifying user IDs.
+
+        By default, `SnippetClient` operates within the current user.
+
+        We don't add the `--user {ID}` arg when Android's SDK is below 24,
+        where multi-user support is not well implemented.
+
+        Returns:
+            String, the command param section to be formatted into the adb
+            commands.
+        """
+        sdk_int = int(self._ad.build_info['build_version_sdk'])
+        if sdk_int < 24:
+            return ''
+        return '--user %s' % self._adb.current_user_id
+
     def start_app_and_connect(self):
         """Starts snippet apk on the device and connects to it.
 
@@ -157,7 +174,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
                       self.package, _PROTOCOL_MAJOR_VERSION,
                       _PROTOCOL_MINOR_VERSION)
         cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
-                                 user=self._adb.current_user_id,
+                                 user=self._get_user_command_string(),
                                  snippet_package=self.package)
         start_time = time.time()
         self._proc = self._do_start_app(cmd)
@@ -234,7 +251,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
             if self._proc:
                 utils.stop_standing_subprocess(self._proc)
             self._proc = None
-            out = self._adb.shell(_STOP_CMD % self.package).decode('utf-8')
+            out = self._adb.shell(
+                _STOP_CMD.format(
+                    snippet_package=self.package,
+                    user=self._get_user_command_string())).decode('utf-8')
             if 'OK (0 tests)' not in out:
                 raise errors.DeviceError(
                     self._ad,
