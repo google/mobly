@@ -90,7 +90,7 @@ class ProtocolError(Error):
     """Raised when there is some error in exchanging data with server."""
     NO_RESPONSE_FROM_HANDSHAKE = 'No response from handshake.'
     NO_RESPONSE_FROM_SERVER = 'No response from server.'
-    MISMATCHED_API_ID = 'Mismatched API id.'
+    MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
 
 
 class JsonRpcCommand(object):
