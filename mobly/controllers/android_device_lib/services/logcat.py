@@ -11,17 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import copy
 import io
 import logging
 import os
-import shutil
+import time
 
 from mobly import logger as mobly_logger
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib.services import base_service
+
+CREATE_LOGCAT_FILE_TIMEOUT_SEC = 5
 
 
 class Error(errors.ServiceError):
@@ -62,6 +63,7 @@ class Logcat(base_service.BaseService):
         super(Logcat, self).__init__(android_device, configs)
         self._ad = android_device
         self._adb_logcat_process = None
+        self._adb_logcat_file_obj = None
         self.adb_logcat_file_path = None
         # Logcat service uses a single config obj, using singular internal
         # name: `_config`.
@@ -104,11 +106,11 @@ class Logcat(base_service.BaseService):
         .. deprecated:: 1.10
            Use :func:`create_output_excerpts` instead.
 
+        This copies logcat lines from self.adb_logcat_file_path to an excerpt
+        file, starting from the location where the previous excerpt ended.
+
         To use this feature, call this method at the end of: `setup_class`,
         `teardown_test`, and `teardown_class`.
-
-        This moves the current content of `self.adb_logcat_file_path` to the
-        log directory specific to the current test.
 
         Args:
             current_test_info: `self.current_test_info` in a Mobly test.
@@ -118,8 +120,8 @@ class Logcat(base_service.BaseService):
     def create_output_excerpts(self, test_info):
         """Convenient method for creating excerpts of adb logcat.
 
-        This moves the current content of `self.adb_logcat_file_path` to the
-        log directory specific to the current test.
+        This copies logcat lines from self.adb_logcat_file_path to an excerpt
+        file, starting from the location where the previous excerpt ended.
 
         Call this method at the end of: `setup_class`, `teardown_test`, and
         `teardown_class`.
@@ -130,15 +132,19 @@ class Logcat(base_service.BaseService):
         Returns:
             List of strings, the absolute paths to excerpt files.
         """
-        self.pause()
         dest_path = test_info.output_path
         utils.create_dir(dest_path)
         filename = self._ad.generate_filename(self.OUTPUT_FILE_TYPE, test_info,
                                               'txt')
         excerpt_file_path = os.path.join(dest_path, filename)
-        shutil.move(self.adb_logcat_file_path, excerpt_file_path)
+        with io.open(excerpt_file_path, 'w', encoding='utf-8',
+                     errors='replace') as out:
+            while True:
+                line = self._adb_logcat_file_obj.readline()
+                if not line:
+                    break
+                out.write(line)
         self._ad.log.debug('logcat excerpt created at: %s', excerpt_file_path)
-        self.resume()
         return [excerpt_file_path]
 
     @property
@@ -252,21 +258,41 @@ class Logcat(base_service.BaseService):
     def _start(self):
         """The actual logic of starting logcat."""
         self._enable_logpersist()
-        logcat_file_path = self._config.output_file_path
-        if not logcat_file_path:
+        if self._config.output_file_path:
+            self._close_logcat_file()
+            self.adb_logcat_file_path = self._config.output_file_path
+        if not self.adb_logcat_file_path:
             f_name = self._ad.generate_filename(self.OUTPUT_FILE_TYPE,
                                                 extension_name='txt')
             logcat_file_path = os.path.join(self._ad.log_path, f_name)
-        utils.create_dir(os.path.dirname(logcat_file_path))
-        cmd = '"%s" -s %s logcat -v threadtime %s >> "%s"' % (
+            self.adb_logcat_file_path = logcat_file_path
+        utils.create_dir(os.path.dirname(self.adb_logcat_file_path))
+        cmd = '"%s" -s %s logcat -v threadtime -T 1 %s >> "%s"' % (
             adb.ADB, self._ad.serial, self._config.logcat_params,
-            logcat_file_path)
+            self.adb_logcat_file_path)
         process = utils.start_standing_subprocess(cmd, shell=True)
         self._adb_logcat_process = process
-        self.adb_logcat_file_path = logcat_file_path
+        if not self._adb_logcat_file_obj:
+            start_time = time.time()
+            while not os.path.exists(self.adb_logcat_file_path):
+                if time.time() > start_time + CREATE_LOGCAT_FILE_TIMEOUT_SEC:
+                    raise Error(
+                        self._ad,
+                        'Timeout while waiting for logcat file to be created.')
+                time.sleep(1)
+            self._adb_logcat_file_obj = io.open(
+                self.adb_logcat_file_path, 'r', encoding='utf-8',
+                errors='replace')
+            self._adb_logcat_file_obj.seek(0, os.SEEK_END)
 
-    def stop(self):
-        """Stops the adb logcat service."""
+    def _close_logcat_file(self):
+        """Closes and resets the logcat file object, if it exists."""
+        if self._adb_logcat_file_obj:
+            self._adb_logcat_file_obj.close()
+            self._adb_logcat_file_obj = None
+
+    def _stop_logcat_process(self):
+        """Stops the background process for logcat."""
         if not self._adb_logcat_process:
             return
         try:
@@ -275,23 +301,19 @@ class Logcat(base_service.BaseService):
             self._ad.log.exception('Failed to stop adb logcat.')
         self._adb_logcat_process = None
 
+    def stop(self):
+        """Stops the adb logcat service."""
+        self._close_logcat_file()
+        self._stop_logcat_process()
+
     def pause(self):
         """Pauses logcat.
 
         Note: the service is unable to collect the logs when paused, if more
         logs are generated on the device than the device's log buffer can hold,
         some logs would be lost.
-
-        Clears cached adb content, so that when the service resumes, we don't
-        duplicate what's in the device's log buffer already. This helps
-        situations like USB off.
         """
-        self.stop()
-        # Clears cached adb content, so that the next time logcat is started,
-        # we won't produce duplicated logs to log file.
-        # This helps disconnection that caused by, e.g., USB off; at the
-        # cost of losing logs at disconnection caused by reboot.
-        self.clear_adb_log()
+        self._stop_logcat_process()
 
     def resume(self):
         """Resumes a paused logcat service."""
