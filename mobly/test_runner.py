@@ -64,7 +64,7 @@ def main(argv=None):
         _print_test_names(test_class)
         sys.exit(0)
     # Load test config file.
-    test_configs = config_parser.load_test_config_file(args.config[0],
+    test_configs = config_parser.load_test_config_file(args.config,
                                                        args.test_bed)
     # Parse test specifiers if exist.
     tests = None
@@ -110,7 +110,6 @@ def parse_mobly_cli_args(argv):
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-c',
                        '--config',
-                       nargs=1,
                        type=str,
                        metavar='<PATH>',
                        help='Path to the test configuration file.')
