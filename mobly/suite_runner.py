@@ -57,7 +57,6 @@ def run_suite(test_classes, argv=None):
     parser = argparse.ArgumentParser(description='Mobly Suite Executable.')
     parser.add_argument('-c',
                         '--config',
-                        nargs=1,
                         type=str,
                         required=True,
                         metavar='<PATH>',
@@ -73,7 +72,7 @@ def run_suite(test_classes, argv=None):
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
     # Load test config file.
-    test_configs = config_parser.load_test_config_file(args.config[0])
+    test_configs = config_parser.load_test_config_file(args.config)
 
     # Check the classes that were passed in
     for test_class in test_classes:
