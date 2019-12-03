@@ -242,8 +242,12 @@ class LogcatTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad)
         logcat_service._start()
+        # Generate logs before the file pointer is created.
+        # This message will not be captured in the excerpt.
+        NOT_IN_EXCERPT = 'Not in excerpt.\n'
         with open(logcat_service.adb_logcat_file_path, 'a') as f:
-            f.write('')
+            f.write(NOT_IN_EXCERPT)
+        # With the file pointer created, generate logs and make an excerpt.
         logcat_service._open_logcat_file()
         FILE_CONTENT = 'Some log.\n'
         with open(logcat_service.adb_logcat_file_path, 'a') as f:
@@ -259,6 +263,7 @@ class LogcatTest(unittest.TestCase):
         self.assertEqual(actual_path1, expected_path1)
         self.assertTrue(os.path.exists(expected_path1))
         self.AssertFileContains(FILE_CONTENT, expected_path1)
+        self.AssertFileDoesNotContain(NOT_IN_EXCERPT, expected_path1)
         # Generate some new logs and do another excerpt.
         FILE_CONTENT = 'Some more logs!!!\n'
         with open(logcat_service.adb_logcat_file_path, 'a') as f:
