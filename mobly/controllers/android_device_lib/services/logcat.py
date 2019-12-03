@@ -245,33 +245,11 @@ class Logcat(base_service.BaseService):
                           self._config, new_config)
         self._config = new_config
 
-    def start(self):
-        """Starts a standing adb logcat collection.
-
-        The collection runs in a separate subprocess and saves logs in a file.
+    def _open_logcat_file(self):
+        """Create a file object that points to the beginning of the logcat file.
+        Wait for the logcat file to be created by the subprocess if it doesn't
+        exist.
         """
-        self._assert_not_running()
-        if self._config.clear_log:
-            self.clear_adb_log()
-        self._start()
-
-    def _start(self):
-        """The actual logic of starting logcat."""
-        self._enable_logpersist()
-        if self._config.output_file_path:
-            self._close_logcat_file()
-            self.adb_logcat_file_path = self._config.output_file_path
-        if not self.adb_logcat_file_path:
-            f_name = self._ad.generate_filename(self.OUTPUT_FILE_TYPE,
-                                                extension_name='txt')
-            logcat_file_path = os.path.join(self._ad.log_path, f_name)
-            self.adb_logcat_file_path = logcat_file_path
-        utils.create_dir(os.path.dirname(self.adb_logcat_file_path))
-        cmd = '"%s" -s %s logcat -v threadtime -T 1 %s >> "%s"' % (
-            adb.ADB, self._ad.serial, self._config.logcat_params,
-            self.adb_logcat_file_path)
-        process = utils.start_standing_subprocess(cmd, shell=True)
-        self._adb_logcat_process = process
         if not self._adb_logcat_file_obj:
             start_time = time.time()
             while not os.path.exists(self.adb_logcat_file_path):
@@ -291,7 +269,41 @@ class Logcat(base_service.BaseService):
             self._adb_logcat_file_obj.close()
             self._adb_logcat_file_obj = None
 
-    def _stop_logcat_process(self):
+    def start(self):
+        """Starts a standing adb logcat collection.
+
+        The collection runs in a separate subprocess and saves logs in a file.
+        """
+        self._assert_not_running()
+        if self._config.clear_log:
+            self.clear_adb_log()
+        self._start()
+        self._open_logcat_file()
+
+    def _start(self):
+        """The actual logic of starting logcat."""
+        self._enable_logpersist()
+        if self._config.output_file_path:
+            self._close_logcat_file()
+            self.adb_logcat_file_path = self._config.output_file_path
+        if not self.adb_logcat_file_path:
+            f_name = self._ad.generate_filename(self.OUTPUT_FILE_TYPE,
+                                                extension_name='txt')
+            logcat_file_path = os.path.join(self._ad.log_path, f_name)
+            self.adb_logcat_file_path = logcat_file_path
+        utils.create_dir(os.path.dirname(self.adb_logcat_file_path))
+        cmd = '"%s" -s %s logcat -v threadtime -T 1 %s >> "%s"' % (
+            adb.ADB, self._ad.serial, self._config.logcat_params,
+            self.adb_logcat_file_path)
+        process = utils.start_standing_subprocess(cmd, shell=True)
+        self._adb_logcat_process = process
+
+    def stop(self):
+        """Stops the adb logcat service."""
+        self._close_logcat_file()
+        self._stop()
+
+    def _stop(self):
         """Stops the background process for logcat."""
         if not self._adb_logcat_process:
             return
@@ -301,11 +313,6 @@ class Logcat(base_service.BaseService):
             self._ad.log.exception('Failed to stop adb logcat.')
         self._adb_logcat_process = None
 
-    def stop(self):
-        """Stops the adb logcat service."""
-        self._close_logcat_file()
-        self._stop_logcat_process()
-
     def pause(self):
         """Pauses logcat.
 
@@ -313,7 +320,7 @@ class Logcat(base_service.BaseService):
         logs are generated on the device than the device's log buffer can hold,
         some logs would be lost.
         """
-        self._stop_logcat_process()
+        self._stop()
 
     def resume(self):
         """Resumes a paused logcat service."""
