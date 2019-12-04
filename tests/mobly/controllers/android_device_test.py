@@ -855,9 +855,10 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
     def test_AndroidDevice_change_log_path_with_service(
-            self, stop_proc_mock, start_proc_mock, creat_dir_mock,
-            FastbootProxy, MockAdbProxy):
+            self, open_logcat_mock, stop_proc_mock, start_proc_mock,
+            creat_dir_mock, FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         ad.services.logcat.start()
         new_log_path = tempfile.mkdtemp()
@@ -911,9 +912,10 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
     def test_AndroidDevice_update_serial_with_service_running(
-            self, stop_proc_mock, start_proc_mock, creat_dir_mock,
-            FastbootProxy, MockAdbProxy):
+            self, open_logcat_mock, stop_proc_mock, start_proc_mock,
+            creat_dir_mock, FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         ad.services.logcat.start()
         expected_msg = '.* Cannot change device serial number when there is service running.'
@@ -1053,7 +1055,8 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch(
         'mobly.controllers.android_device_lib.snippet_client.SnippetClient')
     @mock.patch('mobly.utils.get_available_host_port')
-    def test_AndroidDevice_snippet_cleanup(self, MockGetPort,
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+    def test_AndroidDevice_snippet_cleanup(self, open_logcat_mock, MockGetPort,
                                            MockSnippetClient, MockFastboot,
                                            MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
@@ -1093,9 +1096,11 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
-    def test_AndroidDevice_handle_usb_disconnect(self, stop_proc_mock,
-                                                 start_proc_mock,
-                                                 FastbootProxy, MockAdbProxy):
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+    def test_AndroidDevice_handle_usb_disconnect(self, open_logcat_mock,
+                                                 stop_proc_mock,
+                                                 start_proc_mock, FastbootProxy,
+                                                 MockAdbProxy):
         class MockService(base_service.BaseService):
             def __init__(self, device, configs=None):
                 self._alive = False
@@ -1137,8 +1142,10 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
-    def test_AndroidDevice_handle_reboot(self, stop_proc_mock, start_proc_mock,
-                                         FastbootProxy, MockAdbProxy):
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+    def test_AndroidDevice_handle_reboot(self, open_logcat_mock, stop_proc_mock,
+                                         start_proc_mock, FastbootProxy,
+                                         MockAdbProxy):
         class MockService(base_service.BaseService):
             def __init__(self, device, configs=None):
                 self._alive = False
@@ -1180,9 +1187,10 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
     def test_AndroidDevice_handle_reboot_changes_build_info(
-            self, stop_proc_mock, start_proc_mock, FastbootProxy,
-            MockAdbProxy):
+            self, open_logcat_mock, stop_proc_mock, start_proc_mock,
+            FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')
         with ad.handle_reboot():
             ad.adb.mock_properties['ro.build.type'] = 'user'
@@ -1199,9 +1207,10 @@ class AndroidDeviceTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
     def test_AndroidDevice_handle_reboot_changes_build_info_with_caching(
-            self, stop_proc_mock, start_proc_mock, FastbootProxy,
-            MockAdbProxy):
+            self, open_logcat_mock, stop_proc_mock, start_proc_mock,
+            FastbootProxy, MockAdbProxy):
         ad = android_device.AndroidDevice(serial='1')  # Call getprops 1.
         rootable_states = [ad.is_rootable]
         with ad.handle_reboot():

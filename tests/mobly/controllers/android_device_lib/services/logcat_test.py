@@ -97,10 +97,11 @@ class LogcatTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
     @mock.patch('mobly.logger.get_log_file_timestamp')
-    def test_start_and_stop(self, get_timestamp_mock, stop_proc_mock,
-                            start_proc_mock, create_dir_mock, FastbootProxy,
-                            MockAdbProxy):
+    def test_start_and_stop(self, get_timestamp_mock, open_logcat_mock,
+                            stop_proc_mock, start_proc_mock, create_dir_mock,
+                            FastbootProxy, MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
         the calls.
@@ -116,7 +117,7 @@ class LogcatTest(unittest.TestCase):
             logging.log_path, 'AndroidDevice%s' % ad.serial,
             'logcat,%s,fakemodel,123.txt' % ad.serial)
         create_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = '"adb" -s %s logcat -v threadtime  >> %s'
+        adb_cmd = '"adb" -s %s logcat -v threadtime -T 1  >> %s'
         start_proc_mock.assert_called_with(
             adb_cmd % (ad.serial, '"%s"' % expected_log_path), shell=True)
         self.assertEqual(logcat_service.adb_logcat_file_path,
@@ -142,8 +143,10 @@ class LogcatTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
-    def test_update_config(self, stop_proc_mock, start_proc_mock,
-                           create_dir_mock, FastbootProxy, MockAdbProxy):
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+    def test_update_config(self, open_logcat_mock, stop_proc_mock,
+                           start_proc_mock, create_dir_mock, FastbootProxy,
+                           MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad)
@@ -157,11 +160,12 @@ class LogcatTest(unittest.TestCase):
         logcat_service.start()
         self.assertTrue(logcat_service._adb_logcat_process)
         create_dir_mock.assert_has_calls([mock.call('some/path')])
-        expected_adb_cmd = ('"adb" -s 1 logcat -v threadtime -a -b -c >> '
+        expected_adb_cmd = ('"adb" -s 1 logcat -v threadtime -T 1 -a -b -c >> '
                             '"some/path/log.txt"')
         start_proc_mock.assert_called_with(expected_adb_cmd, shell=True)
         self.assertEqual(logcat_service.adb_logcat_file_path,
                          'some/path/log.txt')
+        logcat_service.stop()
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -171,9 +175,10 @@ class LogcatTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
-    def test_update_config_while_running(self, stop_proc_mock, start_proc_mock,
-                                         create_dir_mock, FastbootProxy,
-                                         MockAdbProxy):
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+    def test_update_config_while_running(self, open_logcat_mock, stop_proc_mock,
+                                         start_proc_mock, create_dir_mock,
+                                         FastbootProxy, MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad)
@@ -185,6 +190,7 @@ class LogcatTest(unittest.TestCase):
                 'Logcat thread is already running, cannot start another one'):
             logcat_service.update_config(new_config)
         self.assertTrue(logcat_service.is_alive)
+        logcat_service.stop()
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -194,12 +200,13 @@ class LogcatTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
     @mock.patch(
         'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
         return_value=mock_android_device.MockAdbProxy('1'))
-    def test_pause_and_resume(self, clear_adb_mock, stop_proc_mock,
-                              start_proc_mock, create_dir_mock, FastbootProxy,
-                              MockAdbProxy):
+    def test_pause_and_resume(self, clear_adb_mock, open_logcat_mock,
+                              stop_proc_mock, start_proc_mock, create_dir_mock,
+                              FastbootProxy, MockAdbProxy):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad, logcat.Config(clear_log=True))
@@ -214,56 +221,7 @@ class LogcatTest(unittest.TestCase):
         logcat_service.resume()
         self.assertTrue(logcat_service.is_alive)
         clear_adb_mock.assert_not_called()
-
-    @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
-                return_value=mock_android_device.MockAdbProxy('1'))
-    @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
-                return_value=mock_android_device.MockFastbootProxy('1'))
-    @mock.patch('mobly.utils.start_standing_subprocess',
-                return_value='process')
-    @mock.patch('mobly.utils.stop_standing_subprocess')
-    @mock.patch(
-        'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
-        return_value=mock_android_device.MockAdbProxy('1'))
-    def test_logcat_service_create_excerpt(self, clear_adb_mock,
-                                           stop_proc_mock, start_proc_mock,
-                                           FastbootProxy, MockAdbProxy):
-        mock_serial = '1'
-        ad = android_device.AndroidDevice(serial=mock_serial)
-        logcat_service = logcat.Logcat(ad)
-        logcat_service.start()
-        FILE_CONTENT = 'Some log.\n'
-        with open(logcat_service.adb_logcat_file_path, 'w') as f:
-            f.write(FILE_CONTENT)
-        test_output_dir = os.path.join(self.tmp_dir, 'test_foo')
-        mock_record = mock.MagicMock()
-        mock_record.begin_time = 123
-        test_run_info = runtime_test_info.RuntimeTestInfo(
-            'test_foo', test_output_dir, mock_record)
-        actual_path1 = logcat_service.create_output_excerpts(test_run_info)[0]
-        expected_path1 = os.path.join(test_output_dir, 'test_foo-123',
-                                      'logcat,1,fakemodel,test_foo-123.txt')
-        self.assertEqual(expected_path1, actual_path1)
-        self.assertTrue(os.path.exists(expected_path1))
-        self.AssertFileContains(FILE_CONTENT, expected_path1)
-        self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
-        # Generate some new logs and do another excerpt.
-        FILE_CONTENT = 'Some more logs!!!\n'
-        with open(logcat_service.adb_logcat_file_path, 'w') as f:
-            f.write(FILE_CONTENT)
-        test_output_dir = os.path.join(self.tmp_dir, 'test_bar')
-        mock_record = mock.MagicMock()
-        mock_record.begin_time = 456
-        test_run_info = runtime_test_info.RuntimeTestInfo(
-            'test_bar', test_output_dir, mock_record)
-        actual_path2 = logcat_service.create_output_excerpts(test_run_info)[0]
-        expected_path2 = os.path.join(test_output_dir, 'test_bar-456',
-                                      'logcat,1,fakemodel,test_bar-456.txt')
-        self.assertEqual(expected_path2, actual_path2)
-        self.assertTrue(os.path.exists(expected_path2))
-        self.AssertFileContains(FILE_CONTENT, expected_path2)
-        self.AssertFileDoesNotContain(FILE_CONTENT, expected_path1)
-        self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
+        logcat_service.stop()
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -283,9 +241,16 @@ class LogcatTest(unittest.TestCase):
         mock_serial = '1'
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad)
-        logcat_service.start()
+        logcat_service._start()
+        # Generate logs before the file pointer is created.
+        # This message will not be captured in the excerpt.
+        NOT_IN_EXCERPT = 'Not in excerpt.\n'
+        with open(logcat_service.adb_logcat_file_path, 'a') as f:
+            f.write(NOT_IN_EXCERPT)
+        # With the file pointer created, generate logs and make an excerpt.
+        logcat_service._open_logcat_file()
         FILE_CONTENT = 'Some log.\n'
-        with open(logcat_service.adb_logcat_file_path, 'w') as f:
+        with open(logcat_service.adb_logcat_file_path, 'a') as f:
             f.write(FILE_CONTENT)
         test_output_dir = os.path.join(self.tmp_dir, 'test_foo')
         mock_record = mock.MagicMock()
@@ -298,10 +263,10 @@ class LogcatTest(unittest.TestCase):
         self.assertEqual(actual_path1, expected_path1)
         self.assertTrue(os.path.exists(expected_path1))
         self.AssertFileContains(FILE_CONTENT, expected_path1)
-        self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
+        self.AssertFileDoesNotContain(NOT_IN_EXCERPT, expected_path1)
         # Generate some new logs and do another excerpt.
         FILE_CONTENT = 'Some more logs!!!\n'
-        with open(logcat_service.adb_logcat_file_path, 'w') as f:
+        with open(logcat_service.adb_logcat_file_path, 'a') as f:
             f.write(FILE_CONTENT)
         test_output_dir = os.path.join(self.tmp_dir, 'test_bar')
         mock_record = mock.MagicMock()
@@ -315,7 +280,7 @@ class LogcatTest(unittest.TestCase):
         self.assertTrue(os.path.exists(expected_path2))
         self.AssertFileContains(FILE_CONTENT, expected_path2)
         self.AssertFileDoesNotContain(FILE_CONTENT, expected_path1)
-        self.assertFalse(os.path.exists(logcat_service.adb_logcat_file_path))
+        logcat_service.stop()
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -325,11 +290,12 @@ class LogcatTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
     @mock.patch('mobly.logger.get_log_file_timestamp')
     def test_take_logcat_with_extra_params(self, get_timestamp_mock,
-                                           stop_proc_mock, start_proc_mock,
-                                           create_dir_mock, FastbootProxy,
-                                           MockAdbProxy):
+                                           open_logcat_mock, stop_proc_mock,
+                                           start_proc_mock, create_dir_mock,
+                                           FastbootProxy, MockAdbProxy):
         """Verifies the steps of collecting adb logcat on an AndroidDevice
         object, including various function calls and the expected behaviors of
         the calls.
@@ -347,11 +313,12 @@ class LogcatTest(unittest.TestCase):
             logging.log_path, 'AndroidDevice%s' % ad.serial,
             'logcat,%s,fakemodel,123.txt' % ad.serial)
         create_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = '"adb" -s %s logcat -v threadtime -b radio >> %s'
+        adb_cmd = '"adb" -s %s logcat -v threadtime -T 1 -b radio >> %s'
         start_proc_mock.assert_called_with(
             adb_cmd % (ad.serial, '"%s"' % expected_log_path), shell=True)
         self.assertEqual(logcat_service.adb_logcat_file_path,
                          expected_log_path)
+        logcat_service.stop()
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
@@ -374,10 +341,12 @@ class LogcatTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
     @mock.patch('mobly.logger.get_log_line_timestamp',
                 return_value=MOCK_ADB_LOGCAT_END_TIME)
-    def test_cat_adb_log(self, mock_timestamp_getter, stop_proc_mock,
-                         start_proc_mock, FastbootProxy, MockAdbProxy):
+    def test_cat_adb_log(self, mock_timestamp_getter, open_logcat_mock,
+                         stop_proc_mock, start_proc_mock, FastbootProxy,
+                         MockAdbProxy):
         """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
         file, locates the correct adb log lines within the given time range,
         and writes the lines to the correct output file.
@@ -413,11 +382,13 @@ class LogcatTest(unittest.TestCase):
     @mock.patch('mobly.utils.start_standing_subprocess',
                 return_value='process')
     @mock.patch('mobly.utils.stop_standing_subprocess')
+    @mock.patch.object(logcat.Logcat, '_open_logcat_file')
     @mock.patch('mobly.logger.get_log_line_timestamp',
                 return_value=MOCK_ADB_LOGCAT_END_TIME)
     def test_cat_adb_log_with_unicode(self, mock_timestamp_getter,
-                                      stop_proc_mock, start_proc_mock,
-                                      FastbootProxy, MockAdbProxy):
+                                      open_logcat_mock, stop_proc_mock,
+                                      start_proc_mock, FastbootProxy,
+                                      MockAdbProxy):
         """Verifies that AndroidDevice.cat_adb_log loads the correct adb log
         file, locates the correct adb log lines within the given time range,
         and writes the lines to the correct output file.
