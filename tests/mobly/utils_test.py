@@ -19,6 +19,7 @@ import os
 import platform
 import shutil
 import socket
+import sys
 import subprocess
 import tempfile
 import time
@@ -166,6 +167,8 @@ class UtilsTest(unittest.TestCase):
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
 
+    @unittest.skipIf(sys.version_info >= (3, 4) and sys.version_info < (3, 5),
+                     'Python 3.4 does not support `None` max_workers.')
     def test_concurrent_exec_when_none_workers(self):
         def adder(a, b):
             return a + b
