@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from concurrent import futures
 import io
 import mock
 import os
@@ -43,7 +44,6 @@ class UtilsTest(unittest.TestCase):
     """This test class has unit tests for the implementation of everything
     under mobly.utils.
     """
-
     def setUp(self):
         system = platform.system()
         self.tmp_dir = tempfile.mkdtemp()
@@ -165,6 +165,233 @@ class UtilsTest(unittest.TestCase):
         p1 = psutil.Process(p.pid)
         utils.stop_standing_subprocess(p)
         self.assertFalse(p1.is_running())
+
+    def test_concurrent_exec_when_none_workers(self):
+        def adder(a, b):
+            return a + b
+
+        with mock.patch.object(
+                futures, 'ThreadPoolExecutor',
+                wraps=futures.ThreadPoolExecutor) as thread_pool_spy:
+            results = utils.concurrent_exec(adder, [(1, 1), (2, 2)],
+                                            max_workers=None)
+
+        thread_pool_spy.assert_called_once_with(max_workers=None)
+
+        self.assertEqual(len(results), 2)
+        self.assertIn(2, results)
+        self.assertIn(4, results)
+
+    def test_concurrent_exec_when_default_max_workers(self):
+        def adder(a, b):
+            return a + b
+
+        with mock.patch.object(
+                futures, 'ThreadPoolExecutor',
+                wraps=futures.ThreadPoolExecutor) as thread_pool_spy:
+            results = utils.concurrent_exec(adder, [(1, 1), (2, 2)])
+
+        thread_pool_spy.assert_called_once_with(max_workers=30)
+
+        self.assertEqual(len(results), 2)
+        self.assertIn(2, results)
+        self.assertIn(4, results)
+
+    def test_concurrent_exec_when_custom_max_workers(self):
+        def adder(a, b):
+            return a + b
+
+        with mock.patch.object(
+                futures, 'ThreadPoolExecutor',
+                wraps=futures.ThreadPoolExecutor) as thread_pool_spy:
+            results = utils.concurrent_exec(adder, [(1, 1), (2, 2)],
+                                            max_workers=1)
+
+        thread_pool_spy.assert_called_once_with(max_workers=1)
+        self.assertEqual(len(results), 2)
+        self.assertIn(2, results)
+        self.assertIn(4, results)
+
+    def test_concurrent_exec_makes_all_calls(self):
+        mock_function = mock.MagicMock()
+        _ = utils.concurrent_exec(mock_function, [
+            (1, 1),
+            (2, 2),
+            (3, 3),
+        ])
+        self.assertEqual(mock_function.call_count, 3)
+        mock_function.assert_has_calls(
+            [mock.call(1, 1),
+             mock.call(2, 2),
+             mock.call(3, 3)],
+            any_order=True)
+
+    def test_concurrent_exec_generates_results(self):
+        def adder(a, b):
+            return a + b
+
+        results = utils.concurrent_exec(adder, [(1, 1), (2, 2)])
+        self.assertEqual(len(results), 2)
+        self.assertIn(2, results)
+        self.assertIn(4, results)
+
+    def test_concurrent_exec_when_exception_makes_all_calls(self):
+        mock_call_recorder = mock.MagicMock()
+
+        def fake_int(a, ):
+            mock_call_recorder(a)
+            return int(a)
+
+        results = utils.concurrent_exec(fake_int, [
+            (1, ),
+            ('123', ),
+            ('not_int', ),
+            (5435, ),
+        ])
+
+        self.assertEqual(mock_call_recorder.call_count, 4)
+        mock_call_recorder.assert_has_calls([
+            mock.call(1),
+            mock.call('123'),
+            mock.call('not_int'),
+            mock.call(5435),
+        ],
+                                            any_order=True)
+
+    def test_concurrent_exec_when_exception_generates_results(self):
+        mock_call_recorder = mock.MagicMock()
+
+        def fake_int(a, ):
+            mock_call_recorder(a)
+            return int(a)
+
+        results = utils.concurrent_exec(fake_int, [
+            (1, ),
+            ('123', ),
+            ('not_int', ),
+            (5435, ),
+        ])
+
+        self.assertEqual(len(results), 4)
+        self.assertIn(1, results)
+        self.assertIn(123, results)
+        self.assertIn(5435, results)
+        exceptions = [
+            result for result in results if isinstance(result, Exception)
+        ]
+        self.assertEqual(len(exceptions), 1)
+        self.assertIsInstance(exceptions[0], ValueError)
+
+    def test_concurrent_exec_when_multiple_exceptions_makes_all_calls(self):
+        mock_call_recorder = mock.MagicMock()
+
+        def fake_int(a, ):
+            mock_call_recorder(a)
+            return int(a)
+
+        results = utils.concurrent_exec(fake_int, [
+            (1, ),
+            ('not_int1', ),
+            ('not_int2', ),
+            (5435, ),
+        ])
+
+        self.assertEqual(mock_call_recorder.call_count, 4)
+        mock_call_recorder.assert_has_calls([
+            mock.call(1),
+            mock.call('not_int1'),
+            mock.call('not_int2'),
+            mock.call(5435),
+        ],
+                                            any_order=True)
+
+    def test_concurrent_exec_when_multiple_exceptions_generates_results(self):
+        mock_call_recorder = mock.MagicMock()
+
+        def fake_int(a, ):
+            mock_call_recorder(a)
+            return int(a)
+
+        results = utils.concurrent_exec(fake_int, [
+            (1, ),
+            ('not_int1', ),
+            ('not_int2', ),
+            (5435, ),
+        ])
+
+        self.assertEqual(len(results), 4)
+        self.assertIn(1, results)
+        self.assertIn(5435, results)
+        exceptions = [
+            result for result in results if isinstance(result, Exception)
+        ]
+        self.assertEqual(len(exceptions), 2)
+        self.assertIsInstance(exceptions[0], ValueError)
+        self.assertIsInstance(exceptions[1], ValueError)
+        self.assertNotEqual(exceptions[0], exceptions[1])
+
+    def test_concurrent_exec_when_raising_exception_generates_results(self):
+        def adder(a, b):
+            return a + b
+
+        results = utils.concurrent_exec(adder, [(1, 1), (2, 2)],
+                                        raise_on_exception=True)
+        self.assertEqual(len(results), 2)
+        self.assertIn(2, results)
+        self.assertIn(4, results)
+
+    def test_concurrent_exec_when_raising_exception_makes_all_calls(self):
+        mock_call_recorder = mock.MagicMock()
+
+        def fake_int(a, ):
+            mock_call_recorder(a)
+            return int(a)
+
+        with self.assertRaisesRegex(RuntimeError, '.*not_int.*'):
+            _ = utils.concurrent_exec(fake_int, [
+                (1, ),
+                ('123', ),
+                ('not_int', ),
+                (5435, ),
+            ],
+                                      raise_on_exception=True)
+
+        self.assertEqual(mock_call_recorder.call_count, 4)
+        mock_call_recorder.assert_has_calls([
+            mock.call(1),
+            mock.call('123'),
+            mock.call('not_int'),
+            mock.call(5435),
+        ],
+                                            any_order=True)
+
+    def test_concurrent_exec_when_raising_multiple_exceptions_makes_all_calls(
+            self):
+        mock_call_recorder = mock.MagicMock()
+
+        def fake_int(a, ):
+            mock_call_recorder(a)
+            return int(a)
+
+        with self.assertRaisesRegex(
+                RuntimeError,
+                r'(?m).*(not_int1(.|\s)+not_int2|not_int2(.|\s)+not_int1).*'):
+            _ = utils.concurrent_exec(fake_int, [
+                (1, ),
+                ('not_int1', ),
+                ('not_int2', ),
+                (5435, ),
+            ],
+                                      raise_on_exception=True)
+
+        self.assertEqual(mock_call_recorder.call_count, 4)
+        mock_call_recorder.assert_has_calls([
+            mock.call(1),
+            mock.call('not_int1'),
+            mock.call('not_int2'),
+            mock.call(5435),
+        ],
+                                            any_order=True)
 
     def test_create_dir(self):
         new_path = os.path.join(self.tmp_dir, 'haha')

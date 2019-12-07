@@ -29,6 +29,7 @@ import re
 import signal
 import string
 import subprocess
+import sys
 import threading
 import time
 import traceback
@@ -256,7 +257,8 @@ def rand_ascii_str(length):
 
 
 # Thead/Process related functions.
-def concurrent_exec(func, param_list):
+def concurrent_exec(func, param_list, max_workers=30,
+                    raise_on_exception=False):
     """Executes a function with different parameters pseudo-concurrently.
 
     This is basically a map function. Each element (should be an iterable) in
@@ -267,16 +269,26 @@ def concurrent_exec(func, param_list):
         func: The function that parforms a task.
         param_list: A list of iterables, each being a set of params to be
             passed into the function.
+        max_workers: int, the number of workers to use for parallelizing the
+            tasks. By default, this is 30 workers.
+        raise_on_exception: bool, raises all of the task failures if any of the
+            tasks failed if `True`. By default, this is `False`.
 
     Returns:
         A list of return values from each function execution. If an execution
         caused an exception, the exception object will be the corresponding
         result.
+
+    Raises:
+        RuntimeError: If executing any of the tasks failed and
+          `raise_on_exception` is True.
     """
-    with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max_workers) as executor:
         # Start the load operations and mark each future with its params
         future_to_params = {executor.submit(func, *p): p for p in param_list}
         return_vals = []
+        exceptions = []
         for future in concurrent.futures.as_completed(future_to_params):
             params = future_to_params[future]
             try:
@@ -285,6 +297,22 @@ def concurrent_exec(func, param_list):
                 logging.exception("{} generated an exception: {}".format(
                     params, traceback.format_exc()))
                 return_vals.append(exc)
+                exceptions.append(exc)
+        if raise_on_exception and exceptions:
+            error_messages = []
+            if sys.version_info < (3, 0):
+                for exception in exceptions:
+                    error_messages.append(
+                        unicode(exception.message,
+                                encoding='utf-8',
+                                errors='replace'))
+            else:
+                for exception in exceptions:
+                    error_messages.append(''.join(
+                        traceback.format_exception(exception.__class__,
+                                                   exception,
+                                                   exception.__traceback__)))
+            raise RuntimeError('\n\n'.join(error_messages))
         return return_vals
 
 
