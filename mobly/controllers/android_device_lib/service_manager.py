@@ -15,6 +15,7 @@
 # TODO(xpconanfan: move the device errors to a more generic location so
 # other device controllers like iOS can share it.
 import collections
+import contextlib
 import inspect
 
 from mobly import expects
@@ -118,6 +119,20 @@ class ServiceManager(object):
                 (func.__name__, alias)):
                 func(self._service_objects[alias])
 
+    def list_live_services(self):
+        """Lists the aliases of all the services that are alive.
+
+        Order of this list is determined by the order the services are
+        registered in.
+
+        Returns:
+            list of strings, the aliases of the services that are running.
+        """
+        aliases = []
+        self.for_each(lambda service: aliases.append(service.alias)
+                      if service.is_alive else None)
+        return aliases
+
     def create_output_excerpts_all(self, test_info):
         """Creates output excerpts from all services.
 
@@ -134,6 +149,8 @@ class ServiceManager(object):
         excerpt_paths = {}
 
         def create_output_excerpts_for_one(service):
+            if not service.is_alive:
+                return
             paths = service.create_output_excerpts(test_info)
             excerpt_paths[service.alias] = paths
 
@@ -159,6 +176,24 @@ class ServiceManager(object):
                 with expects.expect_no_raises('Failed to start service "%s".' %
                                               alias):
                     service.start()
+
+    def start_services(self, service_alises):
+        """Starts the specified services.
+
+        Services will be resumed in the order specified by the input list.
+
+        Args:
+            service_alises: list of strings, the aliases of services to start.
+        """
+        for name in service_alises:
+            if name not in self._service_objects:
+                raise Error(
+                    self._device,
+                    'No service is registered under the name "%s", cannot start.'
+                    % name)
+            service = self._service_objects[name]
+            if not service.is_alive:
+                service.start()
 
     def stop_all(self):
         """Stops all active service instances.
@@ -193,6 +228,24 @@ class ServiceManager(object):
         for alias, service in self._service_objects.items():
             with expects.expect_no_raises('Failed to resume service "%s".' %
                                           alias):
+                service.resume()
+
+    def resume_services(self, service_alises):
+        """Resumes the specified services.
+
+        Services will be resumed in the order specified by the input list.
+
+        Args:
+            service_alises: list of strings, the names of services to start.
+        """
+        for name in service_alises:
+            if name not in self._service_objects:
+                raise Error(
+                    self._device,
+                    'No service is registered under the name "%s", cannot resume.'
+                    % name)
+            service = self._service_objects[name]
+            if not service.is_alive:
                 service.resume()
 
     def __getattr__(self, name):
