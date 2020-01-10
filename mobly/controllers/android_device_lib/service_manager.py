@@ -235,7 +235,6 @@ class ServiceManager(object):
         """Resumes the specified services.
 
         Services will be resumed in the order specified by the input list.
-        No-op for services that are already running.
 
         Args:
             service_alises: list of strings, the names of services to start.
@@ -247,8 +246,7 @@ class ServiceManager(object):
                     'No service is registered under the name "%s", cannot resume.'
                     % name)
             service = self._service_objects[name]
-            if not service.is_alive:
-                service.resume()
+            service.resume()
 
     def __getattr__(self, name):
         """Syntactic sugar to enable direct access of service objects by alias.
