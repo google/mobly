@@ -247,8 +247,7 @@ class ServiceManager(object):
                     'No service is registered under the name "%s", cannot resume.'
                     % name)
             service = self._service_objects[name]
-            if not service.is_alive:
-                service.resume()
+            service.resume()
 
     def __getattr__(self, name):
         """Syntactic sugar to enable direct access of service objects by alias.
