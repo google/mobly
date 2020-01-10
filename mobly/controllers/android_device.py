@@ -649,6 +649,7 @@ class AndroidDevice(object):
 
         For sample usage, see self.reboot().
         """
+        live_service_names = self.services.list_live_services()
         self.services.stop_all()
         # On rooted devices, system properties may change on reboot, so disable
         # the `build_info` cache by setting `_is_rebooting` to True and
@@ -676,7 +677,7 @@ class AndroidDevice(object):
             self._is_rebooting = False
             if self.is_rootable:
                 self.root_adb()
-        self.services.start_all()
+        self.services.start_services(live_service_names)
 
     @contextlib.contextmanager
     def handle_usb_disconnect(self):
@@ -725,11 +726,12 @@ class AndroidDevice(object):
                   # context
                   ad.adb.wait_for_device(timeout=SOME_TIMEOUT)
         """
+        live_service_names = self.services.list_live_services()
         self.services.pause_all()
         try:
             yield
         finally:
-            self.services.resume_all()
+            self.services.resume_services(live_service_names)
 
     @property
     def build_info(self):

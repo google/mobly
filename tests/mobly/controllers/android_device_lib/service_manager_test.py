@@ -46,9 +46,11 @@ class MockService(base_service.BaseService):
 
     def pause(self):
         self.pause_func()
+        self._alive = False
 
     def resume(self):
         self.resume_func()
+        self._alive = True
 
 
 class ServiceManagerTest(unittest.TestCase):
@@ -423,6 +425,49 @@ class ServiceManagerTest(unittest.TestCase):
         self.assertEqual(service2.resume_func.call_count, 1)
         self.assert_recorded_one_error(
             'Failed to resume service "mock_service1".')
+
+    def test_list_live_services(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        manager.register('mock_service1', MockService, start_service=False)
+        manager.register('mock_service2', MockService)
+        aliases = manager.list_live_services()
+        self.assertEqual(aliases, ['mock_service2'])
+        manager.stop_all()
+        aliases = manager.list_live_services()
+        self.assertEqual(aliases, [])
+
+    def test_start_services(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        manager.register('mock_service1', MockService, start_service=False)
+        manager.register('mock_service2', MockService, start_service=False)
+        manager.start_services(['mock_service2'])
+        aliases = manager.list_live_services()
+        self.assertEqual(aliases, ['mock_service2'])
+
+    def test_start_services_non_existent(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        msg = ('.* No service is registered under the name "mock_service", '
+               'cannot start.')
+        with self.assertRaisesRegex(service_manager.Error, msg):
+            manager.start_services(['mock_service'])
+
+    def test_resume_services(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        manager.register('mock_service1', MockService)
+        manager.register('mock_service2', MockService)
+        manager.pause_all()
+        aliases = manager.list_live_services()
+        self.assertEqual(aliases, [])
+        manager.resume_services(['mock_service2'])
+        aliases = manager.list_live_services()
+        self.assertEqual(aliases, ['mock_service2'])
+
+    def test_resume_services_non_existent(self):
+        manager = service_manager.ServiceManager(mock.MagicMock())
+        msg = ('.* No service is registered under the name "mock_service", '
+               'cannot resume.')
+        with self.assertRaisesRegex(service_manager.Error, msg):
+            manager.resume_services(['mock_service'])
 
 
 if __name__ == '__main__':
