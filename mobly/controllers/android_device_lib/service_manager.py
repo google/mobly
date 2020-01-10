@@ -235,7 +235,6 @@ class ServiceManager(object):
         """Resumes the specified services.
 
         Services will be resumed in the order specified by the input list.
-        No-op for services that are already running.
 
         Args:
             service_alises: list of strings, the names of services to start.
