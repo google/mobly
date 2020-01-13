@@ -1,6 +1,32 @@
 # Mobly Release History
 
 
+## Mobly Release 1.10: Framework and `AndroidDevice` Output Improvements
+
+*This is likely the last major release that preserves Py2 compatibility.*
+
+### New
+* `AndroidDevice` now has a new `is_emulator` property.
+* Better multi-user support in `AndroidDevice`.
+* Standardized logging and output file names.
+* Improvement in `utils.concurrent_exec`.
+* Support class-based decorator on Mobly test methods.
+
+### Breaking Changes
+Due to the standardization of output files for both Mobly and `AndroidDevice`
+controller, if you have custom parser of Mobly outputs, you need to adjust
+your parsing logic to accommodate the changes.
+
+* Major change in output directory structure #650
+* Names of `AndroidDevice`'s output files have been standardized #633
+* Changed multiple references of `test_bed` to `testbed` in code #641
+
+### Fixes
+* `AndroidDevice`'s service manager behavior for reboot and USB disconnect.
+
+[Full list of changes](https://github.com/google/mobly/milestone/23?closed=1)
+
+
 ## Mobly Release 1.9.1: Documentation Fix
 
 Fix readthedocs documentation bug introduced in 1.9.
