@@ -17,6 +17,7 @@ from past.builtins import basestring
 import base64
 import concurrent.futures
 import datetime
+import errno
 import inspect
 import io
 import logging
@@ -100,7 +101,7 @@ def create_dir(path):
             os.makedirs(full_path)
         except OSError as e:
             # ignore the error for dir already exist.
-            if e.errno != os.errno.EEXIST:
+            if e.errno != errno.EEXIST:
                 raise
 
 
