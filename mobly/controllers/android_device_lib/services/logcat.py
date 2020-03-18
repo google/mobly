@@ -292,7 +292,7 @@ class Logcat(base_service.BaseService):
             logcat_file_path = os.path.join(self._ad.log_path, f_name)
             self.adb_logcat_file_path = logcat_file_path
         utils.create_dir(os.path.dirname(self.adb_logcat_file_path))
-        cmd = '"%s" -s %s logcat -v threadtime -T 1 %s >> "%s"' % (
+        cmd = ' "%s" -s %s logcat -v threadtime -T 1 %s >> "%s" ' % (
             adb.ADB, self._ad.serial, self._config.logcat_params,
             self.adb_logcat_file_path)
         process = utils.start_standing_subprocess(cmd, shell=True)
