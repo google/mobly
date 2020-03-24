@@ -117,9 +117,9 @@ class LogcatTest(unittest.TestCase):
             logging.log_path, 'AndroidDevice%s' % ad.serial,
             'logcat,%s,fakemodel,123.txt' % ad.serial)
         create_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = '"adb" -s %s logcat -v threadtime -T 1  >> %s'
+        adb_cmd = ' "adb" -s %s logcat -v threadtime -T 1  >> %s'
         start_proc_mock.assert_called_with(
-            adb_cmd % (ad.serial, '"%s"' % expected_log_path), shell=True)
+            adb_cmd % (ad.serial, '"%s" ' % expected_log_path), shell=True)
         self.assertEqual(logcat_service.adb_logcat_file_path,
                          expected_log_path)
         expected_msg = (
@@ -160,8 +160,8 @@ class LogcatTest(unittest.TestCase):
         logcat_service.start()
         self.assertTrue(logcat_service._adb_logcat_process)
         create_dir_mock.assert_has_calls([mock.call('some/path')])
-        expected_adb_cmd = ('"adb" -s 1 logcat -v threadtime -T 1 -a -b -c >> '
-                            '"some/path/log.txt"')
+        expected_adb_cmd = (' "adb" -s 1 logcat -v threadtime -T 1 -a -b -c >> '
+                            '"some/path/log.txt" ')
         start_proc_mock.assert_called_with(expected_adb_cmd, shell=True)
         self.assertEqual(logcat_service.adb_logcat_file_path,
                          'some/path/log.txt')
@@ -313,9 +313,9 @@ class LogcatTest(unittest.TestCase):
             logging.log_path, 'AndroidDevice%s' % ad.serial,
             'logcat,%s,fakemodel,123.txt' % ad.serial)
         create_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-        adb_cmd = '"adb" -s %s logcat -v threadtime -T 1 -b radio >> %s'
+        adb_cmd = ' "adb" -s %s logcat -v threadtime -T 1 -b radio >> %s'
         start_proc_mock.assert_called_with(
-            adb_cmd % (ad.serial, '"%s"' % expected_log_path), shell=True)
+            adb_cmd % (ad.serial, '"%s" ' % expected_log_path), shell=True)
         self.assertEqual(logcat_service.adb_logcat_file_path,
                          expected_log_path)
         logcat_service.stop()
