@@ -1005,11 +1005,11 @@ class AndroidDevice(object):
         self.log.debug('Bugreport taken at %s.', full_out_path)
         return full_out_path
 
-    def take_screenshot(self, path):
+    def take_screenshot(self, destination):
         """Takes a screenshot of the device.
 
         Args:
-            path: string, full path to the directory to save in.
+            destination: string, full path to the directory to save in.
 
         Returns:
             string, full path to the screenshot file on the host.
@@ -1018,9 +1018,9 @@ class AndroidDevice(object):
         device_path = os.path.join('/storage/emulated/0/', filename)
         self.adb.shell(['screencap', '-p', device_path],
                        timeout=TAKE_SCREENSHOT_TIMEOUT_SECOND)
-        utils.create_dir(path)
-        self.adb.pull([device_path, path])
-        pic_path = os.path.join(path, filename)
+        utils.create_dir(destination)
+        self.adb.pull([device_path, destination])
+        pic_path = os.path.join(destination, filename)
         self.log.debug('Screenshot taken, saved on the host: %s', pic_path)
         self.adb.shell(['rm', device_path])
         return pic_path
