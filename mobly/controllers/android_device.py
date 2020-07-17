@@ -189,7 +189,11 @@ def parse_device_list(device_list_str, key):
     Returns:
         A list of android device serial numbers.
     """
-    clean_lines = new_str(device_list_str, 'utf-8').strip().split('\n')
+    try:
+        clean_lines = new_str(device_list_str, 'utf-8').strip().split('\n')
+    except UnicodeDecodeError:
+        logging.warning("unicode decode error, origin str: %s", device_list_str)
+        raise
     results = []
     for line in clean_lines:
         tokens = line.strip().split('\t')
