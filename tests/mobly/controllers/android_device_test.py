@@ -1298,6 +1298,18 @@ class AndroidDeviceTest(unittest.TestCase):
             'adb.AdbError or adb.AdbTimeoutError exception raised but not handled.'
         )
 
+    def test_AndroidDevice_parse_parse_device_list_when_decode_error(self):
+        gbk_str = b'\xc4\xe3\xba\xc3'
+        raised = False
+        try:
+            android_device.parse_device_list(gbk_str, "somekey")
+        except UnicodeDecodeError:
+            raised = True
+        self.assertTrue(
+            raised,
+            'did not raise an exception when parsing gbk bytes'
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

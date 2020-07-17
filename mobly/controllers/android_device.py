@@ -21,7 +21,6 @@ import os
 import re
 import shutil
 import time
-import warnings
 
 from mobly import logger as mobly_logger
 from mobly import runtime_test_info
@@ -192,9 +191,9 @@ def parse_device_list(device_list_str, key):
     """
     try:
         clean_lines = new_str(device_list_str, 'utf-8').strip().split('\n')
-    except UnicodeDecodeError as e:
-        warnings.warn("unicode decode error, origin str: {}".format(device_list_str))
-        raise e
+    except UnicodeDecodeError:
+        logging.warning("unicode decode error, origin str: %s", device_list_str)
+        raise
     results = []
     for line in clean_lines:
         tokens = line.strip().split('\t')
