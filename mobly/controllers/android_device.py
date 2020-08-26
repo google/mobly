@@ -1000,6 +1000,7 @@ class AndroidDevice(object):
                 raise DeviceError(self, 'Failed to take bugreport: %s' % out)
             br_out_path = out.split(':')[1].strip()
             self.adb.pull([br_out_path, full_out_path])
+            self.adb.shell(['rm', br_out_path])
         else:
             # shell=True as this command redirects the stdout to a local file
             # using shell redirection.
