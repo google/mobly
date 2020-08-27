@@ -336,7 +336,7 @@ def run_command(cmd,
         stdout: file handle, the file handle to write std out to. If None is
             given, then subprocess.PIPE is used. See subprocess.Popen()
             documentation.
-        stdee: file handle, the file handle to write std err to. If None is
+        stderr: file handle, the file handle to write std err to. If None is
             given, then subprocess.PIPE is used. See subprocess.Popen()
             documentation.
         shell: bool, True to run this command through the system shell,
