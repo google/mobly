@@ -219,6 +219,7 @@ class JsonRpcClientBase(object):
             ProtocolError: Raised when there is an error in the protocol.
         """
         # socket.create_connection throws different exceptions in Python 2/3
+        # TODO: Use ConnectionRefusedError directly once PY2 is deprecated.
         ExceptionAlias = socket.error
         if sys.version_info >= (3, 0):
           ExceptionAlias = ConnectionRefusedError
