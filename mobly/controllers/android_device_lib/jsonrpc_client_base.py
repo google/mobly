@@ -218,8 +218,15 @@ class JsonRpcClientBase(object):
             ProtocolError: Raised when there is an error in the protocol.
         """
         self._counter = self._id_counter()
-        self._conn = socket.create_connection(('localhost', self.host_port),
-                                              _SOCKET_CONNECTION_TIMEOUT)
+        try:
+          self._conn = socket.create_connection(('localhost', self.host_port),
+                                                _SOCKET_CONNECTION_TIMEOUT)
+        except ConnectionRefusedError as err:
+          self.log.error('Failled to connect to localhost, trying 127.0.0.1: {}'
+                         .format(str(err)))
+          self._conn = socket.create_connection(('127.0.0.1', self.host_port),
+                                                _SOCKET_CONNECTION_TIMEOUT)
+
         self._conn.settimeout(_SOCKET_READ_TIMEOUT)
         self._client = self._conn.makefile(mode='brw')
 
