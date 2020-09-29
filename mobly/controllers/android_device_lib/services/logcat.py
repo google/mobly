@@ -139,7 +139,9 @@ class Logcat(base_service.BaseService):
         excerpt_file_path = os.path.join(dest_path, filename)
         with io.open(excerpt_file_path, 'w', encoding='utf-8',
                      errors='replace') as out:
-            while True:
+            # Devices may accidentally go offline during test,
+            # check not None before readline().
+            while self._adb_logcat_file_obj:
                 line = self._adb_logcat_file_obj.readline()
                 if not line:
                     break
