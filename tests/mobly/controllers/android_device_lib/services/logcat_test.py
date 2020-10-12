@@ -242,6 +242,31 @@ class LogcatTest(unittest.TestCase):
         ad = android_device.AndroidDevice(serial=mock_serial)
         logcat_service = logcat.Logcat(ad)
         logcat_service._start()
+
+        def _write_logcat_file_and_assert_excerpts_exists(logcat_file_content,
+                                                          test_begin_time,
+                                                          test_name):
+            with open(logcat_service.adb_logcat_file_path, 'a') as f:
+                f.write(logcat_file_content)
+            test_output_dir = os.path.join(self.tmp_dir, test_name)
+            mock_record = mock.MagicMock()
+            mock_record.begin_time = test_begin_time
+            test_run_info = runtime_test_info.RuntimeTestInfo(test_name,
+                                                              test_output_dir,
+                                                              mock_record)
+            actual_path = logcat_service.create_output_excerpts(test_run_info)[0]
+            expected_path = os.path.join(
+                test_output_dir, '{test_name}-{test_begin_time}'.format(
+                    test_name=test_name, test_begin_time=test_begin_time),
+                'logcat,{mock_serial},fakemodel,{test_name}-{test_begin_time}.txt'
+                .format(
+                    mock_serial=mock_serial,
+                    test_name=test_name,
+                    test_begin_time=test_begin_time))
+            self.assertEqual(actual_path, expected_path)
+            self.assertTrue(os.path.exists(expected_path))
+            return expected_path
+
         # Generate logs before the file pointer is created.
         # This message will not be captured in the excerpt.
         NOT_IN_EXCERPT = 'Not in excerpt.\n'
@@ -250,37 +275,32 @@ class LogcatTest(unittest.TestCase):
         # With the file pointer created, generate logs and make an excerpt.
         logcat_service._open_logcat_file()
         FILE_CONTENT = 'Some log.\n'
-        with open(logcat_service.adb_logcat_file_path, 'a') as f:
-            f.write(FILE_CONTENT)
-        test_output_dir = os.path.join(self.tmp_dir, 'test_foo')
-        mock_record = mock.MagicMock()
-        mock_record.begin_time = 123
-        test_run_info = runtime_test_info.RuntimeTestInfo(
-            'test_foo', test_output_dir, mock_record)
-        actual_path1 = logcat_service.create_output_excerpts(test_run_info)[0]
-        expected_path1 = os.path.join(test_output_dir, 'test_foo-123',
-                                      'logcat,1,fakemodel,test_foo-123.txt')
-        self.assertEqual(actual_path1, expected_path1)
-        self.assertTrue(os.path.exists(expected_path1))
+        expected_path1 = _write_logcat_file_and_assert_excerpts_exists(
+            logcat_file_content=FILE_CONTENT,
+            test_begin_time=123,
+            test_name='test_foo',
+        )
         self.AssertFileContains(FILE_CONTENT, expected_path1)
         self.AssertFileDoesNotContain(NOT_IN_EXCERPT, expected_path1)
         # Generate some new logs and do another excerpt.
         FILE_CONTENT = 'Some more logs!!!\n'
-        with open(logcat_service.adb_logcat_file_path, 'a') as f:
-            f.write(FILE_CONTENT)
-        test_output_dir = os.path.join(self.tmp_dir, 'test_bar')
-        mock_record = mock.MagicMock()
-        mock_record.begin_time = 456
-        test_run_info = runtime_test_info.RuntimeTestInfo(
-            'test_bar', test_output_dir, mock_record)
-        actual_path2 = logcat_service.create_output_excerpts(test_run_info)[0]
-        expected_path2 = os.path.join(test_output_dir, 'test_bar-456',
-                                      'logcat,1,fakemodel,test_bar-456.txt')
-        self.assertEqual(actual_path2, expected_path2)
-        self.assertTrue(os.path.exists(expected_path2))
+        expected_path2 = _write_logcat_file_and_assert_excerpts_exists(
+            logcat_file_content=FILE_CONTENT,
+            test_begin_time=456,
+            test_name='test_bar',
+        )
         self.AssertFileContains(FILE_CONTENT, expected_path2)
         self.AssertFileDoesNotContain(FILE_CONTENT, expected_path1)
+        # Simulate devices accidentally go offline, logcat service stopped.
         logcat_service.stop()
+        FILE_CONTENT = 'Whatever logs\n'
+        expected_path3 = _write_logcat_file_and_assert_excerpts_exists(
+            logcat_file_content=FILE_CONTENT,
+            test_begin_time=789,
+            test_name='test_offline',
+        )
+        self.assertEqual(os.stat(expected_path3).st_size, 0)
+
 
     @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
                 return_value=mock_android_device.MockAdbProxy('1'))
