@@ -22,6 +22,7 @@ import socket
 import sys
 import subprocess
 import tempfile
+import threading
 import time
 from future.tests.base import unittest
 
@@ -240,9 +241,11 @@ class UtilsTest(unittest.TestCase):
 
     def test_concurrent_exec_when_exception_makes_all_calls(self):
         mock_call_recorder = mock.MagicMock()
+        lock_call_count = threading.Lock()
 
         def fake_int(a, ):
-            mock_call_recorder(a)
+            with lock_call_count:
+                mock_call_recorder(a)
             return int(a)
 
         results = utils.concurrent_exec(fake_int, [
@@ -263,9 +266,11 @@ class UtilsTest(unittest.TestCase):
 
     def test_concurrent_exec_when_exception_generates_results(self):
         mock_call_recorder = mock.MagicMock()
+        lock_call_count = threading.Lock()
 
         def fake_int(a, ):
-            mock_call_recorder(a)
+            with lock_call_count:
+                mock_call_recorder(a)
             return int(a)
 
         results = utils.concurrent_exec(fake_int, [
@@ -287,9 +292,11 @@ class UtilsTest(unittest.TestCase):
 
     def test_concurrent_exec_when_multiple_exceptions_makes_all_calls(self):
         mock_call_recorder = mock.MagicMock()
+        lock_call_count = threading.Lock()
 
         def fake_int(a, ):
-            mock_call_recorder(a)
+            with lock_call_count:
+                mock_call_recorder(a)
             return int(a)
 
         results = utils.concurrent_exec(fake_int, [
@@ -310,9 +317,11 @@ class UtilsTest(unittest.TestCase):
 
     def test_concurrent_exec_when_multiple_exceptions_generates_results(self):
         mock_call_recorder = mock.MagicMock()
+        lock_call_count = threading.Lock()
 
         def fake_int(a, ):
-            mock_call_recorder(a)
+            with lock_call_count:
+                mock_call_recorder(a)
             return int(a)
 
         results = utils.concurrent_exec(fake_int, [
@@ -345,9 +354,11 @@ class UtilsTest(unittest.TestCase):
 
     def test_concurrent_exec_when_raising_exception_makes_all_calls(self):
         mock_call_recorder = mock.MagicMock()
+        lock_call_count = threading.Lock()
 
         def fake_int(a, ):
-            mock_call_recorder(a)
+            with lock_call_count:
+                mock_call_recorder(a)
             return int(a)
 
         with self.assertRaisesRegex(RuntimeError, '.*not_int.*'):
@@ -371,9 +382,11 @@ class UtilsTest(unittest.TestCase):
     def test_concurrent_exec_when_raising_multiple_exceptions_makes_all_calls(
             self):
         mock_call_recorder = mock.MagicMock()
+        lock_call_count = threading.Lock()
 
         def fake_int(a, ):
-            mock_call_recorder(a)
+            with lock_call_count:
+                mock_call_recorder(a)
             return int(a)
 
         with self.assertRaisesRegex(
