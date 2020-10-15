@@ -228,6 +228,48 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         self.assertEqual(next(client._counter), 10)
 
+    @mock.patch('socket.create_connection')
+    def test_rpc_verbose_logging(self, mock_create_connection):
+        """Test rpc response fully write into DEBUG level log.
+        """
+        fake_file = self.setup_mock_socket_file(mock_create_connection)
+        fake_file.resp = self.MOCK_REST_LONG_STRINGS
+
+        client = FakeRpcClient()
+        client.connect()
+        client.set_snippet_client_verbose_logging(True)
+
+        response = client._client_receive()
+        self.assertEqual(response, self.MOCK_REST_LONG_STRINGS)
+
+        client.log.debug.assert_called_with(
+            'Snippet received: %s', self.MOCK_REST_LONG_STRINGS)
+
+    @mock.patch('socket.create_connection')
+    def test_rpc_truncated_logging(self, mock_create_connection):
+        """Test rpc response truncated with given lenght in DEBUG level log.
+        """
+        fake_file = self.setup_mock_socket_file(mock_create_connection)
+        fake_file.resp = self.MOCK_REST_LONG_STRINGS
+
+        test_truncate_lengths = [1024, 100, 10000]
+
+        client = FakeRpcClient()
+        client.connect()
+        client.set_snippet_client_verbose_logging(False)
+
+        for test_length in test_truncate_lengths:
+            client.max_rpc_return_value_length = test_length
+            response = client._client_receive()
+
+            # Response should contain full response.
+            self.assertEqual(response, self.MOCK_REST_LONG_STRINGS)
+
+            # DEBUG level log should truncated by given length.
+            client.log.debug.assert_called_with(
+                'Snippet received: %s',
+                self.MOCK_REST_LONG_STRINGS[:int(test_length)])
+
 
 if __name__ == '__main__':
     unittest.main()
