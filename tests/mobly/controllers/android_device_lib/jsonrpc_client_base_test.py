@@ -20,10 +20,10 @@ import socket
 import random
 import string
 
-from absl.testing import parameterized
 from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
+from parameterized import parameterized
 from tests.lib import jsonrpc_client_test_base
 
 
@@ -33,8 +33,7 @@ class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
             app_name='FakeRpcClient', ad=mock.Mock())
 
 
-class JsonRpcClientBaseTest(parameterized.TestCase,
-                            jsonrpc_client_test_base.JsonRpcClientTestBase):
+class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.jsonrpc_client_base.
     """
 
@@ -233,19 +232,14 @@ class JsonRpcClientBaseTest(parameterized.TestCase,
 
         self.assertEqual(next(client._counter), 10)
 
-    @parameterized.named_parameters(
-        {
-            'testcase_name': 'long_response',
-            'total_length': 4000
-        }, {
-            'testcase_name': 'fit_legnth_response',
-            'total_length': 1024
-        }, {
-            'testcase_name': 'short_response',
-            'total_length': 100
-        })
+    @parameterized.expand([
+        ("long_response", 4000),
+        ("fit_legnth_response", 1024),
+        ("short_response", 100),
+    ])
     @mock.patch('socket.create_connection')
-    def test_rpc_verbose_logging(self, mock_create_connection, total_length):
+    def test_rpc_verbose_logging(self, name, total_length,
+                                 mock_create_connection):
         """Test rpc response fully write into DEBUG level log by default."""
         # TODO: Py2 deprecation
         # .encode('utf-8') is for py2 compatibility, after py2 deprecation, it
@@ -270,19 +264,14 @@ class JsonRpcClientBaseTest(parameterized.TestCase,
         client.log.debug.assert_called_with('Snippet received: %s',
                                             mock_testing_rest_bytes)
 
-    @parameterized.named_parameters(
-        {
-            'testcase_name': 'long_response',
-            'total_length': 4000
-        }, {
-            'testcase_name': 'fit_legnth_response',
-            'total_length': 1024
-        }, {
-            'testcase_name': 'short_response',
-            'total_length': 100
-        })
+    @parameterized.expand([
+        ("long_response", 4000),
+        ("fit_legnth_response", 1024),
+        ("short_response", 100),
+    ])
     @mock.patch('socket.create_connection')
-    def test_rpc_truncated_logging(self, mock_create_connection, total_length):
+    def test_rpc_truncated_logging(self, title, total_length,
+                                   mock_create_connection):
         """Test rpc response truncated with given length in DEBUG level log.
         """
         # TODO: Py2 deprecation
@@ -296,7 +285,7 @@ class JsonRpcClientBaseTest(parameterized.TestCase,
             (self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH %
              json_result_str).encode('utf-8'))
 
-        target_log_len = jsonrpc_client_base._MAX_RPC_RETURN_LENGTH_IN_DEBUG_LOG
+        target_log_len = jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH
 
         fake_file = self.setup_mock_socket_file(mock_create_connection)
         fake_file.resp = mock_testing_rest_bytes
