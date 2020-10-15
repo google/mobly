@@ -70,6 +70,9 @@ _SOCKET_CONNECTION_TIMEOUT = 60
 # Maximum time to wait for a response message on the socket.
 _SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
 
+# Maximum logging length of Rpc response in DEBUG level.
+_MAX_RPC_RETURN_LENGTH_IN_DEBUG_LOG = 1024
+
 
 class Error(errors.DeviceError):
     pass
@@ -138,8 +141,7 @@ class JsonRpcClientBase(object):
         self._counter = None
         self._lock = threading.Lock()
         self._event_client = None
-        self.verbose_logging = False   # Logging RPC response with full string or truncated by given length
-        self.max_rpc_return_value_length = 1024
+        self.verbose_logging = True
 
     def __del__(self):
         self.disconnect()
@@ -295,11 +297,14 @@ class JsonRpcClientBase(object):
         try:
             response = self._client.readline()
             response_log = str(response)
-            if self.verbose_logging:
-                self.log.debug('Snippet received: %s', response)
+            if self.verbose_logging or\
+                _MAX_RPC_RETURN_LENGTH_IN_DEBUG_LOG >= len(response):
+              self.log.debug('Snippet received: %s', response)
             else:
-                self.log.debug('Snippet received: %s',
-                               response_log[:self.max_rpc_return_value_length])
+              self.log.debug(
+                  'Snippet received: %s...(%d bytes are truncated)',
+                  response_log[:_MAX_RPC_RETURN_LENGTH_IN_DEBUG_LOG],
+                  len(response) - _MAX_RPC_RETURN_LENGTH_IN_DEBUG_LOG)
             return response
         except socket.error as e:
             raise Error(
@@ -385,7 +390,7 @@ class JsonRpcClientBase(object):
             yield i
             i += 1
 
-    def set_snippet_client_verbose_logging(self, verbose=False):
+    def set_snippet_client_verbose_logging(self, verbose=True):
         """Switches verbose logging. True for logging full RPC response.
 
         By default it will only write max_rpc_return_value_length for Rpc return

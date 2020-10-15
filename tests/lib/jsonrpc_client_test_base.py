@@ -39,9 +39,9 @@ class JsonRpcClientTestBase(unittest.TestCase):
         b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
         b'"callback": "1-0"}')
     MOCK_RESP_WITH_ERROR = b'{"id": 0, "error": 1, "status": 1, "uid": 1}'
-    MOCK_REST_LONG_STRINGS = bytes((
-        '{"id": 0, "result": "' + 'Very long long long long response. ' * 40 +
-        '", "error": null, "status": 0, "callback": null}').encode('utf-8'))
+    MOCK_RESP_FLEXIABLE_RESULT_LENGTH = (
+        '{"id": 0, "result": "%s", "error": null, "status": 0, "callback": null}'
+    )
 
     class MockSocketFile(object):
         def __init__(self, resp):

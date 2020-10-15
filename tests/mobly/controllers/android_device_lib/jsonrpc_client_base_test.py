@@ -17,6 +17,10 @@ from builtins import str
 import json
 import mock
 import socket
+import random
+import string
+
+from absl.testing import parameterized
 from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
@@ -29,7 +33,8 @@ class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
             app_name='FakeRpcClient', ad=mock.Mock())
 
 
-class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
+class JsonRpcClientBaseTest(parameterized.TestCase,
+                            jsonrpc_client_test_base.JsonRpcClientTestBase):
     """Unit tests for mobly.controllers.android_device_lib.jsonrpc_client_base.
     """
 
@@ -228,47 +233,90 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         self.assertEqual(next(client._counter), 10)
 
+    @parameterized.named_parameters(
+        {
+            'testcase_name': 'long_response',
+            'total_length': 4000
+        }, {
+            'testcase_name': 'fit_legnth_response',
+            'total_length': 1024
+        }, {
+            'testcase_name': 'short_response',
+            'total_length': 100
+        })
     @mock.patch('socket.create_connection')
-    def test_rpc_verbose_logging(self, mock_create_connection):
-        """Test rpc response fully write into DEBUG level log.
-        """
+    def test_rpc_verbose_logging(self, mock_create_connection, total_length):
+        """Test rpc response fully write into DEBUG level log by default."""
+        # TODO: Py2 deprecation
+        # .encode('utf-8') is for py2 compatibility, after py2 deprecation, it
+        # could be modified to byte('xxxxx', 'utf-8')
+        json_result_str = ''.join(
+            random.choice(string.ascii_lowercase)
+            for i in range(total_length -
+                           len(self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH) + 2))
+        mock_testing_rest_bytes = bytes(
+            (self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH %
+             json_result_str).encode('utf-8'))
+
         fake_file = self.setup_mock_socket_file(mock_create_connection)
-        fake_file.resp = self.MOCK_REST_LONG_STRINGS
+        fake_file.resp = mock_testing_rest_bytes
 
         client = FakeRpcClient()
         client.connect()
-        client.set_snippet_client_verbose_logging(True)
 
         response = client._client_receive()
-        self.assertEqual(response, self.MOCK_REST_LONG_STRINGS)
+        self.assertEqual(response, mock_testing_rest_bytes)
 
-        client.log.debug.assert_called_with(
-            'Snippet received: %s', self.MOCK_REST_LONG_STRINGS)
+        client.log.debug.assert_called_with('Snippet received: %s',
+                                            mock_testing_rest_bytes)
 
+    @parameterized.named_parameters(
+        {
+            'testcase_name': 'long_response',
+            'total_length': 4000
+        }, {
+            'testcase_name': 'fit_legnth_response',
+            'total_length': 1024
+        }, {
+            'testcase_name': 'short_response',
+            'total_length': 100
+        })
     @mock.patch('socket.create_connection')
-    def test_rpc_truncated_logging(self, mock_create_connection):
-        """Test rpc response truncated with given lenght in DEBUG level log.
+    def test_rpc_truncated_logging(self, mock_create_connection, total_length):
+        """Test rpc response truncated with given length in DEBUG level log.
         """
+        # TODO: Py2 deprecation
+        # .encode('utf-8') is for py2 compatibility, after py2 deprecation, it
+        # could be modified to byte('xxxxx', 'utf-8')
+        json_result_str = ''.join(
+            random.choice(string.ascii_lowercase)
+            for i in range(total_length -
+                           len(self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH) + 2))
+        mock_testing_rest_bytes = bytes(
+            (self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH %
+             json_result_str).encode('utf-8'))
+
+        target_log_len = jsonrpc_client_base._MAX_RPC_RETURN_LENGTH_IN_DEBUG_LOG
+
         fake_file = self.setup_mock_socket_file(mock_create_connection)
-        fake_file.resp = self.MOCK_REST_LONG_STRINGS
-
-        test_truncate_lengths = [1024, 100, 10000]
-
+        fake_file.resp = mock_testing_rest_bytes
         client = FakeRpcClient()
         client.connect()
         client.set_snippet_client_verbose_logging(False)
 
-        for test_length in test_truncate_lengths:
-            client.max_rpc_return_value_length = test_length
-            response = client._client_receive()
+        response = client._client_receive()
+        # Response should contain full response.
+        self.assertEqual(response, mock_testing_rest_bytes)
 
-            # Response should contain full response.
-            self.assertEqual(response, self.MOCK_REST_LONG_STRINGS)
-
+        if len(response) <= target_log_len:
+            client.log.debug.assert_called_with('Snippet received: %s',
+                                                response)
+        else:
             # DEBUG level log should truncated by given length.
             client.log.debug.assert_called_with(
-                'Snippet received: %s',
-                str(self.MOCK_REST_LONG_STRINGS)[:int(test_length)])
+                'Snippet received: %s...(%d bytes are truncated)',
+                str(mock_testing_rest_bytes)[:target_log_len],
+                len(response) - target_log_len)
 
 
 if __name__ == '__main__':
