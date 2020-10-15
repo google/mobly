@@ -294,11 +294,12 @@ class JsonRpcClientBase(object):
         """
         try:
             response = self._client.readline()
+            response_log = str(response)
             if self.verbose_logging:
                 self.log.debug('Snippet received: %s', response)
             else:
                 self.log.debug('Snippet received: %s',
-                               response[:int(self.max_rpc_return_value_length)])
+                               response_log[:self.max_rpc_return_value_length])
             return response
         except socket.error as e:
             raise Error(

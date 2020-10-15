@@ -268,7 +268,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
             # DEBUG level log should truncated by given length.
             client.log.debug.assert_called_with(
                 'Snippet received: %s',
-                self.MOCK_REST_LONG_STRINGS[:int(test_length)])
+                str(self.MOCK_REST_LONG_STRINGS)[:int(test_length)])
 
 
 if __name__ == '__main__':
