@@ -20,7 +20,6 @@ import socket
 from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
-from parameterized import parameterized
 from tests.lib import jsonrpc_client_test_base
 
 
