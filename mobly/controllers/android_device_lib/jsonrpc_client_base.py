@@ -142,6 +142,8 @@ class JsonRpcClientBase(object):
         self._counter = None
         self._lock = threading.Lock()
         self._event_client = None
+        self.verbose_logging = False   # Logging RPC response with full string or truncated by given length
+        self._max_rpc_return_value_length = 1024
 
     def __del__(self):
         self.disconnect()
@@ -296,9 +298,11 @@ class JsonRpcClientBase(object):
         """
         try:
             response = self._client.readline()
-            self.log.debug('Snippet received: %s',
-                           response if _VERBOSE_LOGGING else
-                           response[:MAX_RPC_RETURN_VALUE_LENGTH])
+            if self.verbose_logging:
+                self.log.debug('Snippet received: %s', response)
+            else:
+                self.log.debug('Snippet received: %s',
+                               response[:self._max_rpc_return_value_length])
             return response
         except socket.error as e:
             raise Error(
@@ -384,12 +388,12 @@ class JsonRpcClientBase(object):
             yield i
             i += 1
 
-    def set_verbose_logging(self, verbose: bool = False):
+    def set_snippet_client_verbose_logging(self, verbose=False):
+        # type: (bool) -> None
         """Switches verbose logging. True for logging full RPC response.
 
         Args:
             verbose: bool, True for full logging full RPC response in DEBUG level.
         """
-        self._ad.log.info('Set verbose logging to %s.', bool)
-        global _VERBOSE_LOGGING
-        _VERBOSE_LOGGING = verbose
+        self._ad.log.info('Set verbose logging to %s.', verbose)
+        self.verbose_logging = verbose
