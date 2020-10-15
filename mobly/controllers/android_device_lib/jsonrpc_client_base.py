@@ -70,6 +70,10 @@ _SOCKET_CONNECTION_TIMEOUT = 60
 # Maximum time to wait for a response message on the socket.
 _SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
 
+# Logging RPC response with full string or truncated by given length
+_VERBOSE_LOGGING = False
+MAX_RPC_RETURN_VALUE_LENGTH = 1024
+
 
 class Error(errors.DeviceError):
     pass
@@ -292,7 +296,9 @@ class JsonRpcClientBase(object):
         """
         try:
             response = self._client.readline()
-            self.log.debug('Snippet received: %s', response)
+            self.log.debug('Snippet received: %s',
+                           response if _VERBOSE_LOGGING else
+                           response[:MAX_RPC_RETURN_VALUE_LENGTH])
             return response
         except socket.error as e:
             raise Error(
@@ -377,3 +383,13 @@ class JsonRpcClientBase(object):
         while True:
             yield i
             i += 1
+
+    def set_verbose_logging(self, verbose: bool = False):
+        """Switches verbose logging. True for logging full RPC response.
+
+        Args:
+            verbose: bool, True for full logging full RPC response in DEBUG level.
+        """
+        self._ad.log.info('Set verbose logging to %s.', bool)
+        global _VERBOSE_LOGGING
+        _VERBOSE_LOGGING = verbose
