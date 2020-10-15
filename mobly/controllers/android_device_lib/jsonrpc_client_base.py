@@ -70,10 +70,6 @@ _SOCKET_CONNECTION_TIMEOUT = 60
 # Maximum time to wait for a response message on the socket.
 _SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
 
-# Logging RPC response with full string or truncated by given length
-_VERBOSE_LOGGING = False
-MAX_RPC_RETURN_VALUE_LENGTH = 1024
-
 
 class Error(errors.DeviceError):
     pass
@@ -143,7 +139,7 @@ class JsonRpcClientBase(object):
         self._lock = threading.Lock()
         self._event_client = None
         self.verbose_logging = False   # Logging RPC response with full string or truncated by given length
-        self._max_rpc_return_value_length = 1024
+        self.max_rpc_return_value_length = 1024
 
     def __del__(self):
         self.disconnect()
@@ -389,11 +385,17 @@ class JsonRpcClientBase(object):
             i += 1
 
     def set_snippet_client_verbose_logging(self, verbose=False):
-        # type: (bool) -> None
         """Switches verbose logging. True for logging full RPC response.
 
+        By default it will only write max_rpc_return_value_length for Rpc return
+        strings. If you need to see full message returned from Rpc, please turn
+        on verbose logging.
+
+        max_rpc_return_value_length will set to 1024 by default, the length
+        contains full Rpc response in Json format, included 1st element "id".
+
         Args:
-            verbose: bool, True for full logging full RPC response in DEBUG level.
+            verbose: bool. If True, turns on verbose logging, if False turns off
         """
         self._ad.log.info('Set verbose logging to %s.', verbose)
         self.verbose_logging = verbose
