@@ -61,8 +61,13 @@ import threading
 from mobly.controllers.android_device_lib import callback_handler
 from mobly.controllers.android_device_lib import errors
 
+import six
+
 # UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
 UNKNOWN_UID = -1
+
+# Maximum length of the snippet response to log. Full logging by default.
+SNIPPET_RESPONSE_LOGGING_LENGTH_LIMITATION = six.MAXSIZE
 
 # Maximum time to wait for the socket to open on the device.
 _SOCKET_CONNECTION_TIMEOUT = 60
@@ -292,7 +297,10 @@ class JsonRpcClientBase(object):
         """
         try:
             response = self._client.readline()
-            self.log.debug('Snippet received: %s', response)
+            response_log = str(response)
+            self.log.debug(
+                'Snippet received: %s',
+                response_log[:SNIPPET_RESPONSE_LOGGING_LENGTH_LIMITATION])
             return response
         except socket.error as e:
             raise Error(

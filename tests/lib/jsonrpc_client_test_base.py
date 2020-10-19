@@ -27,6 +27,9 @@ class JsonRpcClientTestBase(unittest.TestCase):
     MOCK_RESP = (
         b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
         b'"callback": null}')
+    MOCK_RESP_WITH_LONG_RESULT = (
+        '{"id": 0, "result": "' + 'long_result' * 100 + '", "error": null, '
+        '"status": 1, "uid": 1, "callback": null}').encode('utf-8')
     MOCK_RESP_WITHOUT_CALLBACK = (
         b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1}')
     MOCK_RESP_TEMPLATE = (

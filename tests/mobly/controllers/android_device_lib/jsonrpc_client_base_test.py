@@ -228,6 +228,35 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
         self.assertEqual(next(client._counter), 10)
 
+    @mock.patch('socket.create_connection')
+    def test_rpc_response_default_full_logging(self, mock_create_connection):
+        """Test rpc response default full logging."""
+        fake_file = self.setup_mock_socket_file(mock_create_connection)
+        fake_file.resp = self.MOCK_RESP_WITH_LONG_RESULT
+
+        client = FakeRpcClient()
+        client.connect()
+
+        response = client._client_receive()
+        self.assertEqual(response, self.MOCK_RESP_WITH_LONG_RESULT)
+        client.log.debug.assert_called_with(
+            'Snippet received: %s', str(self.MOCK_RESP_WITH_LONG_RESULT))
+
+    @mock.patch('socket.create_connection')
+    def test_rpc_response_truncated(self, mock_create_connection):
+        """Test rpc response can be truncated for logging."""
+        fake_file = self.setup_mock_socket_file(mock_create_connection)
+        fake_file.resp = self.MOCK_RESP_WITH_LONG_RESULT
+        jsonrpc_client_base.SNIPPET_RESPONSE_LOGGING_LENGTH_LIMITATION = 1024
+
+        client = FakeRpcClient()
+        client.connect()
+
+        response = client._client_receive()
+        self.assertEqual(response, self.MOCK_RESP_WITH_LONG_RESULT)
+        client.log.debug.assert_called_with(
+            'Snippet received: %s', str(self.MOCK_RESP_WITH_LONG_RESULT)[:1024])
+
 
 if __name__ == '__main__':
     unittest.main()
