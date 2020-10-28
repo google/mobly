@@ -19,7 +19,7 @@ import sys
 
 install_requires = [
     'future', 'portpicker', 'psutil>=5.4.4', 'pyserial', 'pyyaml',
-    'timeout_decorator'
+    'timeout_decorator', 'absl-py'
 ]
 
 if sys.version_info < (3, ):
