@@ -305,7 +305,7 @@ class JsonRpcClientBase(object):
                 else:
                     self.log.debug(
                         'Snippet received: %s... %d chars are truncated',
-                        str(response)[:_MAX_RPC_RESP_LOGGING_LENGTH],
+                        response[:_MAX_RPC_RESP_LOGGING_LENGTH],
                         len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
             return response
         except socket.error as e:
