@@ -302,7 +302,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         # DEBUG level log should truncated by given length.
         client.log.debug.assert_called_with(
             'Snippet received: %s... %d chars are truncated',
-            str(testing_rpc_response)
+            testing_rpc_response
             [:jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH],
             resp_len - jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH)
 
