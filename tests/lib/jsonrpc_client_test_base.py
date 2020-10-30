@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import random
+import string
 from builtins import str
 
 import mock
@@ -39,6 +40,9 @@ class JsonRpcClientTestBase(unittest.TestCase):
         b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
         b'"callback": "1-0"}')
     MOCK_RESP_WITH_ERROR = b'{"id": 0, "error": 1, "status": 1, "uid": 1}'
+    MOCK_RESP_FLEXIABLE_RESULT_LENGTH = (
+        '{"id": 0, "result": "%s", "error": null, "status": 0, "callback": null}'
+    )
 
     class MockSocketFile(object):
         def __init__(self, resp):
@@ -69,3 +73,13 @@ class JsonRpcClientTestBase(unittest.TestCase):
         fake_conn.makefile.return_value = fake_file
         mock_create_connection.return_value = fake_conn
         return fake_file
+
+    def generate_rpc_response(self, response_length=1024):
+        # TODO: Py2 deprecation
+        # .encode('utf-8') is for py2 compatibility, after py2 deprecation, it
+        # could be modified to byte('xxxxx', 'utf-8')
+        return bytes((self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH % ''.join(
+            random.choice(string.ascii_lowercase)
+            for i in range(response_length -
+                           len(self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH) + 2))
+                      ).encode('utf-8'))

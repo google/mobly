@@ -70,6 +70,10 @@ _SOCKET_CONNECTION_TIMEOUT = 60
 # Maximum time to wait for a response message on the socket.
 _SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
 
+# Maximum logging length of Rpc response in DEBUG level when verbose logging is
+# off.
+_MAX_RPC_RESP_LOGGING_LENGTH = 1024
+
 
 class Error(errors.DeviceError):
     pass
@@ -138,6 +142,7 @@ class JsonRpcClientBase(object):
         self._counter = None
         self._lock = threading.Lock()
         self._event_client = None
+        self.verbose_logging = True
 
     def __del__(self):
         self.disconnect()
@@ -292,7 +297,17 @@ class JsonRpcClientBase(object):
         """
         try:
             response = self._client.readline()
-            self.log.debug('Snippet received: %s', response)
+            response_log = str(response)
+            if self.verbose_logging:
+                self.log.debug('Snippet received: %s', response)
+            else:
+                if _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
+                    self.log.debug('Snippet received: %s', response)
+                else:
+                    self.log.debug(
+                        'Snippet received: %s... %d chars are truncated',
+                        response_log[:_MAX_RPC_RESP_LOGGING_LENGTH],
+                        len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
             return response
         except socket.error as e:
             raise Error(
@@ -377,3 +392,19 @@ class JsonRpcClientBase(object):
         while True:
             yield i
             i += 1
+
+    def set_snippet_client_verbose_logging(self, verbose):
+        """Switches verbose logging. True for logging full RPC response.
+
+        By default it will only write max_rpc_return_value_length for Rpc return
+        strings. If you need to see full message returned from Rpc, please turn
+        on verbose logging.
+
+        max_rpc_return_value_length will set to 1024 by default, the length
+        contains full Rpc response in Json format, included 1st element "id".
+
+        Args:
+            verbose: bool. If True, turns on verbose logging, if False turns off
+        """
+        self._ad.log.info('Set verbose logging to %s.', verbose)
+        self.verbose_logging = verbose
