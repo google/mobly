@@ -463,6 +463,36 @@ class AdbProxy(object):
         else:
             return self._execute_adb_and_process_stdout(
                 'shell', instrumentation_command, shell=False, handler=handler)
+                
+    def root(self):
+        """Enables ADB root mode on the device.
+
+        This method will retry to execute the command "adb root" when an
+        AdbError occurs.
+
+        Returns:
+            The stdout of root command.
+
+        Raises:
+            AdbError: The command exit code is not 0.
+        """
+        for attempt in range(ADB_ROOT_ATTMEPTS):
+            try:
+                return self._exec_adb_cmd('root',
+                                          args=None,
+                                          shell=False,
+                                          timeout=None,
+                                          stderr=None)
+            except AdbError as e:
+                if attempt + 1 < ADB_ROOT_ATTMEPTS:
+                    logging.debug(
+                      'Retry the command "%s" since Error "%s" occurred.' %
+                      (utils.cli_cmd_to_string(e.cmd),
+                       e.stderr.decode('utf-8').strip()))
+                    # Buffer between "adb root" commands.
+                    time.sleep(ADB_ROOT_ATTEMPTS_INTERVAL_SEC)
+                else:
+                  raise e
 
     def root(self):
         """Enables ADB root mode on the device.
