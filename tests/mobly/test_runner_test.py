@@ -360,6 +360,26 @@ class TestRunnerTest(unittest.TestCase):
                                  __main__=multiple_subclasses_module):
                 test_class = test_runner._find_test_class()
 
+    def test_print_test_names(self):
+        mock_test_class = mock.MagicMock()
+        mock_cls_instance = mock.MagicMock()
+        mock_test_class.return_value = mock_cls_instance
+        test_runner._print_test_names(mock_test_class)
+        mock_cls_instance.setup_generated_tests.assert_called_once()
+        mock_cls_instance.get_existing_test_names.assert_called_once()
+        mock_cls_instance._controller_manager.unregister_controllers.assert_called_once(
+        )
+
+    def test_print_test_names_with_exception(self):
+        mock_test_class = mock.MagicMock()
+        mock_cls_instance = mock.MagicMock()
+        mock_test_class.return_value = mock_cls_instance
+        test_runner._print_test_names(mock_test_class)
+        mock_cls_instance.setup_generated_tests.side_effect = Exception(
+            'Something went wrong.')
+        mock_cls_instance._controller_manager.unregister_controllers.assert_called_once(
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
