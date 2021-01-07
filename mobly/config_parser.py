@@ -178,7 +178,8 @@ class TestRunConfig(object):
     """
 
     def __init__(self):
-        self.log_path = None
+        # Init value is an empty string to avoid string joining errors.
+        self.log_path = ''
         # Deprecated, use 'testbed_name'
         self.test_bed_name = None
         self.testbed_name = None
