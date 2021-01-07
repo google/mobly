@@ -43,7 +43,8 @@ MOCK_OPTIONS_INSTRUMENTATION_COMMAND = ('am instrument -r -w -e option1 value1'
 
 # Mock root command outputs.
 MOCK_ROOT_SUCCESS_OUTPUT = 'adbd is already running as root'
-MOCK_ROOT_ERROR_OUTPUT = 'adb: unable to connect for root: closed'.encode('utf-8')
+MOCK_ROOT_ERROR_OUTPUT = (
+    'adb: unable to connect for root: closed'.encode('utf-8'))
 
 # Mock Shell Command
 MOCK_SHELL_COMMAND = 'ls'
@@ -717,16 +718,16 @@ class AdbTest(unittest.TestCase):
             self.assertEqual(stderr,
                              mock_execute_and_process_stdout.return_value)
 
-    def test_root_success(self):
-        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
-            mock_exec_cmd.return_value = MOCK_ROOT_SUCCESS_OUTPUT
-            output = adb.AdbProxy().root()
-            mock_exec_cmd.assert_called_once_with(
-                ['adb', 'root'],
-                shell=False,
-                timeout=None,
-                stderr=None)
-            self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
+    @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+    def test_root_success(self, mock_exec_cmd):
+        mock_exec_cmd.return_value = MOCK_ROOT_SUCCESS_OUTPUT
+        output = adb.AdbProxy().root()
+        mock_exec_cmd.assert_called_once_with(
+            ['adb', 'root'],
+            shell=False,
+            timeout=None,
+            stderr=None)
+        self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
 
     @mock.patch('time.sleep', return_value=mock.MagicMock())
     @mock.patch.object(adb.AdbProxy, '_exec_cmd')
