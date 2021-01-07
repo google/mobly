@@ -1,6 +1,23 @@
 # Mobly Release History
 
 
+## Mobly Release 1.10.1: Incremental fixes
+
+This release contains minor fixes and improvements.
+
+### New
+* API for taking screenshots in `AndroidDevice` 
+* Option to change the logging verbosity of the Mobly snippet client. The
+  default logging size is now capped.
+
+### Fixes
+* Resource leakage in `_print_test_name`.
+* IDE compatibility.
+* Bugs in unit tests.
+
+[Full list of changes](https://github.com/google/mobly/milestone/24?closed=1)
+
+
 ## Mobly Release 1.10: Framework and `AndroidDevice` Output Improvements
 
 *This is likely the last major release that preserves Py2 compatibility.*
