@@ -40,6 +40,11 @@ MOCK_OPTIONS_INSTRUMENTATION_COMMAND = ('am instrument -r -w -e option1 value1'
                                         '.instrumentation.tests/com.android'
                                         '.common.support.test.runner'
                                         '.AndroidJUnitRunner')
+
+# Mock root command outputs.
+MOCK_ROOT_SUCCESS_OUTPUT = 'adbd is already running as root'
+MOCK_ROOT_ERROR_OUTPUT = 'adb: unable to connect for root: closed'.encode('utf-8')
+
 # Mock Shell Command
 MOCK_SHELL_COMMAND = 'ls'
 MOCK_COMMAND_OUTPUT = '/system/bin/ls'.encode('utf-8')
@@ -711,6 +716,53 @@ class AdbTest(unittest.TestCase):
                 handler=mock_handler)
             self.assertEqual(stderr,
                              mock_execute_and_process_stdout.return_value)
+
+    def test_root_success(self):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.return_value = MOCK_ROOT_SUCCESS_OUTPUT
+            output = adb.AdbProxy().root()
+            mock_exec_cmd.assert_called_once_with(
+                ['adb', 'root'],
+                shell=False,
+                timeout=None,
+                stderr=None)
+            self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
+
+    @mock.patch('time.sleep', return_value=mock.MagicMock())
+    def test_root_success_with_retry(self, mock_sleep):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.side_effect = [
+                adb.AdbError('adb root', '', MOCK_ROOT_ERROR_OUTPUT, 1),
+                MOCK_ROOT_SUCCESS_OUTPUT]
+            output = adb.AdbProxy().root()
+            mock_exec_cmd.assert_called_with(
+                ['adb', 'root'],
+                shell=False,
+                timeout=None,
+                stderr=None)
+            self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
+            self.assertEqual(mock_sleep.call_count, 1)
+            mock_sleep.assert_called_with(10)
+
+    @mock.patch('time.sleep', return_value=mock.MagicMock())
+    def test_root_raises_adb_error_when_all_retries_failed(self, mock_sleep):
+        with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+            mock_exec_cmd.side_effect = adb.AdbError('adb root',
+                                                     '',
+                                                     MOCK_ROOT_ERROR_OUTPUT,
+                                                     1)
+            expected_msg = ('Error executing adb cmd "adb root". '
+                            'ret: 1, stdout: , stderr: %s' %
+                            MOCK_ROOT_ERROR_OUTPUT)
+            with self.assertRaisesRegex(adb.AdbError, expected_msg):
+                adb.AdbProxy().root()
+                mock_exec_cmd.assert_called_with(
+                    ['adb', 'root'],
+                    shell=False,
+                    timeout=None,
+                    stderr=None)
+                self.assertEqual(mock_sleep.call_count, 3)
+                mock_sleep.assert_called_with(10)
 
     def test_has_shell_command_called_correctly(self):
         with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
