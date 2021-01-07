@@ -30,8 +30,8 @@ ADB_PORT_LOCK = threading.Lock()
 
 # Number of attempts to execute "adb root", and seconds for interval time of
 # this commands.
-ADB_ROOT_ATTMEPTS = 3
-ADB_ROOT_ATTEMPTS_INTERVAL_SEC = 10
+ADB_ROOT_RETRY_ATTMEPTS = 3
+ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC = 10
 
 # Qualified class name of the default instrumentation test runner.
 DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
@@ -466,7 +466,7 @@ class AdbProxy(object):
 
         This method will retry to execute the command `adb root` when an
         AdbError occurs, since sometimes the error `adb: unable to connect
-        for root: closed` is raised when executing 'adb root' immediately after
+        for root: closed` is raised when executing `adb root` immediately after
         the device is booted to OS.
 
         Returns:
@@ -475,7 +475,7 @@ class AdbProxy(object):
         Raises:
             AdbError: If the command exit code is not 0.
         """
-        for attempt in range(ADB_ROOT_ATTMEPTS):
+        for attempt in range(ADB_ROOT_RETRY_ATTMEPTS):
             try:
                 return self._exec_adb_cmd('root',
                                           args=None,
@@ -483,13 +483,13 @@ class AdbProxy(object):
                                           timeout=None,
                                           stderr=None)
             except AdbError as e:
-                if attempt + 1 < ADB_ROOT_ATTMEPTS:
+                if attempt + 1 < ADB_ROOT_RETRY_ATTMEPTS:
                     logging.debug(
                       'Retry the command "%s" since Error "%s" occurred.' %
                       (utils.cli_cmd_to_string(e.cmd),
                        e.stderr.decode('utf-8').strip()))
                     # Buffer between "adb root" commands.
-                    time.sleep(ADB_ROOT_ATTEMPTS_INTERVAL_SEC)
+                    time.sleep(ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC)
                 else:
                   raise e
 
