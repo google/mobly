@@ -20,14 +20,7 @@ from mobly import signals
 
 # Have an instance of unittest.TestCase so we could reuse some logic from
 # python's own unittest.
-# _ProxyTest is required because py2 does not allow instantiating
-# unittest.TestCase directly.
-class _ProxyTest(unittest.TestCase):
-    def runTest(self):
-        pass
-
-
-_pyunit_proxy = _ProxyTest()
+_pyunit_proxy = unittest.TestCase()
 
 
 def assert_equal(first, second, msg=None, extras=None):

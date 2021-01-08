@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from past.builtins import basestring
-
 import base64
 import concurrent.futures
 import datetime
@@ -24,16 +22,16 @@ import logging
 import os
 import pipes
 import platform
-import portpicker
 import random
 import re
-import signal
 import string
 import subprocess
 import sys
 import threading
 import time
 import traceback
+
+import portpicker
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
@@ -572,7 +570,7 @@ def cli_cmd_to_string(args):
     Returns:
         String representation of the command.
     """
-    if isinstance(args, basestring):
+    if isinstance(args, str):
         # Return directly if it's already a string.
         return args
     return ' '.join([pipes.quote(arg) for arg in args])

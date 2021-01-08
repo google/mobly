@@ -15,8 +15,6 @@
 (http://msoon.com/LabEquipment/PowerMonitor/).
 """
 
-from past.builtins import basestring
-
 import fcntl
 import io
 import logging

@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str as new_str
-from past.builtins import basestring
-
 import contextlib
 import logging
 import os
@@ -108,7 +105,7 @@ def create(configs):
     elif isinstance(configs[0], dict):
         # Configs is a list of dicts.
         ads = get_instances_with_configs(configs)
-    elif isinstance(configs[0], basestring):
+    elif isinstance(configs[0], str):
         # Configs is a list of strings representing serials.
         ads = get_instances(configs)
     else:
@@ -190,7 +187,7 @@ def parse_device_list(device_list_str, key):
         A list of android device serial numbers.
     """
     try:
-        clean_lines = new_str(device_list_str, 'utf-8').strip().split('\n')
+        clean_lines = str(device_list_str, 'utf-8').strip().split('\n')
     except UnicodeDecodeError:
         logging.warning("unicode decode error, origin str: %s", device_list_str)
         raise
@@ -222,7 +219,7 @@ def list_adb_devices_by_usb_id():
         none.
     """
     out = adb.AdbProxy().devices(['-l'])
-    clean_lines = new_str(out, 'utf-8').strip().split('\n')
+    clean_lines = str(out, 'utf-8').strip().split('\n')
     results = []
     for line in clean_lines:
         tokens = line.strip().split()
@@ -1046,7 +1043,7 @@ class AndroidDevice(object):
             results: results have data flow information
         """
         out = self.adb.shell('iperf3 -c %s %s' % (server_host, extra_args))
-        clean_out = new_str(out, 'utf-8').strip().split('\n')
+        clean_out = str(out, 'utf-8').strip().split('\n')
         if 'error' in clean_out[0].lower():
             return False, clean_out
         return True, clean_out
