@@ -100,23 +100,6 @@ class Logcat(base_service.BaseService):
         high = mobly_logger.logline_timestamp_comparator(end_time, target) >= 0
         return low and high
 
-    def create_per_test_excerpt(self, current_test_info):
-        """Convenient method for creating excerpts of adb logcat.
-
-        .. deprecated:: 1.10
-           Use :func:`create_output_excerpts` instead.
-
-        This copies logcat lines from self.adb_logcat_file_path to an excerpt
-        file, starting from the location where the previous excerpt ended.
-
-        To use this feature, call this method at the end of: `setup_class`,
-        `teardown_test`, and `teardown_class`.
-
-        Args:
-            current_test_info: `self.current_test_info` in a Mobly test.
-        """
-        self.create_output_excerpts(current_test_info)
-
     def create_output_excerpts(self, test_info):
         """Convenient method for creating excerpts of adb logcat.
 
@@ -165,59 +148,6 @@ class Logcat(base_service.BaseService):
                     'Encountered known Android error to clear logcat.')
             else:
                 raise
-
-    def cat_adb_log(self, tag, begin_time):
-        """Takes an excerpt of the adb logcat log from a certain time point to
-        current time.
-
-        .. deprecated:: 1.10
-            Use :func:`create_output_excerpts` instead.
-
-        Args:
-            tag: An identifier of the time period, usualy the name of a test.
-            begin_time: Logline format timestamp of the beginning of the time
-                period.
-
-        Returns:
-            String, full path to the excerpt file created.
-        """
-        if not self.adb_logcat_file_path:
-            raise Error(
-                self._ad,
-                'Attempting to cat adb log when none has been collected.')
-        end_time = mobly_logger.get_log_line_timestamp()
-        self._ad.log.debug('Extracting adb log from logcat.')
-        adb_excerpt_path = os.path.join(self._ad.log_path, 'AdbLogExcerpts')
-        utils.create_dir(adb_excerpt_path)
-        out_name = '%s,%s.txt' % (tag, begin_time)
-        out_name = mobly_logger.sanitize_filename(out_name)
-        full_adblog_path = os.path.join(adb_excerpt_path, out_name)
-        with io.open(full_adblog_path, 'w', encoding='utf-8') as out:
-            in_file = self.adb_logcat_file_path
-            with io.open(in_file, 'r', encoding='utf-8',
-                         errors='replace') as f:
-                in_range = False
-                while True:
-                    line = None
-                    try:
-                        line = f.readline()
-                        if not line:
-                            break
-                    except:
-                        continue
-                    line_time = line[:mobly_logger.log_line_timestamp_len]
-                    if not mobly_logger.is_valid_logline_timestamp(line_time):
-                        continue
-                    if self._is_timestamp_in_range(line_time, begin_time,
-                                                   end_time):
-                        in_range = True
-                        if not line.endswith('\n'):
-                            line += '\n'
-                        out.write(line)
-                    else:
-                        if in_range:
-                            break
-        return full_adblog_path
 
     def _assert_not_running(self):
         """Asserts the logcat service is not running.
