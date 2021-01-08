@@ -223,17 +223,11 @@ class JsonRpcClientBase(object):
             socket.timeout: Raised when the socket waits to long for connection.
             ProtocolError: Raised when there is an error in the protocol.
         """
-        # socket.create_connection throws different exceptions in Python 2/3
-        # TODO: Use ConnectionRefusedError directly once PY2 is deprecated.
-        ExceptionAlias = socket.error
-        if sys.version_info >= (3, 0):
-          ExceptionAlias = ConnectionRefusedError
-
         self._counter = self._id_counter()
         try:
           self._conn = socket.create_connection(('localhost', self.host_port),
                                                 _SOCKET_CONNECTION_TIMEOUT)
-        except ExceptionAlias as err:
+        except ConnectionRefusedError as err:
           # Retry using '127.0.0.1' for IPv4 enabled machines that only resolve
           # 'localhost' to '[::1]'.
           self.log.debug('Failed to connect to localhost, trying 127.0.0.1: {}'
