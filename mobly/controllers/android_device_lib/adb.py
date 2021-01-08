@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str
-from past.builtins import basestring
-
 import logging
-import psutil
 import re
 import subprocess
-import time
 import threading
+import time
 
 from mobly import utils
+import psutil
 
 # Command to use for running ADB commands.
 ADB = 'adb'
@@ -263,7 +260,7 @@ class AdbProxy(object):
                 adb_cmd.extend(['-s', self.serial])
             adb_cmd.append(name)
             if args:
-                if isinstance(args, basestring):
+                if isinstance(args, str):
                     adb_cmd.append(args)
                 else:
                     adb_cmd.extend(args)
