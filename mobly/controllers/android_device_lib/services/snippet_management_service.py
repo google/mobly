@@ -20,137 +20,128 @@ MISSING_SNIPPET_CLIENT_MSG = 'No snippet client is registered with name "%s".'
 
 
 class Error(errors.ServiceError):
-    """Root error type for snippet management service."""
-    SERVICE_TYPE = 'SnippetManagementService'
+  """Root error type for snippet management service."""
+  SERVICE_TYPE = 'SnippetManagementService'
 
 
 class SnippetManagementService(base_service.BaseService):
-    """Management service of snippet clients.
+  """Management service of snippet clients.
 
-    This service manages all the snippet clients associated with an Android
-    device.
+  This service manages all the snippet clients associated with an Android
+  device.
+  """
+
+  def __init__(self, device, configs=None):
+    del configs  # Unused param.
+    self._device = device
+    self._is_alive = False
+    self._snippet_clients = {}
+    super(SnippetManagementService, self).__init__(device)
+
+  @property
+  def is_alive(self):
+    """True if any client is running, False otherwise."""
+    return any([client.is_alive for client in self._snippet_clients.values()])
+
+  def get_snippet_client(self, name):
+    """Gets the snippet client managed under a given name.
+
+    Args:
+      name: string, the name of the snippet client under management.
+
+    Returns:
+      SnippetClient.
     """
+    if name in self._snippet_clients:
+      return self._snippet_clients[name]
 
-    def __init__(self, device, configs=None):
-        del configs  # Unused param.
-        self._device = device
-        self._is_alive = False
-        self._snippet_clients = {}
-        super(SnippetManagementService, self).__init__(device)
+  def add_snippet_client(self, name, package):
+    """Adds a snippet client to the management.
 
-    @property
-    def is_alive(self):
-        """True if any client is running, False otherwise."""
-        return any(
-            [client.is_alive for client in self._snippet_clients.values()])
+    Args:
+      name: string, the attribute name to which to attach the snippet client.
+        E.g. `name='maps'` attaches the snippet client to `ad.maps`.
+      package: string, the package name of the snippet apk to connect to.
 
-    def get_snippet_client(self, name):
-        """Gets the snippet client managed under a given name.
+    Raises:
+      Error, if a duplicated name or package is passed in.
+    """
+    # Should not load snippet with the same name more than once.
+    if name in self._snippet_clients:
+      raise Error(
+          self, 'Name "%s" is already registered with package "%s", it cannot '
+          'be used again.' % (name, self._snippet_clients[name].client.package))
+    # Should not load the same snippet package more than once.
+    for snippet_name, client in self._snippet_clients.items():
+      if package == client.package:
+        raise Error(
+            self, 'Snippet package "%s" has already been loaded under name'
+            ' "%s".' % (package, snippet_name))
+    client = snippet_client.SnippetClient(package=package, ad=self._device)
+    client.start_app_and_connect()
+    self._snippet_clients[name] = client
 
-        Args:
-            name: string, the name of the snippet client under management.
+  def remove_snippet_client(self, name):
+    """Removes a snippet client from management.
 
-        Returns:
-            SnippetClient.
-        """
-        if name in self._snippet_clients:
-            return self._snippet_clients[name]
+    Args:
+      name: string, the name of the snippet client to remove.
 
-    def add_snippet_client(self, name, package):
-        """Adds a snippet client to the management.
+    Raises:
+      Error: if no snippet client is managed under the specified name.
+    """
+    if name not in self._snippet_clients:
+      raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
+    client = self._snippet_clients.pop(name)
+    client.stop_app()
 
-        Args:
-            name: string, the attribute name to which to attach the snippet
-                client. E.g. `name='maps'` attaches the snippet client to
-                `ad.maps`.
-            package: string, the package name of the snippet apk to connect to.
-
-        Raises:
-            Error, if a duplicated name or package is passed in.
-        """
-        # Should not load snippet with the same name more than once.
-        if name in self._snippet_clients:
-            raise Error(
-                self,
-                'Name "%s" is already registered with package "%s", it cannot '
-                'be used again.' %
-                (name, self._snippet_clients[name].client.package))
-        # Should not load the same snippet package more than once.
-        for snippet_name, client in self._snippet_clients.items():
-            if package == client.package:
-                raise Error(
-                    self,
-                    'Snippet package "%s" has already been loaded under name'
-                    ' "%s".' % (package, snippet_name))
-        client = snippet_client.SnippetClient(package=package, ad=self._device)
+  def start(self):
+    """Starts all the snippet clients under management."""
+    for client in self._snippet_clients.values():
+      if not client.is_alive:
+        self._device.log.debug('Starting SnippetClient<%s>.', client.package)
         client.start_app_and_connect()
-        self._snippet_clients[name] = client
+      else:
+        self._device.log.debug(
+            'Not startng SnippetClient<%s> because it is already alive.',
+            client.package)
 
-    def remove_snippet_client(self, name):
-        """Removes a snippet client from management.
-
-        Args:
-            name: string, the name of the snippet client to remove.
-
-        Raises:
-            Error: if no snippet client is managed under the specified name.
-        """
-        if name not in self._snippet_clients:
-            raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
-        client = self._snippet_clients.pop(name)
+  def stop(self):
+    """Stops all the snippet clients under management."""
+    for client in self._snippet_clients.values():
+      if client.is_alive:
+        self._device.log.debug('Stopping SnippetClient<%s>.', client.package)
         client.stop_app()
+      else:
+        self._device.log.debug(
+            'Not stopping SnippetClient<%s> because it is not alive.',
+            client.package)
 
-    def start(self):
-        """Starts all the snippet clients under management."""
-        for client in self._snippet_clients.values():
-            if not client.is_alive:
-                self._device.log.debug('Starting SnippetClient<%s>.',
-                                       client.package)
-                client.start_app_and_connect()
-            else:
-                self._device.log.debug(
-                    'Not startng SnippetClient<%s> because it is already alive.',
-                    client.package)
+  def pause(self):
+    """Pauses all the snippet clients under management.
 
-    def stop(self):
-        """Stops all the snippet clients under management."""
-        for client in self._snippet_clients.values():
-            if client.is_alive:
-                self._device.log.debug('Stopping SnippetClient<%s>.',
-                                       client.package)
-                client.stop_app()
-            else:
-                self._device.log.debug(
-                    'Not stopping SnippetClient<%s> because it is not alive.',
-                    client.package)
+    This clears the host port of a client because a new port will be
+    allocated in `resume`.
+    """
+    for client in self._snippet_clients.values():
+      self._device.log.debug('Clearing host port %d of SnippetClient<%s>.',
+                             client.host_port, client.package)
+      client.clear_host_port()
 
-    def pause(self):
-        """Pauses all the snippet clients under management.
+  def resume(self):
+    """Resumes all paused snippet clients."""
+    for client in self._snippet_clients.values():
+      # Resume is only applicable if a client is alive and does not have
+      # a host port.
+      if client.is_alive and client.host_port is None:
+        self._device.log.debug('Resuming SnippetClient<%s>.', client.package)
+        client.restore_app_connection()
+      else:
+        self._device.log.debug('Not resuming SnippetClient<%s>.',
+                               client.package)
 
-        This clears the host port of a client because a new port will be
-        allocated in `resume`.
-        """
-        for client in self._snippet_clients.values():
-            self._device.log.debug(
-                'Clearing host port %d of SnippetClient<%s>.',
-                client.host_port, client.package)
-            client.clear_host_port()
-
-    def resume(self):
-        """Resumes all paused snippet clients."""
-        for client in self._snippet_clients.values():
-            # Resume is only applicable if a client is alive and does not have
-            # a host port.
-            if client.is_alive and client.host_port is None:
-                self._device.log.debug('Resuming SnippetClient<%s>.',
-                                       client.package)
-                client.restore_app_connection()
-            else:
-                self._device.log.debug('Not resuming SnippetClient<%s>.',
-                                       client.package)
-
-    def __getattr__(self, name):
-        client = self.get_snippet_client(name)
-        if client:
-            return client
-        return self.__getattribute__(name)
+  def __getattr__(self, name):
+    client = self.get_snippet_client(name)
+    if client:
+      return client
+    return self.__getattribute__(name)
