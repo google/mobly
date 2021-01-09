@@ -22,13 +22,6 @@ install_requires = [
     'timeout_decorator'
 ]
 
-if sys.version_info < (3, ):
-    install_requires.extend([
-        'enum34',
-        # "futures" is needed for py2 compatibility and it only works in 2.7
-        'futures',
-    ])
-
 if platform.system() == 'Windows':
     install_requires.append('pywin32')
 
@@ -64,8 +57,7 @@ def main():
         scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
         tests_require=[
             'mock',
-            # Needed for supporting Python 2 because this release stopped supporting Python 2.
-            'pytest<5.0.0',
+            'pytest',
             'pytz',
         ],
         install_requires=install_requires,
