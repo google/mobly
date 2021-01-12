@@ -11,3 +11,4 @@ Gemfile.lock
 .pytest_cache/
 .sass-cache
 _site
+.tox/
