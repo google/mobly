@@ -605,7 +605,8 @@ class BaseTestClass(object):
         except signals.TestAbortSignal:
           raise
         except Exception as e:
-          logging.exception(e)
+          logging.exception('Exception occurred in teardown_test of %s',
+                            self.current_test_info.name)
           tr_record.test_error()
           tr_record.add_error(STAGE_NAME_TEARDOWN_TEST, e)
           teardown_test_failed = True
