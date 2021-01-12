@@ -24,288 +24,288 @@ from tests.lib import jsonrpc_client_test_base
 
 
 class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
-    def __init__(self):
-        super(FakeRpcClient, self).__init__(
-            app_name='FakeRpcClient', ad=mock.Mock())
+  def __init__(self):
+    super(FakeRpcClient, self).__init__(
+      app_name='FakeRpcClient', ad=mock.Mock())
 
 
 class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
-    """Unit tests for mobly.controllers.android_device_lib.jsonrpc_client_base.
+  """Unit tests for mobly.controllers.android_device_lib.jsonrpc_client_base.
+  """
+
+  @mock.patch('socket.create_connection')
+  def test_open_timeout_io_error(self, mock_create_connection):
+    """Test socket timeout with io error
+
+    Test that if the net socket gives an io error, then the client
+    will eventually exit with an IOError.
     """
+    mock_create_connection.side_effect = IOError()
+    with self.assertRaises(IOError):
+      client = FakeRpcClient()
+      client.connect()
 
-    @mock.patch('socket.create_connection')
-    def test_open_timeout_io_error(self, mock_create_connection):
-        """Test socket timeout with io error
+  @mock.patch('socket.create_connection')
+  def test_connect_timeout(self, mock_create_connection):
+    """Test socket timeout
 
-        Test that if the net socket gives an io error, then the client
-        will eventually exit with an IOError.
-        """
-        mock_create_connection.side_effect = IOError()
-        with self.assertRaises(IOError):
-            client = FakeRpcClient()
-            client.connect()
+    Test that a timeout exception will be raised if the socket gives a
+    timeout.
+    """
+    mock_create_connection.side_effect = socket.timeout
+    with self.assertRaises(socket.timeout):
+      client = FakeRpcClient()
+      client.connect()
 
-    @mock.patch('socket.create_connection')
-    def test_connect_timeout(self, mock_create_connection):
-        """Test socket timeout
+  @mock.patch('socket.create_connection')
+  def test_handshake_error(self, mock_create_connection):
+    """Test error in jsonrpc handshake
 
-        Test that a timeout exception will be raised if the socket gives a
-        timeout.
-        """
-        mock_create_connection.side_effect = socket.timeout
-        with self.assertRaises(socket.timeout):
-            client = FakeRpcClient()
-            client.connect()
+    Test that if there is an error in the jsonrpc handshake then a protocol
+    error will be raised.
+    """
+    self.setup_mock_socket_file(mock_create_connection, resp=None)
+    client = FakeRpcClient()
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
+      client.connect()
 
-    @mock.patch('socket.create_connection')
-    def test_handshake_error(self, mock_create_connection):
-        """Test error in jsonrpc handshake
+  @mock.patch('socket.create_connection')
+  def test_connect_handshake(self, mock_create_connection):
+    """Test client handshake
 
-        Test that if there is an error in the jsonrpc handshake then a protocol
-        error will be raised.
-        """
-        self.setup_mock_socket_file(mock_create_connection, resp=None)
-        client = FakeRpcClient()
-        with self.assertRaisesRegex(
-                jsonrpc_client_base.ProtocolError,
-                jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
-            client.connect()
+    Test that at the end of a handshake with no errors the client object
+    has the correct parameters.
+    """
+    self.setup_mock_socket_file(mock_create_connection)
+    client = FakeRpcClient()
+    client.connect()
+    self.assertEqual(client.uid, 1)
 
-    @mock.patch('socket.create_connection')
-    def test_connect_handshake(self, mock_create_connection):
-        """Test client handshake
+  @mock.patch('socket.create_connection')
+  def test_connect_handshake_unknown_status(self, mock_create_connection):
+    """Test handshake with unknown status response
 
-        Test that at the end of a handshake with no errors the client object
-        has the correct parameters.
-        """
-        self.setup_mock_socket_file(mock_create_connection)
-        client = FakeRpcClient()
-        client.connect()
-        self.assertEqual(client.uid, 1)
+    Test that when the handshake is given an unknown status then the client
+    will not be given a uid.
+    """
+    self.setup_mock_socket_file(
+      mock_create_connection, resp=self.MOCK_RESP_UNKNOWN_STATUS)
+    client = FakeRpcClient()
+    client.connect()
+    self.assertEqual(client.uid, jsonrpc_client_base.UNKNOWN_UID)
 
-    @mock.patch('socket.create_connection')
-    def test_connect_handshake_unknown_status(self, mock_create_connection):
-        """Test handshake with unknown status response
+  @mock.patch('socket.create_connection')
+  def test_rpc_error_response(self, mock_create_connection):
+    """Test rpc that is given an error response
 
-        Test that when the handshake is given an unknown status then the client
-        will not be given a uid.
-        """
-        self.setup_mock_socket_file(
-            mock_create_connection, resp=self.MOCK_RESP_UNKNOWN_STATUS)
-        client = FakeRpcClient()
-        client.connect()
-        self.assertEqual(client.uid, jsonrpc_client_base.UNKNOWN_UID)
+    Test that when an rpc receives a response with an error will raised
+    an api error.
+    """
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_error_response(self, mock_create_connection):
-        """Test rpc that is given an error response
+    client = FakeRpcClient()
+    client.connect()
 
-        Test that when an rpc receives a response with an error will raised
-        an api error.
-        """
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
+    fake_file.resp = self.MOCK_RESP_WITH_ERROR
 
-        client = FakeRpcClient()
-        client.connect()
+    with self.assertRaisesRegex(jsonrpc_client_base.ApiError, '1'):
+      client.some_rpc(1, 2, 3)
 
-        fake_file.resp = self.MOCK_RESP_WITH_ERROR
+  @mock.patch('socket.create_connection')
+  def test_rpc_callback_response(self, mock_create_connection):
+    """Test rpc that is given a callback response.
 
-        with self.assertRaisesRegex(jsonrpc_client_base.ApiError, '1'):
-            client.some_rpc(1, 2, 3)
+    Test that when an rpc receives a callback response, a callback object is
+    created correctly.
+    """
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_callback_response(self, mock_create_connection):
-        """Test rpc that is given a callback response.
+    client = FakeRpcClient()
+    client.connect()
 
-        Test that when an rpc receives a callback response, a callback object is
-        created correctly.
-        """
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
+    fake_file.resp = self.MOCK_RESP_WITH_CALLBACK
+    client._event_client = mock.Mock()
 
-        client = FakeRpcClient()
-        client.connect()
+    callback = client.some_rpc(1, 2, 3)
+    self.assertEqual(callback.ret_value, 123)
+    self.assertEqual(callback._id, '1-0')
 
-        fake_file.resp = self.MOCK_RESP_WITH_CALLBACK
-        client._event_client = mock.Mock()
+  @mock.patch('socket.create_connection')
+  def test_rpc_id_mismatch(self, mock_create_connection):
+    """Test rpc that returns a different id than expected
 
-        callback = client.some_rpc(1, 2, 3)
-        self.assertEqual(callback.ret_value, 123)
-        self.assertEqual(callback._id, '1-0')
+    Test that if an rpc returns with an id that is different than what
+    is expected will give a protocl error.
+    """
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_id_mismatch(self, mock_create_connection):
-        """Test rpc that returns a different id than expected
+    client = FakeRpcClient()
+    client.connect()
 
-        Test that if an rpc returns with an id that is different than what
-        is expected will give a protocl error.
-        """
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
+    fake_file.resp = (self.MOCK_RESP_TEMPLATE % 52).encode('utf8')
 
-        client = FakeRpcClient()
-        client.connect()
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
+      client.some_rpc(1, 2, 3)
 
-        fake_file.resp = (self.MOCK_RESP_TEMPLATE % 52).encode('utf8')
+  @mock.patch('socket.create_connection')
+  def test_rpc_no_response(self, mock_create_connection):
+    """Test rpc that does not get a response
 
-        with self.assertRaisesRegex(
-                jsonrpc_client_base.ProtocolError,
-                jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
-            client.some_rpc(1, 2, 3)
+    Test that when an rpc does not get a response it throws a protocol
+    error.
+    """
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_no_response(self, mock_create_connection):
-        """Test rpc that does not get a response
+    client = FakeRpcClient()
+    client.connect()
 
-        Test that when an rpc does not get a response it throws a protocol
-        error.
-        """
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
+    fake_file.resp = None
 
-        client = FakeRpcClient()
-        client.connect()
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
+      client.some_rpc(1, 2, 3)
 
-        fake_file.resp = None
+  @mock.patch('socket.create_connection')
+  def test_rpc_send_to_socket(self, mock_create_connection):
+    """Test rpc sending and recieving
 
-        with self.assertRaisesRegex(
-                jsonrpc_client_base.ProtocolError,
-                jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
-            client.some_rpc(1, 2, 3)
+    Tests that when an rpc is sent and received the corrent data
+    is used.
+    """
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_send_to_socket(self, mock_create_connection):
-        """Test rpc sending and recieving
+    client = FakeRpcClient()
+    client.connect()
 
-        Tests that when an rpc is sent and received the corrent data
-        is used.
-        """
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
+    result = client.some_rpc(1, 2, 3)
+    self.assertEqual(result, 123)
 
-        client = FakeRpcClient()
-        client.connect()
+    expected = {'id': 0, 'method': 'some_rpc', 'params': [1, 2, 3]}
+    actual = json.loads(fake_file.last_write.decode('utf-8'))
 
-        result = client.some_rpc(1, 2, 3)
-        self.assertEqual(result, 123)
+    self.assertEqual(expected, actual)
 
-        expected = {'id': 0, 'method': 'some_rpc', 'params': [1, 2, 3]}
-        actual = json.loads(fake_file.last_write.decode('utf-8'))
+  @mock.patch('socket.create_connection')
+  def test_rpc_send_to_socket_without_callback(self, mock_create_connection):
+    """Test rpc sending and recieving with Rpc protocol before callback was
+    added to the resp message.
 
-        self.assertEqual(expected, actual)
+    Logic is the same as test_rpc_send_to_socket.
+    """
+    fake_file = self.setup_mock_socket_file(
+      mock_create_connection, resp=self.MOCK_RESP_WITHOUT_CALLBACK)
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_send_to_socket_without_callback(self, mock_create_connection):
-        """Test rpc sending and recieving with Rpc protocol before callback was
-        added to the resp message.
+    client = FakeRpcClient()
+    client.connect()
 
-        Logic is the same as test_rpc_send_to_socket.
-        """
-        fake_file = self.setup_mock_socket_file(
-            mock_create_connection, resp=self.MOCK_RESP_WITHOUT_CALLBACK)
+    result = client.some_rpc(1, 2, 3)
+    self.assertEqual(result, 123)
 
-        client = FakeRpcClient()
-        client.connect()
+    expected = {'id': 0, 'method': 'some_rpc', 'params': [1, 2, 3]}
+    actual = json.loads(fake_file.last_write.decode('utf-8'))
 
-        result = client.some_rpc(1, 2, 3)
-        self.assertEqual(result, 123)
+    self.assertEqual(expected, actual)
 
-        expected = {'id': 0, 'method': 'some_rpc', 'params': [1, 2, 3]}
-        actual = json.loads(fake_file.last_write.decode('utf-8'))
+  @mock.patch('socket.create_connection')
+  def test_rpc_call_increment_counter(self, mock_create_connection):
+    """Test rpc counter
 
-        self.assertEqual(expected, actual)
+    Test that with each rpc call the counter is incremented by 1.
+    """
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_call_increment_counter(self, mock_create_connection):
-        """Test rpc counter
+    client = FakeRpcClient()
+    client.connect()
 
-        Test that with each rpc call the counter is incremented by 1.
-        """
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
+    for i in range(0, 10):
+      fake_file.resp = (self.MOCK_RESP_TEMPLATE % i).encode('utf-8')
+      client.some_rpc()
 
-        client = FakeRpcClient()
-        client.connect()
+    self.assertEqual(next(client._counter), 10)
 
-        for i in range(0, 10):
-            fake_file.resp = (self.MOCK_RESP_TEMPLATE % i).encode('utf-8')
-            client.some_rpc()
+  @mock.patch('socket.create_connection')
+  def test_rpc_verbose_logging_with_long_string(self,
+                          mock_create_connection):
+    """Test rpc response fully write into DEBUG level log."""
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
+    testing_rpc_response = self.generate_rpc_response(4000)
+    fake_file.resp = testing_rpc_response
 
-        self.assertEqual(next(client._counter), 10)
+    client = FakeRpcClient()
+    client.connect()
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_verbose_logging_with_long_string(self,
-                                                  mock_create_connection):
-        """Test rpc response fully write into DEBUG level log."""
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
-        testing_rpc_response = self.generate_rpc_response(4000)
-        fake_file.resp = testing_rpc_response
+    response = client._client_receive()
+    self.assertEqual(response, testing_rpc_response)
 
-        client = FakeRpcClient()
-        client.connect()
+    client.log.debug.assert_called_with('Snippet received: %s',
+                      testing_rpc_response)
 
-        response = client._client_receive()
-        self.assertEqual(response, testing_rpc_response)
+  @mock.patch('socket.create_connection')
+  def test_rpc_truncated_logging_short_response(self,
+                          mock_create_connection):
+    """Test rpc response will full logged when length is short."""
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
+    testing_rpc_response = self.generate_rpc_response(
+      int(jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH / 2))
+    fake_file.resp = testing_rpc_response
 
-        client.log.debug.assert_called_with('Snippet received: %s',
-                                            testing_rpc_response)
+    client = FakeRpcClient()
+    client.connect()
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_truncated_logging_short_response(self,
-                                                  mock_create_connection):
-        """Test rpc response will full logged when length is short."""
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
-        testing_rpc_response = self.generate_rpc_response(
-            int(jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH / 2))
-        fake_file.resp = testing_rpc_response
+    client.set_snippet_client_verbose_logging(False)
+    response = client._client_receive()
 
-        client = FakeRpcClient()
-        client.connect()
+    self.assertEqual(response, testing_rpc_response)
+    client.log.debug.assert_called_with('Snippet received: %s',
+                      testing_rpc_response)
 
-        client.set_snippet_client_verbose_logging(False)
-        response = client._client_receive()
+  @mock.patch('socket.create_connection')
+  def test_rpc_truncated_logging_fit_size_response(self,
+                           mock_create_connection):
+    """Test rpc response will full logged when length is equal to threshold.
+    """
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
+    testing_rpc_response = self.generate_rpc_response(
+      jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH)
+    fake_file.resp = testing_rpc_response
 
-        self.assertEqual(response, testing_rpc_response)
-        client.log.debug.assert_called_with('Snippet received: %s',
-                                            testing_rpc_response)
+    client = FakeRpcClient()
+    client.connect()
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_truncated_logging_fit_size_response(self,
-                                                     mock_create_connection):
-        """Test rpc response will full logged when length is equal to threshold.
-        """
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
-        testing_rpc_response = self.generate_rpc_response(
-            jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH)
-        fake_file.resp = testing_rpc_response
+    client.set_snippet_client_verbose_logging(False)
+    response = client._client_receive()
 
-        client = FakeRpcClient()
-        client.connect()
+    self.assertEqual(response, testing_rpc_response)
+    client.log.debug.assert_called_with('Snippet received: %s',
+                      testing_rpc_response)
 
-        client.set_snippet_client_verbose_logging(False)
-        response = client._client_receive()
+  @mock.patch('socket.create_connection')
+  def test_rpc_truncated_logging_long_response(self, mock_create_connection):
+    """Test rpc response truncated with given length in DEBUG level log."""
+    fake_file = self.setup_mock_socket_file(mock_create_connection)
+    resp_len = jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH * 40
+    testing_rpc_response = self.generate_rpc_response(resp_len)
+    fake_file.resp = testing_rpc_response
 
-        self.assertEqual(response, testing_rpc_response)
-        client.log.debug.assert_called_with('Snippet received: %s',
-                                            testing_rpc_response)
+    client = FakeRpcClient()
+    client.connect()
 
-    @mock.patch('socket.create_connection')
-    def test_rpc_truncated_logging_long_response(self, mock_create_connection):
-        """Test rpc response truncated with given length in DEBUG level log."""
-        fake_file = self.setup_mock_socket_file(mock_create_connection)
-        resp_len = jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH * 40
-        testing_rpc_response = self.generate_rpc_response(resp_len)
-        fake_file.resp = testing_rpc_response
+    client.set_snippet_client_verbose_logging(False)
+    response = client._client_receive()
 
-        client = FakeRpcClient()
-        client.connect()
-
-        client.set_snippet_client_verbose_logging(False)
-        response = client._client_receive()
-
-        self.assertEqual(response, testing_rpc_response)
-        # DEBUG level log should truncated by given length.
-        client.log.debug.assert_called_with(
-            'Snippet received: %s... %d chars are truncated',
-            testing_rpc_response
-            [:jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH],
-            resp_len - jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH)
+    self.assertEqual(response, testing_rpc_response)
+    # DEBUG level log should truncated by given length.
+    client.log.debug.assert_called_with(
+      'Snippet received: %s... %d chars are truncated',
+      testing_rpc_response
+      [:jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH],
+      resp_len - jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH)
 
 
 if __name__ == '__main__':
-    unittest.main()
+  unittest.main()
