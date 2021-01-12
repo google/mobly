@@ -78,7 +78,7 @@ pip install tox
 ```
 
 Then in the Mobly directory, run:
-```
+```sh
 tox
 ```
 
