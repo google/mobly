@@ -21,7 +21,7 @@ While developed by Googlers, Mobly is not an official Google product.
 
 ## Compatibility
 
-Mobly requires *python 3.6+* or newer.
+Mobly requires *python 3.6* or newer.
 
 Mobly tests could run on the following platforms:
   - Ubuntu 14.04+
@@ -38,7 +38,7 @@ Mobly tests could run on the following platforms:
   - python3.6+
   - python-setuptools
 
-*If you use Python3, use `pip3` and `python3` (or python3.x) accordingly.*
+*To use Python3, use `pip3` and `python3` (or python3.x) accordingly.*
 
 ## Installation
 You can install the released package from pip
