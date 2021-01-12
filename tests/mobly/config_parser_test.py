@@ -22,59 +22,59 @@ from mobly import config_parser
 
 
 class OutputTest(unittest.TestCase):
-    """This test class has unit tests for the implementation of Mobly's output
-    files.
-    """
+  """This test class has unit tests for the implementation of Mobly's output
+  files.
+  """
 
-    def setUp(self):
-        self.tmp_dir = tempfile.mkdtemp()
+  def setUp(self):
+    self.tmp_dir = tempfile.mkdtemp()
 
-    def tearDown(self):
-        shutil.rmtree(self.tmp_dir)
+  def tearDown(self):
+    shutil.rmtree(self.tmp_dir)
 
-    def test__load_config_file(self):
-        tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
-        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-            f.write(u'TestBeds:\n')
-            f.write(u'  # A test bed where adb will find Android devices.\n')
-            f.write(u'  - Name: SampleTestBed\n')
-            f.write(u'    Controllers:\n')
-            f.write(u'        AndroidDevice: \'*\'\n')
+  def test__load_config_file(self):
+    tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
+    with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+      f.write(u'TestBeds:\n')
+      f.write(u'  # A test bed where adb will find Android devices.\n')
+      f.write(u'  - Name: SampleTestBed\n')
+      f.write(u'    Controllers:\n')
+      f.write(u'        AndroidDevice: \'*\'\n')
 
-        config = config_parser._load_config_file(tmp_file_path)
-        self.assertEqual(config['TestBeds'][0]['Name'], u'SampleTestBed')
+    config = config_parser._load_config_file(tmp_file_path)
+    self.assertEqual(config['TestBeds'][0]['Name'], u'SampleTestBed')
 
-    def test__load_config_file_with_unicode(self):
-        tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
-        with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-            f.write(u'TestBeds:\n')
-            f.write(u'  # A test bed where adb will find Android devices.\n')
-            f.write(u'  - Name: \u901a\n')
-            f.write(u'    Controllers:\n')
-            f.write(u'        AndroidDevice: \'*\'\n')
+  def test__load_config_file_with_unicode(self):
+    tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
+    with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+      f.write(u'TestBeds:\n')
+      f.write(u'  # A test bed where adb will find Android devices.\n')
+      f.write(u'  - Name: \u901a\n')
+      f.write(u'    Controllers:\n')
+      f.write(u'        AndroidDevice: \'*\'\n')
 
-        config = config_parser._load_config_file(tmp_file_path)
-        self.assertEqual(config['TestBeds'][0]['Name'], u'\u901a')
+    config = config_parser._load_config_file(tmp_file_path)
+    self.assertEqual(config['TestBeds'][0]['Name'], u'\u901a')
 
-    def test_run_config_type(self):
-        config = config_parser.TestRunConfig()
-        self.assertNotIn('summary_writer', str(config))
-        self.assertNotIn('register_controller', str(config))
+  def test_run_config_type(self):
+    config = config_parser.TestRunConfig()
+    self.assertNotIn('summary_writer', str(config))
+    self.assertNotIn('register_controller', str(config))
 
-    def test_run_config_controller_configs_is_already_initialized(self):
-        config = config_parser.TestRunConfig()
-        expected_value = 'SOME_VALUE'
-        self.assertEqual(
-            config.controller_configs.get('NON_EXISTENT_KEY', expected_value),
-            expected_value)
+  def test_run_config_controller_configs_is_already_initialized(self):
+    config = config_parser.TestRunConfig()
+    expected_value = 'SOME_VALUE'
+    self.assertEqual(
+      config.controller_configs.get('NON_EXISTENT_KEY', expected_value),
+      expected_value)
 
-    def test_run_config_user_params_is_already_initialized(self):
-        config = config_parser.TestRunConfig()
-        expected_value = 'SOME_VALUE'
-        self.assertEqual(
-            config.user_params.get('NON_EXISTENT_KEY', expected_value),
-            expected_value)
+  def test_run_config_user_params_is_already_initialized(self):
+    config = config_parser.TestRunConfig()
+    expected_value = 'SOME_VALUE'
+    self.assertEqual(
+      config.user_params.get('NON_EXISTENT_KEY', expected_value),
+      expected_value)
 
 
 if __name__ == '__main__':
-    unittest.main()
+  unittest.main()
