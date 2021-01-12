@@ -19,43 +19,43 @@ from mobly import utils
 
 
 class RuntimeTestInfo(object):
-    """Container class for runtime information of a test or test stage.
+  """Container class for runtime information of a test or test stage.
 
-    One object corresponds to one test. This is meant to be a read-only class.
+  One object corresponds to one test. This is meant to be a read-only class.
 
-    This also applies to test stages like `setup_class`, which has its own
-    runtime info but is not part of any single test.
+  This also applies to test stages like `setup_class`, which has its own
+  runtime info but is not part of any single test.
 
-    Attributes:
-        name: string, name of the test.
-        signature: string, an identifier of the test, a combination of test
-            name and begin time.
-        record: TestResultRecord, the current test result record. This changes
-            as the test's execution progresses.
-        output_path: string, path to the test's output directory. It's created
-            upon accessing.
-    """
+  Attributes:
+    name: string, name of the test.
+    signature: string, an identifier of the test, a combination of test
+      name and begin time.
+    record: TestResultRecord, the current test result record. This changes
+      as the test's execution progresses.
+    output_path: string, path to the test's output directory. It's created
+      upon accessing.
+  """
 
-    def __init__(self, test_name, log_path, record):
-        self._name = test_name
-        self._record = record
-        self._signature = '%s-%s' % (test_name, record.begin_time)
-        self._output_dir_path = utils.abs_path(
-            os.path.join(log_path, self._signature))
+  def __init__(self, test_name, log_path, record):
+    self._name = test_name
+    self._record = record
+    self._signature = '%s-%s' % (test_name, record.begin_time)
+    self._output_dir_path = utils.abs_path(
+      os.path.join(log_path, self._signature))
 
-    @property
-    def name(self):
-        return self._name
+  @property
+  def name(self):
+    return self._name
 
-    @property
-    def signature(self):
-        return self._signature
+  @property
+  def signature(self):
+    return self._signature
 
-    @property
-    def record(self):
-        return copy.deepcopy(self._record)
+  @property
+  def record(self):
+    return copy.deepcopy(self._record)
 
-    @property
-    def output_path(self):
-        utils.create_dir(self._output_dir_path)
-        return self._output_dir_path
+  @property
+  def output_path(self):
+    utils.create_dir(self._output_dir_path)
+    return self._output_dir_path
