@@ -21,11 +21,7 @@ While developed by Googlers, Mobly is not an official Google product.
 
 ## Compatibility
 
-Mobly is compatible with both *python 3.4+* and *python 2.7*.
-
-NOTE: As part of the bigger [communitiy initiative](https://python3statement.org/),
-we are planning to drop Python 2.7 support in 2020. Mobly 1.10 is likely the last
-major release to support Python 2.7.
+Mobly is compatible with *python 3.6+*.
 
 Mobly tests could run on the following platforms:
   - Ubuntu 14.04+
@@ -39,7 +35,7 @@ Mobly tests could run on the following platforms:
 
 ## System dependencies
   - adb (1.0.36+ recommended)
-  - python2.7 or python3.4+
+  - python3.6+
   - python-setuptools
 
 *If you use Python3, use `pip3` and `python3` (or python3.x) accordingly.*
