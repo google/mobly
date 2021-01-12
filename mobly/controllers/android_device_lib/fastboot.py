@@ -16,54 +16,54 @@ from subprocess import Popen, PIPE
 
 
 def exe_cmd(*cmds):
-    """Executes commands in a new shell. Directing stderr to PIPE.
+  """Executes commands in a new shell. Directing stderr to PIPE.
 
-    This is fastboot's own exe_cmd because of its peculiar way of writing
-    non-error info to stderr.
+  This is fastboot's own exe_cmd because of its peculiar way of writing
+  non-error info to stderr.
 
-    Args:
-        cmds: A sequence of commands and arguments.
+  Args:
+    cmds: A sequence of commands and arguments.
 
-    Returns:
-        The output of the command run.
+  Returns:
+    The output of the command run.
 
-    Raises:
-        Exception: An error occurred during the command execution.
-    """
-    cmd = ' '.join(cmds)
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
-    (out, err) = proc.communicate()
-    if not err:
-        return out
-    return err
+  Raises:
+    Exception: An error occurred during the command execution.
+  """
+  cmd = ' '.join(cmds)
+  proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+  (out, err) = proc.communicate()
+  if not err:
+    return out
+  return err
 
 
 class FastbootProxy():
-    """Proxy class for fastboot.
+  """Proxy class for fastboot.
 
-    For syntactic reasons, the '-' in fastboot commands need to be replaced
-    with '_'. Can directly execute fastboot commands on an object:
-    >> fb = FastbootProxy(<serial>)
-    >> fb.devices() # will return the console output of "fastboot devices".
-    """
+  For syntactic reasons, the '-' in fastboot commands need to be replaced
+  with '_'. Can directly execute fastboot commands on an object:
+  >> fb = FastbootProxy(<serial>)
+  >> fb.devices() # will return the console output of "fastboot devices".
+  """
 
-    def __init__(self, serial=""):
-        self.serial = serial
-        if serial:
-            self.fastboot_str = "fastboot -s {}".format(serial)
-        else:
-            self.fastboot_str = "fastboot"
+  def __init__(self, serial=""):
+    self.serial = serial
+    if serial:
+      self.fastboot_str = "fastboot -s {}".format(serial)
+    else:
+      self.fastboot_str = "fastboot"
 
-    def _exec_fastboot_cmd(self, name, arg_str):
-        return exe_cmd(' '.join((self.fastboot_str, name, arg_str)))
+  def _exec_fastboot_cmd(self, name, arg_str):
+    return exe_cmd(' '.join((self.fastboot_str, name, arg_str)))
 
-    def args(self, *args):
-        return exe_cmd(' '.join((self.fastboot_str, ) + args))
+  def args(self, *args):
+    return exe_cmd(' '.join((self.fastboot_str, ) + args))
 
-    def __getattr__(self, name):
-        def fastboot_call(*args):
-            clean_name = name.replace('_', '-')
-            arg_str = ' '.join(str(elem) for elem in args)
-            return self._exec_fastboot_cmd(clean_name, arg_str)
+  def __getattr__(self, name):
+    def fastboot_call(*args):
+      clean_name = name.replace('_', '-')
+      arg_str = ' '.join(str(elem) for elem in args)
+      return self._exec_fastboot_cmd(clean_name, arg_str)
 
-        return fastboot_call
+    return fastboot_call

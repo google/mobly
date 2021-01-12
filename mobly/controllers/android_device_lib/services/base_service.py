@@ -16,112 +16,112 @@
 
 #TODO(xpconanfan): use `abc` after py2 deprecation.
 class BaseService(object):
-    """Base class of a Mobly AndroidDevice service.
+  """Base class of a Mobly AndroidDevice service.
 
-    This class defines the interface for Mobly's AndroidDevice service.
+  This class defines the interface for Mobly's AndroidDevice service.
+  """
+  _alias = None
+
+  def __init__(self, device, configs=None):
+    """Constructor of the class.
+
+    The constructor is the only place to pass in a config. If you need to
+    change the config later, you should unregister the service instance
+    from `ServiceManager` and register again with the new config.
+
+    Args:
+      device: the device object this service is associated with.
+      config: optional configuration defined by the author of the service
+        class.
     """
-    _alias = None
+    self._device = device
+    self._configs = configs
 
-    def __init__(self, device, configs=None):
-        """Constructor of the class.
+  @property
+  def alias(self):
+    """String, alias used to register this service with service manager.
 
-        The constructor is the only place to pass in a config. If you need to
-        change the config later, you should unregister the service instance
-        from `ServiceManager` and register again with the new config.
+    This can be None if the service is never registered.
+    """
+    return self._alias
 
-        Args:
-          device: the device object this service is associated with.
-          config: optional configuration defined by the author of the service
-              class.
-        """
-        self._device = device
-        self._configs = configs
+  @alias.setter
+  def alias(self, alias):
+    self._alias = alias
 
-    @property
-    def alias(self):
-        """String, alias used to register this service with service manager.
+  @property
+  def is_alive(self):
+    """True if the service is active; False otherwise."""
+    raise NotImplementedError('"is_alive" is a required service property.')
 
-        This can be None if the service is never registered.
-        """
-        return self._alias
+  def start(self):
+    """Starts the service."""
+    raise NotImplementedError('"start" is a required service method.')
 
-    @alias.setter
-    def alias(self, alias):
-        self._alias = alias
+  def stop(self):
+    """Stops the service and cleans up all resources.
 
-    @property
-    def is_alive(self):
-        """True if the service is active; False otherwise."""
-        raise NotImplementedError('"is_alive" is a required service property.')
+    This method should handle any error and not throw.
+    """
+    raise NotImplementedError('"stop" is a required service method.')
 
-    def start(self):
-        """Starts the service."""
-        raise NotImplementedError('"start" is a required service method.')
+  def pause(self):
+    """Pauses a service temporarily.
 
-    def stop(self):
-        """Stops the service and cleans up all resources.
+    For when the Python service object needs to temporarily lose connection
+    to the device without shutting down the service running on the actual
+    device.
 
-        This method should handle any error and not throw.
-        """
-        raise NotImplementedError('"stop" is a required service method.')
+    This is relevant when a service needs to maintain a constant connection
+    to the device and the connection is lost if USB connection to the
+    device is disrupted.
 
-    def pause(self):
-        """Pauses a service temporarily.
+    E.g. a services that utilizes a socket connection over adb port
+    forwarding would need to implement this for the situation where the USB
+    connection to the device will be temporarily cut, but the device is not
+    rebooted.
 
-        For when the Python service object needs to temporarily lose connection
-        to the device without shutting down the service running on the actual
-        device.
+    For more context, see:
+    `mobly.controllers.android_device.AndroidDevice.handle_usb_disconnect`
 
-        This is relevant when a service needs to maintain a constant connection
-        to the device and the connection is lost if USB connection to the
-        device is disrupted.
+    If not implemented, we assume the service is not sensitive to device
+    disconnect, and `stop` will be called by default.
+    """
+    self.stop()
 
-        E.g. a services that utilizes a socket connection over adb port
-        forwarding would need to implement this for the situation where the USB
-        connection to the device will be temporarily cut, but the device is not
-        rebooted.
+  def resume(self):
+    """Resumes a paused service.
 
-        For more context, see:
-        `mobly.controllers.android_device.AndroidDevice.handle_usb_disconnect`
+    Same context as the `pause` method. This should resume the service
+    after the connection to the device has been re-established.
 
-        If not implemented, we assume the service is not sensitive to device
-        disconnect, and `stop` will be called by default.
-        """
-        self.stop()
+    If not implemented, we assume the service is not sensitive to device
+    disconnect, and `start` will be called by default.
+    """
+    self.start()
 
-    def resume(self):
-        """Resumes a paused service.
+  def create_output_excerpts(self, test_info):
+    """Creates excerpts of the service's output files.
 
-        Same context as the `pause` method. This should resume the service
-        after the connection to the device has been re-established.
+    [Optional] This method only applies to services with output files.
 
-        If not implemented, we assume the service is not sensitive to device
-        disconnect, and `start` will be called by default.
-        """
-        self.start()
+    For services that generates output files, calling this method would
+    create excerpts of the output files. An excerpt should contain info
+    between two calls of `create_output_excerpts` or from the start of the
+    service to the call to `create_output_excerpts`.
 
-    def create_output_excerpts(self, test_info):
-        """Creates excerpts of the service's output files.
+    Use `AndroidDevice#generate_filename` to get the proper filenames for
+    excerpts.
 
-        [Optional] This method only applies to services with output files.
+    This is usually called at the end of: `setup_class`, `teardown_test`,
+    or `teardown_class`.
 
-        For services that generates output files, calling this method would
-        create excerpts of the output files. An excerpt should contain info
-        between two calls of `create_output_excerpts` or from the start of the
-        service to the call to `create_output_excerpts`.
+    Args:
+      test_info: RuntimeTestInfo, the test info associated with the scope
+        of the excerpts.
 
-        Use `AndroidDevice#generate_filename` to get the proper filenames for
-        excerpts.
-
-        This is usually called at the end of: `setup_class`, `teardown_test`,
-        or `teardown_class`.
-
-        Args:
-            test_info: RuntimeTestInfo, the test info associated with the scope
-                of the excerpts.
-
-        Returns:
-            List of strings, the absolute paths to the excerpt files created.
-                Empty list if no excerpt files are created.
-        """
-        return []
+    Returns:
+      List of strings, the absolute paths to the excerpt files created.
+        Empty list if no excerpt files are created.
+    """
+    return []
