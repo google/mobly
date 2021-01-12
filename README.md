@@ -69,6 +69,19 @@ How to use Mobly's Android instrumentation test runner to run Android instrument
 * [Mobly AndroidDevice Service](docs/android_device_service.md) -
 Create custom service to attach to Mobly's `AndroidDevice` controller.
 
+## Test
+To run the unit tests for Mobly to verify your local changes:
+
+Make sure you have `tox` installed:
+```sh
+pip install tox
+```
+
+Then in the Mobly directory, run:
+```
+tox
+```
+
 ## Mobly Snippet
 The Mobly Snippet projects let users better control Android devices.
 
