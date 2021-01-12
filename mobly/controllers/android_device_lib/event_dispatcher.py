@@ -315,7 +315,7 @@ class EventDispatcher:
         passed.
     """
     self.lock.acquire()
-    if not event_name in self.event_dict or self.event_dict[
+    if event_name not in self.event_dict or self.event_dict[
         event_name] is None:
       self.event_dict[event_name] = queue.Queue()
     self.lock.release()
