@@ -18,22 +18,22 @@ from mobly import records
 
 
 def validate_test_result(result):
-    """Validate basic properties of a test result.
+  """Validate basic properties of a test result.
 
-    The records in each bucket of the test result should have the corresponding
-    result enum.
+  The records in each bucket of the test result should have the corresponding
+  result enum.
 
-    Args:
-        result: The `records.TestResult` object to validate.
-    """
-    buckets = [
-        (result.passed, records.TestResultEnums.TEST_RESULT_PASS),
-        (result.failed, records.TestResultEnums.TEST_RESULT_FAIL),
-        (result.error, records.TestResultEnums.TEST_RESULT_ERROR),
-        (result.skipped, records.TestResultEnums.TEST_RESULT_SKIP),
-    ]
-    for bucket_list, expected_enum in buckets:
-        for record in bucket_list:
-            if record.result != expected_enum:
-                raise AssertionError('Expected result %s, got %s.' %
-                                     (expected_enum, record.result))
+  Args:
+    result: The `records.TestResult` object to validate.
+  """
+  buckets = [
+    (result.passed, records.TestResultEnums.TEST_RESULT_PASS),
+    (result.failed, records.TestResultEnums.TEST_RESULT_FAIL),
+    (result.error, records.TestResultEnums.TEST_RESULT_ERROR),
+    (result.skipped, records.TestResultEnums.TEST_RESULT_SKIP),
+  ]
+  for bucket_list, expected_enum in buckets:
+    for record in bucket_list:
+      if record.result != expected_enum:
+        raise AssertionError('Expected result %s, got %s.' %
+                   (expected_enum, record.result))
