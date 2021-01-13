@@ -18,12 +18,12 @@ from future.tests.base import unittest
 
 
 class MonsoonTest(unittest.TestCase):
-    @unittest.skipIf(platform.system() == 'Windows',
-                     'fcntl does not exist on Windows')
-    def test_monsoon_import(self):
-        # TODO: Replace 'fnctl' with a Windows equivalent when on Windows
-        from mobly.controllers import monsoon
+  @unittest.skipIf(platform.system() == 'Windows',
+           'fcntl does not exist on Windows')
+  def test_monsoon_import(self):
+    # TODO: Replace 'fnctl' with a Windows equivalent when on Windows
+    from mobly.controllers import monsoon
 
 
 if __name__ == '__main__':
-    unittest.main()
+  unittest.main()
