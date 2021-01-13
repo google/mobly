@@ -18,14 +18,14 @@ from mobly.controllers.android_device_lib.services import base_service
 
 
 class BaseServiceTest(unittest.TestCase):
-    def setUp(self):
-        self.mock_device = mock.MagicMock()
-        self.service = base_service.BaseService(self.mock_device)
+  def setUp(self):
+    self.mock_device = mock.MagicMock()
+    self.service = base_service.BaseService(self.mock_device)
 
-    def test_alias(self):
-        self.service.alias = 'SomeService'
-        self.assertEqual(self.service.alias, 'SomeService')
+  def test_alias(self):
+    self.service.alias = 'SomeService'
+    self.assertEqual(self.service.alias, 'SomeService')
 
 
 if __name__ == '__main__':
-    unittest.main()
+  unittest.main()
