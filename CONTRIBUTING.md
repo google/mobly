@@ -23,12 +23,13 @@ Contributions made by corporations are covered by a different agreement than
 the one above, the
 [Software Grant and Corporate Contributor License Agreement](https://cla.developers.google.com/about/google-corporate).
 
+## Pre-submit
 
-## Code reviews
+### Code reviews
 All submissions, including submissions by project members, require review. We
 use GitHub pull requests for this purpose.
 
-## Test
+### Testing
 To run the unit tests for Mobly to verify your local changes:
 
 Make sure you have `tox` installed:
@@ -41,7 +42,7 @@ Then in the Mobly directory, run:
 mobly $ tox
 ```
 
-## Code Style
+### Code Style
 Before pushing your changes, run `yapf` to make sure the code styles are correct.
 
 ```sh
