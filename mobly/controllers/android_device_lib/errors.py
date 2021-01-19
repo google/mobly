@@ -45,6 +45,5 @@ class ServiceError(DeviceError):
   SERVICE_TYPE = None
 
   def __init__(self, device, msg):
-    new_msg = '%sService<%s> %s' % (HIERARCHY_TOKEN, self.SERVICE_TYPE,
-                    msg)
+    new_msg = '%sService<%s> %s' % (HIERARCHY_TOKEN, self.SERVICE_TYPE, msg)
     super(ServiceError, self).__init__(device, new_msg)

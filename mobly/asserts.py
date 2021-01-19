@@ -17,7 +17,6 @@ import unittest
 
 from mobly import signals
 
-
 # Have an instance of unittest.TestCase so we could reuse some logic from
 # python's own unittest.
 _pyunit_proxy = unittest.TestCase()
@@ -71,10 +70,10 @@ def assert_raises(expected_exception, extras=None, *args, **kwargs):
 
 
 def assert_raises_regex(expected_exception,
-            expected_regex,
-            extras=None,
-            *args,
-            **kwargs):
+                        expected_regex,
+                        extras=None,
+                        *args,
+                        **kwargs):
   """Assert that an exception is raised when a function is called.
 
   If no exception is raised, test fail. If an exception is raised but not
@@ -93,8 +92,8 @@ def assert_raises_regex(expected_exception,
       test result.
   """
   context = _AssertRaisesContext(expected_exception,
-                   expected_regex,
-                   extras=extras)
+                                 expected_regex,
+                                 extras=extras)
   return context
 
 
@@ -272,8 +271,7 @@ class _AssertRaisesContext(object):
         exc_name = self.expected.__name__
       except AttributeError:
         exc_name = str(self.expected)
-      raise signals.TestFailure('%s not raised' % exc_name,
-                    extras=self.extras)
+      raise signals.TestFailure('%s not raised' % exc_name, extras=self.extras)
     if not issubclass(exc_type, self.expected):
       # let unexpected exceptions pass through
       return False
@@ -285,8 +283,7 @@ class _AssertRaisesContext(object):
     if isinstance(expected_regexp, str):
       expected_regexp = re.compile(expected_regexp)
     if not expected_regexp.search(str(exc_value)):
-      raise signals.TestFailure(
-        '"%s" does not match "%s"' %
-        (expected_regexp.pattern, str(exc_value)),
-        extras=self.extras)
+      raise signals.TestFailure('"%s" does not match "%s"' %
+                                (expected_regexp.pattern, str(exc_value)),
+                                extras=self.extras)
     return True

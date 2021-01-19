@@ -24,7 +24,7 @@ from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 _INSTRUMENTATION_RUNNER_PACKAGE = (
-  'com.google.android.mobly.snippet.SnippetRunner')
+    'com.google.android.mobly.snippet.SnippetRunner')
 
 # Major version of the launch and communication protocol being used by this
 # client.
@@ -40,11 +40,11 @@ _PROTOCOL_MAJOR_VERSION = 1
 _PROTOCOL_MINOR_VERSION = 0
 
 _LAUNCH_CMD = (
-  '{shell_cmd} am instrument {user} -w -e action start {snippet_package}/' +
-  _INSTRUMENTATION_RUNNER_PACKAGE)
+    '{shell_cmd} am instrument {user} -w -e action start {snippet_package}/' +
+    _INSTRUMENTATION_RUNNER_PACKAGE)
 
 _STOP_CMD = ('am instrument {user} -w -e action stop {snippet_package}/' +
-       _INSTRUMENTATION_RUNNER_PACKAGE)
+             _INSTRUMENTATION_RUNNER_PACKAGE)
 
 # Test that uses UiAutomation requires the shell session to be maintained while
 # test is in progress. However, this requirement does not hold for the test that
@@ -147,7 +147,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         self.stop_app()
       except:
         self._ad.log.exception(
-          'Failed to stop app after failure to start and connect.')
+            'Failed to stop app after failure to start and connect.')
       # Explicitly raise the original error from starting app.
       raise e
 
@@ -170,12 +170,11 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     # process. Starting snippets can be slow, especially if there are
     # multiple, and this avoids the perception that the framework is hanging
     # for a long time doing nothing.
-    self.log.info('Launching snippet apk %s with protocol %d.%d',
-            self.package, _PROTOCOL_MAJOR_VERSION,
-            _PROTOCOL_MINOR_VERSION)
+    self.log.info('Launching snippet apk %s with protocol %d.%d', self.package,
+                  _PROTOCOL_MAJOR_VERSION, _PROTOCOL_MINOR_VERSION)
     cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
-                 user=self._get_user_command_string(),
-                 snippet_package=self.package)
+                             user=self._get_user_command_string(),
+                             snippet_package=self.package)
     start_time = time.time()
     self._proc = self._do_start_app(cmd)
 
@@ -193,15 +192,13 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
     # Forward the device port to a new host port, and connect to that port
     self.host_port = utils.get_available_host_port()
-    self._adb.forward(
-      ['tcp:%d' % self.host_port,
-       'tcp:%d' % self.device_port])
+    self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
     self.connect()
 
     # Yaaay! We're done!
     self.log.debug('Snippet %s started after %.1fs on host port %s',
-             self.package,
-             time.time() - start_time, self.host_port)
+                   self.package,
+                   time.time() - start_time, self.host_port)
 
   def restore_app_connection(self, port=None):
     """Restores the app after device got reconnected.
@@ -220,19 +217,16 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       AppRestoreConnectionError: When the app was not able to be started.
     """
     self.host_port = port or utils.get_available_host_port()
-    self._adb.forward(
-      ['tcp:%d' % self.host_port,
-       'tcp:%d' % self.device_port])
+    self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
     try:
       self.connect()
     except:
       # Log the original error and raise AppRestoreConnectionError.
       self.log.exception('Failed to re-connect to app.')
       raise jsonrpc_client_base.AppRestoreConnectionError(
-        self._ad,
-        ('Failed to restore app connection for %s at host port %s, '
-         'device port %s') %
-        (self.package, self.host_port, self.device_port))
+          self._ad,
+          ('Failed to restore app connection for %s at host port %s, '
+           'device port %s') % (self.package, self.host_port, self.device_port))
 
     # Because the previous connection was lost, update self._proc
     self._proc = None
@@ -252,13 +246,13 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         utils.stop_standing_subprocess(self._proc)
       self._proc = None
       out = self._adb.shell(
-        _STOP_CMD.format(
-          snippet_package=self.package,
-          user=self._get_user_command_string())).decode('utf-8')
+          _STOP_CMD.format(
+              snippet_package=self.package,
+              user=self._get_user_command_string())).decode('utf-8')
       if 'OK (0 tests)' not in out:
         raise errors.DeviceError(
-          self._ad,
-          'Failed to stop existing apk. Unexpected output: %s' % out)
+            self._ad,
+            'Failed to stop existing apk. Unexpected output: %s' % out)
     finally:
       # Always clean up the adb port
       self.clear_host_port()
@@ -268,8 +262,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     event_client = SnippetClient(package=self.package, ad=self._ad)
     event_client.host_port = self.host_port
     event_client.device_port = self.device_port
-    event_client.connect(self.uid,
-               jsonrpc_client_base.JsonRpcCommand.CONTINUE)
+    event_client.connect(self.uid, jsonrpc_client_base.JsonRpcCommand.CONTINUE)
     return event_client
 
   def _restore_event_client(self):
@@ -287,19 +280,19 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     out = self._adb.shell('pm list package --user %s' % user_id)
     if not utils.grep('^package:%s$' % self.package, out):
       raise AppStartPreCheckError(
-        self._ad,
-        '%s is not installed for user %s.' % (self.package, user_id))
+          self._ad,
+          '%s is not installed for user %s.' % (self.package, user_id))
     # Check that the app is instrumented.
     out = self._adb.shell('pm list instrumentation')
     matched_out = utils.grep(
-      '^instrumentation:%s/%s' %
-      (self.package, _INSTRUMENTATION_RUNNER_PACKAGE), out)
+        '^instrumentation:%s/%s' %
+        (self.package, _INSTRUMENTATION_RUNNER_PACKAGE), out)
     if not matched_out:
       raise AppStartPreCheckError(
-        self._ad,
-        '%s is installed, but it is not instrumented.' % self.package)
+          self._ad,
+          '%s is installed, but it is not instrumented.' % self.package)
     match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
-              matched_out[0])
+                      matched_out[0])
     target_name = match.group(3)
     # Check that the instrumentation target is installed if it's not the
     # same as the snippet package.
@@ -307,9 +300,9 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       out = self._adb.shell('pm list package --user %s' % user_id)
       if not utils.grep('^package:%s$' % target_name, out):
         raise AppStartPreCheckError(
-          self._ad,
-          'Instrumentation target %s is not installed for user %s.' %
-          (target_name, user_id))
+            self._ad,
+            'Instrumentation target %s is not installed for user %s.' %
+            (target_name, user_id))
 
   def _do_start_app(self, launch_cmd):
     adb_cmd = [adb.ADB]
@@ -335,34 +328,31 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       line = self._proc.stdout.readline().decode('utf-8')
       if not line:
         raise jsonrpc_client_base.AppStartError(
-          self._ad, 'Unexpected EOF waiting for app to start')
+            self._ad, 'Unexpected EOF waiting for app to start')
       # readline() uses an empty string to mark EOF, and a single newline
       # to mark regular empty lines in the output. Don't move the strip()
       # call above the truthiness check, or this method will start
       # considering any blank output line to be EOF.
       line = line.strip()
-      if (line.startswith('INSTRUMENTATION_RESULT:')
-          or line.startswith('SNIPPET ')):
-        self.log.debug(
-          'Accepted line from instrumentation output: "%s"', line)
+      if (line.startswith('INSTRUMENTATION_RESULT:') or
+          line.startswith('SNIPPET ')):
+        self.log.debug('Accepted line from instrumentation output: "%s"', line)
         return line
-      self.log.debug('Discarded line from instrumentation output: "%s"',
-               line)
+      self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
   def _get_persist_command(self):
     """Check availability and return path of command if available."""
     for command in [_SETSID_COMMAND, _NOHUP_COMMAND]:
       try:
-        if command in self._adb.shell(['which',
-                         command]).decode('utf-8'):
+        if command in self._adb.shell(['which', command]).decode('utf-8'):
           return command
       except adb.AdbError:
         continue
     self.log.warning(
-      'No %s and %s commands available to launch instrument '
-      'persistently, tests that depend on UiAutomator and '
-      'at the same time performs USB disconnection may fail',
-      _SETSID_COMMAND, _NOHUP_COMMAND)
+        'No %s and %s commands available to launch instrument '
+        'persistently, tests that depend on UiAutomator and '
+        'at the same time performs USB disconnection may fail', _SETSID_COMMAND,
+        _NOHUP_COMMAND)
     return ''
 
   def help(self, print_output=True):

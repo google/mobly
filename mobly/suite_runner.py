@@ -56,18 +56,18 @@ def run_suite(test_classes, argv=None):
   # Parse cli args.
   parser = argparse.ArgumentParser(description='Mobly Suite Executable.')
   parser.add_argument('-c',
-            '--config',
-            type=str,
-            required=True,
-            metavar='<PATH>',
-            help='Path to the test configuration file.')
+                      '--config',
+                      type=str,
+                      required=True,
+                      metavar='<PATH>',
+                      help='Path to the test configuration file.')
   parser.add_argument(
-    '--tests',
-    '--test_case',
-    nargs='+',
-    type=str,
-    metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
-    help='A list of test classes and optional tests to execute.')
+      '--tests',
+      '--test_case',
+      nargs='+',
+      type=str,
+      metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
+      help='A list of test classes and optional tests to execute.')
   if not argv:
     argv = sys.argv[1:]
   args = parser.parse_args(argv)
@@ -78,8 +78,8 @@ def run_suite(test_classes, argv=None):
   for test_class in test_classes:
     if not issubclass(test_class, base_test.BaseTestClass):
       logging.error(
-        'Test class %s does not extend '
-        'mobly.base_test.BaseTestClass', test_class)
+          'Test class %s does not extend '
+          'mobly.base_test.BaseTestClass', test_class)
       sys.exit(1)
 
   # Find the full list of tests to execute
@@ -98,8 +98,7 @@ def run_suite(test_classes, argv=None):
       except signals.TestAbortAll:
         pass
       except:
-        logging.exception('Exception when executing %s.',
-                  config.testbed_name)
+        logging.exception('Exception when executing %s.', config.testbed_name)
         ok = False
   if not ok:
     sys.exit(1)

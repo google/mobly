@@ -43,31 +43,31 @@ ascii_letters_and_digits = string.ascii_letters + string.digits
 valid_filename_chars = "-_." + ascii_letters_and_digits
 
 GMT_to_olson = {
-  "GMT-9": "America/Anchorage",
-  "GMT-8": "US/Pacific",
-  "GMT-7": "US/Mountain",
-  "GMT-6": "US/Central",
-  "GMT-5": "US/Eastern",
-  "GMT-4": "America/Barbados",
-  "GMT-3": "America/Buenos_Aires",
-  "GMT-2": "Atlantic/South_Georgia",
-  "GMT-1": "Atlantic/Azores",
-  "GMT+0": "Africa/Casablanca",
-  "GMT+1": "Europe/Amsterdam",
-  "GMT+2": "Europe/Athens",
-  "GMT+3": "Europe/Moscow",
-  "GMT+4": "Asia/Baku",
-  "GMT+5": "Asia/Oral",
-  "GMT+6": "Asia/Almaty",
-  "GMT+7": "Asia/Bangkok",
-  "GMT+8": "Asia/Hong_Kong",
-  "GMT+9": "Asia/Tokyo",
-  "GMT+10": "Pacific/Guam",
-  "GMT+11": "Pacific/Noumea",
-  "GMT+12": "Pacific/Fiji",
-  "GMT+13": "Pacific/Tongatapu",
-  "GMT-11": "Pacific/Midway",
-  "GMT-10": "Pacific/Honolulu"
+    "GMT-9": "America/Anchorage",
+    "GMT-8": "US/Pacific",
+    "GMT-7": "US/Mountain",
+    "GMT-6": "US/Central",
+    "GMT-5": "US/Eastern",
+    "GMT-4": "America/Barbados",
+    "GMT-3": "America/Buenos_Aires",
+    "GMT-2": "Atlantic/South_Georgia",
+    "GMT-1": "Atlantic/Azores",
+    "GMT+0": "Africa/Casablanca",
+    "GMT+1": "Europe/Amsterdam",
+    "GMT+2": "Europe/Athens",
+    "GMT+3": "Europe/Moscow",
+    "GMT+4": "Asia/Baku",
+    "GMT+5": "Asia/Oral",
+    "GMT+6": "Asia/Almaty",
+    "GMT+7": "Asia/Bangkok",
+    "GMT+8": "Asia/Hong_Kong",
+    "GMT+9": "Asia/Tokyo",
+    "GMT+10": "Pacific/Guam",
+    "GMT+11": "Pacific/Noumea",
+    "GMT+12": "Pacific/Fiji",
+    "GMT+13": "Pacific/Tongatapu",
+    "GMT-11": "Pacific/Midway",
+    "GMT-10": "Pacific/Honolulu"
 }
 
 
@@ -256,8 +256,7 @@ def rand_ascii_str(length):
 
 
 # Thead/Process related functions.
-def concurrent_exec(func, param_list, max_workers=30,
-          raise_on_exception=False):
+def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
   """Executes a function with different parameters pseudo-concurrently.
 
   This is basically a map function. Each element (should be an iterable) in
@@ -294,7 +293,7 @@ def concurrent_exec(func, param_list, max_workers=30,
         return_vals.append(future.result())
       except Exception as exc:
         logging.exception("{} generated an exception: {}".format(
-          params, traceback.format_exc()))
+            params, traceback.format_exc()))
         return_vals.append(exc)
         exceptions.append(exc)
     if raise_on_exception and exceptions:
@@ -302,26 +301,23 @@ def concurrent_exec(func, param_list, max_workers=30,
       if sys.version_info < (3, 0):
         for exception in exceptions:
           error_messages.append(
-            unicode(exception.message,
-                encoding='utf-8',
-                errors='replace'))
+              unicode(exception.message, encoding='utf-8', errors='replace'))
       else:
         for exception in exceptions:
           error_messages.append(''.join(
-            traceback.format_exception(exception.__class__,
-                           exception,
-                           exception.__traceback__)))
+              traceback.format_exception(exception.__class__, exception,
+                                         exception.__traceback__)))
       raise RuntimeError('\n\n'.join(error_messages))
     return return_vals
 
 
 def run_command(cmd,
-        stdout=None,
-        stderr=None,
-        shell=False,
-        timeout=None,
-        cwd=None,
-        env=None):
+                stdout=None,
+                stderr=None,
+                shell=False,
+                timeout=None,
+                cwd=None,
+                env=None):
   """Runs a command in a subprocess.
 
   This function is very similar to subprocess.check_output. The main
@@ -365,11 +361,11 @@ def run_command(cmd,
   if stderr is None:
     stderr = subprocess.PIPE
   process = psutil.Popen(cmd,
-               stdout=stdout,
-               stderr=stderr,
-               shell=shell,
-               cwd=cwd,
-               env=env)
+                         stdout=stdout,
+                         stderr=stderr,
+                         shell=shell,
+                         cwd=cwd,
+                         env=env)
   timer = None
   timer_triggered = threading.Event()
   if timeout and timeout > 0:
@@ -414,11 +410,11 @@ def start_standing_subprocess(cmd, shell=False, env=None):
   """
   logging.debug('Starting standing subprocess with: %s', cmd)
   proc = subprocess.Popen(cmd,
-              stdin=subprocess.PIPE,
-              stdout=subprocess.PIPE,
-              stderr=subprocess.PIPE,
-              shell=shell,
-              env=env)
+                          stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          shell=shell,
+                          env=env)
   # Leaving stdin open causes problems for input, e.g. breaking the
   # code.inspect() shell (http://stackoverflow.com/a/25512460/1612937), so
   # explicitly close it assuming it is not needed for standing subprocesses.
@@ -464,8 +460,7 @@ def stop_standing_subprocess(proc):
       pass
     except:
       failed.append(child.pid)
-      logging.exception('Failed to kill standing subprocess %d',
-                child.pid)
+      logging.exception('Failed to kill standing subprocess %d', child.pid)
   try:
     process.kill()
     process.wait(timeout=10)
@@ -535,7 +530,7 @@ def get_available_host_port():
     if port not in adb.list_occupied_adb_ports():
       return port
   raise Error('Failed to find available port after {} retries'.format(
-    MAX_PORT_ALLOCATION_RETRY))
+      MAX_PORT_ALLOCATION_RETRY))
 
 
 def grep(regex, output):
@@ -626,7 +621,7 @@ def find_subclass_in_module(base_class, module):
   """
   subclasses = find_subclasses_in_module([base_class], module)
   if len(subclasses) != 1:
-    raise ValueError('Expected 1 subclass of %s per module, found %s.' %
-             (base_class.__name__,
-              [subclass.__name__ for subclass in subclasses]))
+    raise ValueError(
+        'Expected 1 subclass of %s per module, found %s.' %
+        (base_class.__name__, [subclass.__name__ for subclass in subclasses]))
   return subclasses[0]

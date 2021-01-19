@@ -18,17 +18,17 @@ from mobly import test_runner
 
 
 class Integration3Test(base_test.BaseTestClass):
-  """This test class is used to cause a failure in integration tests."""
+    """This test class is used to cause a failure in integration tests."""
 
-  def setup_class(self):
-    asserts.fail('Setup failure.')
+    def setup_class(self):
+        asserts.fail('Setup failure.')
 
-  def on_fail(self, record):
-    asserts.abort_all('Skip tests.')
+    def on_fail(self, record):
+        asserts.abort_all('Skip tests.')
 
-  def test_empty(self):
-    pass
+    def test_empty(self):
+        pass
 
 
 if __name__ == '__main__':
-  test_runner.main()
+    test_runner.main()

@@ -57,6 +57,7 @@ def uid(uid):
     raise ValueError('UID cannot be None.')
 
   def decorate(test_func):
+
     @functools.wraps(test_func)
     def wrapper(*args, **kwargs):
       return test_func(*args, **kwargs)
@@ -158,10 +159,10 @@ class TestSummaryWriter(object):
         # Use safe_dump here to avoid language-specific tags in final
         # output.
         yaml.safe_dump(new_content,
-                 f,
-                 explicit_start=True,
-                 allow_unicode=True,
-                 indent=4)
+                       f,
+                       explicit_start=True,
+                       allow_unicode=True,
+                       indent=4)
 
 
 class TestResultEnums(object):
@@ -243,7 +244,7 @@ class ExceptionRecord(object):
       _, _, exc_traceback = sys.exc_info()
     if exc_traceback:
       self.stacktrace = ''.join(
-        traceback.format_exception(e.__class__, e, exc_traceback))
+          traceback.format_exception(e.__class__, e, exc_traceback))
     # Populate fields based on the type of the termination signal.
     if self.is_test_signal:
       self._set_details(e.details)
@@ -266,9 +267,8 @@ class ExceptionRecord(object):
       else:
         # We should never hit this in Py3, if this happens, record
         # an encoded version of the content for users to handle.
-        logging.error(
-          'Unable to decode "%s" in Py3, encoding in utf-8.',
-          content)
+        logging.error('Unable to decode "%s" in Py3, encoding in utf-8.',
+                      content)
         self.details = content.encode('utf-8')
 
   def to_dict(self):
@@ -460,7 +460,7 @@ class TestResultRecord(object):
       self.result = TestResultEnums.TEST_RESULT_ERROR
     if position in self.extra_errors:
       raise Error('An exception is already recorded with position "%s",'
-            ' cannot reuse.' % position)
+                  ' cannot reuse.' % position)
     if isinstance(e, ExceptionRecord):
       self.extra_errors[position] = e
     else:
@@ -493,8 +493,7 @@ class TestResultRecord(object):
     d[TestResultEnums.RECORD_EXTRAS] = self.extras
     d[TestResultEnums.RECORD_DETAILS] = self.details
     d[TestResultEnums.RECORD_EXTRA_ERRORS] = {
-      key: value.to_dict()
-      for (key, value) in self.extra_errors.items()
+        key: value.to_dict() for (key, value) in self.extra_errors.items()
     }
     d[TestResultEnums.RECORD_STACKTRACE] = self.stacktrace
     return d
@@ -539,7 +538,7 @@ class TestResult(object):
     """
     if not isinstance(r, TestResult):
       raise TypeError('Operand %s of type %s is not a TestResult.' %
-              (r, type(r)))
+                      (r, type(r)))
     sum_result = TestResult()
     for name in sum_result.__dict__:
       r_value = getattr(r, name)

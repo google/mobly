@@ -88,21 +88,18 @@ class CallbackHandler(object):
     if timeout:
       if timeout > MAX_TIMEOUT:
         raise Error(
-          self._ad,
-          'Specified timeout %s is longer than max timeout %s.' %
-          (timeout, MAX_TIMEOUT))
+            self._ad, 'Specified timeout %s is longer than max timeout %s.' %
+            (timeout, MAX_TIMEOUT))
     # Convert to milliseconds for java side.
     timeout_ms = int(timeout * 1000)
     try:
-      raw_event = self._event_client.eventWaitAndGet(
-        self._id, event_name, timeout_ms)
+      raw_event = self._event_client.eventWaitAndGet(self._id, event_name,
+                                                     timeout_ms)
     except Exception as e:
       if 'EventSnippetException: timeout.' in str(e):
         raise TimeoutError(
-          self._ad,
-          'Timed out after waiting %ss for event "%s" triggered by'
-          ' %s (%s).' %
-          (timeout, event_name, self._method_name, self._id))
+            self._ad, 'Timed out after waiting %ss for event "%s" triggered by'
+            ' %s (%s).' % (timeout, event_name, self._method_name, self._id))
       raise
     return snippet_event.from_dict(raw_event)
 
@@ -150,9 +147,9 @@ class CallbackHandler(object):
       if predicate(event):
         return event
     raise TimeoutError(
-      self._ad,
-      'Timed out after %ss waiting for an "%s" event that satisfies the '
-      'predicate "%s".' % (timeout, event_name, predicate.__name__))
+        self._ad,
+        'Timed out after %ss waiting for an "%s" event that satisfies the '
+        'predicate "%s".' % (timeout, event_name, predicate.__name__))
 
   def getAll(self, event_name):
     """Gets all the events of a certain name that have been received so

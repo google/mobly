@@ -75,13 +75,11 @@ class ServiceManager(object):
     if not inspect.isclass(service_class):
       raise Error(self._device, '"%s" is not a class!' % service_class)
     if not issubclass(service_class, base_service.BaseService):
-      raise Error(
-        self._device,
-        'Class %s is not a subclass of BaseService!' % service_class)
+      raise Error(self._device,
+                  'Class %s is not a subclass of BaseService!' % service_class)
     if alias in self._service_objects:
-      raise Error(
-        self._device,
-        'A service is already registered with alias "%s".' % alias)
+      raise Error(self._device,
+                  'A service is already registered with alias "%s".' % alias)
     service_obj = service_class(self._device, configs)
     service_obj.alias = alias
     if start_service:
@@ -98,11 +96,11 @@ class ServiceManager(object):
     """
     if alias not in self._service_objects:
       raise Error(self._device,
-            'No service is registered with alias "%s".' % alias)
+                  'No service is registered with alias "%s".' % alias)
     service_obj = self._service_objects.pop(alias)
     if service_obj.is_alive:
-      with expects.expect_no_raises(
-          'Failed to stop service instance "%s".' % alias):
+      with expects.expect_no_raises('Failed to stop service instance "%s".' %
+                                    alias):
         service_obj.stop()
 
   def for_each(self, func):
@@ -114,9 +112,8 @@ class ServiceManager(object):
     """
     aliases = list(self._service_objects.keys())
     for alias in aliases:
-      with expects.expect_no_raises(
-          'Failed to execute "%s" for service "%s".' %
-        (func.__name__, alias)):
+      with expects.expect_no_raises('Failed to execute "%s" for service "%s".' %
+                                    (func.__name__, alias)):
         func(self._service_objects[alias])
 
   def list_live_services(self):
@@ -130,7 +127,7 @@ class ServiceManager(object):
     """
     aliases = []
     self.for_each(lambda service: aliases.append(service.alias)
-            if service.is_alive else None)
+                  if service.is_alive else None)
     return aliases
 
   def create_output_excerpts_all(self, test_info):
@@ -173,8 +170,7 @@ class ServiceManager(object):
     """
     for alias, service in self._service_objects.items():
       if not service.is_alive:
-        with expects.expect_no_raises('Failed to start service "%s".' %
-                        alias):
+        with expects.expect_no_raises('Failed to start service "%s".' % alias):
           service.start()
 
   def start_services(self, service_alises):
@@ -189,9 +185,9 @@ class ServiceManager(object):
     for name in service_alises:
       if name not in self._service_objects:
         raise Error(
-          self._device,
-          'No service is registered under the name "%s", cannot start.'
-          % name)
+            self._device,
+            'No service is registered under the name "%s", cannot start.' %
+            name)
       service = self._service_objects[name]
       if not service.is_alive:
         service.start()
@@ -205,8 +201,7 @@ class ServiceManager(object):
     # to do a list conversion here.
     for alias, service in reversed(list(self._service_objects.items())):
       if service.is_alive:
-        with expects.expect_no_raises('Failed to stop service "%s".' %
-                        alias):
+        with expects.expect_no_raises('Failed to stop service "%s".' % alias):
           service.stop()
 
   def pause_all(self):
@@ -217,8 +212,7 @@ class ServiceManager(object):
     # OrdereDict#items does not return a sequence in Python 3.4, so we have
     # to do a list conversion here.
     for alias, service in reversed(list(self._service_objects.items())):
-      with expects.expect_no_raises('Failed to pause service "%s".' %
-                      alias):
+      with expects.expect_no_raises('Failed to pause service "%s".' % alias):
         service.pause()
 
   def resume_all(self):
@@ -227,8 +221,7 @@ class ServiceManager(object):
     Services will be resumed in the order they were registered.
     """
     for alias, service in self._service_objects.items():
-      with expects.expect_no_raises('Failed to resume service "%s".' %
-                      alias):
+      with expects.expect_no_raises('Failed to resume service "%s".' % alias):
         service.resume()
 
   def resume_services(self, service_alises):
@@ -242,9 +235,9 @@ class ServiceManager(object):
     for name in service_alises:
       if name not in self._service_objects:
         raise Error(
-          self._device,
-          'No service is registered under the name "%s", cannot resume.'
-          % name)
+            self._device,
+            'No service is registered under the name "%s", cannot resume.' %
+            name)
       service = self._service_objects[name]
       service.resume()
 

@@ -35,50 +35,48 @@ from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
 
 class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
-  def __init__(self, package):
-    self._package = package
+    def __init__(self, package):
+        self._package = package
 
-  def _start_services(self, console_env):
-    """Overrides superclass."""
-    self._ad.load_snippet(name='snippet', package=self._package)
-    console_env['snippet'] = self._ad.snippet
-    console_env['s'] = self._ad.snippet
+    def _start_services(self, console_env):
+        """Overrides superclass."""
+        self._ad.load_snippet(name='snippet', package=self._package)
+        console_env['snippet'] = self._ad.snippet
+        console_env['s'] = self._ad.snippet
 
-  def _get_banner(self, serial):
-    lines = [
-      'Connected to %s.' % serial, 'Call methods against:',
-      '    ad (android_device.AndroidDevice)',
-      '    snippet or s (Snippet)'
-    ]
-    return '\n'.join(lines)
+    def _get_banner(self, serial):
+        lines = [
+            'Connected to %s.' % serial, 'Call methods against:',
+            '    ad (android_device.AndroidDevice)',
+            '    snippet or s (Snippet)'
+        ]
+        return '\n'.join(lines)
 
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(
-    description='Interactive client for Mobly code snippets.')
-  parser.add_argument(
-    '-s',
-    '--serial',
-    help=
-    'Device serial to connect to (if more than one device is connected)')
-  parser.add_argument(
-    'package',
-    metavar='PACKAGE_NAME',
-    type=str,
-    nargs='?',
-    help='The package name of the snippet to use.')
-  parser.add_argument(
-    '--mbs',
-    help='Whether to connect to Mobly Bundled Snippets',
-    action='store_true')
-  args = parser.parse_args()
-  if args.package and args.mbs:
-    print('Cannot specify both --package and --mbs', file=sys.stderr)
-    sys.exit(1)
-  if args.mbs:
-    package = android_device.MBS_PACKAGE
-  else:
-    package = args.package
+    parser = argparse.ArgumentParser(
+        description='Interactive client for Mobly code snippets.')
+    parser.add_argument(
+        '-s',
+        '--serial',
+        help=
+        'Device serial to connect to (if more than one device is connected)')
+    parser.add_argument('package',
+                        metavar='PACKAGE_NAME',
+                        type=str,
+                        nargs='?',
+                        help='The package name of the snippet to use.')
+    parser.add_argument('--mbs',
+                        help='Whether to connect to Mobly Bundled Snippets',
+                        action='store_true')
+    args = parser.parse_args()
+    if args.package and args.mbs:
+        print('Cannot specify both --package and --mbs', file=sys.stderr)
+        sys.exit(1)
+    if args.mbs:
+        package = android_device.MBS_PACKAGE
+    else:
+        package = args.package
 
-  logging.basicConfig(level=logging.INFO)
-  SnippetShell(package).main(args.serial)
+    logging.basicConfig(level=logging.INFO)
+    SnippetShell(package).main(args.serial)

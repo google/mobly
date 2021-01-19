@@ -22,9 +22,9 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 _APP_NAME = 'SL4A'
 _DEVICE_SIDE_PORT = 8080
 _LAUNCH_CMD = (
-  'am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER '
-  '--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT %s '
-  'com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher')
+    'am start -a com.googlecode.android_scripting.action.LAUNCH_SERVER '
+    '--ei com.googlecode.android_scripting.extra.USE_SERVICE_PORT %s '
+    'com.googlecode.android_scripting/.activity.ScriptingLayerServiceLauncher')
 # Maximum time to wait for the app to start on the device (10 minutes).
 # TODO: This timeout is set high in order to allow for retries in
 # start_app_and_connect. Decrease it when the call to connect() has the option
@@ -59,8 +59,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     out = self._adb.shell('pm list package')
     if not utils.grep('com.googlecode.android_scripting', out):
       raise jsonrpc_client_base.AppStartError(
-        self._ad,
-        '%s is not installed on %s' % (_APP_NAME, self._adb.serial))
+          self._ad, '%s is not installed on %s' % (_APP_NAME, self._adb.serial))
     self.disable_hidden_api_blacklist()
 
     # sl4a has problems connecting after disconnection, so kill the apk and
@@ -110,7 +109,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
           self.closeSl4aSession()
         except:
           self.log.exception('Failed to gracefully shut down %s.',
-                     self.app_name)
+                             self.app_name)
 
         # Close the socket connection.
         self.disconnect()
@@ -132,9 +131,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
       self.ed = None
 
   def _retry_connect(self):
-    self._adb.forward(
-      ['tcp:%d' % self.host_port,
-       'tcp:%d' % self.device_port])
+    self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
     start_time = time.time()
     expiration_time = start_time + _APP_START_WAIT_TIME
     started = False
@@ -146,14 +143,14 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         break
       except:
         self.log.debug('%s is not yet running, retrying',
-                 self.app_name,
-                 exc_info=True)
+                       self.app_name,
+                       exc_info=True)
       time.sleep(1)
     if not started:
       raise jsonrpc_client_base.AppRestoreConnectionError(
-        self._ad, '%s failed to connect for %s at host port %s, '
-        'device port %s' % (self.app_name, self._adb.serial,
-                  self.host_port, self.device_port))
+          self._ad, '%s failed to connect for %s at host port %s, '
+          'device port %s' %
+          (self.app_name, self._adb.serial, self.host_port, self.device_port))
 
   def _start_event_client(self):
     # Start an EventDispatcher for the current sl4a session
@@ -161,7 +158,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     event_client.host_port = self.host_port
     event_client.device_port = self.device_port
     event_client.connect(uid=self.uid,
-               cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
+                         cmd=jsonrpc_client_base.JsonRpcCommand.CONTINUE)
     ed = event_dispatcher.EventDispatcher(event_client)
     ed.start()
     return ed

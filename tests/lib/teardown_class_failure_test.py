@@ -17,12 +17,12 @@ from mobly import test_runner
 
 
 class TearDownClassFailureTest(base_test.BaseTestClass):
-  def test_foo(self):
-    pass
+    def test_foo(self):
+        pass
 
-  def teardown_class(self):
-    raise Exception('Teardown class failed.')
+    def teardown_class(self):
+        raise Exception('Teardown class failed.')
 
 
 if __name__ == '__main__':
-  test_runner.main()
+    test_runner.main()

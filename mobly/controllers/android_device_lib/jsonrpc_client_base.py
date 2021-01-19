@@ -226,22 +226,22 @@ class JsonRpcClientBase(object):
     self._counter = self._id_counter()
     try:
       self._conn = socket.create_connection(('localhost', self.host_port),
-                        _SOCKET_CONNECTION_TIMEOUT)
+                                            _SOCKET_CONNECTION_TIMEOUT)
     except ConnectionRefusedError as err:
       # Retry using '127.0.0.1' for IPv4 enabled machines that only resolve
       # 'localhost' to '[::1]'.
-      self.log.debug('Failed to connect to localhost, trying 127.0.0.1: {}'
-             .format(str(err)))
+      self.log.debug(
+          'Failed to connect to localhost, trying 127.0.0.1: {}'.format(
+              str(err)))
       self._conn = socket.create_connection(('127.0.0.1', self.host_port),
-                        _SOCKET_CONNECTION_TIMEOUT)
+                                            _SOCKET_CONNECTION_TIMEOUT)
 
     self._conn.settimeout(_SOCKET_READ_TIMEOUT)
     self._client = self._conn.makefile(mode='brw')
 
     resp = self._cmd(cmd, uid)
     if not resp:
-      raise ProtocolError(self._ad,
-                ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+      raise ProtocolError(self._ad, ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
     result = json.loads(str(resp, encoding='utf8'))
     if result['status']:
       self.uid = result['uid']
@@ -276,9 +276,8 @@ class JsonRpcClientBase(object):
       self.log.debug('Snippet sent %s.', msg)
     except socket.error as e:
       raise Error(
-        self._ad,
-        'Encountered socket error "%s" sending RPC message "%s"' %
-        (e, msg))
+          self._ad,
+          'Encountered socket error "%s" sending RPC message "%s"' % (e, msg))
 
   def _client_receive(self):
     """Receives the server's response of an Rpc message.
@@ -297,15 +296,13 @@ class JsonRpcClientBase(object):
         if _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
           self.log.debug('Snippet received: %s', response)
         else:
-          self.log.debug(
-            'Snippet received: %s... %d chars are truncated',
-            response[:_MAX_RPC_RESP_LOGGING_LENGTH],
-            len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
+          self.log.debug('Snippet received: %s... %d chars are truncated',
+                         response[:_MAX_RPC_RESP_LOGGING_LENGTH],
+                         len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
       return response
     except socket.error as e:
-      raise Error(
-        self._ad,
-        'Encountered socket error reading RPC response "%s"' % e)
+      raise Error(self._ad,
+                  'Encountered socket error reading RPC response "%s"' % e)
 
   def _cmd(self, command, uid=None):
     """Send a command to the server.
@@ -343,8 +340,7 @@ class JsonRpcClientBase(object):
       self._client_send(request)
       response = self._client_receive()
     if not response:
-      raise ProtocolError(self._ad,
-                ProtocolError.NO_RESPONSE_FROM_SERVER)
+      raise ProtocolError(self._ad, ProtocolError.NO_RESPONSE_FROM_SERVER)
     result = json.loads(str(response, encoding='utf8'))
     if result['error']:
       raise ApiError(self._ad, result['error'])
@@ -353,12 +349,11 @@ class JsonRpcClientBase(object):
     if result.get('callback') is not None:
       if self._event_client is None:
         self._event_client = self._start_event_client()
-      return callback_handler.CallbackHandler(
-        callback_id=result['callback'],
-        event_client=self._event_client,
-        ret_value=result['result'],
-        method_name=method,
-        ad=self._ad)
+      return callback_handler.CallbackHandler(callback_id=result['callback'],
+                                              event_client=self._event_client,
+                                              ret_value=result['result'],
+                                              method_name=method,
+                                              ad=self._ad)
     return result['result']
 
   def disable_hidden_api_blacklist(self):
@@ -367,10 +362,9 @@ class JsonRpcClientBase(object):
     sdk_version = int(self._ad.build_info['build_version_sdk'])
     # we check version_codename in addition to sdk_version because P builds
     # in development report sdk_version 27, but still enforce the blacklist.
-    if self._ad.is_rootable and (sdk_version >= 28
-                   or version_codename == 'P'):
+    if self._ad.is_rootable and (sdk_version >= 28 or version_codename == 'P'):
       self._ad.adb.shell(
-        'settings put global hidden_api_blacklist_exemptions "*"')
+          'settings put global hidden_api_blacklist_exemptions "*"')
 
   def __getattr__(self, name):
     """Wrapper for python magic to turn method calls into RPC calls."""

@@ -58,9 +58,10 @@ class FastbootProxy():
     return exe_cmd(' '.join((self.fastboot_str, name, arg_str)))
 
   def args(self, *args):
-    return exe_cmd(' '.join((self.fastboot_str, ) + args))
+    return exe_cmd(' '.join((self.fastboot_str,) + args))
 
   def __getattr__(self, name):
+
     def fastboot_call(*args):
       clean_name = name.replace('_', '-')
       arg_str = ' '.join(str(elem) for elem in args)
