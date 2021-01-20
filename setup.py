@@ -23,47 +23,47 @@ install_requires = [
 ]
 
 if platform.system() == 'Windows':
-    install_requires.append('pywin32')
+  install_requires.append('pywin32')
 
 
 class PyTest(test.test):
-    """Class used to execute unit tests using PyTest. This allows us to execute
+  """Class used to execute unit tests using PyTest. This allows us to execute
   unit tests without having to install the package.
   """
 
-    def finalize_options(self):
-        test.test.finalize_options(self)
-        self.test_args = ['-x', "tests/mobly"]
-        self.test_suite = True
+  def finalize_options(self):
+    test.test.finalize_options(self)
+    self.test_args = ['-x', "tests/mobly"]
+    self.test_suite = True
 
-    def run_tests(self):
-        import pytest
-        errno = pytest.main(self.test_args)
-        sys.exit(errno)
+  def run_tests(self):
+    import pytest
+    errno = pytest.main(self.test_args)
+    sys.exit(errno)
 
 
 def main():
-    setuptools.setup(
-        name='mobly',
-        version='1.10.1',
-        maintainer='Ang Li',
-        maintainer_email='mobly-github@googlegroups.com',
-        description='Automation framework for special end-to-end test cases',
-        license='Apache2.0',
-        url='https://github.com/google/mobly',
-        download_url='https://github.com/google/mobly/tarball/1.10.1',
-        packages=setuptools.find_packages(exclude=['tests']),
-        include_package_data=False,
-        scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
-        tests_require=[
-            'mock',
-            'pytest',
-            'pytz',
-        ],
-        install_requires=install_requires,
-        cmdclass={'test': PyTest},
-    )
+  setuptools.setup(
+      name='mobly',
+      version='1.10.1',
+      maintainer='Ang Li',
+      maintainer_email='mobly-github@googlegroups.com',
+      description='Automation framework for special end-to-end test cases',
+      license='Apache2.0',
+      url='https://github.com/google/mobly',
+      download_url='https://github.com/google/mobly/tarball/1.10.1',
+      packages=setuptools.find_packages(exclude=['tests']),
+      include_package_data=False,
+      scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
+      tests_require=[
+          'mock',
+          'pytest',
+          'pytz',
+      ],
+      install_requires=install_requires,
+      cmdclass={'test': PyTest},
+  )
 
 
 if __name__ == '__main__':
-    main()
+  main()
