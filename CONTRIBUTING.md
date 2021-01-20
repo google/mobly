@@ -23,7 +23,7 @@ Contributions made by corporations are covered by a different agreement than
 the one above, the
 [Software Grant and Corporate Contributor License Agreement](https://cla.developers.google.com/about/google-corporate).
 
-## Pre-submit
+## Pre-submit Steps
 
 ### Code reviews
 All submissions, including submissions by project members, require review. We
@@ -34,7 +34,7 @@ To run the unit tests for Mobly to verify your local changes:
 
 Make sure you have `tox` installed:
 ```sh
-pip install tox
+pip3 install tox
 ```
 
 Then in the Mobly directory, run:
@@ -42,8 +42,16 @@ Then in the Mobly directory, run:
 mobly $ tox
 ```
 
-### Code Style
-Before pushing your changes, run `yapf` to make sure the code styles are correct.
+### Code style
+Before pushing your changes, you need to lint the code style via `yapf`
+
+To install `yapf`:
+
+```sh
+$ pip3 install yapf
+```
+
+To lint the code:
 
 ```sh
 mobly $ yapf -i {files you modified}
