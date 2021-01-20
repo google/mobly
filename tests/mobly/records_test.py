@@ -83,7 +83,7 @@ class RecordsTest(unittest.TestCase):
     # in them.
     if stacktrace:
       stacktrace_key = records.TestResultEnums.RECORD_STACKTRACE
-      self.assertTrue(d.pop(stacktrace_key) in actual_d.pop(stacktrace_key))
+      self.assertIn(d.pop(stacktrace_key), actual_d.pop(stacktrace_key))
     self.assertDictEqual(actual_d, d)
     # Verify that these code paths do not cause crashes and yield non-empty
     # results.
