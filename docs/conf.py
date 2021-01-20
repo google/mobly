@@ -20,7 +20,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.pardir))
 
-
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -30,20 +29,19 @@ sys.path.insert(0, os.path.abspath(os.path.pardir))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.todo',
-    'sphinx.ext.viewcode']
+extensions = [
+    'sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.todo',
+    'sphinx.ext.viewcode'
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-
 
 # Setting up parsers for MD support
 from recommonmark.parser import CommonMarkParser
 
 source_parsers = {
-        '.md': CommonMarkParser,
+    '.md': CommonMarkParser,
 }
 
 # The suffix(es) of source filenames.
@@ -79,19 +77,16 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build',
-    'Thumbs.db',
-    '.DS_Store',
-    'tutorial.md',
-    'instrumentation_tutorial.md',
-    'android_device_service.md']
+exclude_patterns = [
+    '_build', 'Thumbs.db', '.DS_Store', 'tutorial.md',
+    'instrumentation_tutorial.md', 'android_device_service.md'
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -111,12 +106,10 @@ html_theme = 'alabaster'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
 
-
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Moblydoc'
-
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -142,20 +135,14 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Mobly.tex', u'Mobly Documentation',
-     u'Ang Li', 'manual'),
+    (master_doc, 'Mobly.tex', u'Mobly Documentation', u'Ang Li', 'manual'),
 ]
-
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'mobly', u'Mobly Documentation',
-     [author], 1)
-]
-
+man_pages = [(master_doc, 'mobly', u'Mobly Documentation', [author], 1)]
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -163,12 +150,10 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Mobly', u'Mobly Documentation',
-     author, 'Mobly', 'Mobly is a Python-based test framework that specializes in supporting tests that require multiple devices, complex environments, or custom hardware setups.',
+    (master_doc, 'Mobly', u'Mobly Documentation', author, 'Mobly',
+     'Mobly is a Python-based test framework that specializes in supporting tests that require multiple devices, complex environments, or custom hardware setups.',
      'Miscellaneous'),
 ]
-
-
 
 # -- Options for Epub output ----------------------------------------------
 
@@ -189,5 +174,3 @@ epub_copyright = copyright
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
-
-

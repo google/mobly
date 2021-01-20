@@ -69,8 +69,7 @@ class _ExpectErrorRecorder(object):
       error: Exception or signals.ExceptionRecord, the error to add.
     """
     self._count += 1
-    self._record.add_error('expect@%s+%s' % (time.time(), self._count),
-                 error)
+    self._record.add_error('expect@%s+%s' % (time.time(), self._count), error)
 
 
 def expect_true(condition, msg, extras=None):
@@ -131,7 +130,7 @@ def expect_equal(first, second, msg=None, extras=None):
     asserts.assert_equal(first, second, msg, extras)
   except signals.TestSignal as e:
     logging.exception('Expected %s equals to %s, but they are not.', first,
-              second)
+                      second)
     recorder.add_error(e)
 
 

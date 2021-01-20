@@ -39,7 +39,7 @@ class TestSignal(Exception):
       self.extras = extras
     except TypeError:
       raise TestSignalError('Extras must be json serializable. %s '
-                  'is not.' % extras)
+                            'is not.' % extras)
 
   def __str__(self):
     return 'Details=%s, Extras=%s' % (self.details, self.extras)

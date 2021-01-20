@@ -35,6 +35,7 @@ from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
 
 class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
+
   def __init__(self, package):
     self._package = package
 
@@ -46,31 +47,27 @@ class SnippetShell(jsonrpc_shell_base.JsonRpcShellBase):
 
   def _get_banner(self, serial):
     lines = [
-      'Connected to %s.' % serial, 'Call methods against:',
-      '    ad (android_device.AndroidDevice)',
-      '    snippet or s (Snippet)'
+        'Connected to %s.' % serial, 'Call methods against:',
+        '    ad (android_device.AndroidDevice)', '    snippet or s (Snippet)'
     ]
     return '\n'.join(lines)
 
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
-    description='Interactive client for Mobly code snippets.')
+      description='Interactive client for Mobly code snippets.')
   parser.add_argument(
-    '-s',
-    '--serial',
-    help=
-    'Device serial to connect to (if more than one device is connected)')
-  parser.add_argument(
-    'package',
-    metavar='PACKAGE_NAME',
-    type=str,
-    nargs='?',
-    help='The package name of the snippet to use.')
-  parser.add_argument(
-    '--mbs',
-    help='Whether to connect to Mobly Bundled Snippets',
-    action='store_true')
+      '-s',
+      '--serial',
+      help='Device serial to connect to (if more than one device is connected)')
+  parser.add_argument('package',
+                      metavar='PACKAGE_NAME',
+                      type=str,
+                      nargs='?',
+                      help='The package name of the snippet to use.')
+  parser.add_argument('--mbs',
+                      help='Whether to connect to Mobly Bundled Snippets',
+                      action='store_true')
   args = parser.parse_args()
   if args.package and args.mbs:
     print('Cannot specify both --package and --mbs', file=sys.stderr)

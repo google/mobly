@@ -1,7 +1,8 @@
 # Contributing
-Want to contribute? Great! First, read this page (including the small print at the end).
+Want to contribute? Great! First, read this page.
 
-### Before you contribute
+
+## Before you contribute
 Before we can use your code, you must sign the
 [Google Individual Contributor License Agreement]
 (https://cla.developers.google.com/about/google-individual)
@@ -17,11 +18,41 @@ us first through the issue tracker with your idea so that we can help out and
 possibly guide you. Coordinating up front makes it much easier to avoid
 frustration later on.
 
-### Code reviews
-All submissions, including submissions by project members, require review. We
-use GitHub pull requests for this purpose.
-
 ### The small print
 Contributions made by corporations are covered by a different agreement than
 the one above, the
 [Software Grant and Corporate Contributor License Agreement](https://cla.developers.google.com/about/google-corporate).
+
+## Pre-submit Steps
+
+### Code reviews
+All submissions, including submissions by project members, require review. We
+use GitHub pull requests for this purpose.
+
+### Testing
+To run the unit tests for Mobly to verify your local changes:
+
+Make sure you have `tox` installed:
+```sh
+pip3 install tox
+```
+
+Then in the Mobly directory, run:
+```sh
+mobly $ tox
+```
+
+### Code style
+Before pushing your changes, you need to lint the code style via `yapf`
+
+To install `yapf`:
+
+```sh
+$ pip3 install yapf
+```
+
+To lint the code:
+
+```sh
+mobly $ yapf -i {files you modified}
+```

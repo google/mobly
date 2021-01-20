@@ -33,12 +33,13 @@ class TestSuiteTest(unittest.TestCase):
 
   Tests here target a combination of test_runner and base_test code.
   """
+
   def setUp(self):
     self.tmp_dir = tempfile.mkdtemp()
     self.mock_test_cls_configs = config_parser.TestRunConfig()
     self.summary_file = os.path.join(self.tmp_dir, 'summary.yaml')
     self.mock_test_cls_configs.summary_writer = records.TestSummaryWriter(
-      self.summary_file)
+        self.summary_file)
     self.mock_test_cls_configs.log_path = self.tmp_dir
     self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
     self.mock_test_cls_configs.reporter = mock.MagicMock()
@@ -46,8 +47,8 @@ class TestSuiteTest(unittest.TestCase):
     self.base_mock_test_config.testbed_name = 'SampleTestBed'
     self.base_mock_test_config.controller_configs = {}
     self.base_mock_test_config.user_params = {
-      'icecream': 42,
-      'extra_param': 'haha'
+        'icecream': 42,
+        'extra_param': 'haha'
     }
     self.base_mock_test_config.log_path = self.tmp_dir
 
@@ -59,15 +60,16 @@ class TestSuiteTest(unittest.TestCase):
     test_run_config.controller_configs = {'MagicDevice': [{'serial': 1}]}
 
     class FooTest(base_test.BaseTestClass):
+
       def setup_class(cls1):
         self.controller1 = cls1.register_controller(mock_controller)[0]
 
     class BarTest(base_test.BaseTestClass):
+
       def setup_class(cls2):
         self.controller2 = cls2.register_controller(mock_controller)[0]
 
-    tr = test_runner.TestRunner(self.tmp_dir,
-                  test_run_config.testbed_name)
+    tr = test_runner.TestRunner(self.tmp_dir, test_run_config.testbed_name)
     with tr.mobly_logger():
       tr.add_test_class(test_run_config, FooTest)
       tr.add_test_class(test_run_config, BarTest)

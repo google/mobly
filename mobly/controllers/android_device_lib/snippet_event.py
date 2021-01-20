@@ -23,9 +23,9 @@ def from_dict(event_dict):
     A SnippetEvent object.
   """
   return SnippetEvent(callback_id=event_dict['callbackId'],
-            name=event_dict['name'],
-            creation_time=event_dict['time'],
-            data=event_dict['data'])
+                      name=event_dict['name'],
+                      creation_time=event_dict['time'],
+                      data=event_dict['data'])
 
 
 class SnippetEvent(object):
@@ -47,5 +47,5 @@ class SnippetEvent(object):
 
   def __repr__(self):
     return ('SnippetEvent(callback_id: %s, name: %s, creation_time: %s, '
-        'data: %s)') % (self.callback_id, self.name,
-                self.creation_time, self.data)
+            'data: %s)') % (self.callback_id, self.name, self.creation_time,
+                            self.data)

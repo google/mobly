@@ -47,8 +47,8 @@ class OutputTest(unittest.TestCase):
     self.base_mock_test_config.testbed_name = 'SampleTestBed'
     self.base_mock_test_config.controller_configs = {}
     self.base_mock_test_config.user_params = {
-      'icecream': 42,
-      'extra_param': 'haha'
+        'icecream': 42,
+        'extra_param': 'haha'
     }
     self.base_mock_test_config.log_path = self.tmp_dir
     self.log_dir = self.base_mock_test_config.log_path
@@ -61,20 +61,18 @@ class OutputTest(unittest.TestCase):
     mock_test_config = base_mock_test_config.copy()
     mock_ctrlr_config_name = mock_controller.MOBLY_CONTROLLER_CONFIG_NAME
     my_config = [{
-      'serial': 'xxxx',
-      'magic': 'Magic1'
+        'serial': 'xxxx',
+        'magic': 'Magic1'
     }, {
-      'serial': 'xxxx',
-      'magic': 'Magic2'
+        'serial': 'xxxx',
+        'magic': 'Magic2'
     }]
     mock_test_config.controller_configs[mock_ctrlr_config_name] = my_config
     return mock_test_config
 
   def get_output_logs(self, output_dir):
-    summary_file_path = os.path.join(output_dir,
-                     records.OUTPUT_FILE_SUMMARY)
-    debug_log_path = os.path.join(output_dir,
-                    records.OUTPUT_FILE_DEBUG_LOG)
+    summary_file_path = os.path.join(output_dir, records.OUTPUT_FILE_SUMMARY)
+    debug_log_path = os.path.join(output_dir, records.OUTPUT_FILE_DEBUG_LOG)
     info_log_path = os.path.join(output_dir, records.OUTPUT_FILE_INFO_LOG)
     return (summary_file_path, debug_log_path, info_log_path)
 
@@ -100,11 +98,10 @@ class OutputTest(unittest.TestCase):
       self.assertEqual(log_path, logging.log_path)
 
   @unittest.skipIf(platform.system() == 'Windows',
-           'Symlinks are usually specific to Unix operating systems')
+                   'Symlinks are usually specific to Unix operating systems')
   def test_symlink(self):
     """Verifies the symlink is created and links properly."""
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger():
       pass
@@ -112,58 +109,50 @@ class OutputTest(unittest.TestCase):
     self.assertEqual(os.readlink(symlink), logging.log_path)
 
   @unittest.skipIf(platform.system() != 'Windows',
-           'Shortcuts are specific to Windows operating systems')
+                   'Shortcuts are specific to Windows operating systems')
   def test_shortcut(self):
     """Verifies the shortcut is created and links properly."""
-    shortcut_path = os.path.join(self.log_dir, self.testbed_name,
-                   'latest.lnk')
+    shortcut_path = os.path.join(self.log_dir, self.testbed_name, 'latest.lnk')
     shell = client.Dispatch("WScript.Shell")
     shortcut = shell.CreateShortCut(shortcut_path)
     self.assertFalse(shortcut.Targetpath)
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger():
       pass
     shortcut = shell.CreateShortCut(shortcut_path)
     # Normalize paths for case and truncation
     normalized_shortcut_path = os.path.normcase(
-      win32file.GetLongPathName(shortcut.Targetpath))
+        win32file.GetLongPathName(shortcut.Targetpath))
     normalized_logger_path = os.path.normcase(
-      win32file.GetLongPathName(logging.log_path))
+        win32file.GetLongPathName(logging.log_path))
     self.assertEqual(normalized_shortcut_path, normalized_logger_path)
 
   @mock.patch('mobly.utils.create_alias')
-  def test_mobly_logger_with_default_latest_log_alias(
-      self, mock_create_alias):
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+  def test_mobly_logger_with_default_latest_log_alias(self, mock_create_alias):
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger():
       pass
-    expected_alias_dir = os.path.join(self.log_dir, self.testbed_name,
-                      'latest')
+    expected_alias_dir = os.path.join(self.log_dir, self.testbed_name, 'latest')
     mock_create_alias.assert_called_once_with(logging.log_path,
-                          expected_alias_dir)
+                                              expected_alias_dir)
 
   @mock.patch('mobly.utils.create_alias')
-  def test_mobly_logger_with_custom_latest_log_alias(self,
-                             mock_create_alias):
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+  def test_mobly_logger_with_custom_latest_log_alias(self, mock_create_alias):
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger(alias='history'):
       pass
     expected_alias_dir = os.path.join(self.log_dir, self.testbed_name,
-                      'history')
+                                      'history')
     mock_create_alias.assert_called_once_with(logging.log_path,
-                          expected_alias_dir)
+                                              expected_alias_dir)
 
   @mock.patch('mobly.utils.create_alias')
   def test_mobly_logger_skips_latest_log_alias_when_none(
       self, mock_create_alias):
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger(alias=None):
       pass
@@ -172,8 +161,7 @@ class OutputTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_alias')
   def test_mobly_logger_skips_latest_log_alias_when_empty(
       self, mock_create_alias):
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger(alias=''):
       pass
@@ -185,36 +173,32 @@ class OutputTest(unittest.TestCase):
     * Files are correctly created.
     * Basic sanity checks of each output file.
     """
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     info_uuid = 'e098d4ff-4e90-4e08-b369-aa84a7ef90ec'
     debug_uuid = 'c6f1474e-960a-4df8-8305-1c5b8b905eca'
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger():
       logging.info(info_uuid)
       logging.debug(debug_uuid)
-      tr.add_test_class(mock_test_config,
-                integration_test.IntegrationTest)
+      tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
       tr.run()
     output_dir = logging.root_output_path
     (summary_file_path, debug_log_path,
      info_log_path) = self.assert_output_logs_exist(output_dir)
-    self.assert_log_contents(debug_log_path,
-                 whitelist=[debug_uuid, info_uuid])
+    self.assert_log_contents(debug_log_path, whitelist=[debug_uuid, info_uuid])
     self.assert_log_contents(info_log_path,
-                 whitelist=[info_uuid],
-                 blacklist=[debug_uuid])
+                             whitelist=[info_uuid],
+                             blacklist=[debug_uuid])
 
   @mock.patch('mobly.logger.get_log_file_timestamp',
-        side_effect=str(time.time()))
+              side_effect=str(time.time()))
   def test_run_twice_for_two_sets_of_logs(self, mock_timestamp):
     """Verifies the expected output files from a test run.
 
     * Files are correctly created.
     * Basic sanity checks of each output file.
     """
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
     with tr.mobly_logger():
@@ -228,15 +212,14 @@ class OutputTest(unittest.TestCase):
     self.assert_output_logs_exist(output_dir2)
 
   @mock.patch('mobly.logger.get_log_file_timestamp',
-        side_effect=str(time.time()))
+              side_effect=str(time.time()))
   def test_teardown_erases_logs(self, mock_timestamp):
     """Verifies the expected output files from a test run.
 
     * Files are correctly created.
     * Basic sanity checks of each output file.
     """
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     info_uuid1 = '0c3ebb06-700d-496e-b015-62652da9e451'
     debug_uuid1 = '0c3ebb06-700d-496e-b015-62652da9e451'
     info_uuid2 = '484ef7db-f2dd-4b76-a126-c2f263e3808c'
@@ -261,11 +244,11 @@ class OutputTest(unittest.TestCase):
      info_log_path2) = self.get_output_logs(output_dir2)
 
     self.assert_log_contents(debug_log_path1,
-                 whitelist=[debug_uuid1, info_uuid1],
-                 blacklist=[info_uuid2, debug_uuid2])
+                             whitelist=[debug_uuid1, info_uuid1],
+                             blacklist=[info_uuid2, debug_uuid2])
     self.assert_log_contents(debug_log_path2,
-                 whitelist=[debug_uuid2, info_uuid2],
-                 blacklist=[info_uuid1, debug_uuid1])
+                             whitelist=[debug_uuid2, info_uuid2],
+                             blacklist=[info_uuid1, debug_uuid1])
 
   def test_basic_output(self):
     """Verifies the expected output files from a test run.
@@ -273,15 +256,13 @@ class OutputTest(unittest.TestCase):
     * Files are correctly created.
     * Basic sanity checks of each output file.
     """
-    mock_test_config = self.create_mock_test_config(
-      self.base_mock_test_config)
+    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger():
-      tr.add_test_class(mock_test_config,
-                integration_test.IntegrationTest)
+      tr.add_test_class(mock_test_config, integration_test.IntegrationTest)
       tr.run()
     expected_class_path = os.path.join(logging.root_output_path,
-                       'IntegrationTest')
+                                       'IntegrationTest')
     self.assertEqual(expected_class_path, logging.log_path)
     os.path.exists(logging.log_path)
     output_dir = logging.root_output_path
@@ -294,8 +275,8 @@ class OutputTest(unittest.TestCase):
         summary_entries.append(entry)
     self.assert_log_contents(debug_log_path, whitelist=['DEBUG', 'INFO'])
     self.assert_log_contents(info_log_path,
-                 whitelist=['INFO'],
-                 blacklist=['DEBUG'])
+                             whitelist=['INFO'],
+                             blacklist=['DEBUG'])
 
   def test_teardown_class_output(self):
     """Verifies the summary file includes the failure record for
@@ -304,27 +285,23 @@ class OutputTest(unittest.TestCase):
     mock_test_config = self.base_mock_test_config.copy()
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger():
-      tr.add_test_class(
-        mock_test_config,
-        teardown_class_failure_test.TearDownClassFailureTest)
+      tr.add_test_class(mock_test_config,
+                        teardown_class_failure_test.TearDownClassFailureTest)
       tr.run()
     output_dir = logging.root_output_path
-    summary_file_path = os.path.join(output_dir,
-                     records.OUTPUT_FILE_SUMMARY)
+    summary_file_path = os.path.join(output_dir, records.OUTPUT_FILE_SUMMARY)
     found = False
     with io.open(summary_file_path, 'r', encoding='utf-8') as f:
       raw_content = f.read()
       f.seek(0)
       for entry in yaml.safe_load_all(f):
-        if (entry['Type'] == 'Record'
-            and entry[records.TestResultEnums.RECORD_NAME] ==
-            'teardown_class'):
+        if (entry['Type'] == 'Record' and
+            entry[records.TestResultEnums.RECORD_NAME] == 'teardown_class'):
           found = True
           break
       self.assertTrue(
-        found,
-        'No record for teardown_class found in the output file:\n %s' %
-        raw_content)
+          found, 'No record for teardown_class found in the output file:\n %s' %
+          raw_content)
 
 
 if __name__ == "__main__":

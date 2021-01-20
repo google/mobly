@@ -101,7 +101,7 @@ class BaseTestClass(object):
     class_identifier = self.__class__.__name__
     if configs.test_class_name_suffix:
       class_identifier = '%s_%s' % (class_identifier,
-                      configs.test_class_name_suffix)
+                                    configs.test_class_name_suffix)
     if self.TAG is None:
       self.TAG = class_identifier
     # Set params.
@@ -116,13 +116,13 @@ class BaseTestClass(object):
     self.summary_writer = configs.summary_writer
     self._generated_test_table = collections.OrderedDict()
     self._controller_manager = controller_manager.ControllerManager(
-      class_name=self.TAG, controller_configs=configs.controller_configs)
+        class_name=self.TAG, controller_configs=configs.controller_configs)
     self.controller_configs = self._controller_manager.controller_configs
 
   def unpack_userparams(self,
-              req_param_names=None,
-              opt_param_names=None,
-              **kwargs):
+                        req_param_names=None,
+                        opt_param_names=None,
+                        **kwargs):
     """An optional function that unpacks user defined parameters into
     individual variables.
 
@@ -160,7 +160,7 @@ class BaseTestClass(object):
         continue
       if name not in self.user_params:
         raise Error('Missing required user param "%s" in test '
-              'configuration.' % name)
+                    'configuration.' % name)
       setattr(self, name, self.user_params[name])
     for name in opt_param_names:
       if hasattr(self, name):
@@ -169,8 +169,8 @@ class BaseTestClass(object):
         setattr(self, name, self.user_params[name])
       else:
         logging.warning(
-          'Missing optional user param "%s" in '
-          'configuration, continue.', name)
+            'Missing optional user param "%s" in '
+            'configuration, continue.', name)
 
   def register_controller(self, module, required=True, min_number=1):
     """Loads a controller module and returns its loaded devices.
@@ -245,15 +245,15 @@ class BaseTestClass(object):
         * `required` is True and no corresponding config can be found.
         * Any other error occurred in the registration process.
     """
-    return self._controller_manager.register_controller(
-      module, required, min_number)
+    return self._controller_manager.register_controller(module, required,
+                                                        min_number)
 
   def _record_controller_info(self):
     # Collect controller information and write to test result.
     for record in self._controller_manager.get_controller_info_records():
       self.results.add_controller_info_record(record)
-      self.summary_writer.dump(
-        record.to_dict(), records.TestSummaryEntryType.CONTROLLER_INFO)
+      self.summary_writer.dump(record.to_dict(),
+                               records.TestSummaryEntryType.CONTROLLER_INFO)
 
   def _setup_generated_tests(self):
     """Proxy function to guarantee the base implementation of
@@ -266,7 +266,7 @@ class BaseTestClass(object):
     record = records.TestResultRecord(stage_name, self.TAG)
     record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
-      stage_name, self.log_path, record)
+        stage_name, self.log_path, record)
     try:
       with self._log_test_stage(stage_name):
         self.setup_generated_tests()
@@ -276,7 +276,7 @@ class BaseTestClass(object):
       record.test_error(e)
       self.results.add_class_error(record)
       self.summary_writer.dump(record.to_dict(),
-                   records.TestSummaryEntryType.RECORD)
+                               records.TestSummaryEntryType.RECORD)
       return False
 
   def setup_generated_tests(self):
@@ -299,11 +299,10 @@ class BaseTestClass(object):
       has gone wrong, and the rest of the test class should not execute.
     """
     # Setup for the class.
-    class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS,
-                        self.TAG)
+    class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS, self.TAG)
     class_record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
-      STAGE_NAME_SETUP_CLASS, self.log_path, class_record)
+        STAGE_NAME_SETUP_CLASS, self.log_path, class_record)
     expects.recorder.reset_internal_states(class_record)
     try:
       with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
@@ -320,7 +319,7 @@ class BaseTestClass(object):
       self._exec_procedure_func(self._on_fail, class_record)
       class_record.update_record()
       self.summary_writer.dump(class_record.to_dict(),
-                   records.TestSummaryEntryType.RECORD)
+                               records.TestSummaryEntryType.RECORD)
       self._skip_remaining_tests(e)
       return self.results
     if expects.recorder.has_error:
@@ -328,10 +327,9 @@ class BaseTestClass(object):
       class_record.test_error()
       class_record.update_record()
       self.summary_writer.dump(class_record.to_dict(),
-                   records.TestSummaryEntryType.RECORD)
+                               records.TestSummaryEntryType.RECORD)
       self.results.add_class_error(class_record)
-      self._skip_remaining_tests(
-        class_record.termination_signal.exception)
+      self._skip_remaining_tests(class_record.termination_signal.exception)
       return self.results
 
   def setup_class(self):
@@ -353,7 +351,7 @@ class BaseTestClass(object):
     record = records.TestResultRecord(stage_name, self.TAG)
     record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
-      stage_name, self.log_path, record)
+        stage_name, self.log_path, record)
     expects.recorder.reset_internal_states(record)
     try:
       with self._log_test_stage(stage_name):
@@ -367,13 +365,13 @@ class BaseTestClass(object):
       record.update_record()
       self.results.add_class_error(record)
       self.summary_writer.dump(record.to_dict(),
-                   records.TestSummaryEntryType.RECORD)
+                               records.TestSummaryEntryType.RECORD)
     else:
       if expects.recorder.has_error:
         record.update_record()
         self.results.add_class_error(record)
         self.summary_writer.dump(record.to_dict(),
-                     records.TestSummaryEntryType.RECORD)
+                                 records.TestSummaryEntryType.RECORD)
     finally:
       self._clean_up()
 
@@ -403,14 +401,14 @@ class BaseTestClass(object):
     if parent_token == stage_name:
       parent_token = self.TAG
     logging.debug(
-      TEST_STAGE_BEGIN_LOG_TEMPLATE.format(parent_token=parent_token,
-                         child_token=stage_name))
+        TEST_STAGE_BEGIN_LOG_TEMPLATE.format(parent_token=parent_token,
+                                             child_token=stage_name))
     try:
       yield
     finally:
       logging.debug(
-        TEST_STAGE_END_LOG_TEMPLATE.format(parent_token=parent_token,
-                           child_token=stage_name))
+          TEST_STAGE_END_LOG_TEMPLATE.format(parent_token=parent_token,
+                                             child_token=stage_name))
 
   def _setup_test(self, test_name):
     """Proxy function to guarantee the base implementation of setup_test is
@@ -539,9 +537,8 @@ class BaseTestClass(object):
       except signals.TestAbortSignal:
         raise
       except Exception as e:
-        logging.exception(
-          'Exception happened when executing %s for %s.',
-          procedure_name, self.current_test_info.name)
+        logging.exception('Exception happened when executing %s for %s.',
+                          procedure_name, self.current_test_info.name)
         tr_record.add_error(procedure_name, e)
 
   def record_data(self, content):
@@ -561,8 +558,7 @@ class BaseTestClass(object):
     """
     if 'timestamp' not in content:
       content['timestamp'] = utils.get_current_epoch_time()
-    self.summary_writer.dump(content,
-                 records.TestSummaryEntryType.USER_DATA)
+    self.summary_writer.dump(content, records.TestSummaryEntryType.USER_DATA)
 
   def exec_one_test(self, test_name, test_method):
     """Executes one test and update test results.
@@ -579,7 +575,7 @@ class BaseTestClass(object):
     tr_record.uid = getattr(test_method, 'uid', None)
     tr_record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
-      test_name, self.log_path, tr_record)
+        test_name, self.log_path, tr_record)
     expects.recorder.reset_internal_states(tr_record)
     logging.info('%s %s', TEST_CASE_TOKEN, test_name)
     # Did teardown_test throw an error.
@@ -589,14 +585,13 @@ class BaseTestClass(object):
         try:
           self._setup_test(test_name)
         except signals.TestFailure as e:
-          raise_with_traceback(signals.TestError(
-            e.details, e.extras))
+          raise_with_traceback(signals.TestError(e.details, e.extras))
         test_method()
       except (signals.TestPass, signals.TestAbortSignal):
         raise
       except Exception:
         logging.exception('Exception occurred in %s.',
-                  self.current_test_info.name)
+                          self.current_test_info.name)
         raise
       finally:
         before_count = expects.recorder.error_count
@@ -641,9 +636,8 @@ class BaseTestClass(object):
     finally:
       tr_record.update_record()
       try:
-        if tr_record.result in (
-            records.TestResultEnums.TEST_RESULT_ERROR,
-            records.TestResultEnums.TEST_RESULT_FAIL):
+        if tr_record.result in (records.TestResultEnums.TEST_RESULT_ERROR,
+                                records.TestResultEnums.TEST_RESULT_FAIL):
           self._exec_procedure_func(self._on_fail, tr_record)
         elif tr_record.result == records.TestResultEnums.TEST_RESULT_PASS:
           self._exec_procedure_func(self._on_pass, tr_record)
@@ -651,10 +645,10 @@ class BaseTestClass(object):
           self._exec_procedure_func(self._on_skip, tr_record)
       finally:
         logging.info(RESULT_LINE_TEMPLATE, tr_record.test_name,
-               tr_record.result)
+                     tr_record.result)
         self.results.add_record(tr_record)
         self.summary_writer.dump(tr_record.to_dict(),
-                     records.TestSummaryEntryType.RECORD)
+                                 records.TestSummaryEntryType.RECORD)
         self.current_test_info = None
 
   def _assert_function_name_in_stack(self, expected_func_name):
@@ -665,7 +659,7 @@ class BaseTestClass(object):
       if caller_frame[3] == expected_func_name:
         return
     raise Error('"%s" cannot be called outside of %s' %
-          (caller_frames[1][3], expected_func_name))
+                (caller_frames[1][3], expected_func_name))
 
   def generate_tests(self, test_logic, name_func, arg_sets, uid_func=None):
     """Generates tests in the test class.
@@ -697,15 +691,13 @@ class BaseTestClass(object):
     for args in arg_sets:
       test_name = name_func(*args)
       if test_name in self.get_existing_test_names():
-        raise Error(
-          '%s Test name "%s" already exists, cannot be duplicated!' %
-          (root_msg, test_name))
+        raise Error('%s Test name "%s" already exists, cannot be duplicated!' %
+                    (root_msg, test_name))
       test_func = functools.partial(test_logic, *args)
       if uid_func is not None:
         uid = uid_func(*args)
         if uid is None:
-          logging.warning('%s UID for arg set %s is None.', root_msg,
-                  args)
+          logging.warning('%s UID for arg set %s is None.', root_msg, args)
         else:
           setattr(test_func, 'uid', uid)
       self._generated_test_table[test_name] = test_func
@@ -729,7 +721,7 @@ class BaseTestClass(object):
       raise
     except:
       logging.exception('Exception happened when executing %s in %s.',
-                func.__name__, self.TAG)
+                        func.__name__, self.TAG)
 
   def get_existing_test_names(self):
     """Gets the names of existing tests in the class.
@@ -768,14 +760,13 @@ class BaseTestClass(object):
     for test_name in test_names:
       if not test_name.startswith('test_'):
         raise Error('Test method name %s does not follow naming '
-              'convention test_*, abort.' % test_name)
+                    'convention test_*, abort.' % test_name)
       if hasattr(self, test_name):
         test_method = getattr(self, test_name)
       elif test_name in self._generated_test_table:
         test_method = self._generated_test_table[test_name]
       else:
-        raise Error('%s does not have test method %s.' %
-              (self.TAG, test_name))
+        raise Error('%s does not have test method %s.' % (self.TAG, test_name))
       test_methods.append((test_name, test_method))
     return test_methods
 
@@ -795,7 +786,7 @@ class BaseTestClass(object):
         test_record.test_skip(exception)
         self.results.add_record(test_record)
         self.summary_writer.dump(test_record.to_dict(),
-                     records.TestSummaryEntryType.RECORD)
+                                 records.TestSummaryEntryType.RECORD)
 
   def run(self, test_names=None):
     """Runs tests within a test class.
@@ -832,7 +823,7 @@ class BaseTestClass(object):
         test_names = self.get_existing_test_names()
     self.results.requested = test_names
     self.summary_writer.dump(self.results.requested_test_names_dict(),
-                 records.TestSummaryEntryType.TEST_NAME_LIST)
+                             records.TestSummaryEntryType.TEST_NAME_LIST)
     tests = self._get_test_methods(test_names)
     try:
       setup_class_result = self._setup_class()
@@ -856,7 +847,7 @@ class BaseTestClass(object):
     finally:
       self._teardown_class()
       logging.info('Summary for test class %s: %s', self.TAG,
-             self.results.summary_str())
+                   self.results.summary_str())
 
   def _clean_up(self):
     """The final stage of a test class execution."""
@@ -864,7 +855,7 @@ class BaseTestClass(object):
     record = records.TestResultRecord(stage_name, self.TAG)
     record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
-      stage_name, self.log_path, record)
+        stage_name, self.log_path, record)
     expects.recorder.reset_internal_states(record)
     with self._log_test_stage(stage_name):
       # Write controller info and summary to summary file.
@@ -875,4 +866,4 @@ class BaseTestClass(object):
         record.update_record()
         self.results.add_class_error(record)
         self.summary_writer.dump(record.to_dict(),
-                     records.TestSummaryEntryType.RECORD)
+                                 records.TestSummaryEntryType.RECORD)

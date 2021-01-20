@@ -26,6 +26,7 @@ from tests.lib import integration2_test
 
 
 class SuiteRunnerTest(unittest.TestCase):
+
   def setUp(self):
     self.tmp_dir = tempfile.mkdtemp()
 
@@ -34,53 +35,45 @@ class SuiteRunnerTest(unittest.TestCase):
 
   def test_select_no_args(self):
     identifiers = suite_runner.compute_selected_tests(test_classes=[
-      integration_test.IntegrationTest,
-      integration2_test.Integration2Test
+        integration_test.IntegrationTest, integration2_test.Integration2Test
     ],
-                              selected_tests=None)
+                                                      selected_tests=None)
     self.assertEqual(
-      {
-        integration_test.IntegrationTest: None,
-        integration2_test.Integration2Test: None,
-      }, identifiers)
+        {
+            integration_test.IntegrationTest: None,
+            integration2_test.Integration2Test: None,
+        }, identifiers)
 
   def test_select_by_class(self):
     identifiers = suite_runner.compute_selected_tests(
-      test_classes=[
-        integration_test.IntegrationTest,
-        integration2_test.Integration2Test
-      ],
-      selected_tests=['IntegrationTest'])
+        test_classes=[
+            integration_test.IntegrationTest, integration2_test.Integration2Test
+        ],
+        selected_tests=['IntegrationTest'])
     self.assertEqual({integration_test.IntegrationTest: None}, identifiers)
 
   def test_select_by_method(self):
     identifiers = suite_runner.compute_selected_tests(
-      test_classes=[
-        integration_test.IntegrationTest,
-        integration2_test.Integration2Test
-      ],
-      selected_tests=[
-        'IntegrationTest.test_a', 'IntegrationTest.test_b'
-      ])
-    self.assertEqual(
-      {integration_test.IntegrationTest: ['test_a', 'test_b']},
-      identifiers)
+        test_classes=[
+            integration_test.IntegrationTest, integration2_test.Integration2Test
+        ],
+        selected_tests=['IntegrationTest.test_a', 'IntegrationTest.test_b'])
+    self.assertEqual({integration_test.IntegrationTest: ['test_a', 'test_b']},
+                     identifiers)
 
   def test_select_all_clobbers_method(self):
     identifiers = suite_runner.compute_selected_tests(
-      test_classes=[
-        integration_test.IntegrationTest,
-        integration2_test.Integration2Test
-      ],
-      selected_tests=['IntegrationTest.test_a', 'IntegrationTest'])
+        test_classes=[
+            integration_test.IntegrationTest, integration2_test.Integration2Test
+        ],
+        selected_tests=['IntegrationTest.test_a', 'IntegrationTest'])
     self.assertEqual({integration_test.IntegrationTest: None}, identifiers)
 
     identifiers = suite_runner.compute_selected_tests(
-      test_classes=[
-        integration_test.IntegrationTest,
-        integration2_test.Integration2Test
-      ],
-      selected_tests=['IntegrationTest', 'IntegrationTest.test_a'])
+        test_classes=[
+            integration_test.IntegrationTest, integration2_test.Integration2Test
+        ],
+        selected_tests=['IntegrationTest', 'IntegrationTest.test_a'])
     self.assertEqual({integration_test.IntegrationTest: None}, identifiers)
 
   @mock.patch('sys.exit')
@@ -98,7 +91,7 @@ class SuiteRunnerTest(unittest.TestCase):
               extra_param: 'haha'
       """)
     suite_runner.run_suite([integration_test.IntegrationTest],
-                 argv=['-c', tmp_file_path])
+                           argv=['-c', tmp_file_path])
     mock_exit.assert_not_called()
 
   @mock.patch('sys.exit')
@@ -113,7 +106,7 @@ class SuiteRunnerTest(unittest.TestCase):
               MagicDevice: '*'
       """)
     suite_runner.run_suite([integration_test.IntegrationTest],
-                 argv=['-c', tmp_file_path])
+                           argv=['-c', tmp_file_path])
     mock_exit.assert_called_once_with(1)
 
 

@@ -41,8 +41,7 @@ class SnippetManagementService(base_service.BaseService):
   @property
   def is_alive(self):
     """True if any client is running, False otherwise."""
-    return any(
-      [client.is_alive for client in self._snippet_clients.values()])
+    return any([client.is_alive for client in self._snippet_clients.values()])
 
   def get_snippet_client(self, name):
     """Gets the snippet client managed under a given name.
@@ -71,17 +70,14 @@ class SnippetManagementService(base_service.BaseService):
     # Should not load snippet with the same name more than once.
     if name in self._snippet_clients:
       raise Error(
-        self,
-        'Name "%s" is already registered with package "%s", it cannot '
-        'be used again.' %
-        (name, self._snippet_clients[name].client.package))
+          self, 'Name "%s" is already registered with package "%s", it cannot '
+          'be used again.' % (name, self._snippet_clients[name].client.package))
     # Should not load the same snippet package more than once.
     for snippet_name, client in self._snippet_clients.items():
       if package == client.package:
         raise Error(
-          self,
-          'Snippet package "%s" has already been loaded under name'
-          ' "%s".' % (package, snippet_name))
+            self, 'Snippet package "%s" has already been loaded under name'
+            ' "%s".' % (package, snippet_name))
     client = snippet_client.SnippetClient(package=package, ad=self._device)
     client.start_app_and_connect()
     self._snippet_clients[name] = client
@@ -104,25 +100,23 @@ class SnippetManagementService(base_service.BaseService):
     """Starts all the snippet clients under management."""
     for client in self._snippet_clients.values():
       if not client.is_alive:
-        self._device.log.debug('Starting SnippetClient<%s>.',
-                     client.package)
+        self._device.log.debug('Starting SnippetClient<%s>.', client.package)
         client.start_app_and_connect()
       else:
         self._device.log.debug(
-          'Not startng SnippetClient<%s> because it is already alive.',
-          client.package)
+            'Not startng SnippetClient<%s> because it is already alive.',
+            client.package)
 
   def stop(self):
     """Stops all the snippet clients under management."""
     for client in self._snippet_clients.values():
       if client.is_alive:
-        self._device.log.debug('Stopping SnippetClient<%s>.',
-                     client.package)
+        self._device.log.debug('Stopping SnippetClient<%s>.', client.package)
         client.stop_app()
       else:
         self._device.log.debug(
-          'Not stopping SnippetClient<%s> because it is not alive.',
-          client.package)
+            'Not stopping SnippetClient<%s> because it is not alive.',
+            client.package)
 
   def pause(self):
     """Pauses all the snippet clients under management.
@@ -131,9 +125,8 @@ class SnippetManagementService(base_service.BaseService):
     allocated in `resume`.
     """
     for client in self._snippet_clients.values():
-      self._device.log.debug(
-        'Clearing host port %d of SnippetClient<%s>.',
-        client.host_port, client.package)
+      self._device.log.debug('Clearing host port %d of SnippetClient<%s>.',
+                             client.host_port, client.package)
       client.clear_host_port()
 
   def resume(self):
@@ -142,12 +135,11 @@ class SnippetManagementService(base_service.BaseService):
       # Resume is only applicable if a client is alive and does not have
       # a host port.
       if client.is_alive and client.host_port is None:
-        self._device.log.debug('Resuming SnippetClient<%s>.',
-                     client.package)
+        self._device.log.debug('Resuming SnippetClient<%s>.', client.package)
         client.restore_app_connection()
       else:
         self._device.log.debug('Not resuming SnippetClient<%s>.',
-                     client.package)
+                               client.package)
 
   def __getattr__(self, name):
     client = self.get_snippet_client(name)

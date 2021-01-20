@@ -18,6 +18,7 @@ from mobly.controllers.android_device_lib.services import base_service
 
 
 class BaseServiceTest(unittest.TestCase):
+
   def setUp(self):
     self.mock_device = mock.MagicMock()
     self.service = base_service.BaseService(self.mock_device)

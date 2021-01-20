@@ -83,8 +83,7 @@ class RecordsTest(unittest.TestCase):
     # in them.
     if stacktrace:
       stacktrace_key = records.TestResultEnums.RECORD_STACKTRACE
-      self.assertTrue(
-        d.pop(stacktrace_key) in actual_d.pop(stacktrace_key))
+      self.assertTrue(d.pop(stacktrace_key) in actual_d.pop(stacktrace_key))
     self.assertDictEqual(actual_d, d)
     # Verify that these code paths do not cause crashes and yield non-empty
     # results.
@@ -97,43 +96,39 @@ class RecordsTest(unittest.TestCase):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     record.test_pass()
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_PASS,
-      details=None,
-      extras=None)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_PASS,
+                       details=None,
+                       extras=None)
 
   def test_result_record_pass_with_float_extra(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     s = signals.TestPass(self.details, self.float_extra)
     record.test_pass(s)
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_PASS,
-      details=self.details,
-      extras=self.float_extra)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_PASS,
+                       details=self.details,
+                       extras=self.float_extra)
 
   def test_result_record_pass_with_json_extra(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     s = signals.TestPass(self.details, self.json_extra)
     record.test_pass(s)
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_PASS,
-      details=self.details,
-      extras=self.json_extra)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_PASS,
+                       details=self.details,
+                       extras=self.json_extra)
 
   def test_result_record_fail_none(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     record.test_fail()
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_FAIL,
-      details=None,
-      extras=None)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_FAIL,
+                       details=None,
+                       extras=None)
 
   def test_result_record_fail_stacktrace(self):
     record = records.TestResultRecord(self.tn)
@@ -145,25 +140,23 @@ class RecordsTest(unittest.TestCase):
     # Verify stacktrace separately if we expect a non-None value.
     # Because stacktrace includes file names and line numbers, we can't do
     # a simple equality check.
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_FAIL,
-      details='Something failed.',
-      extras=None,
-      stacktrace='in test_result_record_fail_stacktrace\n    '
-      'raise Exception(\'Something failed.\')\nException: '
-      'Something failed.\n')
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_FAIL,
+                       details='Something failed.',
+                       extras=None,
+                       stacktrace='in test_result_record_fail_stacktrace\n    '
+                       'raise Exception(\'Something failed.\')\nException: '
+                       'Something failed.\n')
 
   def test_result_record_fail_with_float_extra(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     s = signals.TestFailure(self.details, self.float_extra)
     record.test_fail(s)
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_FAIL,
-      details=self.details,
-      extras=self.float_extra)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_FAIL,
+                       details=self.details,
+                       extras=self.float_extra)
 
   def test_result_record_fail_with_unicode_test_signal(self):
     record = records.TestResultRecord(self.tn)
@@ -171,11 +164,10 @@ class RecordsTest(unittest.TestCase):
     details = u'\u2022'
     s = signals.TestFailure(details, self.float_extra)
     record.test_fail(s)
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_FAIL,
-      details=details,
-      extras=self.float_extra)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_FAIL,
+                       details=details,
+                       extras=self.float_extra)
 
   def test_result_record_fail_with_unicode_exception(self):
     record = records.TestResultRecord(self.tn)
@@ -183,54 +175,49 @@ class RecordsTest(unittest.TestCase):
     details = u'\u2022'
     s = Exception(details)
     record.test_fail(s)
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_FAIL,
-      details=details,
-      extras=None)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_FAIL,
+                       details=details,
+                       extras=None)
 
   def test_result_record_fail_with_json_extra(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     s = signals.TestFailure(self.details, self.json_extra)
     record.test_fail(s)
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_FAIL,
-      details=self.details,
-      extras=self.json_extra)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_FAIL,
+                       details=self.details,
+                       extras=self.json_extra)
 
   def test_result_record_skip_none(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     record.test_skip()
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_SKIP,
-      details=None,
-      extras=None)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_SKIP,
+                       details=None,
+                       extras=None)
 
   def test_result_record_skip_with_float_extra(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     s = signals.TestSkip(self.details, self.float_extra)
     record.test_skip(s)
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_SKIP,
-      details=self.details,
-      extras=self.float_extra)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_SKIP,
+                       details=self.details,
+                       extras=self.float_extra)
 
   def test_result_record_skip_with_json_extra(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     s = signals.TestSkip(self.details, self.json_extra)
     record.test_skip(s)
-    self.verify_record(
-      record=record,
-      result=records.TestResultEnums.TEST_RESULT_SKIP,
-      details=self.details,
-      extras=self.json_extra)
+    self.verify_record(record=record,
+                       result=records.TestResultEnums.TEST_RESULT_SKIP,
+                       details=self.details,
+                       extras=self.json_extra)
 
   def test_result_add_operator_success(self):
     record1 = records.TestResultRecord(self.tn)
@@ -239,8 +226,8 @@ class RecordsTest(unittest.TestCase):
     record1.test_pass(s)
     tr1 = records.TestResult()
     tr1.add_record(record1)
-    controller_info = records.ControllerInfoRecord(
-      'SomeClass', 'MockDevice', ['magicA', 'magicB'])
+    controller_info = records.ControllerInfoRecord('SomeClass', 'MockDevice',
+                                                   ['magicA', 'magicB'])
     tr1.add_controller_info_record(controller_info)
     record2 = records.TestResultRecord(self.tn)
     record2.test_begin()
@@ -248,8 +235,8 @@ class RecordsTest(unittest.TestCase):
     record2.test_pass(s)
     tr2 = records.TestResult()
     tr2.add_record(record2)
-    controller_info = records.ControllerInfoRecord(
-      'SomeClass', 'MockDevice', ['magicC'])
+    controller_info = records.ControllerInfoRecord('SomeClass', 'MockDevice',
+                                                   ['magicC'])
     tr2.add_controller_info_record(controller_info)
     tr2 += tr1
     self.assertTrue(tr2.passed, [tr1, tr2])
@@ -292,6 +279,7 @@ class RecordsTest(unittest.TestCase):
     tr.add_record(record1)
 
     class SpecialError(Exception):
+
       def __init__(self, arg1, arg2):
         self.msg = '%s %s' % (arg1, arg2)
 
@@ -363,11 +351,11 @@ class RecordsTest(unittest.TestCase):
     with io.open(dump_path, 'r', encoding='utf-8') as f:
       content = yaml.safe_load(f)
       self.assertEqual(content['Type'],
-               records.TestSummaryEntryType.RECORD.value)
+                       records.TestSummaryEntryType.RECORD.value)
       self.assertEqual(content[records.TestResultEnums.RECORD_DETAILS],
-               self.details)
+                       self.details)
       self.assertEqual(content[records.TestResultEnums.RECORD_EXTRAS],
-               self.float_extra)
+                       self.float_extra)
 
   def test_summary_write_dump_with_unicode(self):
     unicode_details = u'\u901a'  # utf-8 -> b'\xe9\x80\x9a'
@@ -382,11 +370,11 @@ class RecordsTest(unittest.TestCase):
     with io.open(dump_path, 'r', encoding='utf-8') as f:
       content = yaml.safe_load(f)
       self.assertEqual(content['Type'],
-               records.TestSummaryEntryType.RECORD.value)
+                       records.TestSummaryEntryType.RECORD.value)
       self.assertEqual(content[records.TestResultEnums.RECORD_DETAILS],
-               unicode_details)
+                       unicode_details)
       self.assertEqual(content[records.TestResultEnums.RECORD_EXTRAS],
-               unicode_extras)
+                       unicode_extras)
 
   def test_summary_user_data(self):
     user_data1 = {'a': 1}
@@ -402,7 +390,7 @@ class RecordsTest(unittest.TestCase):
         contents.append(c)
     for content in contents:
       self.assertEqual(content['Type'],
-               records.TestSummaryEntryType.USER_DATA.value)
+                       records.TestSummaryEntryType.USER_DATA.value)
     self.assertEqual(contents[0]['a'], user_data1['a'])
     self.assertEqual(contents[1]['b'], user_data2['b'])
 
@@ -419,15 +407,16 @@ class RecordsTest(unittest.TestCase):
   def test_add_controller_info_record(self):
     tr = records.TestResult()
     self.assertFalse(tr.controller_info)
-    controller_info = records.ControllerInfoRecord(
-      'SomeClass', 'MockDevice', ['magicA', 'magicB'])
+    controller_info = records.ControllerInfoRecord('SomeClass', 'MockDevice',
+                                                   ['magicA', 'magicB'])
     tr.add_controller_info_record(controller_info)
     self.assertTrue(tr.controller_info[0])
     self.assertEqual(tr.controller_info[0].controller_name, 'MockDevice')
     self.assertEqual(tr.controller_info[0].controller_info,
-             ['magicA', 'magicB'])
+                     ['magicA', 'magicB'])
 
   def test_uid(self):
+
     @records.uid('some-uuid')
     def test_uid_helper():
       """Dummy test used by `test_uid` for testing the uid decorator."""

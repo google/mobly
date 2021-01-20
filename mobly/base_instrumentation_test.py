@@ -144,19 +144,19 @@ class _InstrumentationStatusCodeCategories(object):
   """
 
   TIMING = [
-    _InstrumentationStatusCodes.START,
-    _InstrumentationStatusCodes.IN_PROGRESS,
+      _InstrumentationStatusCodes.START,
+      _InstrumentationStatusCodes.IN_PROGRESS,
   ]
   PASS = [
-    _InstrumentationStatusCodes.OK,
+      _InstrumentationStatusCodes.OK,
   ]
   FAIL = [
-    _InstrumentationStatusCodes.ERROR,
-    _InstrumentationStatusCodes.FAILURE,
+      _InstrumentationStatusCodes.ERROR,
+      _InstrumentationStatusCodes.FAILURE,
   ]
   SKIPPED = [
-    _InstrumentationStatusCodes.IGNORED,
-    _InstrumentationStatusCodes.ASSUMPTION_FAILURE,
+      _InstrumentationStatusCodes.IGNORED,
+      _InstrumentationStatusCodes.ASSUMPTION_FAILURE,
   ]
 
 
@@ -303,9 +303,9 @@ class _InstrumentationBlock(object):
   """
 
   def __init__(self,
-         state=_InstrumentationBlockStates.UNKNOWN,
-         prefix=None,
-         previous_instrumentation_block=None):
+               state=_InstrumentationBlockStates.UNKNOWN,
+               prefix=None,
+               previous_instrumentation_block=None):
     self.state = state
     self.prefix = prefix
     self.previous_instrumentation_block = previous_instrumentation_block
@@ -320,13 +320,13 @@ class _InstrumentationBlock(object):
 
     self.current_key = _InstrumentationKnownStatusKeys.STREAM
     self.known_keys = {
-      _InstrumentationKnownStatusKeys.STREAM: [],
-      _InstrumentationKnownStatusKeys.CLASS: [],
-      _InstrumentationKnownStatusKeys.ERROR: [],
-      _InstrumentationKnownStatusKeys.STACK: [],
-      _InstrumentationKnownStatusKeys.TEST: [],
-      _InstrumentationKnownResultKeys.LONGMSG: [],
-      _InstrumentationKnownResultKeys.SHORTMSG: [],
+        _InstrumentationKnownStatusKeys.STREAM: [],
+        _InstrumentationKnownStatusKeys.CLASS: [],
+        _InstrumentationKnownStatusKeys.ERROR: [],
+        _InstrumentationKnownStatusKeys.STACK: [],
+        _InstrumentationKnownStatusKeys.TEST: [],
+        _InstrumentationKnownResultKeys.LONGMSG: [],
+        _InstrumentationKnownResultKeys.SHORTMSG: [],
     }
     self.unknown_keys = defaultdict(list)
 
@@ -381,8 +381,8 @@ class _InstrumentationBlock(object):
     """
     self._empty = False
     self.status_code = self._remove_structure_prefix(
-      _InstrumentationStructurePrefixes.STATUS_CODE,
-      status_code_line,
+        _InstrumentationStructurePrefixes.STATUS_CODE,
+        status_code_line,
     )
     if self.status_code == _InstrumentationStatusCodes.START:
       self.begin_time = utils.get_current_epoch_time()
@@ -401,8 +401,8 @@ class _InstrumentationBlock(object):
     """
     self._empty = False
     key_value = self._remove_structure_prefix(
-      structure_prefix,
-      key_line,
+        structure_prefix,
+        key_line,
     )
     if '=' in key_value:
       (key, value) = key_value.split('=', 1)
@@ -456,9 +456,9 @@ class _InstrumentationBlock(object):
       return self
     else:
       next_block = _InstrumentationBlock(
-        state=new_state,
-        prefix=self.prefix,
-        previous_instrumentation_block=self,
+          state=new_state,
+          prefix=self.prefix,
+          previous_instrumentation_block=self,
       )
       if self.status_code in _InstrumentationStatusCodeCategories.TIMING:
         next_block.begin_time = self.begin_time
@@ -480,10 +480,10 @@ class _InstrumentationBlockFormatter(object):
     self._unknown_keys = {}
     for key, value in instrumentation_block.known_keys.items():
       self._known_keys[key] = '\n'.join(
-        instrumentation_block.known_keys[key]).rstrip()
+          instrumentation_block.known_keys[key]).rstrip()
     for key, value in instrumentation_block.unknown_keys.items():
       self._unknown_keys[key] = '\n'.join(
-        instrumentation_block.unknown_keys[key]).rstrip()
+          instrumentation_block.unknown_keys[key]).rstrip()
     self._begin_time = instrumentation_block.begin_time
 
   def _get_name(self):
@@ -510,8 +510,7 @@ class _InstrumentationBlockFormatter(object):
       name.
     """
     class_parts = [
-      self._prefix,
-      self._known_keys[_InstrumentationKnownStatusKeys.CLASS]
+        self._prefix, self._known_keys[_InstrumentationKnownStatusKeys.CLASS]
     ]
     return '.'.join(filter(None, class_parts))
 
@@ -548,20 +547,18 @@ class _InstrumentationBlockFormatter(object):
     for value in self._unknown_keys.values():
       extra_parts.append(value)
 
+    extra_parts.append(self._known_keys[_InstrumentationKnownStatusKeys.STREAM])
     extra_parts.append(
-      self._known_keys[_InstrumentationKnownStatusKeys.STREAM])
+        self._known_keys[_InstrumentationKnownResultKeys.SHORTMSG])
     extra_parts.append(
-      self._known_keys[_InstrumentationKnownResultKeys.SHORTMSG])
-    extra_parts.append(
-      self._known_keys[_InstrumentationKnownResultKeys.LONGMSG])
-    extra_parts.append(
-      self._known_keys[_InstrumentationKnownStatusKeys.ERROR])
+        self._known_keys[_InstrumentationKnownResultKeys.LONGMSG])
+    extra_parts.append(self._known_keys[_InstrumentationKnownStatusKeys.ERROR])
 
     if self._known_keys[
         _InstrumentationKnownStatusKeys.STACK] not in self._known_keys[
-          _InstrumentationKnownStatusKeys.STREAM]:
+            _InstrumentationKnownStatusKeys.STREAM]:
       extra_parts.append(
-        self._known_keys[_InstrumentationKnownStatusKeys.STACK])
+          self._known_keys[_InstrumentationKnownStatusKeys.STACK])
 
     return '\n'.join(filter(None, extra_parts))
 
@@ -577,9 +574,8 @@ class _InstrumentationBlockFormatter(object):
     """
     if self._status_code in _InstrumentationStatusCodeCategories.FAIL:
       return True
-    elif (self._known_keys[_InstrumentationKnownStatusKeys.STACK]
-        and self._status_code !=
-        _InstrumentationStatusCodes.ASSUMPTION_FAILURE):
+    elif (self._known_keys[_InstrumentationKnownStatusKeys.STACK] and
+          self._status_code != _InstrumentationStatusCodes.ASSUMPTION_FAILURE):
       return True
     elif self._known_keys[_InstrumentationKnownStatusKeys.ERROR]:
       return True
@@ -605,33 +601,29 @@ class _InstrumentationBlockFormatter(object):
     extras = self._get_extras()
 
     tr_record = records.TestResultRecord(
-      t_name=self._get_full_name(),
-      t_class=mobly_test_class,
+        t_name=self._get_full_name(),
+        t_class=mobly_test_class,
     )
     if self._begin_time:
       tr_record.begin_time = self._begin_time
 
     if self._is_failed():
-      tr_record.test_fail(
-        e=signals.TestFailure(details=details, extras=extras))
+      tr_record.test_fail(e=signals.TestFailure(details=details, extras=extras))
     elif self._status_code in _InstrumentationStatusCodeCategories.SKIPPED:
-      tr_record.test_skip(
-        e=signals.TestSkip(details=details, extras=extras))
+      tr_record.test_skip(e=signals.TestSkip(details=details, extras=extras))
     elif self._status_code in _InstrumentationStatusCodeCategories.PASS:
-      tr_record.test_pass(
-        e=signals.TestPass(details=details, extras=extras))
+      tr_record.test_pass(e=signals.TestPass(details=details, extras=extras))
     elif self._status_code in _InstrumentationStatusCodeCategories.TIMING:
       if self._error_message:
         tr_record.test_error(
-          e=signals.TestError(details=details, extras=extras))
+            e=signals.TestError(details=details, extras=extras))
       else:
         tr_record = None
     else:
-      tr_record.test_error(
-        e=signals.TestError(details=details, extras=extras))
+      tr_record.test_error(e=signals.TestError(details=details, extras=extras))
     if self._known_keys[_InstrumentationKnownStatusKeys.STACK]:
       tr_record.termination_signal.stacktrace = self._known_keys[
-        _InstrumentationKnownStatusKeys.STACK]
+          _InstrumentationKnownStatusKeys.STACK]
     return tr_record
 
   def has_completed_result_block_format(self, error_message):
@@ -678,10 +670,10 @@ class InstrumentationTestMixin(object):
 
   DEFAULT_INSTRUMENTATION_OPTION_PREFIX = 'instrumentation_option_'
   DEFAULT_INSTRUMENTATION_ERROR_MESSAGE = ('instrumentation run exited '
-                       'unexpectedly')
+                                           'unexpectedly')
 
   def _previous_block_never_completed(self, current_block, previous_block,
-                    new_state):
+                                      new_state):
     """Checks if the previous instrumentation method block completed.
 
     Args:
@@ -699,12 +691,11 @@ class InstrumentationTestMixin(object):
       completed executing.
     """
     if previous_block:
-      previously_timing_block = (
-        previous_block.status_code in
-        _InstrumentationStatusCodeCategories.TIMING)
-      currently_new_block = (
-        current_block.status_code == _InstrumentationStatusCodes.START
-        or new_state == _InstrumentationBlockStates.RESULT)
+      previously_timing_block = (previous_block.status_code
+                                 in _InstrumentationStatusCodeCategories.TIMING)
+      currently_new_block = (current_block.status_code
+                             == _InstrumentationStatusCodes.START or
+                             new_state == _InstrumentationBlockStates.RESULT)
       return all([previously_timing_block, currently_new_block])
     else:
       return False
@@ -726,18 +717,16 @@ class InstrumentationTestMixin(object):
     formatters = []
     if self._previous_block_never_completed(
         current_block=instrumentation_block,
-        previous_block=instrumentation_block.
-        previous_instrumentation_block,
+        previous_block=instrumentation_block.previous_instrumentation_block,
         new_state=new_state):
       instrumentation_block.previous_instrumentation_block.set_error_message(
-        self.DEFAULT_INSTRUMENTATION_ERROR_MESSAGE)
+          self.DEFAULT_INSTRUMENTATION_ERROR_MESSAGE)
       formatters.append(
-        _InstrumentationBlockFormatter(
-          instrumentation_block.previous_instrumentation_block))
+          _InstrumentationBlockFormatter(
+              instrumentation_block.previous_instrumentation_block))
 
     if not instrumentation_block.is_empty:
-      formatters.append(
-        _InstrumentationBlockFormatter(instrumentation_block))
+      formatters.append(_InstrumentationBlockFormatter(instrumentation_block))
     return formatters
 
   def _transition_instrumentation_block(
@@ -762,7 +751,7 @@ class InstrumentationTestMixin(object):
       if test_record:
         self.results.add_record(test_record)
         self.summary_writer.dump(test_record.to_dict(),
-                     records.TestSummaryEntryType.RECORD)
+                                 records.TestSummaryEntryType.RECORD)
     return instrumentation_block.transition_state(new_state=new_state)
 
   def _parse_method_block_line(self, instrumentation_block, line):
@@ -778,23 +767,22 @@ class InstrumentationTestMixin(object):
       parsing instrumentation output.
     """
     if line.startswith(_InstrumentationStructurePrefixes.STATUS):
-      instrumentation_block.set_key(
-        _InstrumentationStructurePrefixes.STATUS, line)
+      instrumentation_block.set_key(_InstrumentationStructurePrefixes.STATUS,
+                                    line)
       return instrumentation_block
     elif line.startswith(_InstrumentationStructurePrefixes.STATUS_CODE):
       instrumentation_block.set_status_code(line)
-      return self._transition_instrumentation_block(
-        instrumentation_block)
+      return self._transition_instrumentation_block(instrumentation_block)
     elif line.startswith(_InstrumentationStructurePrefixes.RESULT):
       # Unexpected transition from method block -> result block
-      instrumentation_block.set_key(
-        _InstrumentationStructurePrefixes.RESULT, line)
+      instrumentation_block.set_key(_InstrumentationStructurePrefixes.RESULT,
+                                    line)
       return self._parse_result_line(
-        self._transition_instrumentation_block(
-          instrumentation_block,
-          new_state=_InstrumentationBlockStates.RESULT,
-        ),
-        line,
+          self._transition_instrumentation_block(
+              instrumentation_block,
+              new_state=_InstrumentationBlockStates.RESULT,
+          ),
+          line,
       )
     else:
       instrumentation_block.add_value(line)
@@ -834,20 +822,20 @@ class InstrumentationTestMixin(object):
     """
     if line.startswith(_InstrumentationStructurePrefixes.STATUS):
       return self._parse_method_block_line(
-        self._transition_instrumentation_block(
-          instrumentation_block,
-          new_state=_InstrumentationBlockStates.METHOD,
-        ),
-        line,
+          self._transition_instrumentation_block(
+              instrumentation_block,
+              new_state=_InstrumentationBlockStates.METHOD,
+          ),
+          line,
       )
-    elif (line.startswith(_InstrumentationStructurePrefixes.RESULT)
-        or _InstrumentationStructurePrefixes.FAILED in line):
+    elif (line.startswith(_InstrumentationStructurePrefixes.RESULT) or
+          _InstrumentationStructurePrefixes.FAILED in line):
       return self._parse_result_block_line(
-        self._transition_instrumentation_block(
-          instrumentation_block,
-          new_state=_InstrumentationBlockStates.RESULT,
-        ),
-        line,
+          self._transition_instrumentation_block(
+              instrumentation_block,
+              new_state=_InstrumentationBlockStates.RESULT,
+          ),
+          line,
       )
     else:
       # This would only really execute if instrumentation failed to start.
@@ -894,7 +882,7 @@ class InstrumentationTestMixin(object):
     """
     formatter = _InstrumentationBlockFormatter(instrumentation_block)
     return formatter.has_completed_result_block_format(
-      self.DEFAULT_INSTRUMENTATION_ERROR_MESSAGE)
+        self.DEFAULT_INSTRUMENTATION_ERROR_MESSAGE)
 
   def parse_instrumentation_options(self, parameters=None):
     """Returns the options for the instrumentation test from user_params.
@@ -915,19 +903,18 @@ class InstrumentationTestMixin(object):
 
     filtered_parameters = {}
     for parameter_key, parameter_value in parameters.items():
-      if parameter_key.startswith(
-          self.DEFAULT_INSTRUMENTATION_OPTION_PREFIX):
-        option_key = parameter_key[len(
-          self.DEFAULT_INSTRUMENTATION_OPTION_PREFIX):]
+      if parameter_key.startswith(self.DEFAULT_INSTRUMENTATION_OPTION_PREFIX):
+        option_key = parameter_key[len(self.
+                                       DEFAULT_INSTRUMENTATION_OPTION_PREFIX):]
         filtered_parameters[option_key] = parameter_value
     return filtered_parameters
 
   def run_instrumentation_test(self,
-                 device,
-                 package,
-                 options=None,
-                 prefix=None,
-                 runner=None):
+                               device,
+                               package,
+                               options=None,
+                               prefix=None,
+                               runner=None):
     """Runs instrumentation tests on a device and creates test records.
 
     Args:
@@ -955,19 +942,19 @@ class InstrumentationTestMixin(object):
     def parse_instrumentation(raw_line):
       line = raw_line.rstrip().decode('utf-8')
       logging.info(line)
-      instrumentation_block[0] = self._parse_line(
-        instrumentation_block[0], line)
+      instrumentation_block[0] = self._parse_line(instrumentation_block[0],
+                                                  line)
 
     device.adb.instrument(package=package,
-                options=options,
-                runner=runner,
-                handler=parse_instrumentation)
+                          options=options,
+                          runner=runner,
+                          handler=parse_instrumentation)
 
     return self._finish_parsing(instrumentation_block[0])
 
 
 class BaseInstrumentationTestClass(InstrumentationTestMixin,
-                   base_test.BaseTestClass):
+                                   base_test.BaseTestClass):
   """Base class for all instrumentation test classes to inherit from.
 
   This class extends the BaseTestClass to add functionality to run and parse

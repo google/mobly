@@ -40,7 +40,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
   @mock.patch.object(android_device, 'get_instances')
   @mock.patch.object(os, 'environ', new={})
   def test_load_device_when_one_device(self, mock_get_instances,
-                     mock_list_adb_devices):
+                                       mock_list_adb_devices):
     mock_list_adb_devices.return_value = ['1234']
     mock_device = mock.MagicMock(spec=android_device.AndroidDevice)
     mock_get_instances.return_value = [mock_device]
@@ -52,7 +52,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
   @mock.patch.object(android_device, 'get_instances')
   @mock.patch.object(os, 'environ', new={'ANDROID_SERIAL': '1234'})
   def test_load_device_when_android_serial(self, mock_get_instances,
-                       mock_list_adb_devices):
+                                           mock_list_adb_devices):
     mock_list_adb_devices.return_value = ['1234', '4321']
     mock_device = mock.MagicMock(spec=android_device.AndroidDevice)
     mock_get_instances.return_value = [mock_device]
@@ -65,7 +65,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
     mock_list_adb_devices.return_value = []
     json_shell = jsonrpc_shell_base.JsonRpcShellBase()
     with self.assertRaisesRegex(jsonrpc_shell_base.Error,
-                  'No adb device found!'):
+                                'No adb device found!'):
       json_shell.load_device()
 
   @mock.patch.object(android_device, 'list_adb_devices')
@@ -74,7 +74,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
     mock_list_adb_devices.return_value = ['1234', '4321']
     json_shell = jsonrpc_shell_base.JsonRpcShellBase()
     with self.assertRaisesRegex(jsonrpc_shell_base.Error,
-                  'Expected one phone.*'):
+                                'Expected one phone.*'):
       json_shell.load_device()
 
   @mock.patch.object(android_device, 'list_adb_devices')
@@ -83,7 +83,7 @@ class JsonRpcClientBaseTest(unittest.TestCase):
     mock_list_adb_devices.return_value = ['4321']
     json_shell = jsonrpc_shell_base.JsonRpcShellBase()
     with self.assertRaisesRegex(jsonrpc_shell_base.Error,
-                  'Device "1234" is not found by adb.'):
+                                'Device "1234" is not found by adb.'):
       json_shell.load_device(serial='1234')
 
 

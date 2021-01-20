@@ -67,9 +67,9 @@ class AdbError(Error):
     self.serial = serial
 
   def __str__(self):
-    return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s'
-        ) % (utils.cli_cmd_to_string(
-          self.cmd), self.ret_code, self.stdout, self.stderr)
+    return ('Error executing adb cmd "%s". ret: %d, stdout: %s, stderr: %s') % (
+        utils.cli_cmd_to_string(
+            self.cmd), self.ret_code, self.stdout, self.stderr)
 
 
 class AdbTimeoutError(Error):
@@ -90,7 +90,7 @@ class AdbTimeoutError(Error):
 
   def __str__(self):
     return 'Timed out executing command "%s" after %ss.' % (
-      utils.cli_cmd_to_string(self.cmd), self.timeout)
+        utils.cli_cmd_to_string(self.cmd), self.timeout)
 
 
 def list_occupied_adb_ports():
@@ -165,26 +165,22 @@ class AdbProxy(object):
     if timeout and timeout <= 0:
       raise ValueError('Timeout is not a positive value: %s' % timeout)
     try:
-      (ret, out, err) = utils.run_command(args,
-                        shell=shell,
-                        timeout=timeout)
+      (ret, out, err) = utils.run_command(args, shell=shell, timeout=timeout)
     except psutil.TimeoutExpired:
-      raise AdbTimeoutError(cmd=args,
-                  timeout=timeout,
-                  serial=self.serial)
+      raise AdbTimeoutError(cmd=args, timeout=timeout, serial=self.serial)
 
     if stderr:
       stderr.write(err)
     logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
-            utils.cli_cmd_to_string(args), out, err, ret)
+                  utils.cli_cmd_to_string(args), out, err, ret)
     if ret == 0:
       return out
     else:
       raise AdbError(cmd=args,
-               stdout=out,
-               stderr=err,
-               ret_code=ret,
-               serial=self.serial)
+                     stdout=out,
+                     stderr=err,
+                     ret_code=ret,
+                     serial=self.serial)
 
   def _execute_and_process_stdout(self, args, shell, handler):
     """Executes adb commands and processes the stdout with a handler.
@@ -203,10 +199,10 @@ class AdbProxy(object):
       AdbError: The adb command exit code is not 0.
     """
     proc = subprocess.Popen(args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=shell,
-                bufsize=1)
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            shell=shell,
+                            bufsize=1)
     out = '[elided, processed via handler]'
     try:
       # Even if the process dies, stdout.readline still works
@@ -227,7 +223,7 @@ class AdbProxy(object):
 
     ret = proc.returncode
     logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
-            utils.cli_cmd_to_string(args), out, err, ret)
+                  utils.cli_cmd_to_string(args), out, err, ret)
     if ret == 0:
       return err
     else:
@@ -273,17 +269,14 @@ class AdbProxy(object):
 
   def _exec_adb_cmd(self, name, args, shell, timeout, stderr):
     adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
-    out = self._exec_cmd(adb_cmd,
-               shell=shell,
-               timeout=timeout,
-               stderr=stderr)
+    out = self._exec_cmd(adb_cmd, shell=shell, timeout=timeout, stderr=stderr)
     return out
 
   def _execute_adb_and_process_stdout(self, name, args, shell, handler):
     adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
     err = self._execute_and_process_stdout(adb_cmd,
-                         shell=shell,
-                         handler=handler)
+                                           shell=shell,
+                                           handler=handler)
     return err
 
   def _parse_getprop_output(self, output):
@@ -345,8 +338,8 @@ class AdbProxy(object):
       doesn't exist.
     """
     return self.shell(
-      ['getprop', prop_name],
-      timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
+        ['getprop', prop_name],
+        timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
 
   def getprops(self, prop_names):
     """Get multiple properties of the device.
@@ -367,8 +360,7 @@ class AdbProxy(object):
       # The ADB getprop command can randomly return empty string, so try
       # multiple times. This value should always be non-empty if the device
       # in a working state.
-      raw_output = self.shell(['getprop'],
-                  timeout=DEFAULT_GETPROP_TIMEOUT_SEC)
+      raw_output = self.shell(['getprop'], timeout=DEFAULT_GETPROP_TIMEOUT_SEC)
       properties = self._parse_getprop_output(raw_output)
       if properties:
         for name in prop_names:
@@ -390,8 +382,7 @@ class AdbProxy(object):
       A boolean that is True if the command exists and False otherwise.
     """
     try:
-      output = self.shell(['command', '-v',
-                 command]).decode('utf-8').strip()
+      output = self.shell(['command', '-v', command]).decode('utf-8').strip()
       return command in output
     except AdbError:
       # If the command doesn't exist, then 'command -v' can return
@@ -401,10 +392,10 @@ class AdbProxy(object):
   def forward(self, args=None, shell=False):
     with ADB_PORT_LOCK:
       return self._exec_adb_cmd('forward',
-                    args,
-                    shell,
-                    timeout=None,
-                    stderr=None)
+                                args,
+                                shell,
+                                timeout=None,
+                                stderr=None)
 
   def instrument(self, package, options=None, runner=None, handler=None):
     """Runs an instrumentation command on the device.
@@ -447,19 +438,21 @@ class AdbProxy(object):
       options_list.append('-e %s %s' % (option_key, option_value))
     options_string = ' '.join(options_list)
 
-    instrumentation_command = 'am instrument -r -w %s %s/%s' % (
-      options_string, package, runner)
+    instrumentation_command = 'am instrument -r -w %s %s/%s' % (options_string,
+                                                                package, runner)
     logging.info('AndroidDevice|%s: Executing adb shell %s', self.serial,
-           instrumentation_command)
+                 instrumentation_command)
     if handler is None:
       return self._exec_adb_cmd('shell',
-                    instrumentation_command,
-                    shell=False,
-                    timeout=None,
-                    stderr=None)
+                                instrumentation_command,
+                                shell=False,
+                                timeout=None,
+                                stderr=None)
     else:
-      return self._execute_adb_and_process_stdout(
-        'shell', instrumentation_command, shell=False, handler=handler)
+      return self._execute_adb_and_process_stdout('shell',
+                                                  instrumentation_command,
+                                                  shell=False,
+                                                  handler=handler)
 
   def root(self):
     """Enables ADB root mode on the device.
@@ -478,22 +471,22 @@ class AdbProxy(object):
     for attempt in range(ADB_ROOT_RETRY_ATTMEPTS):
       try:
         return self._exec_adb_cmd('root',
-                      args=None,
-                      shell=False,
-                      timeout=None,
-                      stderr=None)
+                                  args=None,
+                                  shell=False,
+                                  timeout=None,
+                                  stderr=None)
       except AdbError as e:
         if attempt + 1 < ADB_ROOT_RETRY_ATTMEPTS:
-          logging.debug(
-            'Retry the command "%s" since Error "%s" occurred.' %
-            (utils.cli_cmd_to_string(e.cmd),
-             e.stderr.decode('utf-8').strip()))
+          logging.debug('Retry the command "%s" since Error "%s" occurred.' %
+                        (utils.cli_cmd_to_string(
+                            e.cmd), e.stderr.decode('utf-8').strip()))
           # Buffer between "adb root" commands.
           time.sleep(ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC)
         else:
           raise e
 
   def __getattr__(self, name):
+
     def adb_call(args=None, shell=False, timeout=None, stderr=None):
       """Wrapper for an ADB command.
 
@@ -511,9 +504,9 @@ class AdbProxy(object):
         The output of the adb command run if exit code is 0.
       """
       return self._exec_adb_cmd(name,
-                    args,
-                    shell=shell,
-                    timeout=timeout,
-                    stderr=stderr)
+                                args,
+                                shell=shell,
+                                timeout=timeout,
+                                stderr=stderr)
 
     return adb_call

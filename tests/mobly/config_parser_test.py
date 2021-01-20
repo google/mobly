@@ -65,15 +65,14 @@ class OutputTest(unittest.TestCase):
     config = config_parser.TestRunConfig()
     expected_value = 'SOME_VALUE'
     self.assertEqual(
-      config.controller_configs.get('NON_EXISTENT_KEY', expected_value),
-      expected_value)
+        config.controller_configs.get('NON_EXISTENT_KEY', expected_value),
+        expected_value)
 
   def test_run_config_user_params_is_already_initialized(self):
     config = config_parser.TestRunConfig()
     expected_value = 'SOME_VALUE'
-    self.assertEqual(
-      config.user_params.get('NON_EXISTENT_KEY', expected_value),
-      expected_value)
+    self.assertEqual(config.user_params.get('NON_EXISTENT_KEY', expected_value),
+                     expected_value)
 
 
 if __name__ == '__main__':

@@ -15,17 +15,22 @@
 from mobly import base_test
 from mobly import test_runner
 
+
 class Subclass1Test(base_test.BaseTestClass):
   pass
+
 
 class Subclass2Test(base_test.BaseTestClass):
   pass
 
+
 class Subclass1Runner(test_runner.TestRunner):
   pass
 
+
 class Subclass2Runner(test_runner.TestRunner):
   pass
+
 
 class UnrelatedClass(object):
   pass

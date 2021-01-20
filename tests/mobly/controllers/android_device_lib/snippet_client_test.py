@@ -55,29 +55,28 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     sc = self._make_client(mock_android_device.MockAdbProxy())
     expected_msg = '.* %s is not installed.' % MOCK_PACKAGE_NAME
     with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
-                  expected_msg):
+                                expected_msg):
       sc._check_app_installed()
 
   def test_check_app_installed_fail_not_instrumented(self):
     sc = self._make_client(
-      mock_android_device.MockAdbProxy(
-        installed_packages=[MOCK_PACKAGE_NAME]))
+        mock_android_device.MockAdbProxy(
+            installed_packages=[MOCK_PACKAGE_NAME]))
     expected_msg = ('.* %s is installed, but it is not instrumented.' %
-            MOCK_PACKAGE_NAME)
+                    MOCK_PACKAGE_NAME)
     with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
-                  expected_msg):
+                                expected_msg):
       sc._check_app_installed()
 
   def test_check_app_installed_fail_target_not_installed(self):
     sc = self._make_client(
-      mock_android_device.MockAdbProxy(instrumented_packages=[(
-        MOCK_PACKAGE_NAME,
-        snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
-        MOCK_MISSING_PACKAGE_NAME)]))
+        mock_android_device.MockAdbProxy(instrumented_packages=[(
+            MOCK_PACKAGE_NAME, snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
+            MOCK_MISSING_PACKAGE_NAME)]))
     expected_msg = ('.* Instrumentation target %s is not installed.' %
-            MOCK_MISSING_PACKAGE_NAME)
+                    MOCK_MISSING_PACKAGE_NAME)
     with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
-                  expected_msg):
+                                expected_msg):
       sc._check_app_installed()
 
   @mock.patch('socket.create_connection')
@@ -109,9 +108,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_snippet_restore_event_client(self, mock_get_port,
-                      mock_create_connection):
+                                        mock_create_connection):
     mock_get_port.return_value = 789
     fake_file = self.setup_mock_socket_file(mock_create_connection)
     client = self._make_client()
@@ -147,25 +146,24 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     mock_create_connection.side_effect = IOError('socket timed out')
     with self.assertRaisesRegex(
         jsonrpc_client_base.AppRestoreConnectionError,
-      ('Failed to restore app connection for %s at host port %s, '
-       'device port %s') % (MOCK_PACKAGE_NAME, 789, 456)):
+        ('Failed to restore app connection for %s at host port %s, '
+         'device port %s') % (MOCK_PACKAGE_NAME, 789, 456)):
       client.restore_app_connection()
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_snippet_start_app_and_connect(self, mock_get_port,
-                       mock_start_standing_subprocess,
-                       mock_create_connection):
+                                         mock_start_standing_subprocess,
+                                         mock_create_connection):
     self.setup_mock_socket_file(mock_create_connection)
-    self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess,
-      resp_lines=[
-        b'SNIPPET START, PROTOCOL 1 0\n',
-        b'SNIPPET SERVING, PORT 123\n',
-      ])
+    self._setup_mock_instrumentation_cmd(mock_start_standing_subprocess,
+                                         resp_lines=[
+                                             b'SNIPPET START, PROTOCOL 1 0\n',
+                                             b'SNIPPET SERVING, PORT 123\n',
+                                         ])
     client = self._make_client()
     client.start_app_and_connect()
     self.assertEqual(123, client.device_port)
@@ -173,9 +171,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.stop_standing_subprocess')
+              'utils.stop_standing_subprocess')
   def test_snippet_stop_app(self, mock_stop_standing_subprocess,
-                mock_create_connection):
+                            mock_create_connection):
     adb_proxy = mock.MagicMock()
     adb_proxy.shell.return_value = b'OK (0 tests)'
     client = self._make_client(adb_proxy)
@@ -184,9 +182,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'SnippetClient.disconnect')
+              'SnippetClient.disconnect')
   def test_snippet_stop_app_raises(self, mock_disconnect,
-                   mock_create_connection):
+                                   mock_create_connection):
     mock_disconnect.side_effect = Exception('ha')
     adb_proxy = mock.MagicMock()
     adb_proxy.shell.return_value = b'OK (0 tests)'
@@ -198,55 +196,54 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   @mock.patch(
-    'mobly.controllers.android_device_lib.snippet_client.SnippetClient.'
-    'disable_hidden_api_blacklist')
+      'mobly.controllers.android_device_lib.snippet_client.SnippetClient.'
+      'disable_hidden_api_blacklist')
   @mock.patch(
-    'mobly.controllers.android_device_lib.snippet_client.SnippetClient.'
-    'stop_app')
-  def test_start_app_and_connect_precheck_fail(
-      self, mock_stop, mock_precheck, mock_get_port,
-      mock_start_standing_subprocess, mock_create_connection):
+      'mobly.controllers.android_device_lib.snippet_client.SnippetClient.'
+      'stop_app')
+  def test_start_app_and_connect_precheck_fail(self, mock_stop, mock_precheck,
+                                               mock_get_port,
+                                               mock_start_standing_subprocess,
+                                               mock_create_connection):
     self.setup_mock_socket_file(mock_create_connection)
-    self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess,
-      resp_lines=[
-        b'SNIPPET START, PROTOCOL 1 0\n',
-        b'SNIPPET SERVING, PORT 123\n',
-      ])
+    self._setup_mock_instrumentation_cmd(mock_start_standing_subprocess,
+                                         resp_lines=[
+                                             b'SNIPPET START, PROTOCOL 1 0\n',
+                                             b'SNIPPET SERVING, PORT 123\n',
+                                         ])
     client = self._make_client()
     mock_precheck.side_effect = snippet_client.AppStartPreCheckError(
-      client.ad, 'ha')
-    with self.assertRaisesRegex(snippet_client.AppStartPreCheckError,
-                  'ha'):
+        client.ad, 'ha')
+    with self.assertRaisesRegex(snippet_client.AppStartPreCheckError, 'ha'):
       client.start_app_and_connect()
     mock_stop.assert_not_called()
     self.assertFalse(client.is_alive)
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   @mock.patch(
-    'mobly.controllers.android_device_lib.snippet_client.SnippetClient._start_app_and_connect'
+      'mobly.controllers.android_device_lib.snippet_client.SnippetClient._start_app_and_connect'
   )
   @mock.patch(
-    'mobly.controllers.android_device_lib.snippet_client.SnippetClient.stop_app'
+      'mobly.controllers.android_device_lib.snippet_client.SnippetClient.stop_app'
   )
-  def test_start_app_and_connect_generic_error(
-      self, mock_stop, mock_start, mock_get_port,
-      mock_start_standing_subprocess, mock_create_connection):
+  def test_start_app_and_connect_generic_error(self, mock_stop, mock_start,
+                                               mock_get_port,
+                                               mock_start_standing_subprocess,
+                                               mock_create_connection):
     self.setup_mock_socket_file(mock_create_connection)
-    self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess,
-      resp_lines=[
-        b'SNIPPET START, PROTOCOL 1 0\n',
-        b'SNIPPET SERVING, PORT 123\n',
-      ])
+    self._setup_mock_instrumentation_cmd(mock_start_standing_subprocess,
+                                         resp_lines=[
+                                             b'SNIPPET START, PROTOCOL 1 0\n',
+                                             b'SNIPPET SERVING, PORT 123\n',
+                                         ])
     client = self._make_client()
     mock_start.side_effect = Exception('ha')
     with self.assertRaisesRegex(Exception, 'ha'):
@@ -256,25 +253,24 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   @mock.patch(
-    'mobly.controllers.android_device_lib.snippet_client.SnippetClient._start_app_and_connect'
+      'mobly.controllers.android_device_lib.snippet_client.SnippetClient._start_app_and_connect'
   )
   @mock.patch(
-    'mobly.controllers.android_device_lib.snippet_client.SnippetClient.stop_app'
+      'mobly.controllers.android_device_lib.snippet_client.SnippetClient.stop_app'
   )
   def test_start_app_and_connect_fail_stop_also_fail(
       self, mock_stop, mock_start, mock_get_port,
       mock_start_standing_subprocess, mock_create_connection):
     self.setup_mock_socket_file(mock_create_connection)
-    self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess,
-      resp_lines=[
-        b'SNIPPET START, PROTOCOL 1 0\n',
-        b'SNIPPET SERVING, PORT 123\n',
-      ])
+    self._setup_mock_instrumentation_cmd(mock_start_standing_subprocess,
+                                         resp_lines=[
+                                             b'SNIPPET START, PROTOCOL 1 0\n',
+                                             b'SNIPPET SERVING, PORT 123\n',
+                                         ])
     client = self._make_client()
     mock_start.side_effect = Exception('Some error')
     mock_stop.side_effect = Exception('Another error')
@@ -284,19 +280,18 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     self.assertFalse(client.is_alive)
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'SnippetClient._do_start_app')
+              'SnippetClient._do_start_app')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'SnippetClient._check_app_installed')
+              'SnippetClient._check_app_installed')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'SnippetClient._read_protocol_line')
+              'SnippetClient._read_protocol_line')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'SnippetClient.connect')
+              'SnippetClient.connect')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_snippet_start_on_sdk_21(self, mock_get_port, mock_connect,
-                   mock_read_protocol_line,
-                   mock_check_app_installed,
-                   mock_do_start_app):
+                                   mock_read_protocol_line,
+                                   mock_check_app_installed, mock_do_start_app):
     """Check that `--user` is not added to start command on SDK < 24."""
 
     def _mocked_shell(arg):
@@ -307,12 +302,12 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     mock_get_port.return_value = 123
     mock_read_protocol_line.side_effect = [
-      'SNIPPET START, PROTOCOL 1 234',
-      'SNIPPET SERVING, PORT 1234',
-      'SNIPPET START, PROTOCOL 1 234',
-      'SNIPPET SERVING, PORT 1234',
-      'SNIPPET START, PROTOCOL 1 234',
-      'SNIPPET SERVING, PORT 1234',
+        'SNIPPET START, PROTOCOL 1 234',
+        'SNIPPET SERVING, PORT 1234',
+        'SNIPPET START, PROTOCOL 1 234',
+        'SNIPPET SERVING, PORT 1234',
+        'SNIPPET START, PROTOCOL 1 234',
+        'SNIPPET SERVING, PORT 1234',
     ]
 
     # Test 'setsid' exists
@@ -321,23 +316,24 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     client._adb.shell = mock.Mock(return_value=b'setsid')
     client.start_app_and_connect()
     cmd_setsid = '%s am instrument  -w -e action start %s/%s' % (
-      snippet_client._SETSID_COMMAND, MOCK_PACKAGE_NAME,
-      snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
+        snippet_client._SETSID_COMMAND, MOCK_PACKAGE_NAME,
+        snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
     mock_do_start_app.assert_has_calls([mock.call(cmd_setsid)])
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'SnippetClient._do_start_app')
+              'SnippetClient._do_start_app')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'SnippetClient._check_app_installed')
+              'SnippetClient._check_app_installed')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'SnippetClient._read_protocol_line')
+              'SnippetClient._read_protocol_line')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'SnippetClient.connect')
+              'SnippetClient.connect')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_snippet_start_app_and_connect_persistent_session(
       self, mock_get_port, mock_connect, mock_read_protocol_line,
       mock_check_app_installed, mock_do_start_app):
+
     def _mocked_shell(arg):
       if 'setsid' in arg:
         raise adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code')
@@ -346,12 +342,12 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     mock_get_port.return_value = 123
     mock_read_protocol_line.side_effect = [
-      'SNIPPET START, PROTOCOL 1 234',
-      'SNIPPET SERVING, PORT 1234',
-      'SNIPPET START, PROTOCOL 1 234',
-      'SNIPPET SERVING, PORT 1234',
-      'SNIPPET START, PROTOCOL 1 234',
-      'SNIPPET SERVING, PORT 1234',
+        'SNIPPET START, PROTOCOL 1 234',
+        'SNIPPET SERVING, PORT 1234',
+        'SNIPPET START, PROTOCOL 1 234',
+        'SNIPPET SERVING, PORT 1234',
+        'SNIPPET START, PROTOCOL 1 234',
+        'SNIPPET SERVING, PORT 1234',
     ]
 
     # Test 'setsid' exists
@@ -359,8 +355,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     client._adb.shell = mock.Mock(return_value=b'setsid')
     client.start_app_and_connect()
     cmd_setsid = '%s am instrument --user %s -w -e action start %s/%s' % (
-      snippet_client._SETSID_COMMAND, MOCK_USER_ID, MOCK_PACKAGE_NAME,
-      snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
+        snippet_client._SETSID_COMMAND, MOCK_USER_ID, MOCK_PACKAGE_NAME,
+        snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
     mock_do_start_app.assert_has_calls([mock.call(cmd_setsid)])
 
     # Test 'setsid' does not exist, but 'nohup' exsits
@@ -368,41 +364,38 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     client._adb.shell = _mocked_shell
     client.start_app_and_connect()
     cmd_nohup = '%s am instrument --user %s -w -e action start %s/%s' % (
-      snippet_client._NOHUP_COMMAND, MOCK_USER_ID, MOCK_PACKAGE_NAME,
-      snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
+        snippet_client._NOHUP_COMMAND, MOCK_USER_ID, MOCK_PACKAGE_NAME,
+        snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
     mock_do_start_app.assert_has_calls(
-      [mock.call(cmd_setsid),
-       mock.call(cmd_nohup)])
+        [mock.call(cmd_setsid), mock.call(cmd_nohup)])
 
     # Test both 'setsid' and 'nohup' do not exist
     client._adb.shell = mock.Mock(
-      side_effect=adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code'))
+        side_effect=adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code'))
     client = self._make_client()
     client.start_app_and_connect()
     cmd_not_persist = ' am instrument --user %s -w -e action start %s/%s' % (
-      MOCK_USER_ID, MOCK_PACKAGE_NAME,
-      snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
+        MOCK_USER_ID, MOCK_PACKAGE_NAME,
+        snippet_client._INSTRUMENTATION_RUNNER_PACKAGE)
     mock_do_start_app.assert_has_calls([
-      mock.call(cmd_setsid),
-      mock.call(cmd_nohup),
-      mock.call(cmd_not_persist)
+        mock.call(cmd_setsid),
+        mock.call(cmd_nohup),
+        mock.call(cmd_not_persist)
     ])
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_snippet_start_app_crash(self, mock_get_port,
-                   mock_start_standing_subprocess,
-                   mock_create_connection):
+                                   mock_start_standing_subprocess,
+                                   mock_create_connection):
     mock_get_port.return_value = 456
     self.setup_mock_socket_file(mock_create_connection)
     self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess,
-      resp_lines=[
-        b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.\n'
-      ])
+        mock_start_standing_subprocess,
+        resp_lines=[b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.\n'])
     client = self._make_client()
     with self.assertRaisesRegex(
         snippet_client.ProtocolVersionError,
@@ -410,62 +403,62 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
       client.start_app_and_connect()
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_snippet_start_app_and_connect_unknown_protocol(
       self, mock_get_port, mock_start_standing_subprocess):
     mock_get_port.return_value = 789
     self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess,
-      resp_lines=[b'SNIPPET START, PROTOCOL 99 0\n'])
+        mock_start_standing_subprocess,
+        resp_lines=[b'SNIPPET START, PROTOCOL 99 0\n'])
     client = self._make_client()
     with self.assertRaisesRegex(snippet_client.ProtocolVersionError,
-                  'SNIPPET START, PROTOCOL 99 0'):
+                                'SNIPPET START, PROTOCOL 99 0'):
       client.start_app_and_connect()
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_snippet_start_app_and_connect_header_junk(
       self, mock_get_port, mock_start_standing_subprocess,
       mock_create_connection):
     self.setup_mock_socket_file(mock_create_connection)
     self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess,
-      resp_lines=[
-        b'This is some header junk\n',
-        b'Some phones print arbitrary output\n',
-        b'SNIPPET START, PROTOCOL 1 0\n',
-        b'Maybe in the middle too\n',
-        b'SNIPPET SERVING, PORT 123\n',
-      ])
+        mock_start_standing_subprocess,
+        resp_lines=[
+            b'This is some header junk\n',
+            b'Some phones print arbitrary output\n',
+            b'SNIPPET START, PROTOCOL 1 0\n',
+            b'Maybe in the middle too\n',
+            b'SNIPPET SERVING, PORT 123\n',
+        ])
     client = self._make_client()
     client.start_app_and_connect()
     self.assertEqual(123, client.device_port)
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_snippet_start_app_and_connect_no_valid_line(
       self, mock_get_port, mock_start_standing_subprocess,
       mock_create_connection):
     mock_get_port.return_value = 456
     self.setup_mock_socket_file(mock_create_connection)
     self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess,
-      resp_lines=[
-        b'This is some header junk\n',
-        b'Some phones print arbitrary output\n',
-        b'',  # readline uses '' to mark EOF
-      ])
+        mock_start_standing_subprocess,
+        resp_lines=[
+            b'This is some header junk\n',
+            b'Some phones print arbitrary output\n',
+            b'',  # readline uses '' to mark EOF
+        ])
     client = self._make_client()
     with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
-                  'Unexpected EOF waiting for app to start'):
+                                'Unexpected EOF waiting for app to start'):
       client.start_app_and_connect()
 
   @mock.patch(get_print_function_name())
@@ -492,22 +485,20 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
   def _make_client(self, adb_proxy=None):
     adb_proxy = adb_proxy or mock_android_device.MockAdbProxy(
-      instrumented_packages=[(
-        MOCK_PACKAGE_NAME,
-        snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
-        MOCK_PACKAGE_NAME)])
+        instrumented_packages=[(MOCK_PACKAGE_NAME,
+                                snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
+                                MOCK_PACKAGE_NAME)])
     ad = mock.Mock()
     ad.adb = adb_proxy
     ad.adb.current_user_id = MOCK_USER_ID
     ad.build_info = {
-      'build_version_codename':
-      ad.adb.getprop('ro.build.version.codename'),
-      'build_version_sdk': ad.adb.getprop('ro.build.version.sdk'),
+        'build_version_codename': ad.adb.getprop('ro.build.version.codename'),
+        'build_version_sdk': ad.adb.getprop('ro.build.version.sdk'),
     }
     return snippet_client.SnippetClient(package=MOCK_PACKAGE_NAME, ad=ad)
 
   def _setup_mock_instrumentation_cmd(self, mock_start_standing_subprocess,
-                    resp_lines):
+                                      resp_lines):
     mock_proc = mock_start_standing_subprocess()
     mock_proc.stdout.readline.side_effect = resp_lines
 

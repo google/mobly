@@ -46,15 +46,15 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 # System properties that are cached by the `AndroidDevice.build_info` property.
 # The only properties on this list should be read-only system properties.
 CACHED_SYSTEM_PROPS = [
-  'ro.build.id',
-  'ro.build.type',
-  'ro.build.version.codename',
-  'ro.build.version.sdk',
-  'ro.build.product',
-  'ro.build.characteristics',
-  'ro.debuggable',
-  'ro.product.name',
-  'ro.hardware',
+    'ro.build.id',
+    'ro.build.type',
+    'ro.build.version.codename',
+    'ro.build.version.sdk',
+    'ro.build.product',
+    'ro.build.characteristics',
+    'ro.debuggable',
+    'ro.product.name',
+    'ro.hardware',
 ]
 
 # Keys for attributes in configs that alternate the controller module behavior.
@@ -115,8 +115,8 @@ def create(configs):
   for ad in ads:
     if ad.serial not in valid_ad_identifiers:
       raise DeviceError(
-        ad, 'Android device is specified in config but is not '
-        'attached.')
+          ad, 'Android device is specified in config but is not '
+          'attached.')
   _start_services_on_ads(ads)
   return ads
 
@@ -156,21 +156,20 @@ def _start_services_on_ads(ads):
     ads: A list of AndroidDevice objects whose services to start.
   """
   for ad in ads:
-    start_logcat = not getattr(ad, KEY_SKIP_LOGCAT,
-                   DEFAULT_VALUE_SKIP_LOGCAT)
+    start_logcat = not getattr(ad, KEY_SKIP_LOGCAT, DEFAULT_VALUE_SKIP_LOGCAT)
     try:
       if start_logcat:
         ad.services.logcat.start()
     except Exception:
       is_required = getattr(ad, KEY_DEVICE_REQUIRED,
-                  DEFAULT_VALUE_DEVICE_REQUIRED)
+                            DEFAULT_VALUE_DEVICE_REQUIRED)
       if is_required:
         ad.log.exception('Failed to start some services, abort!')
         destroy(ads)
         raise
       else:
         ad.log.exception('Skipping this optional device because some '
-                 'services failed to start.')
+                         'services failed to start.')
 
 
 def parse_device_list(device_list_str, key):
@@ -272,8 +271,7 @@ def get_instances_with_configs(configs):
       serial = c.pop('serial')
     except KeyError:
       raise Error(
-        'Required value "serial" is missing in AndroidDevice config %s.'
-        % c)
+          'Required value "serial" is missing in AndroidDevice config %s.' % c)
     is_required = c.get(KEY_DEVICE_REQUIRED, True)
     try:
       ad = AndroidDevice(serial)
@@ -351,9 +349,8 @@ def get_devices(ads, **kwargs):
 
   filtered = filter_devices(ads, _get_device_filter)
   if not filtered:
-    raise Error(
-      'Could not find a target device that matches condition: %s.' %
-      kwargs)
+    raise Error('Could not find a target device that matches condition: %s.' %
+                kwargs)
   else:
     return filtered
 
@@ -409,8 +406,8 @@ def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
 
   def take_br(test_name, begin_time, ad, destination):
     ad.take_bug_report(test_name=test_name,
-               begin_time=begin_time,
-               destination=destination)
+                       begin_time=begin_time,
+                       destination=destination)
 
   args = [(test_name, begin_time, ad, destination) for ad in ads]
   utils.concurrent_exec(take_br, args)
@@ -447,11 +444,11 @@ class AndroidDevice(object):
     self._serial = str(serial)
     # logging.log_path only exists when this is used in an Mobly test run.
     self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
-    self._log_path = os.path.join(
-      self._log_path_base, 'AndroidDevice%s' % self._normalized_serial)
+    self._log_path = os.path.join(self._log_path_base,
+                                  'AndroidDevice%s' % self._normalized_serial)
     self._debug_tag = self._serial
     self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                        {'tag': self.debug_tag})
+                                          {'tag': self.debug_tag})
     self._build_info = None
     self._is_rebooting = False
     self.adb = adb.AdbProxy(serial)
@@ -460,10 +457,10 @@ class AndroidDevice(object):
       self.root_adb()
     self.services = service_manager.ServiceManager(self)
     self.services.register(SERVICE_NAME_LOGCAT,
-                 logcat.Logcat,
-                 start_service=False)
-    self.services.register(
-      'snippets', snippet_management_service.SnippetManagementService)
+                           logcat.Logcat,
+                           start_service=False)
+    self.services.register('snippets',
+                           snippet_management_service.SnippetManagementService)
     # Device info cache.
     self._user_added_device_info = {}
 
@@ -494,10 +491,10 @@ class AndroidDevice(object):
     can be added via `add_device_info`.
     """
     info = {
-      'serial': self.serial,
-      'model': self.model,
-      'build_info': self.build_info,
-      'user_added_info': self._user_added_device_info
+        'serial': self.serial,
+        'model': self.model,
+        'build_info': self.build_info,
+        'user_added_info': self._user_added_device_info
     }
     return info
 
@@ -583,14 +580,13 @@ class AndroidDevice(object):
     """Setter for `log_path`, use with caution."""
     if self.has_active_service:
       raise DeviceError(
-        self,
-        'Cannot change `log_path` when there is service running.')
+          self, 'Cannot change `log_path` when there is service running.')
     old_path = self._log_path
     if new_path == old_path:
       return
     if os.listdir(new_path):
-      raise DeviceError(
-        self, 'Logs already exist at %s, cannot override.' % new_path)
+      raise DeviceError(self,
+                        'Logs already exist at %s, cannot override.' % new_path)
     if os.path.exists(old_path):
       # Remove new path so copytree doesn't complain.
       shutil.rmtree(new_path, ignore_errors=True)
@@ -633,9 +629,8 @@ class AndroidDevice(object):
     new_serial = str(new_serial)
     if self.has_active_service:
       raise DeviceError(
-        self,
-        'Cannot change device serial number when there is service running.'
-      )
+          self,
+          'Cannot change device serial number when there is service running.')
     if self._debug_tag == self.serial:
       self._debug_tag = new_serial
     self._serial = new_serial
@@ -749,8 +744,7 @@ class AndroidDevice(object):
       device is in bootloader mode.
     """
     if self.is_bootloader:
-      self.log.error('Device is in fastboot mode, could not get build '
-               'info.')
+      self.log.error('Device is in fastboot mode, could not get build ' 'info.')
       return
     if self._build_info is None or self._is_rebooting:
       info = {}
@@ -758,12 +752,11 @@ class AndroidDevice(object):
       info['build_id'] = build_info['ro.build.id']
       info['build_type'] = build_info['ro.build.type']
       info['build_version_codename'] = build_info.get(
-        'ro.build.version.codename', '')
-      info['build_version_sdk'] = build_info.get('ro.build.version.sdk',
-                             '')
+          'ro.build.version.codename', '')
+      info['build_version_sdk'] = build_info.get('ro.build.version.sdk', '')
       info['build_product'] = build_info.get('ro.build.product', '')
-      info['build_characteristics'] = build_info.get(
-        'ro.build.characteristics', '')
+      info['build_characteristics'] = build_info.get('ro.build.characteristics',
+                                                     '')
       info['debuggable'] = build_info.get('ro.debuggable', '')
       info['product_name'] = build_info.get('ro.product.name', '')
       info['hardware'] = build_info.get('ro.hardware', '')
@@ -849,9 +842,8 @@ class AndroidDevice(object):
     for k, v in config.items():
       if hasattr(self, k) and k not in _ANDROID_DEVICE_SETTABLE_PROPS:
         raise DeviceError(
-          self,
-          ('Attribute %s already exists with value %s, cannot set '
-           'again.') % (k, getattr(self, k)))
+            self, ('Attribute %s already exists with value %s, cannot set '
+                   'again.') % (k, getattr(self, k)))
       setattr(self, k, v)
 
   def root_adb(self):
@@ -863,8 +855,7 @@ class AndroidDevice(object):
     self.adb.root()
     # `root` causes the device to temporarily disappear from adb.
     # So we need to wait for the device to come back before proceeding.
-    self.adb.wait_for_device(
-      timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
+    self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
 
   def load_snippet(self, name, package):
     """Starts the snippet apk with the given package name and connects.
@@ -889,9 +880,8 @@ class AndroidDevice(object):
     # Should not load snippet with an existing attribute.
     if hasattr(self, name):
       raise SnippetError(
-        self,
-        'Attribute "%s" already exists, please use a different name.' %
-        name)
+          self,
+          'Attribute "%s" already exists, please use a different name.' % name)
     self.services.snippets.add_snippet_client(name, package)
 
   def unload_snippet(self, name):
@@ -906,9 +896,9 @@ class AndroidDevice(object):
     self.services.snippets.remove_snippet_client(name)
 
   def generate_filename(self,
-              file_type,
-              time_identifier=None,
-              extension_name=None):
+                        file_type,
+                        time_identifier=None,
+                        extension_name=None):
     """Generates a name for an output file related to this device.
 
     The name follows the pattern:
@@ -946,10 +936,10 @@ class AndroidDevice(object):
     return filename_str
 
   def take_bug_report(self,
-            test_name=None,
-            begin_time=None,
-            timeout=300,
-            destination=None):
+                      test_name=None,
+                      begin_time=None,
+                      timeout=300,
+                      destination=None):
     """Takes a bug report on the device and stores it in a file.
 
     Args:
@@ -1001,9 +991,7 @@ class AndroidDevice(object):
     else:
       # shell=True as this command redirects the stdout to a local file
       # using shell redirection.
-      self.adb.bugreport(' > "%s"' % full_out_path,
-                 shell=True,
-                 timeout=timeout)
+      self.adb.bugreport(' > "%s"' % full_out_path, shell=True, timeout=timeout)
     self.log.debug('Bugreport taken at %s.', full_out_path)
     return full_out_path
 
@@ -1019,7 +1007,7 @@ class AndroidDevice(object):
     filename = self.generate_filename('screenshot', extension_name='png')
     device_path = os.path.join('/storage/emulated/0/', filename)
     self.adb.shell(['screencap', '-p', device_path],
-             timeout=TAKE_SCREENSHOT_TIMEOUT_SECOND)
+                   timeout=TAKE_SCREENSHOT_TIMEOUT_SECOND)
     utils.create_dir(destination)
     self.adb.pull([device_path, destination])
     pic_path = os.path.join(destination, filename)
@@ -1048,8 +1036,8 @@ class AndroidDevice(object):
       return False, clean_out
     return True, clean_out
 
-  def wait_for_boot_completion(
-      self, timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND):
+  def wait_for_boot_completion(self,
+                               timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND):
     """Waits for Android framework to broadcast ACTION_BOOT_COMPLETED.
 
     This function times out after 15 minutes.

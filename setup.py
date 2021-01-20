@@ -18,8 +18,8 @@ from setuptools.command import test
 import sys
 
 install_requires = [
-  'future', 'portpicker', 'psutil>=5.4.4', 'pyserial', 'pyyaml',
-  'timeout_decorator'
+    'future', 'portpicker', 'psutil>=5.4.4', 'pyserial', 'pyyaml',
+    'timeout_decorator'
 ]
 
 if platform.system() == 'Windows':
@@ -44,24 +44,24 @@ class PyTest(test.test):
 
 def main():
   setuptools.setup(
-    name='mobly',
-    version='1.10.1',
-    maintainer='Ang Li',
-    maintainer_email='mobly-github@googlegroups.com',
-    description='Automation framework for special end-to-end test cases',
-    license='Apache2.0',
-    url='https://github.com/google/mobly',
-    download_url='https://github.com/google/mobly/tarball/1.10.1',
-    packages=setuptools.find_packages(exclude=['tests']),
-    include_package_data=False,
-    scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
-    tests_require=[
-      'mock',
-      'pytest',
-      'pytz',
-    ],
-    install_requires=install_requires,
-    cmdclass={'test': PyTest},
+      name='mobly',
+      version='1.10.1',
+      maintainer='Ang Li',
+      maintainer_email='mobly-github@googlegroups.com',
+      description='Automation framework for special end-to-end test cases',
+      license='Apache2.0',
+      url='https://github.com/google/mobly',
+      download_url='https://github.com/google/mobly/tarball/1.10.1',
+      packages=setuptools.find_packages(exclude=['tests']),
+      include_package_data=False,
+      scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
+      tests_require=[
+          'mock',
+          'pytest',
+          'pytz',
+      ],
+      install_requires=install_requires,
+      cmdclass={'test': PyTest},
   )
 
 

@@ -17,6 +17,7 @@ from mobly import test_runner
 
 
 class TearDownClassFailureTest(base_test.BaseTestClass):
+
   def test_foo(self):
     pass
 

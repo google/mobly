@@ -41,12 +41,12 @@ def verify_controller_module(module):
   for attr in required_attributes:
     if not hasattr(module, attr):
       raise signals.ControllerError(
-        'Module %s missing required controller module attribute'
-        ' %s.' % (module.__name__, attr))
+          'Module %s missing required controller module attribute'
+          ' %s.' % (module.__name__, attr))
     if not getattr(module, attr):
       raise signals.ControllerError(
-        'Controller interface %s in %s cannot be null.' %
-        (attr, module.__name__))
+          'Controller interface %s in %s cannot be null.' %
+          (attr, module.__name__))
 
 
 class ControllerManager(object):
@@ -101,18 +101,17 @@ class ControllerManager(object):
     module_ref_name = module.__name__.split('.')[-1]
     if module_ref_name in self._controller_objects:
       raise signals.ControllerError(
-        'Controller module %s has already been registered. It cannot '
-        'be registered again.' % module_ref_name)
+          'Controller module %s has already been registered. It cannot '
+          'be registered again.' % module_ref_name)
     # Create controller objects.
     module_config_name = module.MOBLY_CONTROLLER_CONFIG_NAME
     if module_config_name not in self.controller_configs:
       if required:
-        raise signals.ControllerError(
-          'No corresponding config found for %s' %
-          module_config_name)
+        raise signals.ControllerError('No corresponding config found for %s' %
+                                      module_config_name)
       logging.warning(
-        'No corresponding config found for optional controller %s',
-        module_config_name)
+          'No corresponding config found for optional controller %s',
+          module_config_name)
       return None
     try:
       # Make a deep copy of the config to pass to the controller module,
@@ -122,25 +121,25 @@ class ControllerManager(object):
       objects = module.create(controller_config)
     except:
       logging.exception(
-        'Failed to initialize objects for controller %s, abort!',
-        module_config_name)
+          'Failed to initialize objects for controller %s, abort!',
+          module_config_name)
       raise
     if not isinstance(objects, list):
       raise signals.ControllerError(
-        'Controller module %s did not return a list of objects, abort.'
-        % module_ref_name)
+          'Controller module %s did not return a list of objects, abort.' %
+          module_ref_name)
     # Check we got enough controller objects to continue.
     actual_number = len(objects)
     if actual_number < min_number:
       module.destroy(objects)
       raise signals.ControllerError(
-        'Expected to get at least %d controller objects, got %d.' %
-        (min_number, actual_number))
+          'Expected to get at least %d controller objects, got %d.' %
+          (min_number, actual_number))
     # Save a shallow copy of the list for internal usage, so tests can't
     # affect internal registry by manipulating the object list.
     self._controller_objects[module_ref_name] = copy.copy(objects)
     logging.debug('Found %d objects for controller %s', len(objects),
-            module_config_name)
+                  module_config_name)
     self._controller_modules[module_ref_name] = module
     return objects
 
@@ -153,8 +152,7 @@ class ControllerManager(object):
     # logging them.
     for name, module in self._controller_modules.items():
       logging.debug('Destroying %s.', name)
-      with expects.expect_no_raises('Exception occurred destroying %s.' %
-                      name):
+      with expects.expect_no_raises('Exception occurred destroying %s.' % name):
         module.destroy(self._controller_objects[name])
     self._controller_objects = collections.OrderedDict()
     self._controller_modules = {}
@@ -176,23 +174,22 @@ class ControllerManager(object):
     controller_info = None
     try:
       controller_info = module.get_info(
-        copy.copy(self._controller_objects[controller_module_name]))
+          copy.copy(self._controller_objects[controller_module_name]))
     except AttributeError:
       logging.warning(
-        'No optional debug info found for controller '
-        '%s. To provide it, implement `get_info`.',
-        controller_module_name)
+          'No optional debug info found for controller '
+          '%s. To provide it, implement `get_info`.', controller_module_name)
     try:
       yaml.dump(controller_info)
     except TypeError:
       logging.warning(
-        'The info of controller %s in class "%s" is not '
-        'YAML serializable! Coercing it to string.',
-        controller_module_name, self._class_name)
+          'The info of controller %s in class "%s" is not '
+          'YAML serializable! Coercing it to string.', controller_module_name,
+          self._class_name)
       controller_info = str(controller_info)
-    return records.ControllerInfoRecord(
-      self._class_name, module.MOBLY_CONTROLLER_CONFIG_NAME,
-      controller_info)
+    return records.ControllerInfoRecord(self._class_name,
+                                        module.MOBLY_CONTROLLER_CONFIG_NAME,
+                                        controller_info)
 
   def get_controller_info_records(self):
     """Get the info records for all the controller objects in the manager.
@@ -207,10 +204,8 @@ class ControllerManager(object):
     info_records = []
     for controller_module_name in self._controller_objects.keys():
       with expects.expect_no_raises(
-          'Failed to collect controller info from %s' %
-          controller_module_name):
-        record = self._create_controller_info_record(
-          controller_module_name)
+          'Failed to collect controller info from %s' % controller_module_name):
+        record = self._create_controller_info_record(controller_module_name)
         if record:
           info_records.append(record)
     return info_records

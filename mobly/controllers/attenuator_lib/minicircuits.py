@@ -23,32 +23,32 @@ from mobly.controllers.attenuator_lib import telnet_scpi_client
 
 
 class AttenuatorDevice(object):
-    """This provides a specific telnet-controlled implementation of
+  """This provides a specific telnet-controlled implementation of
     AttenuatorDevice for Mini-Circuits RC-DAT attenuators.
 
     Attributes:
         path_count: The number of signal attenuation path this device has.
     """
 
-    def __init__(self, path_count=1):
-        self.path_count = path_count
-        # The telnet client used to communicate with the attenuator device.
-        self._telnet_client = telnet_scpi_client.TelnetScpiClient(
-            tx_cmd_separator="\r\n", rx_cmd_separator="\r\n", prompt="")
+  def __init__(self, path_count=1):
+    self.path_count = path_count
+    # The telnet client used to communicate with the attenuator device.
+    self._telnet_client = telnet_scpi_client.TelnetScpiClient(
+        tx_cmd_separator="\r\n", rx_cmd_separator="\r\n", prompt="")
 
-    @property
-    def is_open(self):
-        """This function returns the state of the telnet connection to the
+  @property
+  def is_open(self):
+    """This function returns the state of the telnet connection to the
         underlying AttenuatorDevice.
 
         Returns:
             True if there is a successfully open connection to the
             AttenuatorDevice.
         """
-        return bool(self._telnet_client.is_open)
+    return bool(self._telnet_client.is_open)
 
-    def open(self, host, port=23):
-        """Opens a telnet connection to the desired AttenuatorDevice and
+  def open(self, host, port=23):
+    """Opens a telnet connection to the desired AttenuatorDevice and
         queries basic information.
 
         Args:
@@ -56,25 +56,25 @@ class AttenuatorDevice(object):
                 MC-DAT attenuator instrument.
             port: An optional port number (defaults to telnet default 23)
         """
-        self._telnet_client.open(host, port)
-        config_str = self._telnet_client.cmd("MN?")
-        if config_str.startswith("MN="):
-            config_str = config_str[len("MN="):]
-        self.properties = dict(
-            zip(['model', 'max_freq', 'max_atten'], config_str.split("-", 2)))
-        self.max_atten = float(self.properties['max_atten'])
+    self._telnet_client.open(host, port)
+    config_str = self._telnet_client.cmd("MN?")
+    if config_str.startswith("MN="):
+      config_str = config_str[len("MN="):]
+    self.properties = dict(
+        zip(['model', 'max_freq', 'max_atten'], config_str.split("-", 2)))
+    self.max_atten = float(self.properties['max_atten'])
 
-    def close(self):
-        """Closes a telnet connection to the desired attenuator device.
+  def close(self):
+    """Closes a telnet connection to the desired attenuator device.
 
         This should be called as part of any teardown procedure prior to the
         attenuator instrument leaving scope.
         """
-        if self.is_open:
-            self._telnet_client.close()
+    if self.is_open:
+      self._telnet_client.close()
 
-    def set_atten(self, idx, value):
-        """Sets the attenuation value for a particular signal path.
+  def set_atten(self, idx, value):
+    """Sets the attenuation value for a particular signal path.
 
         Args:
             idx: Zero-based index int which is the identifier for a particular
@@ -90,21 +90,18 @@ class AttenuatorDevice(object):
             ValueError: The requested set value is greater than the maximum
                 attenuation value.
         """
-        if not self.is_open:
-            raise attenuator.Error(
-                "Connection to attenuator at %s is not open!" %
-                self._telnet_client.host)
-        if idx + 1 > self.path_count:
-            raise IndexError("Attenuator index out of range!", self.path_count,
-                             idx)
-        if value > self.max_atten:
-            raise ValueError("Attenuator value out of range!", self.max_atten,
-                             value)
-        # The actual device uses one-based index for channel numbers.
-        self._telnet_client.cmd("CHAN:%s:SETATT:%s" % (idx + 1, value))
+    if not self.is_open:
+      raise attenuator.Error("Connection to attenuator at %s is not open!" %
+                             self._telnet_client.host)
+    if idx + 1 > self.path_count:
+      raise IndexError("Attenuator index out of range!", self.path_count, idx)
+    if value > self.max_atten:
+      raise ValueError("Attenuator value out of range!", self.max_atten, value)
+    # The actual device uses one-based index for channel numbers.
+    self._telnet_client.cmd("CHAN:%s:SETATT:%s" % (idx + 1, value))
 
-    def get_atten(self, idx=0):
-        """This function returns the current attenuation from an attenuator at a
+  def get_atten(self, idx=0):
+    """This function returns the current attenuation from an attenuator at a
         given index in the instrument.
 
         Args:
@@ -118,13 +115,11 @@ class AttenuatorDevice(object):
         Returns:
             A float that is the current attenuation value.
         """
-        if not self.is_open:
-            raise attenuator.Error(
-                "Connection to attenuator at %s is not open!" %
-                self._telnet_client.host)
-        if idx + 1 > self.path_count or idx < 0:
-            raise IndexError("Attenuator index out of range!", self.path_count,
-                             idx)
-        atten_val_str = self._telnet_client.cmd("CHAN:%s:ATT?" % (idx + 1))
-        atten_val = float(atten_val_str)
-        return atten_val
+    if not self.is_open:
+      raise attenuator.Error("Connection to attenuator at %s is not open!" %
+                             self._telnet_client.host)
+    if idx + 1 > self.path_count or idx < 0:
+      raise IndexError("Attenuator index out of range!", self.path_count, idx)
+    atten_val_str = self._telnet_client.cmd("CHAN:%s:ATT?" % (idx + 1))
+    atten_val = float(atten_val_str)
+    return atten_val

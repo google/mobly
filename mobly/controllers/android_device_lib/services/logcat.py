@@ -41,10 +41,7 @@ class Config(object):
       generate one if not specified.
   """
 
-  def __init__(self,
-         logcat_params=None,
-         clear_log=True,
-         output_file_path=None):
+  def __init__(self, logcat_params=None, clear_log=True, output_file_path=None):
     self.clear_log = clear_log
     self.logcat_params = logcat_params if logcat_params else ''
     self.output_file_path = output_file_path
@@ -77,7 +74,7 @@ class Logcat(base_service.BaseService):
       return
 
     logpersist_warning = ('%s encountered an error enabling persistent'
-                ' logs, logs may not get saved.')
+                          ' logs, logs may not get saved.')
     # Android L and older versions do not have logpersist installed,
     # so check that the logpersist scripts exists before trying to use
     # them.
@@ -95,8 +92,7 @@ class Logcat(base_service.BaseService):
       logging.warning(logpersist_warning, self)
 
   def _is_timestamp_in_range(self, target, begin_time, end_time):
-    low = mobly_logger.logline_timestamp_comparator(begin_time,
-                            target) <= 0
+    low = mobly_logger.logline_timestamp_comparator(begin_time, target) <= 0
     high = mobly_logger.logline_timestamp_comparator(end_time, target) >= 0
     return low and high
 
@@ -118,10 +114,10 @@ class Logcat(base_service.BaseService):
     dest_path = test_info.output_path
     utils.create_dir(dest_path)
     filename = self._ad.generate_filename(self.OUTPUT_FILE_TYPE, test_info,
-                        'txt')
+                                          'txt')
     excerpt_file_path = os.path.join(dest_path, filename)
     with io.open(excerpt_file_path, 'w', encoding='utf-8',
-           errors='replace') as out:
+                 errors='replace') as out:
       # Devices may accidentally go offline during test,
       # check not None before readline().
       while self._adb_logcat_file_obj:
@@ -144,8 +140,7 @@ class Logcat(base_service.BaseService):
       # On Android O, the clear command fails due to a known bug.
       # Catching this so we don't crash from this Android issue.
       if b'failed to clear' in e.stderr:
-        self._ad.log.warning(
-          'Encountered known Android error to clear logcat.')
+        self._ad.log.warning('Encountered known Android error to clear logcat.')
       else:
         raise
 
@@ -157,8 +152,8 @@ class Logcat(base_service.BaseService):
     """
     if self.is_alive:
       raise Error(
-        self._ad,
-        'Logcat thread is already running, cannot start another one.')
+          self._ad,
+          'Logcat thread is already running, cannot start another one.')
 
   def update_config(self, new_config):
     """Updates the configuration for the service.
@@ -174,7 +169,7 @@ class Logcat(base_service.BaseService):
     """
     self._assert_not_running()
     self._ad.log.info('[LogcatService] Changing config from %s to %s',
-              self._config, new_config)
+                      self._config, new_config)
     self._config = new_config
 
   def _open_logcat_file(self):
@@ -186,13 +181,13 @@ class Logcat(base_service.BaseService):
       start_time = time.time()
       while not os.path.exists(self.adb_logcat_file_path):
         if time.time() > start_time + CREATE_LOGCAT_FILE_TIMEOUT_SEC:
-          raise Error(
-            self._ad,
-            'Timeout while waiting for logcat file to be created.')
+          raise Error(self._ad,
+                      'Timeout while waiting for logcat file to be created.')
         time.sleep(1)
-      self._adb_logcat_file_obj = io.open(
-        self.adb_logcat_file_path, 'r', encoding='utf-8',
-        errors='replace')
+      self._adb_logcat_file_obj = io.open(self.adb_logcat_file_path,
+                                          'r',
+                                          encoding='utf-8',
+                                          errors='replace')
       self._adb_logcat_file_obj.seek(0, os.SEEK_END)
 
   def _close_logcat_file(self):
@@ -220,7 +215,7 @@ class Logcat(base_service.BaseService):
       self.adb_logcat_file_path = self._config.output_file_path
     if not self.adb_logcat_file_path:
       f_name = self._ad.generate_filename(self.OUTPUT_FILE_TYPE,
-                        extension_name='txt')
+                                          extension_name='txt')
       logcat_file_path = os.path.join(self._ad.log_path, f_name)
       self.adb_logcat_file_path = logcat_file_path
     utils.create_dir(os.path.dirname(self.adb_logcat_file_path))
@@ -228,8 +223,8 @@ class Logcat(base_service.BaseService):
     # double quotes in args if starting and ending with it.
     # Add spaces at beginning and at last to fix this issue.
     cmd = ' "%s" -s %s logcat -v threadtime -T 1 %s >> "%s" ' % (
-      adb.ADB, self._ad.serial, self._config.logcat_params,
-      self.adb_logcat_file_path)
+        adb.ADB, self._ad.serial, self._config.logcat_params,
+        self.adb_logcat_file_path)
     process = utils.start_standing_subprocess(cmd, shell=True)
     self._adb_logcat_process = process
 

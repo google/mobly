@@ -31,50 +31,48 @@ class Sl4aClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_start_app_and_connect(self, mock_get_port,
-                   mock_start_standing_subprocess,
-                   mock_create_connection):
+                                 mock_start_standing_subprocess,
+                                 mock_create_connection):
     self.setup_mock_socket_file(mock_create_connection)
-    self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess, resp_lines=[b'\n'])
+    self._setup_mock_instrumentation_cmd(mock_start_standing_subprocess,
+                                         resp_lines=[b'\n'])
     client = self._make_client()
     client.start_app_and_connect()
     self.assertEqual(8080, client.device_port)
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.start_standing_subprocess')
+              'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-        'utils.get_available_host_port')
+              'utils.get_available_host_port')
   def test_app_not_installed(self, mock_get_port,
-                 mock_start_standing_subprocess,
-                 mock_create_connection):
+                             mock_start_standing_subprocess,
+                             mock_create_connection):
     self.setup_mock_socket_file(mock_create_connection)
-    self._setup_mock_instrumentation_cmd(
-      mock_start_standing_subprocess, resp_lines=[b'\n'])
-    client = self._make_client(
-      adb_proxy=mock_android_device.MockAdbProxy())
+    self._setup_mock_instrumentation_cmd(mock_start_standing_subprocess,
+                                         resp_lines=[b'\n'])
+    client = self._make_client(adb_proxy=mock_android_device.MockAdbProxy())
     with self.assertRaisesRegex(jsonrpc_client_base.AppStartError,
-                  '.* SL4A is not installed on .*'):
+                                '.* SL4A is not installed on .*'):
       client.start_app_and_connect()
 
   def _make_client(self, adb_proxy=None):
     adb_proxy = adb_proxy or mock_android_device.MockAdbProxy(
-      installed_packages=['com.googlecode.android_scripting'])
+        installed_packages=['com.googlecode.android_scripting'])
     ad = mock.Mock()
     ad.adb = adb_proxy
     ad.build_info = {
-      'build_version_codename':
-      ad.adb.getprop('ro.build.version.codename'),
-      'build_version_sdk': ad.adb.getprop('ro.build.version.sdk'),
+        'build_version_codename': ad.adb.getprop('ro.build.version.codename'),
+        'build_version_sdk': ad.adb.getprop('ro.build.version.sdk'),
     }
     return sl4a_client.Sl4aClient(ad=ad)
 
   def _setup_mock_instrumentation_cmd(self, mock_start_standing_subprocess,
-                    resp_lines):
+                                      resp_lines):
     mock_proc = mock_start_standing_subprocess()
     mock_proc.stdout.readline.side_effect = resp_lines
 

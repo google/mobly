@@ -41,6 +41,7 @@ from mobly.controllers.android_device_lib.services import sl4a_service
 
 
 class Sl4aShell(jsonrpc_shell_base.JsonRpcShellBase):
+
   def _start_services(self, console_env):
     """Overrides superclass."""
     self._ad.services.register('sl4a', sl4a_service.Sl4aService)
@@ -50,21 +51,19 @@ class Sl4aShell(jsonrpc_shell_base.JsonRpcShellBase):
 
   def _get_banner(self, serial):
     lines = [
-      'Connected to %s.' % serial, 'Call methods against:',
-      '    ad (android_device.AndroidDevice)', '    sl4a or s (SL4A)',
-      '    ed (EventDispatcher)'
+        'Connected to %s.' % serial, 'Call methods against:',
+        '    ad (android_device.AndroidDevice)', '    sl4a or s (SL4A)',
+        '    ed (EventDispatcher)'
     ]
     return '\n'.join(lines)
 
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(
-    description='Interactive client for sl4a.')
+  parser = argparse.ArgumentParser(description='Interactive client for sl4a.')
   parser.add_argument(
-    '-s',
-    '--serial',
-    help=
-    'Device serial to connect to (if more than one device is connected)')
+      '-s',
+      '--serial',
+      help='Device serial to connect to (if more than one device is connected)')
   args = parser.parse_args()
   logging.basicConfig(level=logging.INFO)
   Sl4aShell().main(args.serial)

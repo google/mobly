@@ -22,16 +22,16 @@ import mock
 import os
 
 DEFAULT_MOCK_PROPERTIES = {
-  'ro.build.id': 'AB42',
-  'ro.build.type': 'userdebug',
-  'ro.build.product': 'FakeModel',
-  'ro.build.version.codename': 'Z',
-  'ro.build.version.sdk': '28',
-  'ro.product.name': 'FakeModel',
-  'ro.debuggable': '1',
-  'sys.boot_completed': "1",
-  'ro.build.characteristics': 'emulator,phone',
-  'ro.hardware': 'marlin',
+    'ro.build.id': 'AB42',
+    'ro.build.type': 'userdebug',
+    'ro.build.product': 'FakeModel',
+    'ro.build.version.codename': 'Z',
+    'ro.build.version.sdk': '28',
+    'ro.product.name': 'FakeModel',
+    'ro.debuggable': '1',
+    'sys.boot_completed': "1",
+    'ro.build.characteristics': 'emulator,phone',
+    'ro.hardware': 'marlin',
 }
 
 
@@ -80,12 +80,12 @@ class MockAdbProxy(object):
   """Mock class that swaps out calls to adb with mock calls."""
 
   def __init__(self,
-         serial='',
-         fail_br=False,
-         fail_br_before_N=False,
-         mock_properties=None,
-         installed_packages=None,
-         instrumented_packages=None):
+               serial='',
+               fail_br=False,
+               fail_br_before_N=False,
+               mock_properties=None,
+               installed_packages=None,
+               instrumented_packages=None):
     self.serial = serial
     self.fail_br = fail_br
     self.fail_br_before_N = fail_br_before_N
@@ -115,18 +115,16 @@ class MockAdbProxy(object):
       return b'1.1'
     elif 'pm list package' in params:
       packages = self.installed_packages + [
-        package for package, _, _ in self.instrumented_packages
+          package for package, _, _ in self.instrumented_packages
       ]
-      return bytes(
-        '\n'.join(['package:%s' % package for package in packages]),
-        'utf-8')
+      return bytes('\n'.join(['package:%s' % package for package in packages]),
+                   'utf-8')
     elif 'pm list instrumentation' in params:
       return bytes(
-        '\n'.join([
-          'instrumentation:%s/%s (target=%s)' %
-          (package, runner, target)
-          for package, runner, target in self.instrumented_packages
-        ]), 'utf-8')
+          '\n'.join([
+              'instrumentation:%s/%s (target=%s)' % (package, runner, target)
+              for package, runner, target in self.instrumented_packages
+          ]), 'utf-8')
     elif 'which' in params:
       return b''
 
@@ -140,8 +138,8 @@ class MockAdbProxy(object):
 
   def bugreport(self, args, shell=False, timeout=None):
     expected = os.path.join(
-      logging.log_path, 'AndroidDevice%s' % self.serial, 'BugReports',
-      'bugreport,test_something,%s,fakemodel,sometime' % self.serial)
+        logging.log_path, 'AndroidDevice%s' % self.serial, 'BugReports',
+        'bugreport,test_something,%s,fakemodel,sometime' % self.serial)
     if expected not in args:
       raise Error('"Expected "%s", got "%s"' % (expected, args))
 
@@ -167,6 +165,7 @@ class MockFastbootProxy(object):
     return b"xxxx device\nyyyy device"
 
   def __getattr__(self, name):
+
     def fastboot_call(*args):
       arg_str = ' '.join(str(elem) for elem in args)
       return arg_str

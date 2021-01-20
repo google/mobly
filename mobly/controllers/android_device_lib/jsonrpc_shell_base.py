@@ -27,6 +27,7 @@ class Error(Exception):
 
 
 class JsonRpcShellBase(object):
+
   def _start_services(self, console_env):
     """Starts the services needed by this client and adds them to console_env.
 
@@ -59,9 +60,8 @@ class JsonRpcShellBase(object):
       elif len(serials) == 1:
         serial = serials[0]
       else:
-        raise Error(
-          'Expected one phone, but %d found. Use the -s flag or '
-          'specify ANDROID_SERIAL.' % len(serials))
+        raise Error('Expected one phone, but %d found. Use the -s flag or '
+                    'specify ANDROID_SERIAL.' % len(serials))
     if serial not in serials:
       raise Error('Device "%s" is not found by adb.' % serial)
     ads = android_device.get_instances([serial])
@@ -71,8 +71,8 @@ class JsonRpcShellBase(object):
   def start_console(self):
     # Set up initial console environment
     console_env = {
-      'ad': self._ad,
-      'pprint': pprint.pprint,
+        'ad': self._ad,
+        'pprint': pprint.pprint,
     }
 
     # Start the services
