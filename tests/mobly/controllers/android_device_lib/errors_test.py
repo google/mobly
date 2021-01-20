@@ -20,30 +20,31 @@ from mobly.controllers.android_device_lib import errors
 
 
 class ErrorsTest(unittest.TestCase):
-    def test_device_error(self):
-        device = mock.MagicMock()
-        device.__repr__ = lambda _: '[MockDevice]'
-        exception = errors.DeviceError(device, 'Some error message.')
-        self.assertEqual(str(exception), '[MockDevice] Some error message.')
 
-    def test_service_error(self):
-        device = mock.MagicMock()
-        device.__repr__ = lambda _: '[MockDevice]'
-        exception = errors.ServiceError(device, 'Some error message.')
-        self.assertEqual(str(exception),
-                         '[MockDevice]::Service<None> Some error message.')
+  def test_device_error(self):
+    device = mock.MagicMock()
+    device.__repr__ = lambda _: '[MockDevice]'
+    exception = errors.DeviceError(device, 'Some error message.')
+    self.assertEqual(str(exception), '[MockDevice] Some error message.')
 
-    def test_subclass_service_error(self):
-        class Error(errors.ServiceError):
-            SERVICE_TYPE = 'SomeType'
+  def test_service_error(self):
+    device = mock.MagicMock()
+    device.__repr__ = lambda _: '[MockDevice]'
+    exception = errors.ServiceError(device, 'Some error message.')
+    self.assertEqual(str(exception),
+                     '[MockDevice]::Service<None> Some error message.')
 
-        device = mock.MagicMock()
-        device.__repr__ = lambda _: '[MockDevice]'
-        exception = Error(device, 'Some error message.')
-        self.assertEqual(
-            str(exception),
-            '[MockDevice]::Service<SomeType> Some error message.')
+  def test_subclass_service_error(self):
+
+    class Error(errors.ServiceError):
+      SERVICE_TYPE = 'SomeType'
+
+    device = mock.MagicMock()
+    device.__repr__ = lambda _: '[MockDevice]'
+    exception = Error(device, 'Some error message.')
+    self.assertEqual(str(exception),
+                     '[MockDevice]::Service<SomeType> Some error message.')
 
 
 if __name__ == '__main__':
-    unittest.main()
+  unittest.main()

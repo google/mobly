@@ -20,46 +20,46 @@ import unittest
 
 
 class JsonRpcClientTestBase(unittest.TestCase):
-    """Base class for tests of JSONRPC clients.
+  """Base class for tests of JSONRPC clients.
 
   Contains infrastructure for mocking responses.
   """
 
-    MOCK_RESP = (
-        b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
-        b'"callback": null}')
-    MOCK_RESP_WITHOUT_CALLBACK = (
-        b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1}')
-    MOCK_RESP_TEMPLATE = (
-        '{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, '
-        '"callback": null}')
-    MOCK_RESP_UNKNOWN_STATUS = (
-        b'{"id": 0, "result": 123, "error": null, "status": 0, '
-        b'"callback": null}')
-    MOCK_RESP_WITH_CALLBACK = (
-        b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
-        b'"callback": "1-0"}')
-    MOCK_RESP_WITH_ERROR = b'{"id": 0, "error": 1, "status": 1, "uid": 1}'
-    MOCK_RESP_FLEXIABLE_RESULT_LENGTH = (
-        '{"id": 0, "result": "%s", "error": null, "status": 0, "callback": null}'
-    )
+  MOCK_RESP = (
+      b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
+      b'"callback": null}')
+  MOCK_RESP_WITHOUT_CALLBACK = (
+      b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1}')
+  MOCK_RESP_TEMPLATE = (
+      '{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, '
+      '"callback": null}')
+  MOCK_RESP_UNKNOWN_STATUS = (
+      b'{"id": 0, "result": 123, "error": null, "status": 0, '
+      b'"callback": null}')
+  MOCK_RESP_WITH_CALLBACK = (
+      b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
+      b'"callback": "1-0"}')
+  MOCK_RESP_WITH_ERROR = b'{"id": 0, "error": 1, "status": 1, "uid": 1}'
+  MOCK_RESP_FLEXIABLE_RESULT_LENGTH = (
+      '{"id": 0, "result": "%s", "error": null, "status": 0, "callback": null}')
 
-    class MockSocketFile(object):
-        def __init__(self, resp):
-            self.resp = resp
-            self.last_write = None
+  class MockSocketFile(object):
 
-        def write(self, msg):
-            self.last_write = msg
+    def __init__(self, resp):
+      self.resp = resp
+      self.last_write = None
 
-        def readline(self):
-            return self.resp
+    def write(self, msg):
+      self.last_write = msg
 
-        def flush(self):
-            pass
+    def readline(self):
+      return self.resp
 
-    def setup_mock_socket_file(self, mock_create_connection, resp=MOCK_RESP):
-        """Sets up a fake socket file from the mock connection.
+    def flush(self):
+      pass
+
+  def setup_mock_socket_file(self, mock_create_connection, resp=MOCK_RESP):
+    """Sets up a fake socket file from the mock connection.
 
     Args:
       mock_create_connection: The mock method for creating a method.
@@ -68,18 +68,18 @@ class JsonRpcClientTestBase(unittest.TestCase):
     Returns:
       The mock file that will be injected into the code.
     """
-        fake_file = self.MockSocketFile(resp)
-        fake_conn = mock.MagicMock()
-        fake_conn.makefile.return_value = fake_file
-        mock_create_connection.return_value = fake_conn
-        return fake_file
+    fake_file = self.MockSocketFile(resp)
+    fake_conn = mock.MagicMock()
+    fake_conn.makefile.return_value = fake_file
+    mock_create_connection.return_value = fake_conn
+    return fake_file
 
-    def generate_rpc_response(self, response_length=1024):
-        # TODO: Py2 deprecation
-        # .encode('utf-8') is for py2 compatibility, after py2 deprecation, it
-        # could be modified to byte('xxxxx', 'utf-8')
-        return bytes((self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH % ''.join(
-            random.choice(string.ascii_lowercase)
-            for i in range(response_length -
-                           len(self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH) + 2))
-                      ).encode('utf-8'))
+  def generate_rpc_response(self, response_length=1024):
+    # TODO: Py2 deprecation
+    # .encode('utf-8') is for py2 compatibility, after py2 deprecation, it
+    # could be modified to byte('xxxxx', 'utf-8')
+    return bytes((self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH % ''.join(
+        random.choice(string.ascii_lowercase)
+        for i in range(response_length -
+                       len(self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH) + 2))
+                 ).encode('utf-8'))

@@ -18,10 +18,10 @@ from tests.lib import integration_test
 
 
 class Integration2Test(integration_test.IntegrationTest):
-    """Same as the IntegrationTest class, created this so we have two
+  """Same as the IntegrationTest class, created this so we have two
   'different' test classes to use in unit tests.
   """
 
 
 if __name__ == "__main__":
-    test_runner.main()
+  test_runner.main()

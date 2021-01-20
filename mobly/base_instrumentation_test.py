@@ -691,11 +691,11 @@ class InstrumentationTestMixin(object):
       completed executing.
     """
     if previous_block:
-      previously_timing_block = (previous_block.status_code in
-                                 _InstrumentationStatusCodeCategories.TIMING)
-      currently_new_block = (
-          current_block.status_code == _InstrumentationStatusCodes.START or
-          new_state == _InstrumentationBlockStates.RESULT)
+      previously_timing_block = (previous_block.status_code
+                                 in _InstrumentationStatusCodeCategories.TIMING)
+      currently_new_block = (current_block.status_code
+                             == _InstrumentationStatusCodes.START or
+                             new_state == _InstrumentationBlockStates.RESULT)
       return all([previously_timing_block, currently_new_block])
     else:
       return False

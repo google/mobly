@@ -32,28 +32,28 @@ LINUX_MAX_FILENAME_LENGTH = 255
 WINDOWS_MAX_FILENAME_LENGTH = 237
 WINDOWS_RESERVED_CHARACTERS_REPLACEMENTS = {
     '<':
-    '-',
+        '-',
     '>':
-    '-',
+        '-',
     ':':
-    '-',
+        '-',
     '"':
-    '_',
+        '_',
     '/':
-    '_',
+        '_',
     '\\':
-    '_',
+        '_',
     '|':
-    ',',
+        ',',
     '?':
-    ',',
+        ',',
     '*':
-    ',',
+        ',',
     # Integer zero (i.e. NUL) is not a valid character.
     # While integers 1-31 are also usually valid, they aren't sanitized because
     # they are situationally valid.
     chr(0):
-    '0',
+        '0',
 }
 # Note, although the documentation does not specify as such, COM0 and LPT0 are
 # also invalid/reserved filenames.

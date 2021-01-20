@@ -22,20 +22,21 @@ from tests.lib import mock_controller
 
 
 class IntegrationTest(base_test.BaseTestClass):
-    def setup_class(self):
-        self.register_controller(mock_controller)
 
-    def test_hello_world(self):
-        asserts.assert_equal(self.user_params['icecream'], 42)
-        asserts.assert_equal(self.user_params['extra_param'], 'haha')
-        logging.info('This is a bare minimal test to make sure the basic MOBLY'
-                     ' test flow works.')
-        asserts.explicit_pass(
-            'Hello World',
-            # Use a unicode string here to make sure the full log pipeline
-            # works with unicode.
-            extras=u'\u2022')
+  def setup_class(self):
+    self.register_controller(mock_controller)
+
+  def test_hello_world(self):
+    asserts.assert_equal(self.user_params['icecream'], 42)
+    asserts.assert_equal(self.user_params['extra_param'], 'haha')
+    logging.info('This is a bare minimal test to make sure the basic MOBLY'
+                 ' test flow works.')
+    asserts.explicit_pass(
+        'Hello World',
+        # Use a unicode string here to make sure the full log pipeline
+        # works with unicode.
+        extras=u'\u2022')
 
 
 if __name__ == '__main__':
-    test_runner.main()
+  test_runner.main()
