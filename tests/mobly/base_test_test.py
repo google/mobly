@@ -421,10 +421,10 @@ class BaseTestTest(unittest.TestCase):
     actual_record = bt_cls.results.error[0]
     self.assertEqual(actual_record.test_name, self.mock_test_name)
     self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
-    self.assertTrue('in setup_test\n    '
-                    'raise Exception(MSG_EXPECTED_EXCEPTION)\n'
-                    'Exception: This is an expected exception.\n' in
-                    actual_record.stacktrace)
+    self.assertIn(
+        'in setup_test\n    '
+        'raise Exception(MSG_EXPECTED_EXCEPTION)\n'
+        'Exception: This is an expected exception.\n', actual_record.stacktrace)
     self.assertIsNone(actual_record.extras)
     expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                         "Requested 1, Skipped 0")
