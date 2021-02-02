@@ -261,15 +261,10 @@ class ExceptionRecord(object):
     try:
       self.details = str(content)
     except UnicodeEncodeError:
-      if sys.version_info < (3, 0):
-        # If Py2 threw encode error, convert to unicode.
-        self.details = unicode(content)
-      else:
-        # We should never hit this in Py3, if this happens, record
-        # an encoded version of the content for users to handle.
-        logging.error('Unable to decode "%s" in Py3, encoding in utf-8.',
-                      content)
-        self.details = content.encode('utf-8')
+      # We should never hit this in Py3, But if this happens, record
+      # an encoded version of the content for users to handle.
+      logging.error('Unable to decode "%s" in Py3, encoding in utf-8.', content)
+      self.details = content.encode('utf-8')
 
   def to_dict(self):
     result = {}

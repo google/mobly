@@ -16,7 +16,6 @@ from builtins import str
 from builtins import bytes
 
 import mock
-import sys
 from future.tests.base import unittest
 
 from mobly.controllers.android_device_lib import adb
@@ -29,18 +28,6 @@ MOCK_PACKAGE_NAME = 'some.package.name'
 MOCK_MISSING_PACKAGE_NAME = 'not.installed'
 JSONRPC_BASE_CLASS = 'mobly.controllers.android_device_lib.jsonrpc_client_base.JsonRpcClientBase'
 MOCK_USER_ID = 0
-
-
-def get_print_function_name():
-  """Gets the name of the print function for mocking.
-
-  Returns:
-    A str representing the print function to mock.
-  """
-  if sys.version_info >= (3, 0):
-    return 'builtins.print'
-  else:
-    return '__builtin__.print'
 
 
 class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
@@ -461,7 +448,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
                                 'Unexpected EOF waiting for app to start'):
       client.start_app_and_connect()
 
-  @mock.patch(get_print_function_name())
+  @mock.patch('builtins.print')
   def test_help_rpc_when_printing_by_default(self, mock_print):
     client = self._make_client()
     mock_rpc = mock.MagicMock()
@@ -472,7 +459,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     self.assertEqual(None, result)
     mock_print.assert_called_once_with(mock_rpc.return_value)
 
-  @mock.patch(get_print_function_name())
+  @mock.patch('builtins.print')
   def test_help_rpc_when_not_printing(self, mock_print):
     client = self._make_client()
     mock_rpc = mock.MagicMock()

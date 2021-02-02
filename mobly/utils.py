@@ -26,7 +26,6 @@ import random
 import re
 import string
 import subprocess
-import sys
 import threading
 import time
 import traceback
@@ -298,15 +297,10 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
         exceptions.append(exc)
     if raise_on_exception and exceptions:
       error_messages = []
-      if sys.version_info < (3, 0):
-        for exception in exceptions:
-          error_messages.append(
-              unicode(exception.message, encoding='utf-8', errors='replace'))
-      else:
-        for exception in exceptions:
-          error_messages.append(''.join(
-              traceback.format_exception(exception.__class__, exception,
-                                         exception.__traceback__)))
+      for exception in exceptions:
+        error_messages.append(''.join(
+            traceback.format_exception(exception.__class__, exception,
+                                       exception.__traceback__)))
       raise RuntimeError('\n\n'.join(error_messages))
     return return_vals
 

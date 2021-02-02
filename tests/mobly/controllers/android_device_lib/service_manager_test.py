@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for Mobly's ServiceManager."""
+
+import importlib
 import mock
-import sys
 
 from future.tests.base import unittest
 
@@ -58,11 +59,7 @@ class ServiceManagerTest(unittest.TestCase):
 
   def setUp(self):
     # Reset hidden global `expects` state.
-    if sys.version_info < (3, 0):
-      reload(expects)
-    else:
-      import importlib
-      importlib.reload(expects)
+    importlib.reload(expects)
 
   def assert_recorded_one_error(self, message):
     self.assertEqual(expects.recorder.error_count, 1)
