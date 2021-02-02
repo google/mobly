@@ -236,12 +236,7 @@ class ExceptionRecord(object):
     # Record stacktrace of the exception.
     # This check cannot be based on try...except, which messes up
     # `exc_info`.
-    if hasattr(e, '__traceback__'):
-      exc_traceback = e.__traceback__
-    else:
-      # In py2, exception objects don't have built-in traceback, so we
-      # have to immediately retrieve stacktrace from `sys.exc_info`.
-      _, _, exc_traceback = sys.exc_info()
+    exc_traceback = e.__traceback__
     if exc_traceback:
       self.stacktrace = ''.join(
           traceback.format_exception(e.__class__, e, exc_traceback))
