@@ -13,9 +13,10 @@
 # limitations under the License.
 """Module for the BaseService."""
 
+import abc
 
-#TODO(xpconanfan): use `abc` after py2 deprecation.
-class BaseService(object):
+
+class BaseService(abc.ABC):
   """Base class of a Mobly AndroidDevice service.
 
   This class defines the interface for Mobly's AndroidDevice service.
@@ -52,18 +53,18 @@ class BaseService(object):
   @property
   def is_alive(self):
     """True if the service is active; False otherwise."""
-    raise NotImplementedError('"is_alive" is a required service property.')
+    pass
 
   def start(self):
     """Starts the service."""
-    raise NotImplementedError('"start" is a required service method.')
+    pass
 
   def stop(self):
     """Stops the service and cleans up all resources.
 
     This method should handle any error and not throw.
     """
-    raise NotImplementedError('"stop" is a required service method.')
+    pass
 
   def pause(self):
     """Pauses a service temporarily.

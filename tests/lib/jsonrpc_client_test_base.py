@@ -75,11 +75,8 @@ class JsonRpcClientTestBase(unittest.TestCase):
     return fake_file
 
   def generate_rpc_response(self, response_length=1024):
-    # TODO: Py2 deprecation
-    # .encode('utf-8') is for py2 compatibility, after py2 deprecation, it
-    # could be modified to byte('xxxxx', 'utf-8')
-    return bytes((self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH % ''.join(
-        random.choice(string.ascii_lowercase)
-        for i in range(response_length -
-                       len(self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH) + 2))
-                 ).encode('utf-8'))
+    length = response_length - len(self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH) + 2
+    chars = string.ascii_letters + string.digits
+    random_msg = ''.join(random.choice(chars) for i in range(length))
+    mock_response = self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH % random_msg
+    return bytes(mock_response, 'utf-8')
