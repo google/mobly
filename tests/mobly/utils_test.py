@@ -436,10 +436,11 @@ class UtilsTest(unittest.TestCase):
     self.assertEqual(utils.get_available_host_port(), MOCK_AVAILABLE_PORT)
     mock_list_occupied_adb_ports.assert_not_called()
 
+  @mock.patch(ADB_MODULE_PACKAGE_PATH + 'is_adb_available', return_value=True)
   @mock.patch(ADB_MODULE_PACKAGE_PATH + 'list_occupied_adb_ports',
               return_value=[MOCK_AVAILABLE_PORT])
   @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
-  def test_get_available_port_negative(self, mock_list_occupied_adb_ports,
+  def test_get_available_port_negative(self, mock_is_adb_available, mock_list_occupied_adb_ports,
                                        mock_pick_unused_port):
     with self.assertRaisesRegex(utils.Error, 'Failed to find.* retries'):
       utils.get_available_host_port()
