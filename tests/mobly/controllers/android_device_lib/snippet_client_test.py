@@ -172,7 +172,10 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
               'SnippetClient.disconnect')
   def test_snippet_stop_app_raises(self, mock_disconnect,
                                    mock_create_connection):
-    mock_disconnect.side_effect = Exception('ha')
+    # Explicitly making the second side_effect noop to avoid uncaught exception
+    # when `__del__` is called after the test is done, which triggers
+    # `disconnect`.
+    mock_disconnect.side_effect = [Exception('ha'), None]
     adb_proxy = mock.MagicMock()
     adb_proxy.shell.return_value = b'OK (0 tests)'
     client = self._make_client(adb_proxy)
