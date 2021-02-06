@@ -420,7 +420,7 @@ class UtilsTest(unittest.TestCase):
 
   @mock.patch('mobly.controllers.android_device_lib.adb.list_occupied_adb_ports'
              )
-  @mock.patch('portpicker.PickUnusedPort', return_value=MOCK_AVAILABLE_PORT)
+  @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
   def test_get_available_port_positive(self, mock_list_occupied_adb_ports,
                                        mock_pick_unused_port):
     self.assertEqual(utils.get_available_host_port(), MOCK_AVAILABLE_PORT)
@@ -428,7 +428,7 @@ class UtilsTest(unittest.TestCase):
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports',
       return_value=[MOCK_AVAILABLE_PORT])
-  @mock.patch('portpicker.PickUnusedPort', return_value=MOCK_AVAILABLE_PORT)
+  @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
   def test_get_available_port_negative(self, mock_list_occupied_adb_ports,
                                        mock_pick_unused_port):
     with self.assertRaisesRegex(utils.Error, 'Failed to find.* retries'):

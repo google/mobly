@@ -518,7 +518,7 @@ def get_available_host_port():
   # Only import adb module if needed.
   from mobly.controllers.android_device_lib import adb
   for _ in range(MAX_PORT_ALLOCATION_RETRY):
-    port = portpicker.PickUnusedPort()
+    port = portpicker.pick_unused_port()
     # Make sure adb is not using this port so we don't accidentally
     # interrupt ongoing runs by trying to bind to the port.
     if port not in adb.list_occupied_adb_ports():
