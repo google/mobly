@@ -159,7 +159,6 @@ class JsonRpcClientBase(abc.ABC):
     Raises:
       AppStartError: When the app was not able to be started.
     """
-    pass
 
   def stop_app(self):
     """Kills any running instance of the app.
