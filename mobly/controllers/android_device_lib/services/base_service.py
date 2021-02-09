@@ -53,18 +53,15 @@ class BaseService(abc.ABC):
   @property
   def is_alive(self):
     """True if the service is active; False otherwise."""
-    pass
 
   def start(self):
     """Starts the service."""
-    pass
 
   def stop(self):
     """Stops the service and cleans up all resources.
 
     This method should handle any error and not throw.
     """
-    pass
 
   def pause(self):
     """Pauses a service temporarily.

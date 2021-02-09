@@ -39,8 +39,6 @@ The JSON protocol expected by this module is:
   }
 """
 
-from builtins import str
-
 # When the Python library `socket.create_connection` call is made, it indirectly
 # calls `import encodings.idna` through the `socket.getaddrinfo` method.
 # However, this chain of function calls is apparently not thread-safe in
@@ -53,6 +51,7 @@ except ImportError:
   # encoding, so ignore import failures based on that.
   pass
 
+import abc
 import json
 import socket
 import sys
@@ -108,7 +107,7 @@ class JsonRpcCommand(object):
   CONTINUE = 'continue'
 
 
-class JsonRpcClientBase(object):
+class JsonRpcClientBase(abc.ABC):
   """Base class for jsonrpc clients that connect to remote servers.
 
   Connects to a remote device running a jsonrpc-compatible app. Before opening
@@ -160,14 +159,12 @@ class JsonRpcClientBase(object):
     Raises:
       AppStartError: When the app was not able to be started.
     """
-    raise NotImplementedError()
 
   def stop_app(self):
     """Kills any running instance of the app.
 
     Must be implemented by subclasses.
     """
-    raise NotImplementedError()
 
   def restore_app_connection(self, port=None):
     """Reconnects to the app after device USB was disconnected.
@@ -188,7 +185,6 @@ class JsonRpcClientBase(object):
       AppRestoreConnectionError: When the app was not able to be
       reconnected.
     """
-    raise NotImplementedError()
 
   def _start_event_client(self):
     """Starts a separate JsonRpc client to the same session for propagating
@@ -201,7 +197,6 @@ class JsonRpcClientBase(object):
       A JsonRpc Client object that connects to the same session as the
       one on which this function is called.
     """
-    raise NotImplementedError()
 
   # Rest of the client methods.
 
