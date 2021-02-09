@@ -40,7 +40,7 @@ from tests.lib import mock_instrumentation_test
 from tests.lib import multiple_subclasses_module
 
 MOCK_AVAILABLE_PORT = 5
-ADB_MODULE_PACKAGE_PATH = 'mobly.controllers.android_device_lib.adb.'
+ADB_MODULE_PACKAGE_NAME = 'mobly.controllers.android_device_lib.adb'
 
 
 class UtilsTest(unittest.TestCase):
@@ -419,16 +419,16 @@ class UtilsTest(unittest.TestCase):
     utils.create_dir(self.tmp_dir)
     self.assertTrue(os.path.exists(self.tmp_dir))
 
-  @mock.patch(ADB_MODULE_PACKAGE_PATH + 'is_adb_available', return_value=True)
-  @mock.patch(ADB_MODULE_PACKAGE_PATH + 'list_occupied_adb_ports')
+  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.is_adb_available', return_value=True)
+  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports')
   @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
   def test_get_available_port_positive(self, mock_is_adb_available,
                                        mock_list_occupied_adb_ports,
                                        mock_pick_unused_port):
     self.assertEqual(utils.get_available_host_port(), MOCK_AVAILABLE_PORT)
 
-  @mock.patch(ADB_MODULE_PACKAGE_PATH + 'is_adb_available', return_value=False)
-  @mock.patch(ADB_MODULE_PACKAGE_PATH + 'list_occupied_adb_ports')
+  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.is_adb_available', return_value=False)
+  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports')
   @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
   def test_get_available_port_positive_no_adb(self, mock_is_adb_available,
                                               mock_list_occupied_adb_ports,
@@ -436,16 +436,17 @@ class UtilsTest(unittest.TestCase):
     self.assertEqual(utils.get_available_host_port(), MOCK_AVAILABLE_PORT)
     mock_list_occupied_adb_ports.assert_not_called()
 
-  @mock.patch(ADB_MODULE_PACKAGE_PATH + 'is_adb_available', return_value=True)
-  @mock.patch(ADB_MODULE_PACKAGE_PATH + 'list_occupied_adb_ports',
+  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.is_adb_available', return_value=True)
+  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports',
               return_value=[MOCK_AVAILABLE_PORT])
   @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
-  def test_get_available_port_negative(self, mock_is_adb_available, mock_list_occupied_adb_ports,
+  def test_get_available_port_negative(self, mock_is_adb_available,
+                                       mock_list_occupied_adb_ports,
                                        mock_pick_unused_port):
     with self.assertRaisesRegex(utils.Error, 'Failed to find.* retries'):
       utils.get_available_host_port()
 
-  @mock.patch(ADB_MODULE_PACKAGE_PATH + 'list_occupied_adb_ports')
+  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports')
   def test_get_available_port_returns_free_port(self,
                                                 mock_list_occupied_adb_ports):
     """Verifies logic to pick a free port on the host.
