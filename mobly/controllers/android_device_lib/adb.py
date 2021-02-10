@@ -93,6 +93,19 @@ class AdbTimeoutError(Error):
         utils.cli_cmd_to_string(self.cmd), self.timeout)
 
 
+def is_adb_available():
+  """Checks if adb is available as a command line tool.
+
+  Returns:
+    True if adb binary is available in console, False otherwise.
+  """
+  ret, out, err = utils.run_command('which adb', shell=True)
+  clean_out = out.decode('utf-8').strip()
+  if clean_out:
+    return True
+  return False
+
+
 def list_occupied_adb_ports():
   """Lists all the host ports occupied by adb forward.
 

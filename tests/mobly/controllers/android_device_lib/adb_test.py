@@ -86,6 +86,17 @@ class AdbTest(unittest.TestCase):
     return mock_popen
 
   @mock.patch('mobly.utils.run_command')
+  def test_is_adb_available(self, mock_run_command):
+    mock_run_command.return_value = (0, '/usr/local/bin/adb\n'.encode('utf-8'),
+                                     ''.encode('utf-8'))
+    self.assertTrue(adb.is_adb_available())
+
+  @mock.patch('mobly.utils.run_command')
+  def test_is_adb_available_negative(self, mock_run_command):
+    mock_run_command.return_value = (0, ''.encode('utf-8'), ''.encode('utf-8'))
+    self.assertFalse(adb.is_adb_available())
+
+  @mock.patch('mobly.utils.run_command')
   def test_exec_cmd_no_timeout_success(self, mock_run_command):
     mock_run_command.return_value = (0, MOCK_DEFAULT_STDOUT.encode('utf-8'),
                                      MOCK_DEFAULT_STDERR.encode('utf-8'))

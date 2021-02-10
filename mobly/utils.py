@@ -517,12 +517,15 @@ def get_available_host_port():
   """
   # Only import adb module if needed.
   from mobly.controllers.android_device_lib import adb
+  port = portpicker.pick_unused_port()
+  if not adb.is_adb_available():
+    return port
   for _ in range(MAX_PORT_ALLOCATION_RETRY):
-    port = portpicker.PickUnusedPort()
     # Make sure adb is not using this port so we don't accidentally
     # interrupt ongoing runs by trying to bind to the port.
     if port not in adb.list_occupied_adb_ports():
       return port
+    port = portpicker.pick_unused_port()
   raise Error('Failed to find available port after {} retries'.format(
       MAX_PORT_ALLOCATION_RETRY))
 
