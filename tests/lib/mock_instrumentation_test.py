@@ -32,7 +32,7 @@ class MockInstrumentationTest(
     mock_test_run_configs.log_path = tmp_dir
     mock_test_run_configs.user_params = user_params
     mock_test_run_configs.reporter = mock.MagicMock()
-    super(MockInstrumentationTest, self).__init__(mock_test_run_configs)
+    super().__init__(mock_test_run_configs)
 
   def run_mock_instrumentation_test(self, instrumentation_output, prefix):
 

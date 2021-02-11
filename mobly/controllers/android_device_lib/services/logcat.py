@@ -57,7 +57,7 @@ class Logcat(base_service.BaseService):
   OUTPUT_FILE_TYPE = 'logcat'
 
   def __init__(self, android_device, configs=None):
-    super(Logcat, self).__init__(android_device, configs)
+    super().__init__(android_device, configs)
     self._ad = android_device
     self._adb_logcat_process = None
     self._adb_logcat_file_obj = None

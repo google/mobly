@@ -145,7 +145,7 @@ class BaseTestTest(unittest.TestCase):
     class MockBaseTest(base_test.BaseTestClass):
 
       def __init__(self, controllers):
-        super(MockBaseTest, self).__init__(controllers)
+        super().__init__(controllers)
         self.tests = ("test_something",)
 
       def test_something(self):
@@ -165,7 +165,7 @@ class BaseTestTest(unittest.TestCase):
     class MockBaseTest(base_test.BaseTestClass):
 
       def __init__(self, controllers):
-        super(MockBaseTest, self).__init__(controllers)
+        super().__init__(controllers)
         self.tests = ("not_a_test_something",)
 
       def not_a_test_something(self):
@@ -186,7 +186,7 @@ class BaseTestTest(unittest.TestCase):
     class MockBaseTest(base_test.BaseTestClass):
 
       def __init__(self, controllers):
-        super(MockBaseTest, self).__init__(controllers)
+        super().__init__(controllers)
         self.tests = ("test_never",)
 
       def test_something(self):
@@ -206,7 +206,7 @@ class BaseTestTest(unittest.TestCase):
     class MockBaseTest(base_test.BaseTestClass):
 
       def __init__(self, controllers):
-        super(MockBaseTest, self).__init__(controllers)
+        super().__init__(controllers)
         self.tests = ("not_a_test_something",)
 
       def not_a_test_something(self):
@@ -257,7 +257,7 @@ class BaseTestTest(unittest.TestCase):
     class MockBaseTest(base_test.BaseTestClass):
 
       def __init__(self, controllers):
-        super(MockBaseTest, self).__init__(controllers)
+        super().__init__(controllers)
         self.test_noncallable = None
 
       @TestDecorator
