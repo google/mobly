@@ -13,8 +13,6 @@
 # limitations under the License.
 """JSON RPC interface to Mobly Snippet Lib."""
 
-from __future__ import print_function
-
 import re
 import time
 
