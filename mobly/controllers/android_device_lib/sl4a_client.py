@@ -48,7 +48,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     Args:
       ad: AndroidDevice object.
     """
-    super(Sl4aClient, self).__init__(app_name=_APP_NAME, ad=ad)
+    super().__init__(app_name=_APP_NAME, ad=ad)
     self._ad = ad
     self.ed = None
     self._adb = ad.adb

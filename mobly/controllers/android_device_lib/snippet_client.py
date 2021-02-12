@@ -84,7 +84,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
         defined.
       ad: (AndroidDevice) the device object associated with this client.
     """
-    super(SnippetClient, self).__init__(app_name=package, ad=ad)
+    super().__init__(app_name=package, ad=ad)
     self.package = package
     self._ad = ad
     self._adb = ad.adb

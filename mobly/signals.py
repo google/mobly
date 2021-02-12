@@ -32,7 +32,7 @@ class TestSignal(Exception):
   """
 
   def __init__(self, details, extras=None):
-    super(TestSignal, self).__init__(details)
+    super().__init__(details)
     self.details = details
     try:
       json.dumps(extras)
