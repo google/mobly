@@ -33,7 +33,7 @@ class DeviceError(Error):
     if isinstance(msg, str) and msg.startswith(HIERARCHY_TOKEN):
       template = '%s%s'
     new_msg = template % (repr(ad), msg)
-    super(DeviceError, self).__init__(new_msg)
+    super().__init__(new_msg)
 
 
 class ServiceError(DeviceError):
@@ -46,4 +46,4 @@ class ServiceError(DeviceError):
 
   def __init__(self, device, msg):
     new_msg = '%sService<%s> %s' % (HIERARCHY_TOKEN, self.SERVICE_TYPE, msg)
-    super(ServiceError, self).__init__(device, new_msg)
+    super().__init__(device, new_msg)

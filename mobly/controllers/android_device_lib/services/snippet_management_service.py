@@ -36,7 +36,7 @@ class SnippetManagementService(base_service.BaseService):
     self._device = device
     self._is_alive = False
     self._snippet_clients = {}
-    super(SnippetManagementService, self).__init__(device)
+    super().__init__(device)
 
   @property
   def is_alive(self):
