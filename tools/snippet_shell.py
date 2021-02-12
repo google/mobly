@@ -24,7 +24,6 @@ $ snippet_shell com.my.package.snippets
 >>> s.mySnippet('example')
 u'You said: example'
 """
-from __future__ import print_function
 
 import argparse
 import logging

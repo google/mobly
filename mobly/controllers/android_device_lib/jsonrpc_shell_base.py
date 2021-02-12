@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Shared library for frontends to jsonrpc servers."""
-from __future__ import print_function
 
 import code
 import os
