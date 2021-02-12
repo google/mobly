@@ -26,8 +26,7 @@ from tests.lib import jsonrpc_client_test_base
 class FakeRpcClient(jsonrpc_client_base.JsonRpcClientBase):
 
   def __init__(self):
-    super(FakeRpcClient, self).__init__(app_name='FakeRpcClient',
-                                        ad=mock.Mock())
+    super().__init__(app_name='FakeRpcClient', ad=mock.Mock())
 
 
 class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):

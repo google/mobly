@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent import futures
 import queue
 import re
 import threading
@@ -129,7 +129,7 @@ class EventDispatcher:
     """
     if not self.started:
       self.started = True
-      self.executor = ThreadPoolExecutor(max_workers=32)
+      self.executor = futures.ThreadPoolExecutor(max_workers=32)
       self.poller = self.executor.submit(self.poll_events)
     else:
       raise IllegalStateError("Dispatcher is already started.")
