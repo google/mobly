@@ -39,34 +39,34 @@ MAX_FILENAME_LEN = 255
 MAX_PORT_ALLOCATION_RETRY = 50
 
 ascii_letters_and_digits = string.ascii_letters + string.digits
-valid_filename_chars = "-_." + ascii_letters_and_digits
+valid_filename_chars = f'-_.{ascii_letters_and_digits}'
 
 GMT_to_olson = {
-    "GMT-9": "America/Anchorage",
-    "GMT-8": "US/Pacific",
-    "GMT-7": "US/Mountain",
-    "GMT-6": "US/Central",
-    "GMT-5": "US/Eastern",
-    "GMT-4": "America/Barbados",
-    "GMT-3": "America/Buenos_Aires",
-    "GMT-2": "Atlantic/South_Georgia",
-    "GMT-1": "Atlantic/Azores",
-    "GMT+0": "Africa/Casablanca",
-    "GMT+1": "Europe/Amsterdam",
-    "GMT+2": "Europe/Athens",
-    "GMT+3": "Europe/Moscow",
-    "GMT+4": "Asia/Baku",
-    "GMT+5": "Asia/Oral",
-    "GMT+6": "Asia/Almaty",
-    "GMT+7": "Asia/Bangkok",
-    "GMT+8": "Asia/Hong_Kong",
-    "GMT+9": "Asia/Tokyo",
-    "GMT+10": "Pacific/Guam",
-    "GMT+11": "Pacific/Noumea",
-    "GMT+12": "Pacific/Fiji",
-    "GMT+13": "Pacific/Tongatapu",
-    "GMT-11": "Pacific/Midway",
-    "GMT-10": "Pacific/Honolulu"
+    'GMT-9': 'America/Anchorage',
+    'GMT-8': 'US/Pacific',
+    'GMT-7': 'US/Mountain',
+    'GMT-6': 'US/Central',
+    'GMT-5': 'US/Eastern',
+    'GMT-4': 'America/Barbados',
+    'GMT-3': 'America/Buenos_Aires',
+    'GMT-2': 'Atlantic/South_Georgia',
+    'GMT-1': 'Atlantic/Azores',
+    'GMT+0': 'Africa/Casablanca',
+    'GMT+1': 'Europe/Amsterdam',
+    'GMT+2': 'Europe/Athens',
+    'GMT+3': 'Europe/Moscow',
+    'GMT+4': 'Asia/Baku',
+    'GMT+5': 'Asia/Oral',
+    'GMT+6': 'Asia/Almaty',
+    'GMT+7': 'Asia/Bangkok',
+    'GMT+8': 'Asia/Hong_Kong',
+    'GMT+9': 'Asia/Tokyo',
+    'GMT+10': 'Pacific/Guam',
+    'GMT+11': 'Pacific/Noumea',
+    'GMT+12': 'Pacific/Fiji',
+    'GMT+13': 'Pacific/Tongatapu',
+    'GMT-11': 'Pacific/Midway',
+    'GMT-10': 'Pacific/Honolulu'
 }
 
 
@@ -141,7 +141,7 @@ def get_current_human_time():
   Returns:
     The current time stamp in Month-Day-Year Hour:Min:Sec format.
   """
-  return time.strftime("%m-%d-%Y %H:%M:%S ")
+  return time.strftime('%m-%d-%Y %H:%M:%S ')
 
 
 def epoch_to_human_time(epoch_time):
@@ -160,7 +160,7 @@ def epoch_to_human_time(epoch_time):
   if isinstance(epoch_time, int):
     try:
       d = datetime.datetime.fromtimestamp(epoch_time / 1000)
-      return d.strftime("%m-%d-%Y %H:%M:%S ")
+      return d.strftime('%m-%d-%Y %H:%M:%S ')
     except ValueError:
       return None
 
@@ -173,11 +173,10 @@ def get_timezone_olson_id():
     timezone.
   """
   tzoffset = int(time.timezone / 3600)
-  gmt = None
   if tzoffset <= 0:
-    gmt = "GMT+{}".format(-tzoffset)
+    gmt = f'GMT+{-tzoffset}'
   else:
-    gmt = "GMT-{}".format(tzoffset)
+    gmt = f'GMT-{tzoffset}'
   return GMT_to_olson[gmt]
 
 
@@ -216,7 +215,7 @@ def load_file_to_base64_str(f_path):
   path = abs_path(f_path)
   with io.open(path, 'rb') as f:
     f_bytes = f.read()
-    base64_str = base64.b64encode(f_bytes).decode("utf-8")
+    base64_str = base64.b64encode(f_bytes).decode('utf-8')
     return base64_str
 
 
@@ -291,8 +290,8 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
       try:
         return_vals.append(future.result())
       except Exception as exc:
-        logging.exception("{} generated an exception: {}".format(
-            params, traceback.format_exc()))
+        logging.exception('%s generated an exception: %s', params,
+                          traceback.format_exc())
         return_vals.append(exc)
         exceptions.append(exc)
     if raise_on_exception and exceptions:
