@@ -178,9 +178,9 @@ class Logcat(base_service.BaseService):
     exist.
     """
     if not self._adb_logcat_file_obj:
-      start_time = time.time()
+      deadline = time.monotonic() + CREATE_LOGCAT_FILE_TIMEOUT_SEC
       while not os.path.exists(self.adb_logcat_file_path):
-        if time.time() > start_time + CREATE_LOGCAT_FILE_TIMEOUT_SEC:
+        if time.monotonic() > deadline:
           raise Error(self._ad,
                       'Timeout while waiting for logcat file to be created.')
         time.sleep(1)

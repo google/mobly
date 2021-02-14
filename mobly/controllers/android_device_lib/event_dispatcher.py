@@ -225,7 +225,7 @@ class EventDispatcher:
       queue.Empty: Raised if no event that satisfies the predicate was
         found before time out.
     """
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
 
     while True:
       event = None
@@ -237,7 +237,7 @@ class EventDispatcher:
       if event and predicate(event, *args, **kwargs):
         return event
 
-      if time.time() > deadline:
+      if time.monotonic() > deadline:
         raise queue.Empty('Timeout after {}s waiting for event: {}'.format(
             timeout, event_name))
 
@@ -267,11 +267,11 @@ class EventDispatcher:
     """
     if not self.started:
       raise IllegalStateError("Dispatcher needs to be started before popping.")
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
     while True:
       #TODO: fix the sleep loop
       results = self._match_and_pop(regex_pattern)
-      if len(results) != 0 or time.time() > deadline:
+      if len(results) != 0 or time.monotonic() > deadline:
         break
       time.sleep(1)
     if len(results) == 0:
