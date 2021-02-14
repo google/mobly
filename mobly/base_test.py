@@ -19,8 +19,7 @@ import functools
 import inspect
 import logging
 import os
-
-from future.utils import raise_with_traceback
+import sys
 
 from mobly import controller_manager
 from mobly import expects
@@ -585,7 +584,8 @@ class BaseTestClass(object):
         try:
           self._setup_test(test_name)
         except signals.TestFailure as e:
-          raise_with_traceback(signals.TestError(e.details, e.extras))
+          _, _, traceback = sys.exc_info()
+          raise signals.TestError(e.details, e.extras).with_traceback(traceback)
         test_method()
       except (signals.TestPass, signals.TestAbortSignal):
         raise
