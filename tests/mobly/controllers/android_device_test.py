@@ -1252,7 +1252,7 @@ class AndroidDeviceTest(unittest.TestCase):
                               serial=1), False, False, False, False
       ])
   @mock.patch('time.sleep', return_value=None)
-  @mock.patch('time.time', side_effect=[0, 5, 10, 15, 20, 25, 30])
+  @mock.patch('time.monotonic', side_effect=[0, 5, 10, 15, 20, 25, 30])
   def test_AndroidDevice_wait_for_completion_never_boot(self, MockTime,
                                                         MockSleep,
                                                         MockIsBootCompleted,
