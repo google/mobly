@@ -156,7 +156,7 @@ def _load_config_file(path):
     return conf
 
 
-class TestRunConfig(object):
+class TestRunConfig:
   """The data class that holds all the information needed for a test run.
 
   Attributes:

@@ -104,7 +104,7 @@ class ServiceManagerTest(unittest.TestCase):
 
   def test_register_wrong_subclass_type(self):
 
-    class MyClass(object):
+    class MyClass:
       pass
 
     manager = service_manager.ServiceManager(mock.MagicMock())

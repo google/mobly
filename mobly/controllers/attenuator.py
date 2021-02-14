@@ -97,7 +97,7 @@ def _validate_config(config):
       raise Error("Required key %s missing from config %s", (key, config))
 
 
-class AttenuatorPath(object):
+class AttenuatorPath:
   """A convenience class that allows users to control each attenuator path
     separately as different objects, as opposed to passing in an index number
     to the functions of an attenuator device object.

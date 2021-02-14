@@ -30,7 +30,7 @@ class Error(errors.ServiceError):
   SERVICE_TYPE = 'Logcat'
 
 
-class Config(object):
+class Config:
   """Config object for logcat service.
 
   Attributes:

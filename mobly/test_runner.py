@@ -174,7 +174,7 @@ def _print_test_names(test_class):
     print(name)
 
 
-class TestRunner(object):
+class TestRunner:
   """The class that instantiates test classes, executes tests, and
   report results.
 
@@ -187,7 +187,7 @@ class TestRunner(object):
       this test run.
   """
 
-  class _TestRunInfo(object):
+  class _TestRunInfo:
     """Identifies one test class to run, which tests to run, and config to
     run it with.
     """

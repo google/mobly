@@ -22,7 +22,7 @@ from mobly import signals
 from mobly import utils
 
 
-class _InstrumentationStructurePrefixes(object):
+class _InstrumentationStructurePrefixes:
   """Class containing prefixes that structure insturmentation output.
 
   Android instrumentation generally follows the following format:
@@ -63,7 +63,7 @@ class _InstrumentationStructurePrefixes(object):
   FAILED = 'INSTRUMENTATION_FAILED:'
 
 
-class _InstrumentationKnownStatusKeys(object):
+class _InstrumentationKnownStatusKeys:
   """Commonly used keys used in instrumentation output for listing
   instrumentation test method result properties.
 
@@ -96,7 +96,7 @@ class _InstrumentationKnownStatusKeys(object):
   STREAM = 'stream'
 
 
-class _InstrumentationStatusCodes(object):
+class _InstrumentationStatusCodes:
   """A mapping of instrumentation status codes to test method results.
 
   When instrumentation runs, at various points output is created in a series
@@ -135,7 +135,7 @@ class _InstrumentationStatusCodes(object):
   ASSUMPTION_FAILURE = '-4'
 
 
-class _InstrumentationStatusCodeCategories(object):
+class _InstrumentationStatusCodeCategories:
   """A mapping of instrumentation test method results to categories.
 
   Aside from the TIMING category, these categories roughly map to Mobly
@@ -160,7 +160,7 @@ class _InstrumentationStatusCodeCategories(object):
   ]
 
 
-class _InstrumentationKnownResultKeys(object):
+class _InstrumentationKnownResultKeys:
   """Commonly used keys for outputting instrumentation errors.
 
   When instrumentation finishes running all of the instrumentation test
@@ -192,7 +192,7 @@ class _InstrumentationKnownResultKeys(object):
   SHORTMSG = 'shortMsg'
 
 
-class _InstrumentationResultSignals(object):
+class _InstrumentationResultSignals:
   """Instrumenttion result block strings for signalling run completion.
 
   The final section of the instrumentation output generally follows this
@@ -242,7 +242,7 @@ class _InstrumentationBlockStates(Enum):
   RESULT = 2
 
 
-class _InstrumentationBlock(object):
+class _InstrumentationBlock:
   """Container class for parsed instrumentation output for instrumentation
   test methods.
 
@@ -465,7 +465,7 @@ class _InstrumentationBlock(object):
       return next_block
 
 
-class _InstrumentationBlockFormatter(object):
+class _InstrumentationBlockFormatter:
   """Takes an instrumentation block and converts it into a Mobly test
   result.
   """
@@ -651,7 +651,7 @@ class _InstrumentationBlockFormatter(object):
       raise signals.TestError(details=error_message, extras=extras)
 
 
-class InstrumentationTestMixin(object):
+class InstrumentationTestMixin:
   """A mixin for Mobly test classes to inherit from for instrumentation tests.
 
   This class should be used in a subclass of both BaseTestClass and this class

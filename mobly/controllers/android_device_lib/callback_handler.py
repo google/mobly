@@ -32,7 +32,7 @@ class TimeoutError(Error):
   pass
 
 
-class CallbackHandler(object):
+class CallbackHandler:
   """The class used to handle a specific group of callback events.
 
   All the events handled by a CallbackHandler are originally triggered by one

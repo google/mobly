@@ -49,7 +49,7 @@ def verify_controller_module(module):
           (attr, module.__name__))
 
 
-class ControllerManager(object):
+class ControllerManager:
   """Manages the controller objects for Mobly tests.
 
   This manages the life cycles and info retrieval of all controller objects
