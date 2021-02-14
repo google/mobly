@@ -24,7 +24,7 @@ import subprocess
 import tempfile
 import threading
 import time
-from future.tests.base import unittest
+import unittest
 
 import portpicker
 import psutil

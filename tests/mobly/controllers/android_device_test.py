@@ -21,9 +21,8 @@ import os
 import shutil
 import sys
 import tempfile
+import unittest
 import yaml
-
-from future.tests.base import unittest
 
 from mobly import runtime_test_info
 from mobly.controllers import android_device
