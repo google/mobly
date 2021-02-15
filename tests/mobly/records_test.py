@@ -21,9 +21,8 @@ import os
 import shutil
 import tempfile
 import threading
+import unittest
 import yaml
-
-from future.tests.base import unittest
 
 from mobly import records
 from mobly import signals
