@@ -173,7 +173,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
                              user=self._get_user_command_string(),
                              snippet_package=self.package)
-    start_time = time.monotonic()
+    start_time = time.perf_counter()
     self._proc = self._do_start_app(cmd)
 
     # Check protocol version and get the device port
@@ -196,7 +196,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     # Yaaay! We're done!
     self.log.debug('Snippet %s started after %.1fs on host port %s',
                    self.package,
-                   time.monotonic() - start_time, self.host_port)
+                   time.perf_counter() - start_time, self.host_port)
 
   def restore_app_connection(self, port=None):
     """Restores the app after device got reconnected.

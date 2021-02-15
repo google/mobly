@@ -1046,10 +1046,10 @@ class AndroidDevice:
       timeout: float, the number of seconds to wait before timing out.
         If not specified, no timeout takes effect.
     """
-    deadline = time.monotonic() + timeout
+    deadline = time.perf_counter() + timeout
 
     self.adb.wait_for_device(timeout=timeout)
-    while time.monotonic() < deadline:
+    while time.perf_counter() < deadline:
       try:
         if self.is_boot_completed():
           return

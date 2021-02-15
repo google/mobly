@@ -130,10 +130,10 @@ class CallbackHandler:
       TimeoutError: raised if no event that satisfies the predicate is
         received after timeout seconds.
     """
-    deadline = time.monotonic() + timeout
-    while time.monotonic() <= deadline:
+    deadline = time.perf_counter() + timeout
+    while time.perf_counter() <= deadline:
       # Calculate the max timeout for the next event rpc call.
-      rpc_timeout = deadline - time.monotonic()
+      rpc_timeout = deadline - time.perf_counter()
       if rpc_timeout < 0:
         break
       # A single RPC call cannot exceed MAX_TIMEOUT.

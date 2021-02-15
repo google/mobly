@@ -132,9 +132,9 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
 
   def _retry_connect(self):
     self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
-    expiration_time = time.monotonic() + _APP_START_WAIT_TIME
+    expiration_time = time.perf_counter() + _APP_START_WAIT_TIME
     started = False
-    while time.monotonic() < expiration_time:
+    while time.perf_counter() < expiration_time:
       self.log.debug('Attempting to start %s.', self.app_name)
       try:
         self.connect()
