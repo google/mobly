@@ -242,7 +242,7 @@ class BaseTestTest(unittest.TestCase):
     mock_decorated = mock.MagicMock()
     mock_undecorated = mock.MagicMock()
 
-    class TestDecorator(object):
+    class TestDecorator:
 
       def __init__(self, func):
         self.func = func

@@ -27,7 +27,7 @@ class Error(errors.DeviceError):
   """Root error type for this module."""
 
 
-class ServiceManager(object):
+class ServiceManager:
   """Manager for services of AndroidDevice.
 
   A service is a long running process that involves an Android device, like

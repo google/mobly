@@ -45,7 +45,7 @@ INSTRUMENTATION_CODE: -1
 """
 
 
-class InstrumentationResult(object):
+class InstrumentationResult:
 
   def __init__(self):
     self.error = None

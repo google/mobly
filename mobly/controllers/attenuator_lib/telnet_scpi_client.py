@@ -26,7 +26,7 @@ def _ascii_string(uc_string):
   return str(uc_string).encode('ASCII')
 
 
-class TelnetScpiClient(object):
+class TelnetScpiClient:
   """This is an internal helper class for Telnet+SCPI command-based
     instruments. It should only be used by those implemention control libraries
     and not by any user code directly.

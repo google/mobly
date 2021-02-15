@@ -24,7 +24,7 @@ Here is a dummy service example:
 `my_service.py`
 
 ```python
-class Configs(object):
+class Configs:
   def __init__(self, secret=None):
     self.secret = secret
 

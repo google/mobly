@@ -253,7 +253,7 @@ def explicit_pass(msg, extras=None):
   raise signals.TestPass(msg, extras)
 
 
-class _AssertRaisesContext(object):
+class _AssertRaisesContext:
   """A context manager used to implement TestCase.assertRaises* methods."""
 
   def __init__(self, expected, expected_regexp=None, extras=None):

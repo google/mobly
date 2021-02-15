@@ -39,7 +39,7 @@ def get_info(objs):
   return infos
 
 
-class MagicDevice(object):
+class MagicDevice:
 
   def __init__(self, config):
     self.magic = config

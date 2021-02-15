@@ -96,7 +96,7 @@ class MonsoonError(mobly.signals.ControllerError):
   """Raised for exceptions encountered in monsoon lib."""
 
 
-class MonsoonProxy(object):
+class MonsoonProxy:
   """Class that directly talks to monsoon over serial.
 
     Provides a simple class to use the power meter, e.g.
@@ -435,7 +435,7 @@ class MonsoonProxy(object):
     #     logging.info("dropped >%d bytes" % flushed)
 
 
-class MonsoonData(object):
+class MonsoonData:
   """A class for reporting power measurement data from monsoon.
 
     Data means the measured current value in Amps.
@@ -653,9 +653,8 @@ class MonsoonData(object):
     return self._header()
 
 
-class Monsoon(object):
-  """The wrapper class for test scripts to interact with monsoon.
-    """
+class Monsoon:
+  """The wrapper class for test scripts to interact with monsoon."""
 
   def __init__(self, *args, **kwargs):
     serial = kwargs["serial"]
