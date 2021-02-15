@@ -18,8 +18,7 @@ from setuptools.command import test
 import sys
 
 install_requires = [
-    'future', 'portpicker', 'psutil>=5.4.4', 'pyserial', 'pyyaml',
-    'timeout_decorator'
+    'portpicker', 'psutil>=5.4.4', 'pyserial', 'pyyaml', 'timeout_decorator'
 ]
 
 if platform.system() == 'Windows':
