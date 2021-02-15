@@ -48,7 +48,7 @@ class Error(Exception):
   """Raised for exceptions that occurred in BaseTestClass."""
 
 
-class BaseTestClass(object):
+class BaseTestClass:
   """Base class for all test classes to inherit from.
 
   This class gets all the controller objects from test_runner and executes

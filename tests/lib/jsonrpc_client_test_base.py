@@ -43,7 +43,7 @@ class JsonRpcClientTestBase(unittest.TestCase):
   MOCK_RESP_FLEXIABLE_RESULT_LENGTH = (
       '{"id": 0, "result": "%s", "error": null, "status": 0, "callback": null}')
 
-  class MockSocketFile(object):
+  class MockSocketFile:
 
     def __init__(self, resp):
       self.resp = resp

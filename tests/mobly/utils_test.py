@@ -502,7 +502,7 @@ class UtilsTest(unittest.TestCase):
 
   def test_get_settable_properties(self):
 
-    class SomeClass(object):
+    class SomeClass:
       regular_attr = 'regular_attr'
       _foo = 'foo'
       _bar = 'bar'

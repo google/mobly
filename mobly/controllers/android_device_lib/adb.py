@@ -128,7 +128,7 @@ def list_occupied_adb_ports():
   return used_ports
 
 
-class AdbProxy(object):
+class AdbProxy:
   """Proxy class for ADB.
 
   For syntactic reasons, the '-' in adb commands need to be replaced with

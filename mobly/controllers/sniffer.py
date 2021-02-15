@@ -91,7 +91,7 @@ class InvalidOperationError(SnifferError):
   pass
 
 
-class Sniffer(object):
+class Sniffer:
   """This class defines an object representing a sniffer.
 
     The object defines the generic behavior of sniffers - irrespective of how
@@ -268,7 +268,7 @@ class Sniffer(object):
     raise NotImplementedError("Base class should not be called directly!")
 
 
-class ActiveCaptureContext(object):
+class ActiveCaptureContext:
   """This class defines an object representing an active sniffer capture.
 
     The object is returned by a Sniffer.start_capture() command and terminates

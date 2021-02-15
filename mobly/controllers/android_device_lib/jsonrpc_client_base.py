@@ -97,7 +97,7 @@ class ProtocolError(Error):
   MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
 
 
-class JsonRpcCommand(object):
+class JsonRpcCommand:
   """Commands that can be invoked on all jsonrpc clients.
 
   INIT: Initializes a new session.

@@ -28,7 +28,7 @@ def from_dict(event_dict):
                       data=event_dict['data'])
 
 
-class SnippetEvent(object):
+class SnippetEvent:
   """The class that represents callback events for mobly snippet library.
 
   Attributes:

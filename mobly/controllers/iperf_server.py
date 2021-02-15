@@ -41,7 +41,7 @@ def destroy(objs):
       pass
 
 
-class IPerfResult(object):
+class IPerfResult:
 
   def __init__(self, result_path):
     try:

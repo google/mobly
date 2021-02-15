@@ -99,7 +99,7 @@ class Error(Exception):
   """Raised for errors in records."""
 
 
-class TestSummaryWriter(object):
+class TestSummaryWriter:
   """Writer for the test result summary file of a test run.
 
   For each test run, a writer is created to stream test results to the
@@ -165,7 +165,7 @@ class TestSummaryWriter(object):
                        indent=4)
 
 
-class TestResultEnums(object):
+class TestResultEnums:
   """Enums used for TestResultRecord class.
 
   Includes the tokens to mark test result with, and the string names for each
@@ -189,7 +189,7 @@ class TestResultEnums(object):
   TEST_RESULT_ERROR = 'ERROR'
 
 
-class ControllerInfoRecord(object):
+class ControllerInfoRecord:
   """A record representing the controller info in test results."""
 
   KEY_TEST_CLASS = TestResultEnums.RECORD_CLASS
@@ -215,7 +215,7 @@ class ControllerInfoRecord(object):
     return str(self.to_dict())
 
 
-class ExceptionRecord(object):
+class ExceptionRecord:
   """A record representing exception objects in TestResultRecord.
 
   Attributes:
@@ -289,7 +289,7 @@ class ExceptionRecord(object):
     return result
 
 
-class TestResultRecord(object):
+class TestResultRecord:
   """A record that holds the information of a single test.
 
   The record object holds all information of a test, including all the
@@ -489,7 +489,7 @@ class TestResultRecord(object):
     return d
 
 
-class TestResult(object):
+class TestResult:
   """A class that contains metrics of a test run.
 
   This class is essentially a container of TestResultRecord objects.

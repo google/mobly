@@ -22,7 +22,7 @@ from mobly.controllers import attenuator
 from mobly.controllers.attenuator_lib import telnet_scpi_client
 
 
-class AttenuatorDevice(object):
+class AttenuatorDevice:
   """This provides a specific telnet-controlled implementation of
     AttenuatorDevice for Mini-Circuits RC-DAT attenuators.
 

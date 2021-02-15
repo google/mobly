@@ -413,7 +413,7 @@ def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
   utils.concurrent_exec(take_br, args)
 
 
-class AndroidDevice(object):
+class AndroidDevice:
   """Class representing an android device.
 
   Each object of this class represents one Android device in Mobly. This class

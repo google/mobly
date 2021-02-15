@@ -32,5 +32,5 @@ class Subclass2Runner(test_runner.TestRunner):
   pass
 
 
-class UnrelatedClass(object):
+class UnrelatedClass:
   pass

@@ -29,7 +29,7 @@ from mobly import signals
 DEFAULT_TEST_RESULT_RECORD = records.TestResultRecord('mobly', 'global')
 
 
-class _ExpectErrorRecorder(object):
+class _ExpectErrorRecorder:
   """Singleton used to store errors caught via `expect_*` functions in test.
 
   This class is only instantiated once as a singleton. It holds a reference

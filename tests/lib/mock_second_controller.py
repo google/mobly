@@ -40,7 +40,7 @@ def get_info(objs):
   return infos
 
 
-class AnotherMagicDevice(object):
+class AnotherMagicDevice:
   """This controller supports adding controller's info during test.
 
   It is used for testing that this info is correctly recorded by Mobly.

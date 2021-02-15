@@ -25,7 +25,7 @@ class Error(Exception):
   pass
 
 
-class JsonRpcShellBase(object):
+class JsonRpcShellBase:
 
   def _start_services(self, console_env):
     """Starts the services needed by this client and adds them to console_env.
