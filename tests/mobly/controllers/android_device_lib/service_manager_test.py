@@ -15,8 +15,7 @@
 
 import importlib
 import mock
-
-from future.tests.base import unittest
+import unittest
 
 from mobly import expects
 from mobly.controllers.android_device_lib import service_manager

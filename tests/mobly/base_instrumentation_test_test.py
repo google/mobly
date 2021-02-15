@@ -16,8 +16,7 @@ import os
 import mock
 import shutil
 import tempfile
-
-from future.tests.base import unittest
+import unittest
 
 from mobly.base_instrumentation_test import _InstrumentationBlock
 from mobly.base_instrumentation_test import _InstrumentationKnownStatusKeys

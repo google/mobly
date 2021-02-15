@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import mock
-from future.tests.base import unittest
+import unittest
 
 from mobly.controllers.android_device_lib.services import sl4a_service
 from mobly.controllers.android_device_lib import service_manager

@@ -13,17 +13,15 @@
 # limitations under the License.
 
 import os
-
 import mock
-from future.tests.base import unittest
+import unittest
 
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
 
 class JsonRpcClientBaseTest(unittest.TestCase):
-  """Unit tests for mobly.controllers.android_device_lib.jsonrpc_shell_base.
-  """
+  """Unit tests for mobly.controllers.android_device_lib.jsonrpc_shell_base."""
 
   @mock.patch.object(android_device, 'list_adb_devices')
   @mock.patch.object(android_device, 'get_instances')

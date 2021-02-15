@@ -16,8 +16,7 @@ import os
 import mock
 import shutil
 import tempfile
-
-from future.tests.base import unittest
+import unittest
 
 from mobly import base_test
 from mobly import config_parser

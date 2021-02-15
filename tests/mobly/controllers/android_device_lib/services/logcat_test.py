@@ -18,8 +18,7 @@ import mock
 import os
 import shutil
 import tempfile
-
-from future.tests.base import unittest
+import unittest
 
 from mobly import utils
 from mobly import runtime_test_info

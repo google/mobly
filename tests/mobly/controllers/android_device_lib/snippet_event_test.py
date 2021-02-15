@@ -14,8 +14,7 @@
 
 import logging
 import time
-
-from future.tests.base import unittest
+import unittest
 
 from mobly.controllers.android_device_lib import snippet_event
 

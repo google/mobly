@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import platform
-
-from future.tests.base import unittest
+import unittest
 
 
 class MonsoonTest(unittest.TestCase):

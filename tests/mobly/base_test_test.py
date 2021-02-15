@@ -19,9 +19,8 @@ import os
 import mock
 import shutil
 import tempfile
+import unittest
 import yaml
-
-from future.tests.base import unittest
 
 from mobly import asserts
 from mobly import base_test

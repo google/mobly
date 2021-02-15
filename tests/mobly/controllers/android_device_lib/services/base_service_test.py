@@ -13,7 +13,8 @@
 # limitations under the License.
 
 import mock
-from future.tests.base import unittest
+import unittest
+
 from mobly.controllers.android_device_lib.services import base_service
 
 

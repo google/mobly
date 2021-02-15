@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for Mobly android_device_lib.errors."""
-import mock
 
-from future.tests.base import unittest
+import mock
+import unittest
 
 from mobly.controllers.android_device_lib import errors
 

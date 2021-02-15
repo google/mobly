@@ -19,8 +19,8 @@ import os
 import re
 import shutil
 import tempfile
+import unittest
 import yaml
-from future.tests.base import unittest
 
 from mobly import config_parser
 from mobly import records
