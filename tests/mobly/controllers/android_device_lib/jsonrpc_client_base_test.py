@@ -17,7 +17,7 @@ from builtins import str
 import json
 import mock
 import socket
-from future.tests.base import unittest
+import unittest
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from tests.lib import jsonrpc_client_test_base

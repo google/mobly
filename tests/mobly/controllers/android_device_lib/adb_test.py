@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 import io
 import mock
 import subprocess
+import unittest
 
-from collections import OrderedDict
-from future.tests.base import unittest
 from mobly.controllers.android_device_lib import adb
 
 # Mock parameters for instrumentation.
 MOCK_INSTRUMENTATION_PACKAGE = 'com.my.instrumentation.tests'
 MOCK_INSTRUMENTATION_RUNNER = 'com.my.instrumentation.runner'
-MOCK_INSTRUMENTATION_OPTIONS = OrderedDict([
+MOCK_INSTRUMENTATION_OPTIONS = collections.OrderedDict([
     ('option1', 'value1'),
     ('option2', 'value2'),
 ])
