@@ -912,7 +912,7 @@ class AndroidDevice:
 
     Args:
       file_type: string, type of this file, like "logcat" etc.
-      filename: string, name of this file,
+      filename: string, additional name of this file,
       time_identifier: string or RuntimeTestInfo. If a `RuntimeTestInfo`
         is passed in, the `signature` of the test case will be used. If
         a string is passed in, the string itself will be used.
@@ -1000,17 +1000,17 @@ class AndroidDevice:
     self.log.debug('Bugreport taken at %s.', full_out_path)
     return full_out_path
 
-  def take_screenshot(self, destination, filename='screenshot',):
+  def take_screenshot(self, destination, filename=None):
     """Takes a screenshot of the device.
 
     Args:
       destination: string, full path to the directory to save in.
-      filename: string, name of file.
+      filename: string, additional name of the screenshot.
 
     Returns:
       string, full path to the screenshot file on the host.
     """
-    filename = self.generate_filename(filename, extension_name='png')
+    filename = self.generate_filename('screenshot', filename, extension_name='png')
     device_path = os.path.join('/storage/emulated/0/', filename)
     self.adb.shell(['screencap', '-p', device_path],
                    timeout=TAKE_SCREENSHOT_TIMEOUT_SECOND)
