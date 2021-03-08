@@ -897,19 +897,22 @@ class AndroidDevice:
 
   def generate_filename(self,
                         file_type,
+                        filename=None,
                         time_identifier=None,
                         extension_name=None):
     """Generates a name for an output file related to this device.
 
     The name follows the pattern:
 
-      {file type},{debug_tag},{serial},{model},{time identifier}.{ext}
+      {file type},{filename},{debug_tag},{serial},{model},{time identifier}.{ext}
 
+    "filename" is only added if given.
     "debug_tag" is only added if it's different from the serial. "ext" is
     added if specified by user.
 
     Args:
       file_type: string, type of this file, like "logcat" etc.
+      filename: string, name of this file,
       time_identifier: string or RuntimeTestInfo. If a `RuntimeTestInfo`
         is passed in, the `signature` of the test case will be used. If
         a string is passed in, the string itself will be used.
@@ -925,6 +928,8 @@ class AndroidDevice:
     elif isinstance(time_identifier, runtime_test_info.RuntimeTestInfo):
       time_str = time_identifier.signature
     filename_tokens = [file_type]
+    if filename:
+        filename_tokens.append(filename)
     if self.debug_tag != self.serial:
       filename_tokens.append(self.debug_tag)
     filename_tokens.extend([self.serial, self.model, time_str])
