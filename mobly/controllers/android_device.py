@@ -1005,7 +1005,8 @@ class AndroidDevice:
 
     Args:
       destination: string, full path to the directory to save in.
-      filename: string, additional name of the screenshot.
+      filename: string, additional name of the screenshot will be added after the
+        file_type:screenshot if given.
 
     Returns:
       string, full path to the screenshot file on the host.
