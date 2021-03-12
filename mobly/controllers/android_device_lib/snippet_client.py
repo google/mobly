@@ -216,23 +216,6 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     self._proc = None
     self._restore_event_client()
 
-  def disconnect(self):
-    """Close the connection to the snippet server on the device.
-
-    This is a unilateral disconnect from the client side, without tearing down
-    the snippet server running on the device.
-
-    The connection to the snippet server can be re-established by calling
-    `SnippetClient.restore_app_connection`.
-    """
-    try:
-      if self._conn:
-        self._conn.close()
-        self._conn = None
-    finally:
-      # Always clear the host port as part of the disconnect step.
-      self.clear_host_port()
-
   def stop_app(self):
     # Kill the pending 'adb shell am instrument -w' process if there is one.
     # Although killing the snippet apk would abort this process anyway, we

@@ -71,6 +71,26 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
       client.connect()
 
+  def test_disconnect(self):
+    client = FakeRpcClient()
+    mock_conn = mock.MagicMock()
+    client.clear_host_port = mock.MagicMock()
+    client._conn = mock_conn
+    client.disconnect()
+    self.assertIsNone(client._conn)
+    mock_conn.close.assert_called_once_with()
+    client.clear_host_port.assert_called_once_with()
+
+  def test_disconnect_raises(self):
+    client = FakeRpcClient()
+    mock_conn = mock.MagicMock()
+    client.clear_host_port = mock.MagicMock()
+    client._conn = mock_conn
+    mock_conn.close.side_effect = Exception('ha')
+    with self.assertRaisesRegex(Exception, 'ha'):
+      client.disconnect()
+    client.clear_host_port.assert_called_once_with()
+
   @mock.patch('socket.create_connection')
   def test_connect_handshake(self, mock_create_connection):
     """Test client handshake
