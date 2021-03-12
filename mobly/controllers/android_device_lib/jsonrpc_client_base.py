@@ -93,8 +93,8 @@ class ApiError(Error):
 class ProtocolError(Error):
   """Raised when there is some error in exchanging data with server."""
   NO_RESPONSE_FROM_HANDSHAKE = 'No response from handshake.'
-  NO_RESPONSE_FROM_SERVER = 'No response from server. Check the device logcat '
-  'for crashes.'
+  NO_RESPONSE_FROM_SERVER = ('No response from server. '
+                             'Check the device logcat for crashes.')
   MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
 
 
