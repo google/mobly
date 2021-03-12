@@ -157,8 +157,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     self.assertTrue(client.is_alive)
 
   @mock.patch('socket.create_connection')
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-              'utils.stop_standing_subprocess')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
   def test_snippet_stop_app(self, mock_stop_standing_subprocess,
                             mock_create_connection):
     adb_proxy = mock.MagicMock()
@@ -168,21 +167,36 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     self.assertFalse(client.is_alive)
 
   @mock.patch('socket.create_connection')
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
-              'SnippetClient.disconnect')
-  def test_snippet_stop_app_raises(self, mock_disconnect,
-                                   mock_create_connection):
-    # Explicitly making the second side_effect noop to avoid uncaught exception
-    # when `__del__` is called after the test is done, which triggers
-    # `disconnect`.
-    mock_disconnect.side_effect = [Exception('ha'), None]
+  def test_snippet_stop_app_raises(self, mock_create_connection):
     adb_proxy = mock.MagicMock()
     adb_proxy.shell.return_value = b'OK (0 tests)'
     client = self._make_client(adb_proxy)
     client.host_port = 1
+    client._conn = mock.MagicMock()
+    client._conn.close.side_effect = Exception('ha')
     with self.assertRaisesRegex(Exception, 'ha'):
       client.stop_app()
     adb_proxy.forward.assert_called_once_with(['--remove', 'tcp:1'])
+
+  def test_disconnect(self):
+    client = self._make_client()
+    mock_conn = mock.MagicMock()
+    client.clear_host_port = mock.MagicMock()
+    client._conn = mock_conn
+    client.disconnect()
+    self.assertIsNone(client._conn)
+    mock_conn.close.assert_called_once_with()
+    client.clear_host_port.assert_called_once_with()
+
+  def test_disconnect_raises(self):
+    client = self._make_client()
+    mock_conn = mock.MagicMock()
+    client.clear_host_port = mock.MagicMock()
+    client._conn = mock_conn
+    mock_conn.close.side_effect = Exception('ha')
+    with self.assertRaisesRegex(Exception, 'ha'):
+      client.disconnect()
+    client.clear_host_port.assert_called_once_with()
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'

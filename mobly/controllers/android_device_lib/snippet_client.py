@@ -90,21 +90,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
   @property
   def is_alive(self):
-    """Is the client alive.
-
-    The client is considered alive if there is a connection object held for
-    it. This is an approximation due to the following scenario:
-
-    In the USB disconnect case, the host subprocess that kicked off the
-    snippet  apk would die, but the snippet apk itself would continue
-    running on the device.
-
-    The best approximation we can make is, the connection object has not
-    been explicitly torn down, so the client should be considered alive.
-
-    Returns:
-      True if the client is considered alive, False otherwise.
-    """
+    """Does the client have an active connection to the snippet server."""
     return self._conn is not None
 
   def _get_user_command_string(self):
@@ -230,6 +216,23 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     self._proc = None
     self._restore_event_client()
 
+  def disconnect(self):
+    """Close the connection to the snippet server on the device.
+
+    This is a unilateral disconnect from the client side, without tearing down
+    the snippet server running on the device.
+
+    The connection to the snippet server can be re-established by calling
+    `SnippetClient.restore_app_connection`.
+    """
+    try:
+      if self._conn:
+        self._conn.close()
+        self._conn = None
+    finally:
+      # Always clear the host port as part of the disconnect step.
+      self.clear_host_port()
+
   def stop_app(self):
     # Kill the pending 'adb shell am instrument -w' process if there is one.
     # Although killing the snippet apk would abort this process anyway, we
@@ -237,23 +240,17 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     # print the failure stack trace if there was any, and reap it from the
     # process table.
     self.log.debug('Stopping snippet apk %s', self.package)
-    try:
-      # Close the socket connection.
-      self.disconnect()
-      if self._proc:
-        utils.stop_standing_subprocess(self._proc)
+    # Close the socket connection.
+    self.disconnect()
+    if self._proc:
+      utils.stop_standing_subprocess(self._proc)
       self._proc = None
-      out = self._adb.shell(
-          _STOP_CMD.format(
-              snippet_package=self.package,
-              user=self._get_user_command_string())).decode('utf-8')
-      if 'OK (0 tests)' not in out:
-        raise errors.DeviceError(
-            self._ad,
-            'Failed to stop existing apk. Unexpected output: %s' % out)
-    finally:
-      # Always clean up the adb port
-      self.clear_host_port()
+    out = self._adb.shell(
+        _STOP_CMD.format(snippet_package=self.package,
+                         user=self._get_user_command_string())).decode('utf-8')
+    if 'OK (0 tests)' not in out:
+      raise errors.DeviceError(
+          self._ad, 'Failed to stop existing apk. Unexpected output: %s' % out)
 
   def _start_event_client(self):
     """Overrides superclass."""

@@ -244,12 +244,6 @@ class JsonRpcClientBase(abc.ABC):
     else:
       self.uid = UNKNOWN_UID
 
-  def disconnect(self):
-    """Close the connection to the remote client."""
-    if self._conn:
-      self._conn.close()
-      self._conn = None
-
   def clear_host_port(self):
     """Stops the adb port forwarding of the host port used by this client.
     """
