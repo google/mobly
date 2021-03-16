@@ -166,14 +166,16 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     client.stop_app()
     self.assertFalse(client.is_alive)
 
-  @mock.patch('socket.create_connection')
-  def test_snippet_stop_app_raises(self, mock_create_connection):
+  def test_snippet_stop_app_raises(self):
     adb_proxy = mock.MagicMock()
     adb_proxy.shell.return_value = b'OK (0 tests)'
     client = self._make_client(adb_proxy)
     client.host_port = 1
     client._conn = mock.MagicMock()
-    client._conn.close.side_effect = Exception('ha')
+    # Explicitly making the second side_effect noop to avoid uncaught exception
+    # when `__del__` is called after the test is done, which triggers
+    # `disconnect`.
+    client._conn.close.side_effect = [Exception('ha'), None]
     with self.assertRaisesRegex(Exception, 'ha'):
       client.stop_app()
     adb_proxy.forward.assert_called_once_with(['--remove', 'tcp:1'])

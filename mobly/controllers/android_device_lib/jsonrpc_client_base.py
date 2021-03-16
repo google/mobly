@@ -265,7 +265,7 @@ class JsonRpcClientBase(abc.ABC):
     """Stops the adb port forwarding of the host port used by this client.
     """
     if self.host_port:
-      self._adb.forward(['--remove', 'tcp:%d' % self.host_port])
+      self._ad.adb.forward(['--remove', 'tcp:%d' % self.host_port])
       self.host_port = None
 
   def _client_send(self, msg):
