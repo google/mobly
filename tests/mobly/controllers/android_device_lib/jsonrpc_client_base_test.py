@@ -71,6 +71,42 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
       client.connect()
 
+  def test_disconnect(self):
+    client = FakeRpcClient()
+    mock_conn = mock.MagicMock()
+    client.clear_host_port = mock.MagicMock()
+    client._conn = mock_conn
+    client.disconnect()
+    self.assertIsNone(client._conn)
+    mock_conn.close.assert_called_once_with()
+    client.clear_host_port.assert_called_once_with()
+
+  def test_disconnect_raises(self):
+    client = FakeRpcClient()
+    mock_conn = mock.MagicMock()
+    client.clear_host_port = mock.MagicMock()
+    client._conn = mock_conn
+    # Explicitly making the second side_effect noop to avoid uncaught exception
+    # when `__del__` is called after the test is done, which triggers
+    # `disconnect`.
+    mock_conn.close.side_effect = [Exception('ha'), None]
+    with self.assertRaisesRegex(Exception, 'ha'):
+      client.disconnect()
+    client.clear_host_port.assert_called_once_with()
+
+  def test_clear_host_port_positive(self):
+    client = FakeRpcClient()
+    client.host_port = 1
+    client.clear_host_port()
+    client._ad.adb.forward.assert_called_once_with(['--remove', 'tcp:1'])
+    self.assertIsNone(client.host_port)
+
+  def test_clear_host_port_negative(self):
+    client = FakeRpcClient()
+    client.host_port = None
+    client.clear_host_port()
+    client._ad.adb.forward.assert_not_called()
+
   @mock.patch('socket.create_connection')
   def test_connect_handshake(self, mock_create_connection):
     """Test client handshake

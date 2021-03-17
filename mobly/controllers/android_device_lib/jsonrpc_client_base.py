@@ -245,16 +245,27 @@ class JsonRpcClientBase(abc.ABC):
       self.uid = UNKNOWN_UID
 
   def disconnect(self):
-    """Close the connection to the remote client."""
-    if self._conn:
-      self._conn.close()
-      self._conn = None
+    """Close the connection to the snippet server on the device.
+
+    This is a unilateral disconnect from the client side, without tearing down
+    the snippet server running on the device.
+
+    The connection to the snippet server can be re-established by calling
+    `SnippetClient.restore_app_connection`.
+    """
+    try:
+      if self._conn:
+        self._conn.close()
+        self._conn = None
+    finally:
+      # Always clear the host port as part of the disconnect step.
+      self.clear_host_port()
 
   def clear_host_port(self):
     """Stops the adb port forwarding of the host port used by this client.
     """
     if self.host_port:
-      self._adb.forward(['--remove', 'tcp:%d' % self.host_port])
+      self._ad.adb.forward(['--remove', 'tcp:%d' % self.host_port])
       self.host_port = None
 
   def _client_send(self, msg):
