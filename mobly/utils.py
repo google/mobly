@@ -262,7 +262,7 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
   GIL, there's no true concurrency. This is suited for IO-bound tasks.
 
   Args:
-    func: The function that parforms a task.
+    func: The function that performs a task.
     param_list: A list of iterables, each being a set of params to be
       passed into the function.
     max_workers: int, the number of workers to use for parallelizing the
