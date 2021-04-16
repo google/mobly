@@ -2237,6 +2237,111 @@ class BaseTestTest(unittest.TestCase):
                     'mock_controller: Some failure')
     self.assertEqual(record.details, expected_msg)
 
+  def test_repeat(self):
+    repeat_count = 3
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=repeat_count)
+      def test_something(self):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(repeat_count, len(bt_cls.results.passed))
+    for i, record in enumerate(bt_cls.results.passed):
+      self.assertEqual(record.test_name, f'test_something_{i}')
+
+  def test_repeat_with_failures(self):
+    repeat_count = 3
+    mock_action = mock.MagicMock()
+    mock_action.side_effect = [None, Exception('Someting failed'), None]
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=repeat_count)
+      def test_something(self):
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(repeat_count, len(bt_cls.results.executed))
+    self.assertEqual(1, len(bt_cls.results.error))
+    self.assertEqual(2, len(bt_cls.results.passed))
+    iter_2 = bt_cls.results.error[0]
+    iter_1, iter_3 = bt_cls.results.passed
+    self.assertEqual(iter_2.test_name, 'test_something_1')
+    self.assertEqual(iter_1.test_name, 'test_something_0')
+    self.assertEqual(iter_3.test_name, 'test_something_2')
+
+  def test_retry_first_pass(self):
+    retry_count = 2
+    mock_action = mock.MagicMock()
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.retry(max_count=retry_count)
+      def test_something(self):
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(1, len(bt_cls.results.executed))
+    self.assertEqual(1, len(bt_cls.results.passed))
+    pass_record = bt_cls.results.passed[0]
+    self.assertEqual(pass_record.test_name, f'test_something')
+    self.assertEqual(0, len(bt_cls.results.error))
+
+  def test_retry_last_pass(self):
+    retry_count = 2
+    mock_action = mock.MagicMock()
+    mock_action.side_effect = [Exception('Fail 1'), Exception('Fail 2'), None]
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.retry(max_count=retry_count)
+      def test_something(self):
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(3, len(bt_cls.results.executed))
+    self.assertEqual(1, len(bt_cls.results.passed))
+    pass_record = bt_cls.results.passed[0]
+    self.assertEqual(pass_record.test_name, f'test_something_retry_2')
+    self.assertEqual(2, len(bt_cls.results.error))
+    error_record_1, error_record_2 = bt_cls.results.error
+    self.assertEqual(error_record_1.test_name, 'test_something')
+    self.assertEqual(error_record_2.test_name, 'test_something_retry_1')
+    self.assertEqual(error_record_1.signature, error_record_2.retry_parent)
+    self.assertEqual(error_record_2.signature, pass_record.retry_parent)
+
+  def test_retry_all_fail(self):
+    retry_count = 2
+    mock_action = mock.MagicMock()
+    mock_action.side_effect = [
+        Exception('Fail 1'),
+        Exception('Fail 2'),
+        Exception('Fail 3')
+    ]
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.retry(max_count=retry_count)
+      def test_something(self):
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(3, len(bt_cls.results.executed))
+    self.assertEqual(3, len(bt_cls.results.error))
+    error_record_1, error_record_2, error_record_3 = bt_cls.results.error
+    self.assertEqual(error_record_1.test_name, 'test_something')
+    self.assertEqual(error_record_2.test_name, 'test_something_retry_1')
+    self.assertEqual(error_record_3.test_name, 'test_something_retry_2')
+    self.assertEqual(error_record_1.signature, error_record_2.retry_parent)
+    self.assertEqual(error_record_2.signature, error_record_3.retry_parent)
+
   def test_uid(self):
 
     class MockBaseTest(base_test.BaseTestClass):
@@ -2270,6 +2375,40 @@ class BaseTestTest(unittest.TestCase):
         @records.uid(None)
         def not_a_test(self):
           pass
+
+  def test_repeat_with_uid(self):
+    repeat_count = 3
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=repeat_count)
+      @records.uid('some-uid')
+      def test_something(self):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(repeat_count, len(bt_cls.results.passed))
+    for i, record in enumerate(bt_cls.results.passed):
+      self.assertEqual(record.test_name, f'test_something_{i}')
+      self.assertEqual(record.uid, 'some-uid')
+
+  def test_uid_with_repeat(self):
+    repeat_count = 3
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @records.uid('some-uid')
+      @base_test.repeat(count=repeat_count)
+      def test_something(self):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(repeat_count, len(bt_cls.results.passed))
+    for i, record in enumerate(bt_cls.results.passed):
+      self.assertEqual(record.test_name, f'test_something_{i}')
+      self.assertEqual(record.uid, 'some-uid')
 
   def test_log_stage_always_logs_end_statement(self):
     instance = base_test.BaseTestClass(self.mock_test_cls_configs)

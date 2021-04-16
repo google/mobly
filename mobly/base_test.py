@@ -43,9 +43,71 @@ STAGE_NAME_TEARDOWN_TEST = 'teardown_test'
 STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
 STAGE_NAME_CLEAN_UP = 'clean_up'
 
+# Attribute names
+ATTR_REPEAT_CNT = '_repeat_count'
+ATTR_MAX_RETRY_CNT = '_max_retry_count'
+
 
 class Error(Exception):
   """Raised for exceptions that occurred in BaseTestClass."""
+
+
+def repeat(count):
+  """Decorator for marking a test case that should be repeated.
+
+  The BaseTestClass will execute the test cases annotated with this decorator
+  the specified number of time.
+
+  This decorator only stores the information needed for the repeat. It does not
+  execute the repeat.
+
+  Args:
+    count: int, the number of times to execute the decorated test case.
+
+  Returns:
+    The wrapped test function.
+  """
+
+  def _outer_decorator(func):
+    setattr(func, ATTR_REPEAT_CNT, count)
+
+    @functools.wraps(func)
+    def _wrapper(*args):
+      func(*args)
+
+    return _wrapper
+
+  return _outer_decorator
+
+
+def retry(max_count):
+  """Decorator for marking a test case that should be retried when failed.
+
+  The BaseTestClass will keep executing the test cases annotated with this
+  decorator until the test passes, or the maxinum number of iterations have
+  been met.
+
+  This decorator only stores the information needed for the retry. It does not
+  execute the retry.
+
+  Args:
+    max_count: int, the maximun number of times to execute the decorated test
+      case.
+
+  Returns:
+    The wrapped test function.
+  """
+
+  def _outer_decorator(func):
+    setattr(func, ATTR_MAX_RETRY_CNT, max_count)
+
+    @functools.wraps(func)
+    def _wrapper(*args):
+      func(*args)
+
+    return _wrapper
+
+  return _outer_decorator
 
 
 class BaseTestClass:
@@ -559,7 +621,27 @@ class BaseTestClass:
       content['timestamp'] = utils.get_current_epoch_time()
     self.summary_writer.dump(content, records.TestSummaryEntryType.USER_DATA)
 
-  def exec_one_test(self, test_name, test_method):
+  def exec_one_test_with_retry(self, test_name, test_method, max_retry_count):
+    previous_record = self.exec_one_test(test_name, test_method)
+
+    def should_retry(record):
+      return record.result in [
+          records.TestResultEnums.TEST_RESULT_FAIL,
+          records.TestResultEnums.TEST_RESULT_ERROR
+      ]
+
+    if not should_retry(previous_record):
+      return previous_record
+
+    for i in range(max_retry_count):
+      retry_name = f'{test_name}_retry_{i+1}'
+      new_record = records.TestResultRecord(retry_name, self.TAG)
+      new_record.retry_parent = previous_record.signature
+      previous_record = self.exec_one_test(retry_name, test_method, new_record)
+      if not should_retry(previous_record):
+        return previous_record
+
+  def exec_one_test(self, test_name, test_method, record=None):
     """Executes one test and update test results.
 
     Executes setup_test, the test method, and teardown_test; then creates a
@@ -569,8 +651,13 @@ class BaseTestClass:
     Args:
       test_name: string, Name of the test.
       test_method: function, The test method to execute.
+      record: records.TestResultRecord, optional arg for injecting a record
+        object to use for this test execution. If not set, a new one is created
+        created. This is meant for passing infomation between consecutive test
+        case execution for retry purposes. Do NOT abuse this for "magical"
+        features.
     """
-    tr_record = records.TestResultRecord(test_name, self.TAG)
+    tr_record = record or records.TestResultRecord(test_name, self.TAG)
     tr_record.uid = getattr(test_method, 'uid', None)
     tr_record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
@@ -650,6 +737,7 @@ class BaseTestClass:
         self.summary_writer.dump(tr_record.to_dict(),
                                  records.TestSummaryEntryType.RECORD)
         self.current_test_info = None
+    return tr_record
 
   def _assert_function_name_in_stack(self, expected_func_name):
     """Asserts that the current stack contains the given function name."""
@@ -767,7 +855,12 @@ class BaseTestClass:
         test_method = self._generated_test_table[test_name]
       else:
         raise Error('%s does not have test method %s.' % (self.TAG, test_name))
-      test_methods.append((test_name, test_method))
+      repeat_count = getattr(test_method, ATTR_REPEAT_CNT, 0)
+      if repeat_count:
+        for i in range(repeat_count):
+          test_methods.append((f'{test_name}_{i}', test_method))
+      else:
+        test_methods.append((test_name, test_method))
     return test_methods
 
   def _skip_remaining_tests(self, exception):
@@ -831,7 +924,11 @@ class BaseTestClass:
         return setup_class_result
       # Run tests in order.
       for test_name, test_method in tests:
-        self.exec_one_test(test_name, test_method)
+        max_retry_count = getattr(test_method, ATTR_MAX_RETRY_CNT, 0)
+        if max_retry_count:
+          self.exec_one_test_with_retry(test_name, test_method, max_retry_count)
+        else:
+          self.exec_one_test(test_name, test_method)
       return self.results
     except signals.TestAbortClass as e:
       e.details = 'Test class aborted due to: %s' % e.details
