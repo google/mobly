@@ -53,7 +53,7 @@ class Error(Exception):
 
 
 def repeat(count):
-  """Decorator for marking a test case that should be repeated.
+  """Decorator for repeating a test case multiple times.
 
   The BaseTestClass will execute the test cases annotated with this decorator
   the specified number of time.
@@ -62,11 +62,17 @@ def repeat(count):
   execute the repeat.
 
   Args:
-    count: int, the number of times to execute the decorated test case.
+    count: int, the total number of times to execute the decorated test case.
 
   Returns:
     The wrapped test function.
+
+  Raises:
+    ValueError, if the user input is invalid.
   """
+  if count <= 1:
+    raise ValueError(
+        f'The `count` for `repeat` must be larger than 1, got "{count}".')
 
   def _outer_decorator(func):
     setattr(func, ATTR_REPEAT_CNT, count)
@@ -81,7 +87,7 @@ def repeat(count):
 
 
 def retry(max_count):
-  """Decorator for marking a test case that should be retried when failed.
+  """Decorator for retrying a test case until it passes.
 
   The BaseTestClass will keep executing the test cases annotated with this
   decorator until the test passes, or the maxinum number of iterations have
@@ -96,7 +102,14 @@ def retry(max_count):
 
   Returns:
     The wrapped test function.
+
+  Raises:
+    ValueError, if the user input is invalid.
   """
+  if max_count <= 1:
+    raise ValueError(
+        f'The `max_count` for `retry` must be larger than 1, got "{max_count}".'
+    )
 
   def _outer_decorator(func):
     setattr(func, ATTR_MAX_RETRY_CNT, max_count)

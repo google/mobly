@@ -2237,6 +2237,17 @@ class BaseTestTest(unittest.TestCase):
                     'mock_controller: Some failure')
     self.assertEqual(record.details, expected_msg)
 
+  def test_repeat_invalid_count(self):
+
+    with self.assertRaisesRegex(
+        ValueError, 'The `count` for `repeat` must be larger than 1, got "1".'):
+
+      class MockBaseTest(base_test.BaseTestClass):
+
+        @base_test.repeat(count=1)
+        def test_something(self):
+          pass
+
   def test_repeat(self):
     repeat_count = 3
 
@@ -2273,6 +2284,18 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(iter_2.test_name, 'test_something_1')
     self.assertEqual(iter_1.test_name, 'test_something_0')
     self.assertEqual(iter_3.test_name, 'test_something_2')
+
+  def test_retry_invalid_count(self):
+
+    with self.assertRaisesRegex(
+        ValueError,
+        'The `max_count` for `retry` must be larger than 1, got "1".'):
+
+      class MockBaseTest(base_test.BaseTestClass):
+
+        @base_test.retry(max_count=1)
+        def test_something(self):
+          pass
 
   def test_retry_first_pass(self):
     retry_count = 2
