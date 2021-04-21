@@ -182,6 +182,8 @@ class TestResultEnums:
   RECORD_EXTRA_ERRORS = 'Extra Errors'
   RECORD_DETAILS = 'Details'
   RECORD_STACKTRACE = 'Stacktrace'
+  RECORD_SIGNATURE = 'Signature'
+  RECORD_RETRY_PARENT = 'Retry Parent'
   RECORD_POSITION = 'Position'
   TEST_RESULT_PASS = 'PASS'
   TEST_RESULT_FAIL = 'FAIL'

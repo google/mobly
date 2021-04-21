@@ -89,8 +89,6 @@ class RecordsTest(unittest.TestCase):
     self.assertTrue(str(record), 'str of the record should not be empty.')
     self.assertTrue(repr(record), "the record's repr shouldn't be empty.")
 
-  """ Begin of Tests """
-
   def test_result_record_pass_none(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
@@ -374,6 +372,13 @@ class RecordsTest(unittest.TestCase):
                        unicode_details)
       self.assertEqual(content[records.TestResultEnums.RECORD_EXTRAS],
                        unicode_extras)
+
+  @mock.patch('mobly.utils.get_current_epoch_time')
+  def test_signature(self, mock_time_src):
+    mock_time_src.return_value = 12345
+    record = records.TestResultRecord(self.tn)
+    record.test_begin()
+    self.assertEqual(record.signature, 'test_name-12345')
 
   def test_summary_user_data(self):
     user_data1 = {'a': 1}
