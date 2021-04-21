@@ -2266,7 +2266,7 @@ class BaseTestTest(unittest.TestCase):
   def test_repeat_with_failures(self):
     repeat_count = 3
     mock_action = mock.MagicMock()
-    mock_action.side_effect = [None, Exception('Someting failed'), None]
+    mock_action.side_effect = [None, Exception('Something failed'), None]
 
     class MockBaseTest(base_test.BaseTestClass):
 

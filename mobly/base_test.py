@@ -45,7 +45,7 @@ STAGE_NAME_CLEAN_UP = 'clean_up'
 
 # Attribute names
 ATTR_REPEAT_CNT = '_repeat_count'
-ATTR_MAX_RETRY_CNT = '_max_retry_count'
+ATTR_MAX_RETRY_CNT = '_max_count'
 
 
 class Error(Exception):
@@ -97,7 +97,7 @@ def retry(max_count):
   execute the retry.
 
   Args:
-    max_count: int, the maximun number of times to execute the decorated test
+    max_count: int, the maximum number of times to execute the decorated test
       case.
 
   Returns:
@@ -634,7 +634,17 @@ class BaseTestClass:
       content['timestamp'] = utils.get_current_epoch_time()
     self.summary_writer.dump(content, records.TestSummaryEntryType.USER_DATA)
 
-  def exec_one_test_with_retry(self, test_name, test_method, max_retry_count):
+  def _exec_one_test_with_retry(self, test_name, test_method, max_count):
+    """Executes one test and retry the test if needed.
+
+    Repeatedly execute a test case until it passes or the maximum count of
+    iteration has been reached.
+
+    Args:
+      test_name: string, Name of the test.
+      test_method: function, The test method to execute.
+      max_count: int, the maximum number of iterations to execute the test for.
+    """
     previous_record = self.exec_one_test(test_name, test_method)
 
     def should_retry(record):
@@ -646,13 +656,13 @@ class BaseTestClass:
     if not should_retry(previous_record):
       return previous_record
 
-    for i in range(max_retry_count):
+    for i in range(max_count):
       retry_name = f'{test_name}_retry_{i+1}'
       new_record = records.TestResultRecord(retry_name, self.TAG)
       new_record.retry_parent = previous_record.signature
       previous_record = self.exec_one_test(retry_name, test_method, new_record)
       if not should_retry(previous_record):
-        return previous_record
+        break
 
   def exec_one_test(self, test_name, test_method, record=None):
     """Executes one test and update test results.
@@ -669,6 +679,11 @@ class BaseTestClass:
         created. This is meant for passing infomation between consecutive test
         case execution for retry purposes. Do NOT abuse this for "magical"
         features.
+
+    Returns:
+      TestResultRecord, the test result record object of the test execution.
+      This object is strictly for read-only purposes. Modifying this record
+      will not change what is reported in the test run's summary yaml file.
     """
     tr_record = record or records.TestResultRecord(test_name, self.TAG)
     tr_record.uid = getattr(test_method, 'uid', None)
@@ -937,9 +952,9 @@ class BaseTestClass:
         return setup_class_result
       # Run tests in order.
       for test_name, test_method in tests:
-        max_retry_count = getattr(test_method, ATTR_MAX_RETRY_CNT, 0)
-        if max_retry_count:
-          self.exec_one_test_with_retry(test_name, test_method, max_retry_count)
+        max_count = getattr(test_method, ATTR_MAX_RETRY_CNT, 0)
+        if max_count:
+          self._exec_one_test_with_retry(test_name, test_method, max_count)
         else:
           self.exec_one_test(test_name, test_method)
       return self.results
