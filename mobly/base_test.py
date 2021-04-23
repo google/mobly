@@ -645,7 +645,6 @@ class BaseTestClass:
       test_method: function, The test method to execute.
       max_count: int, the maximum number of iterations to execute the test for.
     """
-    previous_record = self.exec_one_test(test_name, test_method)
 
     def should_retry(record):
       return record.result in [
@@ -653,10 +652,12 @@ class BaseTestClass:
           records.TestResultEnums.TEST_RESULT_ERROR
       ]
 
+    previous_record = self.exec_one_test(test_name, test_method)
+
     if not should_retry(previous_record):
       return previous_record
 
-    for i in range(max_count):
+    for i in range(max_count - 1):
       retry_name = f'{test_name}_retry_{i+1}'
       new_record = records.TestResultRecord(retry_name, self.TAG)
       new_record.retry_parent = previous_record.signature

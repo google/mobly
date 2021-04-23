@@ -490,6 +490,8 @@ class TestResultRecord:
     d[TestResultEnums.RECORD_END_TIME] = self.end_time
     d[TestResultEnums.RECORD_RESULT] = self.result
     d[TestResultEnums.RECORD_UID] = self.uid
+    d[TestResultEnums.RECORD_SIGNATURE] = self.signature
+    d[TestResultEnums.RECORD_RETRY_PARENT] = self.retry_parent
     d[TestResultEnums.RECORD_EXTRAS] = self.extras
     d[TestResultEnums.RECORD_DETAILS] = self.details
     d[TestResultEnums.RECORD_EXTRA_ERRORS] = {

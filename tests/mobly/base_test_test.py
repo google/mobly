@@ -2298,12 +2298,12 @@ class BaseTestTest(unittest.TestCase):
           pass
 
   def test_retry_first_pass(self):
-    retry_count = 2
+    max_count = 3
     mock_action = mock.MagicMock()
 
     class MockBaseTest(base_test.BaseTestClass):
 
-      @base_test.retry(max_count=retry_count)
+      @base_test.retry(max_count=max_count)
       def test_something(self):
         mock_action()
 
@@ -2316,13 +2316,13 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(0, len(bt_cls.results.error))
 
   def test_retry_last_pass(self):
-    retry_count = 2
+    max_count = 3
     mock_action = mock.MagicMock()
     mock_action.side_effect = [Exception('Fail 1'), Exception('Fail 2'), None]
 
     class MockBaseTest(base_test.BaseTestClass):
 
-      @base_test.retry(max_count=retry_count)
+      @base_test.retry(max_count=max_count)
       def test_something(self):
         mock_action()
 
@@ -2340,7 +2340,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(error_record_2.signature, pass_record.retry_parent)
 
   def test_retry_all_fail(self):
-    retry_count = 2
+    max_count = 3
     mock_action = mock.MagicMock()
     mock_action.side_effect = [
         Exception('Fail 1'),
@@ -2350,7 +2350,7 @@ class BaseTestTest(unittest.TestCase):
 
     class MockBaseTest(base_test.BaseTestClass):
 
-      @base_test.retry(max_count=retry_count)
+      @base_test.retry(max_count=max_count)
       def test_something(self):
         mock_action()
 
