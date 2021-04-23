@@ -20,6 +20,7 @@ import shutil
 import tempfile
 import unittest
 
+from mobly import records
 from mobly import utils
 from mobly import runtime_test_info
 from mobly.controllers import android_device
@@ -239,8 +240,9 @@ class LogcatTest(unittest.TestCase):
       with open(logcat_service.adb_logcat_file_path, 'a') as f:
         f.write(logcat_file_content)
       test_output_dir = os.path.join(self.tmp_dir, test_name)
-      mock_record = mock.MagicMock()
+      mock_record = records.TestResultRecord(test_name)
       mock_record.begin_time = test_begin_time
+      mock_record.signature = f'{test_name}-{test_begin_time}'
       test_run_info = runtime_test_info.RuntimeTestInfo(test_name,
                                                         test_output_dir,
                                                         mock_record)
