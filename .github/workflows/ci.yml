@@ -23,12 +23,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install tox
 
-    # https://github.com/diegovalenzuelaiturra/yapf-action
-    - name: YAPF Formatter
-      uses: diegovalenzuelaiturra/yapf-action@master
-      with:
-        args: . --verbose --recursive --in-place --parallel
-
     - name: Test with tox
       run: |
         tox
