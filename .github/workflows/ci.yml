@@ -3,12 +3,12 @@ name: CI tests for google/mobly
 on: [push]
 
 jobs:
-  build:
-    runs-on: [ubuntu-latest, macos-latest, windows-latest]
+  build-and-test:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.6, 3.7, 3.8]
-
     steps:
     - name: checkout repo
       uses: actions/checkout@v2
