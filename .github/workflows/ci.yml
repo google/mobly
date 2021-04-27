@@ -1,6 +1,6 @@
 name: CI tests for google/mobly
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build-and-test:
