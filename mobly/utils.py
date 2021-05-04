@@ -451,7 +451,7 @@ def stop_standing_subprocess(proc):
     except psutil.NoSuchProcess:
       # Ignore if the child process has already terminated.
       pass
-    except:
+    except Exception:
       failed.append(child.pid)
       logging.exception('Failed to kill standing subprocess %d', child.pid)
   try:
@@ -460,7 +460,7 @@ def stop_standing_subprocess(proc):
   except psutil.NoSuchProcess:
     # Ignore if the process has already terminated.
     pass
-  except:
+  except Exception:
     failed.append(pid)
     logging.exception('Failed to kill standing subprocess %d', pid)
   if failed:

@@ -14,7 +14,6 @@
 
 import argparse
 import contextlib
-import inspect
 import logging
 import os
 import sys
@@ -77,7 +76,7 @@ def main(argv=None):
         ok = runner.results.is_all_pass and ok
       except signals.TestAbortAll:
         pass
-      except:
+      except Exception:
         logging.exception('Exception when executing %s.', config.testbed_name)
         ok = False
   if not ok:
@@ -165,7 +164,7 @@ def _print_test_names(test_class):
   try:
     cls.setup_generated_tests()
     test_names = cls.get_existing_test_names()
-  except:
+  except Exception:
     logging.exception('Failed to retrieve generated tests.')
   finally:
     cls._controller_manager.unregister_controllers()
