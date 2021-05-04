@@ -17,6 +17,7 @@ import functools
 import io
 import os
 import mock
+import re
 import shutil
 import tempfile
 import unittest
@@ -2248,6 +2249,19 @@ class BaseTestTest(unittest.TestCase):
         def test_something(self):
           pass
 
+  def test_repeat_invalid_max_consec_error(self):
+
+    with self.assertRaisesRegex(
+        ValueError,
+        re.escape('The `max_consecutive_error` (4) for `repeat` must be '
+                  'smaller than `count` (3).')):
+
+      class MockBaseTest(base_test.BaseTestClass):
+
+        @base_test.repeat(count=3, max_consecutive_error=4)
+        def test_something(self):
+          pass
+
   def test_repeat(self):
     repeat_count = 3
 
@@ -2284,6 +2298,79 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(iter_2.test_name, 'test_something_1')
     self.assertEqual(iter_1.test_name, 'test_something_0')
     self.assertEqual(iter_3.test_name, 'test_something_2')
+
+  def test_repeat_with_consec_error_at_the_beginning_aborts_repeat(self):
+    repeat_count = 5
+    max_consec_error = 2
+    mock_action = mock.MagicMock()
+    mock_action.side_effect = [
+        Exception('Error 1'),
+        Exception('Error 2'),
+        Exception('Error 3'),
+    ]
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=repeat_count,
+                        max_consecutive_error=max_consec_error)
+      def test_something(self):
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(max_consec_error, len(bt_cls.results.executed))
+    self.assertEqual(max_consec_error, len(bt_cls.results.error))
+    for i, record in enumerate(bt_cls.results.error):
+      self.assertEqual(record.test_name, f'test_something_{i}')
+
+  def test_repeat_with_consec_error_in_the_middle_aborts_repeat(self):
+    repeat_count = 5
+    max_consec_error = 2
+    mock_action = mock.MagicMock()
+    mock_action.side_effect = [
+        None,
+        None,
+        Exception('Error 1'),
+        Exception('Error 2'),
+        Exception('Error 3'),
+    ]
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=repeat_count,
+                        max_consecutive_error=max_consec_error)
+      def test_something(self):
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(4, len(bt_cls.results.executed))
+    self.assertEqual(2, len(bt_cls.results.error))
+    self.assertEqual(2, len(bt_cls.results.passed))
+    for i, record in enumerate(bt_cls.results.passed):
+      self.assertEqual(record.test_name, f'test_something_{i}')
+
+  def test_repeat_with_consec_error_does_not_abort_repeat(self):
+    repeat_count = 5
+    max_consec_error = 2
+    mock_action = mock.MagicMock()
+    mock_action.side_effect = [
+        Exception('Error 1'), None,
+        Exception('Error 2'), None,
+        Exception('Error 3')
+    ]
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=repeat_count,
+                        max_consecutive_error=max_consec_error)
+      def test_something(self):
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(repeat_count, len(bt_cls.results.executed))
+    self.assertEqual(3, len(bt_cls.results.error))
 
   def test_retry_invalid_count(self):
 
