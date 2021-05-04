@@ -887,7 +887,7 @@ class BaseTestClass:
       return func(*args)
     except signals.TestAbortAll:
       raise
-    except:
+    except Exception:
       logging.exception('Exception happened when executing %s in %s.',
                         func.__name__, self.TAG)
 

@@ -97,7 +97,7 @@ def run_suite(test_classes, argv=None):
         ok = runner.results.is_all_pass and ok
       except signals.TestAbortAll:
         pass
-      except:
+      except Exception:
         logging.exception('Exception when executing %s.', config.testbed_name)
         ok = False
   if not ok:
