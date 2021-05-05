@@ -677,7 +677,9 @@ class BaseTestClass:
 
   def _exec_one_test_with_repeat(self, test_name, test_method, repeat_count,
                                  max_consecutive_error):
-    """Repeatedly execute a test test.
+    """Repeatedly execute a test case.
+
+    This method performs the action defined by the `repeat` decorator.
 
     If the number of consecutive failures reach the threshold set by
     `max_consecutive_error`, the remaining iterations will be abandoned.
@@ -685,7 +687,7 @@ class BaseTestClass:
     Args:
       test_name: string, Name of the test.
       test_method: function, The test method to execute.
-      repeat_count: int,
+      repeat_count: int, the number of times to repeat the test case.
       max_consecutive_error: int, the maximum number of consecutive iterations
         allowed to fail before abandoning the remaining iterations.
     """
