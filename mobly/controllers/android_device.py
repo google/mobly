@@ -1000,15 +1000,14 @@ class AndroidDevice:
 
     Args:
       destination: string, full path to the directory to save in.
-      filename: string, additional name of the screenshot will be added after the
-        file_type:screenshot if given.
+      filename: string, additional name of the screenshot will be added if given.
 
     Returns:
       string, full path to the screenshot file on the host.
     """
     prefix = 'screenshot'
     if filename:
-        prefix = 'screenshot_%s' % filename
+        prefix = f'screenshot_{filename}'
     filename = self.generate_filename(prefix, extension_name='png')
     device_path = os.path.join('/storage/emulated/0/', filename)
     self.adb.shell(['screencap', '-p', device_path],
