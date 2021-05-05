@@ -809,7 +809,7 @@ class AndroidDeviceTest(unittest.TestCase):
     self.assertEqual(
         full_pic_path,
         os.path.join(self.tmp_dir,
-                     'screenshot_page_a,1,fakemodel,07-22-2019_17-53-34-450.png'))
+                     'page_a,1,fakemodel,07-22-2019_17-53-34-450.png'))
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
               return_value=mock_android_device.MockAdbProxy('1'))
