@@ -659,7 +659,7 @@ class BaseTestClass:
     def should_retry(record):
       return record.result in [
           records.TestResultEnums.TEST_RESULT_FAIL,
-          records.TestResultEnums.TEST_RESULT_ERROR
+          records.TestResultEnums.TEST_RESULT_ERROR,
       ]
 
     previous_record = self.exec_one_test(test_name, test_method)
@@ -702,16 +702,16 @@ class BaseTestClass:
       record = self.exec_one_test(new_test_name, test_method)
       if record.result in [
           records.TestResultEnums.TEST_RESULT_FAIL,
-          records.TestResultEnums.TEST_RESULT_ERROR
+          records.TestResultEnums.TEST_RESULT_ERROR,
       ]:
         consecutive_error_count += 1
       else:
         consecutive_error_count = 0
       if consecutive_error_count == max_consecutive_error:
         logging.error(
-            'Repeated test case "%s" has consecutively failed %s iterations, '
-            'aborting the remaining iterations.', test_name,
-            consecutive_error_count)
+            'Repeated test case "%s" has consecutively failed %d iterations, '
+            'aborting the remaining %d iterations.', test_name,
+            consecutive_error_count, repeat_count - 1 - i)
         return
 
   def exec_one_test(self, test_name, test_method, record=None):

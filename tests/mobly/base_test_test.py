@@ -2299,7 +2299,9 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(iter_1.test_name, 'test_something_0')
     self.assertEqual(iter_3.test_name, 'test_something_2')
 
-  def test_repeat_with_consec_error_at_the_beginning_aborts_repeat(self):
+  @mock.patch('logging.error')
+  def test_repeat_with_consec_error_at_the_beginning_aborts_repeat(
+      self, mock_logging_error):
     repeat_count = 5
     max_consec_error = 2
     mock_action = mock.MagicMock()
@@ -2318,12 +2320,17 @@ class BaseTestTest(unittest.TestCase):
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
+    mock_logging_error.assert_called_with(
+        'Repeated test case "%s" has consecutively failed %d iterations, aborting'
+        ' the remaining %d iterations.', 'test_something', 2, 3)
     self.assertEqual(max_consec_error, len(bt_cls.results.executed))
     self.assertEqual(max_consec_error, len(bt_cls.results.error))
     for i, record in enumerate(bt_cls.results.error):
       self.assertEqual(record.test_name, f'test_something_{i}')
 
-  def test_repeat_with_consec_error_in_the_middle_aborts_repeat(self):
+  @mock.patch('logging.error')
+  def test_repeat_with_consec_error_in_the_middle_aborts_repeat(
+      self, mock_logging_error):
     repeat_count = 5
     max_consec_error = 2
     mock_action = mock.MagicMock()
@@ -2344,6 +2351,9 @@ class BaseTestTest(unittest.TestCase):
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
+    mock_logging_error.assert_called_with(
+        'Repeated test case "%s" has consecutively failed %d iterations, aborting'
+        ' the remaining %d iterations.', 'test_something', 2, 1)
     self.assertEqual(4, len(bt_cls.results.executed))
     self.assertEqual(2, len(bt_cls.results.error))
     self.assertEqual(2, len(bt_cls.results.passed))
