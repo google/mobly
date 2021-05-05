@@ -2367,7 +2367,7 @@ class BaseTestTest(unittest.TestCase):
     mock_action.side_effect = [
         Exception('Error 1'), None,
         Exception('Error 2'), None,
-        Exception('Error 3')
+        Exception('Error 3'),
     ]
 
     class MockBaseTest(base_test.BaseTestClass):
