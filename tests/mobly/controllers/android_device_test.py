@@ -579,8 +579,11 @@ class AndroidDeviceTest(unittest.TestCase):
     mock_serial = 1
     ad = android_device.AndroidDevice(serial=mock_serial)
     get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
-    mock_record = mock.MagicMock(begin_time='1234567')
-    mock_test_info = runtime_test_info.RuntimeTestInfo('test_xyz', '/tmp/blah/',
+    mock_record = mock.MagicMock(test_name='test_xyz',
+                                 begin_time='1234567',
+                                 signature='test_xyz-1234567')
+    mock_test_info = runtime_test_info.RuntimeTestInfo(mock_record.test_name,
+                                                       '/tmp/blah/',
                                                        mock_record)
     filename = ad.generate_filename('MagicLog', time_identifier=mock_test_info)
     self.assertEqual(filename, 'MagicLog,1,fakemodel,test_xyz-1234567')

@@ -125,16 +125,13 @@ class SnippetManagementService(base_service.BaseService):
     allocated in `resume`.
     """
     for client in self._snippet_clients.values():
-      self._device.log.debug('Clearing host port %d of SnippetClient<%s>.',
-                             client.host_port, client.package)
-      client.clear_host_port()
+      self._device.log.debug('Pausing SnippetClient<%s>.', client.package)
+      client.disconnect()
 
   def resume(self):
     """Resumes all paused snippet clients."""
     for client in self._snippet_clients.values():
-      # Resume is only applicable if a client is alive and does not have
-      # a host port.
-      if client.is_alive and client.host_port is None:
+      if not client.is_alive:
         self._device.log.debug('Resuming SnippetClient<%s>.', client.package)
         client.restore_app_connection()
       else:

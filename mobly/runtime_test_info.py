@@ -39,9 +39,8 @@ class RuntimeTestInfo:
   def __init__(self, test_name, log_path, record):
     self._name = test_name
     self._record = record
-    self._signature = '%s-%s' % (test_name, record.begin_time)
     self._output_dir_path = utils.abs_path(
-        os.path.join(log_path, self._signature))
+        os.path.join(log_path, self._record.signature))
 
   @property
   def name(self):
@@ -49,7 +48,7 @@ class RuntimeTestInfo:
 
   @property
   def signature(self):
-    return self._signature
+    return self.record.signature
 
   @property
   def record(self):

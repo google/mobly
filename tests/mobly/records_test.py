@@ -73,7 +73,10 @@ class RecordsTest(unittest.TestCase):
     d[records.TestResultEnums.RECORD_EXTRAS] = extras
     d[records.TestResultEnums.RECORD_BEGIN_TIME] = record.begin_time
     d[records.TestResultEnums.RECORD_END_TIME] = record.end_time
+    d[records.TestResultEnums.
+      RECORD_SIGNATURE] = f'{self.tn}-{record.begin_time}'
     d[records.TestResultEnums.RECORD_UID] = None
+    d[records.TestResultEnums.RECORD_RETRY_PARENT] = None
     d[records.TestResultEnums.RECORD_CLASS] = None
     d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
     d[records.TestResultEnums.RECORD_STACKTRACE] = stacktrace
@@ -88,8 +91,6 @@ class RecordsTest(unittest.TestCase):
     # results.
     self.assertTrue(str(record), 'str of the record should not be empty.')
     self.assertTrue(repr(record), "the record's repr shouldn't be empty.")
-
-  """ Begin of Tests """
 
   def test_result_record_pass_none(self):
     record = records.TestResultRecord(self.tn)
@@ -374,6 +375,13 @@ class RecordsTest(unittest.TestCase):
                        unicode_details)
       self.assertEqual(content[records.TestResultEnums.RECORD_EXTRAS],
                        unicode_extras)
+
+  @mock.patch('mobly.utils.get_current_epoch_time')
+  def test_signature(self, mock_time_src):
+    mock_time_src.return_value = 12345
+    record = records.TestResultRecord(self.tn)
+    record.test_begin()
+    self.assertEqual(record.signature, 'test_name-12345')
 
   def test_summary_user_data(self):
     user_data1 = {'a': 1}
