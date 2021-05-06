@@ -801,14 +801,14 @@ class AndroidDeviceTest(unittest.TestCase):
               return_value=mock_android_device.MockFastbootProxy('1'))
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.logger.get_log_file_timestamp')
-  def test_AndroidDevice_take_screenshot_with_filename(
+  def test_AndroidDevice_take_screenshot_with_prefix(
     self, get_log_file_timestamp_mock, create_dir_mock,
     FastbootProxy, MockAdbProxy):
     get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
     mock_serial = '1'
-    screenshot_filename = 'page_a'
+    screenshot_prefix = 'page_a'
     ad = android_device.AndroidDevice(serial=mock_serial)
-    full_pic_path = ad.take_screenshot(self.tmp_dir, screenshot_filename)
+    full_pic_path = ad.take_screenshot(self.tmp_dir, screenshot_prefix)
     self.assertEqual(
         full_pic_path,
         os.path.join(self.tmp_dir,
