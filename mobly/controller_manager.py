@@ -119,7 +119,7 @@ class ControllerManager:
       original_config = self.controller_configs[module_config_name]
       controller_config = copy.deepcopy(original_config)
       objects = module.create(controller_config)
-    except:
+    except Exception:
       logging.exception(
           'Failed to initialize objects for controller %s, abort!',
           module_config_name)

@@ -20,7 +20,6 @@ import enum
 import functools
 import io
 import logging
-import sys
 import threading
 import time
 import traceback
@@ -93,10 +92,6 @@ class TestSummaryEntryType(enum.Enum):
   # This can be added at any point in the test, so do not assume the location
   # of these entries in the summary file.
   USER_DATA = 'UserData'
-
-
-class Error(Exception):
-  """Raised for errors in records."""
 
 
 class TestSummaryWriter:
@@ -468,8 +463,8 @@ class TestResultRecord:
 
   def __str__(self):
     d = self.to_dict()
-    l = ['%s = %s' % (k, v) for k, v in d.items()]
-    s = ', '.join(l)
+    kv_pairs = ['%s = %s' % (k, v) for k, v in d.items()]
+    s = ', '.join(kv_pairs)
     return s
 
   def __repr__(self):
@@ -643,9 +638,9 @@ class TestResult:
     Returns:
       A summary string of this test result.
     """
-    l = ['%s %d' % (k, v) for k, v in self.summary_dict().items()]
+    kv_pairs = ['%s %d' % (k, v) for k, v in self.summary_dict().items()]
     # Sort the list so the order is the same every time.
-    msg = ', '.join(sorted(l))
+    msg = ', '.join(sorted(kv_pairs))
     return msg
 
   def summary_dict(self):

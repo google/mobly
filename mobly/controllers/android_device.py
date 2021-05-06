@@ -110,13 +110,6 @@ def create(configs):
     ads = get_instances(configs)
   else:
     raise Error('No valid config found in: %s' % configs)
-  valid_ad_identifiers = list_adb_devices() + list_adb_devices_by_usb_id()
-
-  for ad in ads:
-    if ad.serial not in valid_ad_identifiers:
-      raise DeviceError(
-          ad, 'Android device is specified in config but is not '
-          'attached.')
   _start_services_on_ads(ads)
   return ads
 
@@ -144,6 +137,20 @@ def get_info(ads):
     A list of dict, each representing info for an AndroidDevice objects.
   """
   return [ad.device_info for ad in ads]
+
+
+def _validate_device_existence(serials):
+  """Validate that all the devices specified by the configs can be reached.
+
+  Args:
+    serials: list of strings, the serials of all the devices that are expected
+      to exist.
+  """
+  valid_ad_identifiers = list_adb_devices() + list_adb_devices_by_usb_id()
+  for serial in serials:
+    if serial not in valid_ad_identifiers:
+      raise Error(f'Android device serial "{serial}" is specified in '
+                  'config but is not reachable.')
 
 
 def _start_services_on_ads(ads):
@@ -247,6 +254,8 @@ def get_instances(serials):
   Returns:
     A list of AndroidDevice objects.
   """
+  _validate_device_existence(serials)
+
   results = []
   for s in serials:
     results.append(AndroidDevice(s))
@@ -265,13 +274,19 @@ def get_instances_with_configs(configs):
   Returns:
     A list of AndroidDevice objects.
   """
-  results = []
+  # First make sure each config contains a serial, and all the serials'
+  # corresponding devices exist.
+  serials = []
   for c in configs:
     try:
-      serial = c.pop('serial')
+      serials.append(c['serial'])
     except KeyError:
       raise Error(
           'Required value "serial" is missing in AndroidDevice config %s.' % c)
+  _validate_device_existence(serials)
+  results = []
+  for c in configs:
+    serial = c.pop('serial')
     is_required = c.get(KEY_DEVICE_REQUIRED, True)
     try:
       ad = AndroidDevice(serial)

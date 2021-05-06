@@ -45,14 +45,15 @@ STAGE_NAME_CLEAN_UP = 'clean_up'
 
 # Attribute names
 ATTR_REPEAT_CNT = '_repeat_count'
-ATTR_MAX_RETRY_CNT = '_max_count'
+ATTR_MAX_RETRY_CNT = '_max_retry_count'
+ATTR_MAX_CONSEC_ERROR = '_max_consecutive_error'
 
 
 class Error(Exception):
   """Raised for exceptions that occurred in BaseTestClass."""
 
 
-def repeat(count):
+def repeat(count, max_consecutive_error=None):
   """Decorator for repeating a test case multiple times.
 
   The BaseTestClass will execute the test cases annotated with this decorator
@@ -63,6 +64,9 @@ def repeat(count):
 
   Args:
     count: int, the total number of times to execute the decorated test case.
+    max_consecutive_error: int, the maximum number of consecutively failed
+      iterations allowed. If reached, the remaining iterations is abandoned.
+      By default this is not enabled.
 
   Returns:
     The wrapped test function.
@@ -74,8 +78,14 @@ def repeat(count):
     raise ValueError(
         f'The `count` for `repeat` must be larger than 1, got "{count}".')
 
+  if max_consecutive_error is not None and max_consecutive_error > count:
+    raise ValueError(
+        f'The `max_consecutive_error` ({max_consecutive_error}) for `repeat` '
+        f'must be smaller than `count` ({count}).')
+
   def _outer_decorator(func):
     setattr(func, ATTR_REPEAT_CNT, count)
+    setattr(func, ATTR_MAX_CONSEC_ERROR, max_consecutive_error)
 
     @functools.wraps(func)
     def _wrapper(*args):
@@ -649,13 +659,13 @@ class BaseTestClass:
     def should_retry(record):
       return record.result in [
           records.TestResultEnums.TEST_RESULT_FAIL,
-          records.TestResultEnums.TEST_RESULT_ERROR
+          records.TestResultEnums.TEST_RESULT_ERROR,
       ]
 
     previous_record = self.exec_one_test(test_name, test_method)
 
     if not should_retry(previous_record):
-      return previous_record
+      return
 
     for i in range(max_count - 1):
       retry_name = f'{test_name}_retry_{i+1}'
@@ -664,6 +674,47 @@ class BaseTestClass:
       previous_record = self.exec_one_test(retry_name, test_method, new_record)
       if not should_retry(previous_record):
         break
+
+  def _exec_one_test_with_repeat(self, test_name, test_method, repeat_count,
+                                 max_consecutive_error):
+    """Repeatedly execute a test case.
+
+    This method performs the action defined by the `repeat` decorator.
+
+    If the number of consecutive failures reach the threshold set by
+    `max_consecutive_error`, the remaining iterations will be abandoned.
+
+    Args:
+      test_name: string, Name of the test.
+      test_method: function, The test method to execute.
+      repeat_count: int, the number of times to repeat the test case.
+      max_consecutive_error: int, the maximum number of consecutive iterations
+        allowed to fail before abandoning the remaining iterations.
+    """
+
+    consecutive_error_count = 0
+
+    # If max_consecutive_error is not set by user, it is considered the same as
+    # the repeat_count.
+    if max_consecutive_error == 0:
+      max_consecutive_error = repeat_count
+
+    for i in range(repeat_count):
+      new_test_name = f'{test_name}_{i}'
+      record = self.exec_one_test(new_test_name, test_method)
+      if record.result in [
+          records.TestResultEnums.TEST_RESULT_FAIL,
+          records.TestResultEnums.TEST_RESULT_ERROR,
+      ]:
+        consecutive_error_count += 1
+      else:
+        consecutive_error_count = 0
+      if consecutive_error_count == max_consecutive_error:
+        logging.error(
+            'Repeated test case "%s" has consecutively failed %d iterations, '
+            'aborting the remaining %d iterations.', test_name,
+            consecutive_error_count, repeat_count - 1 - i)
+        return
 
   def exec_one_test(self, test_name, test_method, record=None):
     """Executes one test and update test results.
@@ -677,7 +728,7 @@ class BaseTestClass:
       test_method: function, The test method to execute.
       record: records.TestResultRecord, optional arg for injecting a record
         object to use for this test execution. If not set, a new one is created
-        created. This is meant for passing infomation between consecutive test
+        created. This is meant for passing information between consecutive test
         case execution for retry purposes. Do NOT abuse this for "magical"
         features.
 
@@ -836,7 +887,7 @@ class BaseTestClass:
       return func(*args)
     except signals.TestAbortAll:
       raise
-    except:
+    except Exception:
       logging.exception('Exception happened when executing %s in %s.',
                         func.__name__, self.TAG)
 
@@ -884,12 +935,7 @@ class BaseTestClass:
         test_method = self._generated_test_table[test_name]
       else:
         raise Error('%s does not have test method %s.' % (self.TAG, test_name))
-      repeat_count = getattr(test_method, ATTR_REPEAT_CNT, 0)
-      if repeat_count:
-        for i in range(repeat_count):
-          test_methods.append((f'{test_name}_{i}', test_method))
-      else:
-        test_methods.append((test_name, test_method))
+      test_methods.append((test_name, test_method))
     return test_methods
 
   def _skip_remaining_tests(self, exception):
@@ -953,9 +999,15 @@ class BaseTestClass:
         return setup_class_result
       # Run tests in order.
       for test_name, test_method in tests:
-        max_count = getattr(test_method, ATTR_MAX_RETRY_CNT, 0)
-        if max_count:
-          self._exec_one_test_with_retry(test_name, test_method, max_count)
+        max_consecutive_error = getattr(test_method, ATTR_MAX_CONSEC_ERROR, 0)
+        repeat_count = getattr(test_method, ATTR_REPEAT_CNT, 0)
+        max_retry_count = getattr(test_method, ATTR_MAX_RETRY_CNT, 0)
+        if max_retry_count:
+          self._exec_one_test_with_retry(test_name, test_method,
+                                         max_retry_count)
+        elif repeat_count:
+          self._exec_one_test_with_repeat(test_name, test_method, repeat_count,
+                                          max_consecutive_error)
         else:
           self.exec_one_test(test_name, test_method)
       return self.results
