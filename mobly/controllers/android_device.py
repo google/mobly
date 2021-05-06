@@ -995,17 +995,16 @@ class AndroidDevice:
     self.log.debug('Bugreport taken at %s.', full_out_path)
     return full_out_path
 
-  def take_screenshot(self, destination, filename='screenshot'):
+  def take_screenshot(self, destination, prefix='screenshot'):
     """Takes a screenshot of the device.
 
     Args:
       destination: string, full path to the directory to save in.
-      filename: string, prefix file name of the screenshot.
+      prefix: string, prefix file name of the screenshot.
 
     Returns:
       string, full path to the screenshot file on the host.
     """
-    prefix = filename
     filename = self.generate_filename(prefix, extension_name='png')
     device_path = os.path.join('/storage/emulated/0/', filename)
     self.adb.shell(['screencap', '-p', device_path],
