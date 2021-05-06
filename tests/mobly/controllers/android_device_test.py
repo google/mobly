@@ -164,11 +164,12 @@ class AndroidDeviceTest(unittest.TestCase):
   @mock.patch('mobly.controllers.android_device.AndroidDevice')
   def test_get_instances_with_configs(self, mock_ad_class, mock_list_adb_usb,
                                       mock_list_adb):
-    mock_list_adb.return_value = ['1']
+    mock_list_adb.return_value = ['1', '2']
     mock_list_adb_usb.return_value = []
-    config = {'serial': '1'}
-    android_device.get_instances_with_configs([config])
-    mock_ad_class.assert_called_with('1')
+    configs = [{'serial': '1'}, {'serial': '2'}]
+    android_device.get_instances_with_configs(configs)
+    mock_ad_class.assert_any_call('1')
+    mock_ad_class.assert_any_call('2')
 
   def test_get_instances_with_configs_invalid_config(self):
     config = {'something': 'random'}
