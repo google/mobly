@@ -149,9 +149,8 @@ def _validate_device_existence(serials):
   valid_ad_identifiers = list_adb_devices() + list_adb_devices_by_usb_id()
   for serial in serials:
     if serial not in valid_ad_identifiers:
-      raise DeviceError(
-          ad, 'Android device is specified in config but is not '
-          'attached.')
+      raise Error(f'Android device serial "{serial}" is specified in '
+                  'config but is not reachable.')
 
 
 def _start_services_on_ads(ads):

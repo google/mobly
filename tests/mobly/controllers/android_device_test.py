@@ -27,6 +27,7 @@ import yaml
 from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
+from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import base_service
 from mobly.controllers.android_device_lib.services import logcat
@@ -135,6 +136,61 @@ class AndroidDeviceTest(unittest.TestCase):
     expected_msg = 'No valid config found in: .*'
     with self.assertRaisesRegex(android_device.Error, expected_msg):
       android_device.create([1])
+
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.AndroidDevice')
+  def test_get_instances(self, mock_ad_class, mock_list_adb_usb, mock_list_adb):
+    mock_list_adb.return_value = ['1']
+    mock_list_adb_usb.return_value = []
+    android_device.get_instances(['1'])
+    mock_ad_class.assert_called_with('1')
+
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.AndroidDevice')
+  def test_get_instances_do_not_exist(self, mock_ad_class, mock_list_adb_usb,
+                                      mock_list_adb):
+    mock_list_adb.return_value = []
+    mock_list_adb_usb.return_value = []
+    with self.assertRaisesRegex(
+        errors.Error,
+        'Android device serial "1" is specified in config but is not reachable'
+    ):
+      android_device.get_instances(['1'])
+
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.AndroidDevice')
+  def test_get_instances_with_configs(self, mock_ad_class, mock_list_adb_usb,
+                                      mock_list_adb):
+    mock_list_adb.return_value = ['1']
+    mock_list_adb_usb.return_value = []
+    config = {'serial': '1'}
+    android_device.get_instances_with_configs([config])
+    mock_ad_class.assert_called_with('1')
+
+  def test_get_instances_with_configs_invalid_config(self):
+    config = {'something': 'random'}
+    with self.assertRaisesRegex(
+        errors.Error,
+        f'Required value "serial" is missing in AndroidDevice config {config}'):
+      android_device.get_instances_with_configs([config])
+
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.AndroidDevice')
+  def test_get_instances_with_configsdo_not_exist(self, mock_ad_class,
+                                                  mock_list_adb_usb,
+                                                  mock_list_adb):
+    mock_list_adb.return_value = []
+    mock_list_adb_usb.return_value = []
+    config = {'serial': '1'}
+    with self.assertRaisesRegex(
+        errors.Error,
+        'Android device serial "1" is specified in config but is not reachable'
+    ):
+      android_device.get_instances_with_configs([config])
 
   def test_get_devices_success_with_extra_field(self):
     ads = mock_android_device.get_mock_ads(5)
