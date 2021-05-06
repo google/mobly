@@ -279,14 +279,14 @@ def get_instances_with_configs(configs):
   serials = []
   for c in configs:
     try:
-      serial = c.pop('serial')
-      serials.append(serial)
+      serials.append(c['serial'])
     except KeyError:
       raise Error(
           'Required value "serial" is missing in AndroidDevice config %s.' % c)
   _validate_device_existence(serials)
   results = []
   for c in configs:
+    serial = c.pop('serial')
     is_required = c.get(KEY_DEVICE_REQUIRED, True)
     try:
       ad = AndroidDevice(serial)
