@@ -16,7 +16,6 @@ import io
 import json
 import logging
 import os
-import subprocess
 
 from mobly import utils
 
@@ -28,7 +27,7 @@ def create(configs):
   for c in configs:
     try:
       results.append(IPerfServer(c, logging.log_path))
-    except:
+    except Exception:
       pass
   return results
 
@@ -37,7 +36,7 @@ def destroy(objs):
   for ipf in objs:
     try:
       ipf.stop()
-    except:
+    except Exception:
       pass
 
 

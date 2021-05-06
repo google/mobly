@@ -37,7 +37,9 @@ class Sniffer(local_base.SnifferLocalBase):
   def get_descriptor(self):
     """See base class documentation
         """
-    return "local-tshark-{}-ch{}".format(self._interface)
+    # TODO: "local-tshark-{}-ch{}" needs two arguments
+    #       and only one `self._interface` is given here?
+    return "local-tshark-{0}-ch{0}".format(self._interface)
 
   def get_subtype(self):
     """See base class documentation

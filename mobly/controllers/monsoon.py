@@ -33,7 +33,6 @@ import serial
 import mobly.signals
 
 from mobly import utils
-from mobly.controllers import android_device
 
 MOBLY_CONTROLLER_CONFIG_NAME = "Monsoon"
 
@@ -144,12 +143,12 @@ class MonsoonProxy:
         self._tempfile = io.open(tmpname, "w", encoding='utf-8')
         try:
           os.chmod(tmpname, 0o666)
-        except OSError as e:
+        except OSError:
           pass
 
         try:  # use a lockfile to ensure exclusive access
           fcntl.lockf(self._tempfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except IOError as e:
+        except IOError:
           logging.error("device %s is in use", dev)
           continue
 
@@ -752,7 +751,6 @@ class Monsoon:
     emitted = offset = 0
     collected = []
     # past n samples for rolling average
-    history_deque = collections.deque()
     current_values = []
     timestamps = []
 
@@ -788,7 +786,7 @@ class Monsoon:
           if now - last_flush >= 0.99:  # flush every second
             sys.stdout.flush()
             last_flush = now
-    except Exception as e:
+    except Exception:
       pass
     self.mon.StopDataCollection()
     try:
@@ -797,7 +795,7 @@ class Monsoon:
                          sample_hz,
                          voltage,
                          offset=sample_offset)
-    except:
+    except Exception:
       return None
 
   @timeout_decorator.timeout(60, use_signals=False)
