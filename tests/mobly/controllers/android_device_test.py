@@ -856,6 +856,26 @@ class AndroidDeviceTest(unittest.TestCase):
               return_value=mock_android_device.MockAdbProxy('1'))
   @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
               return_value=mock_android_device.MockFastbootProxy('1'))
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.logger.get_log_file_timestamp')
+  def test_AndroidDevice_take_screenshot_with_prefix(
+    self, get_log_file_timestamp_mock, create_dir_mock,
+    FastbootProxy, MockAdbProxy):
+    get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+    mock_serial = '1'
+    ad = android_device.AndroidDevice(serial=mock_serial)
+
+    full_pic_path = ad.take_screenshot(self.tmp_dir, 'page_a')
+
+    self.assertEqual(
+        full_pic_path,
+        os.path.join(self.tmp_dir,
+                     'page_a,1,fakemodel,07-22-2019_17-53-34-450.png'))
+
+  @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+              return_value=mock_android_device.MockAdbProxy('1'))
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+              return_value=mock_android_device.MockFastbootProxy('1'))
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
   def test_AndroidDevice_change_log_path(self, stop_proc_mock, start_proc_mock,
