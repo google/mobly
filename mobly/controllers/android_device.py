@@ -123,7 +123,7 @@ def destroy(ads):
   for ad in ads:
     try:
       ad.services.stop_all()
-    except:
+    except Exception:
       ad.log.exception('Failed to clean up properly.')
 
 

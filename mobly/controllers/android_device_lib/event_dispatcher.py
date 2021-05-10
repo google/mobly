@@ -62,7 +62,7 @@ class EventDispatcher:
       event_name = None
       try:
         event_obj = self._sl4a.eventWait(50000)
-      except:
+      except Exception:
         if self.started:
           print("Exception happened during polling.")
           print(traceback.format_exc())
@@ -269,7 +269,7 @@ class EventDispatcher:
       raise IllegalStateError("Dispatcher needs to be started before popping.")
     deadline = time.perf_counter() + timeout
     while True:
-      #TODO: fix the sleep loop
+      # TODO: fix the sleep loop
       results = self._match_and_pop(regex_pattern)
       if len(results) != 0 or time.perf_counter() > deadline:
         break
@@ -292,7 +292,7 @@ class EventDispatcher:
         if q:
           try:
             results.append(q.get(False))
-          except:
+          except Exception:
             pass
     self.lock.release()
     return results

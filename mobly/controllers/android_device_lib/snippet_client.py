@@ -129,7 +129,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       # If errors happen, make sure we clean up before raising.
       try:
         self.stop_app()
-      except:
+      except Exception:
         self._ad.log.exception(
             'Failed to stop app after failure to start and connect.')
       # Explicitly raise the original error from starting app.
@@ -204,7 +204,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
     try:
       self.connect()
-    except:
+    except Exception:
       # Log the original error and raise AppRestoreConnectionError.
       self.log.exception('Failed to re-connect to app.')
       raise jsonrpc_client_base.AppRestoreConnectionError(
@@ -313,7 +313,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       # considering any blank output line to be EOF.
       line = line.strip()
       if (line.startswith('INSTRUMENTATION_RESULT:') or
-          line.startswith('SNIPPET ')):
+         line.startswith('SNIPPET ')):
         self.log.debug('Accepted line from instrumentation output: "%s"', line)
         return line
       self.log.debug('Discarded line from instrumentation output: "%s"', line)

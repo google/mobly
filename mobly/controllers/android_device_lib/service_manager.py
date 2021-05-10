@@ -15,7 +15,6 @@
 # TODO(xpconanfan: move the device errors to a more generic location so
 # other device controllers like iOS can share it.
 import collections
-import contextlib
 import inspect
 
 from mobly import expects

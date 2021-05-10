@@ -32,14 +32,14 @@ class JsonRpcShellBase:
 
     Must be implemented by subclasses.
     """
-    raise NotImplemented()
+    raise NotImplementedError()
 
   def _get_banner(self, serial):
     """Returns the user-friendly banner message to print before the console.
 
     Must be implemented by subclasses.
     """
-    raise NotImplemented()
+    raise NotImplementedError()
 
   def load_device(self, serial=None):
     """Creates an AndroidDevice for the given serial number.
