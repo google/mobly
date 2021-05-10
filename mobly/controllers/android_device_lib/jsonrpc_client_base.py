@@ -54,7 +54,6 @@ except ImportError:
 import abc
 import json
 import socket
-import sys
 import threading
 
 from mobly.controllers.android_device_lib import callback_handler

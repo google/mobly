@@ -107,7 +107,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         # Be polite; let the dest know we're shutting down.
         try:
           self.closeSl4aSession()
-        except:
+        except Exception:
           self.log.exception('Failed to gracefully shut down %s.',
                              self.app_name)
 
@@ -126,7 +126,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
     if self.ed:
       try:
         self.ed.clean_up()
-      except:
+      except Exception:
         self.log.exception('Failed to shutdown sl4a event dispatcher.')
       self.ed = None
 
@@ -140,7 +140,7 @@ class Sl4aClient(jsonrpc_client_base.JsonRpcClientBase):
         self.connect()
         started = True
         break
-      except:
+      except Exception:
         self.log.debug('%s is not yet running, retrying',
                        self.app_name,
                        exc_info=True)

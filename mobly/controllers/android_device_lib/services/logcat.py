@@ -239,7 +239,7 @@ class Logcat(base_service.BaseService):
       return
     try:
       utils.stop_standing_subprocess(self._adb_logcat_process)
-    except:
+    except Exception:
       self._ad.log.exception('Failed to stop adb logcat.')
     self._adb_logcat_process = None
 
