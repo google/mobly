@@ -70,7 +70,7 @@ class TelnetScpiClient:
       return None
 
     match_idx, match_val, ret_text = self._tn.expect(
-        [_ascii_string(r'\S+' + self.rx_cmd_separator)], 1)
+        [_ascii_string("\S+" + self.rx_cmd_separator)], 1)
 
     if match_idx == -1:
       raise attenuator.Error("Telnet command failed to return valid data")

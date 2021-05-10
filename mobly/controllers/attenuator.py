@@ -33,6 +33,7 @@ Sample Config:
     ]
 """
 import importlib
+import logging
 
 MOBLY_CONTROLLER_CONFIG_NAME = "Attenuator"
 # Keys used inside a config dict for attenuator.
@@ -63,7 +64,7 @@ def create(configs):
     attenuation_device = module.AttenuatorDevice(
         path_count=len(config[KEY_PATHS]))
     attenuation_device.model = attenuator_model
-    attenuation_device.open(config[KEY_ADDRESS], config[KEY_PORT])
+    instances = attenuation_device.open(config[KEY_ADDRESS], config[KEY_PORT])
     for idx, path_name in enumerate(config[KEY_PATHS]):
       path = AttenuatorPath(attenuation_device, idx=idx, name=path_name)
       objs.append(path)
