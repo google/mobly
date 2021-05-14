@@ -475,6 +475,26 @@ class AdbTest(unittest.TestCase):
     self.assertEqual(MOCK_DEFAULT_STDERR,
                      stderr_redirect.getvalue().decode('utf-8'))
 
+  @mock.patch('mobly.utils.run_command')
+  def test_connect_success(self, mock_run_command):
+    mock_address = 'localhost:1234'
+    mock_run_command.return_value = (
+        0, f'connected to {mock_address}'.encode('utf-8'),
+        MOCK_DEFAULT_STDERR.encode('utf-8'))
+
+    out = adb.AdbProxy().connect(mock_address)
+    self.assertEqual('connected to localhost:1234', out.decode('utf-8'))
+
+  @mock.patch('mobly.utils.run_command')
+  def test_connect_fail(self, mock_run_command):
+    mock_address = 'localhost:1234'
+    mock_run_command.return_value = (0, 'Connection refused\n'.encode('utf-8'),
+                                     MOCK_DEFAULT_STDERR.encode('utf-8'))
+
+    with self.assertRaisesRegex(
+        adb.AdbError, 'Error executing adb cmd "connect localhost:1234".'):
+      out = adb.AdbProxy().connect(mock_address)
+
   def test_getprop(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
       mock_exec_cmd.return_value = b'blah'
