@@ -41,6 +41,9 @@ DEFAULT_GETPROP_TIMEOUT_SEC = 5
 DEFAULT_GETPROPS_ATTEMPTS = 3
 DEFAULT_GETPROPS_RETRY_SLEEP_SEC = 1
 
+# The regex pattern of the success message of the `adb connect` command.
+PATTERN_ADB_CONNECT_SUCCESS = re.compile(r'^connected to .*')
+
 
 class Error(Exception):
   """Base error type for adb proxy module."""
@@ -337,6 +340,30 @@ class AdbProxy:
       return int(re.findall(r'\{(\d+):', user_info_str)[0])
     # Multi-user is not supported in SDK < 21, only user 0 exists.
     return 0
+
+  def connect(self, address):
+    """Executes the `adb connect` command with proper status checking.
+
+    Args:
+      address: string, the address of the Android instance to connect to.
+
+    Returns:
+      The stdout content.
+
+    Raises:
+      AdbError: if the connection failed.
+    """
+    stdout = self._exec_adb_cmd('connect',
+                                address,
+                                shell=False,
+                                timeout=None,
+                                stderr=None)
+    if not PATTERN_ADB_CONNECT_SUCCESS.match(stdout.decode('utf-8')):
+      raise AdbError(cmd=f'connect {address}',
+                     stdout=stdout,
+                     stderr='',
+                     ret_code=0)
+    return stdout
 
   def getprop(self, prop_name):
     """Get a property of the device.
