@@ -486,6 +486,16 @@ class AdbTest(unittest.TestCase):
     self.assertEqual('connected to localhost:1234', out.decode('utf-8'))
 
   @mock.patch('mobly.utils.run_command')
+  def test_connect_already_connected(self, mock_run_command):
+    mock_address = 'localhost:1234'
+    mock_run_command.return_value = (
+        0, f'already connected to {mock_address}'.encode('utf-8'),
+        MOCK_DEFAULT_STDERR.encode('utf-8'))
+
+    out = adb.AdbProxy().connect(mock_address)
+    self.assertEqual('already connected to localhost:1234', out.decode('utf-8'))
+
+  @mock.patch('mobly.utils.run_command')
   def test_connect_fail(self, mock_run_command):
     mock_address = 'localhost:1234'
     mock_run_command.return_value = (0, 'Connection refused\n'.encode('utf-8'),

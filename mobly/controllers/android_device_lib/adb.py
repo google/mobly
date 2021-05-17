@@ -42,7 +42,8 @@ DEFAULT_GETPROPS_ATTEMPTS = 3
 DEFAULT_GETPROPS_RETRY_SLEEP_SEC = 1
 
 # The regex pattern of the success message of the `adb connect` command.
-PATTERN_ADB_CONNECT_SUCCESS = re.compile(r'^connected to .*')
+PATTERN_ADB_CONNECT_SUCCESS = re.compile(
+    r'^connected to .*|^already connected to .*')
 
 
 class Error(Exception):
@@ -52,7 +53,7 @@ class Error(Exception):
 class AdbError(Error):
   """Raised when an adb command encounters an error.
 
-  Args:
+  Attributes:
     cmd: list of strings, the adb command executed.
     stdout: byte string, the raw stdout of the command.
     stderr: byte string, the raw stderr of the command.
@@ -63,6 +64,7 @@ class AdbError(Error):
   """
 
   def __init__(self, cmd, stdout, stderr, ret_code, serial=''):
+    super().__init__()
     self.cmd = cmd
     self.stdout = stdout
     self.stderr = stderr
@@ -78,7 +80,7 @@ class AdbError(Error):
 class AdbTimeoutError(Error):
   """Raised when an command did not complete within expected time.
 
-  Args:
+  Attributes:
     cmd: list of strings, the adb command that timed out
     timeout: float, the number of seconds passed before timing out.
     serial: string, the serial of the device the command is executed on.
@@ -87,6 +89,7 @@ class AdbTimeoutError(Error):
   """
 
   def __init__(self, cmd, timeout, serial=''):
+    super().__init__()
     self.cmd = cmd
     self.timeout = timeout
     self.serial = serial
