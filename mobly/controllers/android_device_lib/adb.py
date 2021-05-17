@@ -41,7 +41,7 @@ DEFAULT_GETPROP_TIMEOUT_SEC = 5
 DEFAULT_GETPROPS_ATTEMPTS = 3
 DEFAULT_GETPROPS_RETRY_SLEEP_SEC = 1
 
-# The regex pattern of the success message of the `adb connect` command.
+# The regex pattern indicating the `adb connect` command did not fail.
 PATTERN_ADB_CONNECT_SUCCESS = re.compile(
     r'^connected to .*|^already connected to .*')
 
