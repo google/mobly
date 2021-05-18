@@ -361,7 +361,7 @@ class AdbProxy:
                                 shell=False,
                                 timeout=None,
                                 stderr=None)
-    if not PATTERN_ADB_CONNECT_SUCCESS.match(stdout.decode('utf-8')):
+    if PATTERN_ADB_CONNECT_SUCCESS.match(stdout.decode('utf-8')) is None:
       raise AdbError(cmd=f'connect {address}',
                      stdout=stdout,
                      stderr='',
