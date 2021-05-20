@@ -90,6 +90,7 @@ class UtilsTest(unittest.TestCase):
         shell=False,
         cwd=None,
         env=None,
+        universal_newlines=False,
     )
     mock_Timer.assert_not_called()
 
@@ -102,6 +103,7 @@ class UtilsTest(unittest.TestCase):
     mock_shell = mock.MagicMock(spec=bool)
     mock_timeout = 1234
     mock_env = mock.MagicMock(spec=dict)
+    mock_universal_newlines = mock.MagicMock(spec=bool)
     mock_proc = mock_Popen.return_value
     mock_proc.communicate.return_value = ('fake_out', 'fake_err')
     mock_proc.returncode = 127
@@ -110,7 +112,8 @@ class UtilsTest(unittest.TestCase):
                             stderr=mock_stderr,
                             shell=mock_shell,
                             timeout=mock_timeout,
-                            env=mock_env)
+                            env=mock_env,
+                            universal_newlines=mock_universal_newlines)
     self.assertEqual(out, (127, 'fake_out', 'fake_err'))
     mock_Popen.assert_called_with(
         mock_command,
@@ -119,8 +122,19 @@ class UtilsTest(unittest.TestCase):
         shell=mock_shell,
         cwd=None,
         env=mock_env,
+        universal_newlines=mock_universal_newlines,
     )
     mock_Timer.assert_called_with(1234, mock.ANY)
+
+  def test_run_command_with_universal_newlines_false(self):
+    (ret, out, err) = utils.run_command(
+        self.sleep_cmd(0.01), universal_newlines=False)
+    self.assertTrue(isinstance(out, bytes))
+
+  def test_run_command_with_universal_newlines_true(self):
+    (ret, out, err) = utils.run_command(
+        self.sleep_cmd(0.01), universal_newlines=True)
+    self.assertTrue(isinstance(out, str))
 
   def test_start_standing_subproc(self):
     try:
