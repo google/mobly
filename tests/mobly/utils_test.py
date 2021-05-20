@@ -122,6 +122,16 @@ class UtilsTest(unittest.TestCase):
     )
     mock_Timer.assert_called_with(1234, mock.ANY)
 
+  def test_run_command_with_universal_newlines_false(self):
+    (ret, out, err) = utils.run_command(
+        self.sleep_cmd(0.01), universal_newlines=False)
+    self.assertTrue(isinstance(out, bytes))
+
+  def test_run_command_with_universal_newlines_true(self):
+    (ret, out, err) = utils.run_command(
+        self.sleep_cmd(0.01), universal_newlines=True)
+    self.assertTrue(isinstance(out, str))
+
   def test_start_standing_subproc(self):
     try:
       p = utils.start_standing_subprocess(self.sleep_cmd(0.01))
