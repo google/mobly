@@ -310,7 +310,8 @@ def run_command(cmd,
                 shell=False,
                 timeout=None,
                 cwd=None,
-                env=None):
+                env=None,
+                universal_newlines=False):
   """Runs a command in a subprocess.
 
   This function is very similar to subprocess.check_output. The main
@@ -337,6 +338,8 @@ def run_command(cmd,
     env: dict, a mapping that defines the environment variables for the
       new process. Default behavior is inheriting the current process'
       environment.
+    universal_newlines: bool, True to open file objects in text mode, False in
+      binary mode.
 
   Returns:
     A 3-tuple of the consisting of the return code, the std output, and the
@@ -358,7 +361,8 @@ def run_command(cmd,
                          stderr=stderr,
                          shell=shell,
                          cwd=cwd,
-                         env=env)
+                         env=env,
+                         universal_newlines=universal_newlines)
   timer = None
   timer_triggered = threading.Event()
   if timeout and timeout > 0:
