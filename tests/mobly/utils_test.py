@@ -129,12 +129,12 @@ class UtilsTest(unittest.TestCase):
   def test_run_command_with_universal_newlines_false(self):
     (ret, out, err) = utils.run_command(
         self.sleep_cmd(0.01), universal_newlines=False)
-    self.assertTrue(isinstance(out, bytes))
+    self.assertIsInstance(out, bytes)
 
   def test_run_command_with_universal_newlines_true(self):
     (ret, out, err) = utils.run_command(
         self.sleep_cmd(0.01), universal_newlines=True)
-    self.assertTrue(isinstance(out, str))
+    self.assertIsInstance(out, str)
 
   def test_start_standing_subproc(self):
     try:
