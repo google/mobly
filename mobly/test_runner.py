@@ -17,6 +17,7 @@ import contextlib
 import logging
 import os
 import sys
+import time
 
 from mobly import base_test
 from mobly import config_parser
@@ -201,6 +202,78 @@ class TestRunner:
       self.test_class_name_suffix = test_class_name_suffix
       self.tests = tests
 
+  class _TestRunMetaData:
+    """Metadata associated with a test run.
+
+    This class calculates values that are specific to a test run.
+
+    One object of this class corresponds to an entire test run, which could
+    include multiple test classes.
+
+    Attributes:
+      root_output_path: string, the root output path for a test run. All
+        artifacts from this test run shall be stored here.
+      run_id: string, the unique identifier for this test run.
+      time_elapsed_sec: float, the number of seconds elapsed for this test run.
+    """
+
+    def __init__(self, log_dir, testbed_name):
+      self._log_dir = log_dir
+      self._testbed_name = testbed_name
+      self._logger_start_time = None
+      self._start_counter = None
+      self._end_counter = None
+      self.root_output_path = log_dir
+
+    def generate_test_run_log_path(self):
+      """Geneartes the log path for a test run.
+
+      The log path includes a timestamp that is set in this call.
+
+      There is usually a minor difference between this timestamp and the actual
+      starting point of the test run. This is because the log path must be set
+      up *before* the test run actually starts, so all information of a test
+      run can be properly captured.
+
+      The generated value can be accessed via `self.root_output_path`.
+
+      Returns:
+        String, the generated log path.
+      """
+      self._logger_start_time = logger.get_log_file_timestamp()
+      self.root_output_path = os.path.join(self._log_dir, self._testbed_name,
+                                           self._logger_start_time)
+      return self.root_output_path
+
+    def set_start_point(self):
+      """Sets the start point of a test run.
+
+      This is used to calculate the total elapsed time of the test run.
+      """
+      self._start_counter = time.perf_counter()
+
+    def set_end_point(self):
+      """Sets the end point of a test run.
+
+      This is used to calculate the total elapsed time of the test run.
+      """
+      self._end_counter = time.perf_counter()
+
+    @property
+    def run_id(self):
+      """The unique identifier of a test run."""
+      return f'{self._testbed_name}@{self._logger_start_time}'
+
+    @property
+    def time_elapsed_sec(self):
+      """The total time elapsed for a test run in seconds.
+
+      This value is None until the test run has completed.
+      """
+      if self._start_counter is None or self._end_counter is None:
+        return None
+      return self._end_counter - self._start_counter
+
   def __init__(self, log_dir, testbed_name):
     """Constructor for TestRunner.
 
@@ -213,16 +286,7 @@ class TestRunner:
 
     self.results = records.TestResult()
     self._test_run_infos = []
-
-    # Set default logging values. Necessary if `run` is used outside of the
-    # `mobly_logger` context.
-    self._update_log_path()
-
-  def _update_log_path(self):
-    """Updates the logging values with the current timestamp."""
-    self._start_time = logger.get_log_file_timestamp()
-    self._root_output_path = os.path.join(self._log_dir, self._testbed_name,
-                                          self._start_time)
+    self._test_run_metadata = TestRunner._TestRunMetaData(log_dir, testbed_name)
 
   @contextlib.contextmanager
   def mobly_logger(self, alias='latest'):
@@ -236,12 +300,11 @@ class TestRunner:
     Yields:
       The host file path where the logs for the test run are stored.
     """
-    self._update_log_path()
-    logger.setup_test_logger(self._root_output_path,
-                             self._testbed_name,
-                             alias=alias)
+    # Refersh the log path at the beginning of the logger context.
+    root_output_path = self._test_run_metadata.generate_test_run_log_path()
+    logger.setup_test_logger(root_output_path, self._testbed_name, alias=alias)
     try:
-      yield self._root_output_path
+      yield self._test_run_metadata.root_output_path
     finally:
       logger.kill_test_logger(logging.getLogger())
 
@@ -305,6 +368,11 @@ class TestRunner:
     This will instantiate controller and test classes, execute tests, and
     print a summary.
 
+    This meethod should usually be called within the runner's `mobly_logger`
+    context. If you must use this method outside of the context, you should
+    make sure `self._test_run_metadata.generate_test_run_log_path` is called
+    before each invocation of `run`.
+
     Raises:
       Error: if no tests have previously been added to this runner using
         add_test_class(...).
@@ -312,17 +380,21 @@ class TestRunner:
     if not self._test_run_infos:
       raise Error('No tests to execute.')
 
+    # Officially starts the test run.
+    self._test_run_metadata.set_start_point()
+
     # Ensure the log path exists. Necessary if `run` is used outside of the
     # `mobly_logger` context.
-    utils.create_dir(self._root_output_path)
+    utils.create_dir(self._test_run_metadata.root_output_path)
 
     summary_writer = records.TestSummaryWriter(
-        os.path.join(self._root_output_path, records.OUTPUT_FILE_SUMMARY))
+        os.path.join(self._test_run_metadata.root_output_path,
+                     records.OUTPUT_FILE_SUMMARY))
     try:
       for test_run_info in self._test_run_infos:
         # Set up the test-specific config
         test_config = test_run_info.config.copy()
-        test_config.log_path = self._root_output_path
+        test_config.log_path = self._test_run_metadata.root_output_path
         test_config.summary_writer = summary_writer
         test_config.test_class_name_suffix = test_run_info.test_class_name_suffix
         try:
@@ -335,7 +407,13 @@ class TestRunner:
     finally:
       summary_writer.dump(self.results.summary_dict(),
                           records.TestSummaryEntryType.SUMMARY)
-      # Stop and show summary.
-      msg = '\nSummary for test run %s@%s: %s\n' % (
-          self._testbed_name, self._start_time, self.results.summary_str())
+      self._test_run_metadata.set_end_point()
+      # Show the test run summary.
+      summary_lines = [
+          f'Summary for test run {self._test_run_metadata.run_id}:',
+          f'Total time elapsed {self._test_run_metadata.time_elapsed_sec}s',
+          f'Artifacts are saved in "{self._test_run_metadata.root_output_path}"',
+          f'Test results: {self.results.summary_str()}'
+      ]
+      msg = '\n'.join(summary_lines)
       logging.info(msg.strip())
