@@ -183,8 +183,8 @@ class TestRunner:
   results for all tests that have been added to this runner.
 
   Attributes:
-    self.results: The test result object used to record the results of
-      this test run.
+    results: records.TestResult, object used to record the results of a test
+      run.
   """
 
   class _TestRunInfo:
@@ -300,7 +300,7 @@ class TestRunner:
     Yields:
       The host file path where the logs for the test run are stored.
     """
-    # Refersh the log path at the beginning of the logger context.
+    # Refresh the log path at the beginning of the logger context.
     root_output_path = self._test_run_metadata.generate_test_run_log_path()
     logger.setup_test_logger(root_output_path, self._testbed_name, alias=alias)
     try:
@@ -415,5 +415,4 @@ class TestRunner:
           f'Artifacts are saved in "{self._test_run_metadata.root_output_path}"',
           f'Test results: {self.results.summary_str()}'
       ]
-      msg = '\n'.join(summary_lines)
-      logging.info(msg.strip())
+      logging.info('\n'.join(summary_lines))
