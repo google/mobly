@@ -259,7 +259,7 @@ def setup_test_logger(log_path, prefix=None, alias='latest'):
   """
   utils.create_dir(log_path)
   _setup_test_logger(log_path, prefix)
-  logging.info('Test output folder: "%s"', log_path)
+  logging.debug('Test output folder: "%s"', log_path)
   if alias:
     create_latest_log_alias(log_path, alias=alias)
 
