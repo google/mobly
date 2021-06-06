@@ -6,6 +6,7 @@ various devices and you can also use your own custom hardware/equipment.
 
 ## Setup Requirements
 
+*   pip install mobly
 *   A computer with at least 2 USB ports.
 *   Mobly package and its system dependencies installed on the computer.
 *   One or two Android devices with the [Mobly Bundled Snippets]
