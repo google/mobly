@@ -1156,7 +1156,7 @@ class AndroidDeviceTest(unittest.TestCase):
     # Verify that repr is changed correctly.
     with self.assertRaisesRegex(
         Exception,
-        r"(<AndroidDevice\|Mememe>, 'Something')"):
+        r'(<AndroidDevice\|Mememe>, \'Something\')'):
       raise Exception(ad, 'Something')
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
