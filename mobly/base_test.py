@@ -670,7 +670,7 @@ class BaseTestClass:
     for i in range(max_count - 1):
       retry_name = f'{test_name}_retry_{i+1}'
       new_record = records.TestResultRecord(retry_name, self.TAG)
-      new_record.retry_parent = previous_record.signature
+      new_record.retry_parent = previous_record
       previous_record = self.exec_one_test(retry_name, test_method, new_record)
       if not should_retry(previous_record):
         break
