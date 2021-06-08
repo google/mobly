@@ -1141,21 +1141,23 @@ class AndroidDeviceTest(unittest.TestCase):
     mock_serial = '1'
     ad = android_device.AndroidDevice(serial=mock_serial)
     self.assertEqual(ad.debug_tag, '1')
-    try:
+    with self.assertRaisesRegex(
+        android_device.DeviceError,
+        r'<AndroidDevice\|1> Something'):
       raise android_device.DeviceError(ad, 'Something')
-    except android_device.DeviceError as e:
-      self.assertEqual('<AndroidDevice|1> Something', str(e))
+
     # Verify that debug tag's setter updates the debug prefix correctly.
     ad.debug_tag = 'Mememe'
-    try:
+    with self.assertRaisesRegex(
+        android_device.DeviceError,
+        r'<AndroidDevice\|Mememe> Something'):
       raise android_device.DeviceError(ad, 'Something')
-    except android_device.DeviceError as e:
-      self.assertEqual('<AndroidDevice|Mememe> Something', str(e))
+
     # Verify that repr is changed correctly.
-    try:
+    with self.assertRaisesRegex(
+        Exception,
+        r'(<AndroidDevice\|Mememe>, \'Something\')'):
       raise Exception(ad, 'Something')
-    except Exception as e:
-      self.assertEqual("(<AndroidDevice|Mememe>, 'Something')", str(e))
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
               return_value=mock_android_device.MockAdbProxy('1'))
