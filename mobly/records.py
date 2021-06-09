@@ -608,15 +608,15 @@ class TestResult:
         return True
     return False
 
-  def _calculate_retry_count_delta(self):
-    """Calculates the error count from retries that should be offset.
+  def _count_non_result_altering_errors(self):
+    """Counts the error records that should not affect the test run status.
 
-    If a test is retried and eventually passed, all the failed iterations
-    should not be counted toward the calculation of the final state of the
-    entire test run.
+    If a test is retried and eventually passed, all the associated error
+    iterations should not be considered when devising the final state of the
+    test run.
 
     Returns:
-      Int, the delta that should be subtracted from the result altering error
+      Int, the number that should be subtracted from the result altering error
       counts.
     """
     count = 0
@@ -631,7 +631,7 @@ class TestResult:
   def is_all_pass(self):
     """True if no tests failed or threw errors, False otherwise."""
     num_of_result_altering_errors = (len(self.failed) + len(self.error) -
-                                     self._calculate_retry_count_delta())
+                                     self._count_non_result_altering_errors())
     if num_of_result_altering_errors == 0:
       return True
     return False
