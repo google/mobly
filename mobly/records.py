@@ -608,10 +608,10 @@ class TestResult:
         return True
     return False
 
-  def _count_non_result_altering_errors(self):
-    """Counts the error records that should not affect the test run status.
+  def _count_eventually_passing_retries(self):
+    """Counts the number of retry iterations that eventually passed.
 
-    If a test is retried and eventually passed, all the associated error
+    If a test is retried and eventually passed, all the associated non-passing
     iterations should not be considered when devising the final state of the
     test run.
 
@@ -631,7 +631,7 @@ class TestResult:
   def is_all_pass(self):
     """True if no tests failed or threw errors, False otherwise."""
     num_of_result_altering_errors = (len(self.failed) + len(self.error) -
-                                     self._count_non_result_altering_errors())
+                                     self._count_eventually_passing_retries())
     if num_of_result_altering_errors == 0:
       return True
     return False
