@@ -2365,8 +2365,10 @@ class BaseTestTest(unittest.TestCase):
     max_consec_error = 2
     mock_action = mock.MagicMock()
     mock_action.side_effect = [
-        Exception('Error 1'), None,
-        Exception('Error 2'), None,
+        Exception('Error 1'),
+        None,
+        Exception('Error 2'),
+        None,
         Exception('Error 3'),
     ]
 
@@ -2406,6 +2408,8 @@ class BaseTestTest(unittest.TestCase):
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
+    self.assertTrue(bt_cls.results.is_all_pass,
+                    'This test run should be considered pass.')
     self.assertEqual(1, len(bt_cls.results.executed))
     self.assertEqual(1, len(bt_cls.results.passed))
     pass_record = bt_cls.results.passed[0]
@@ -2425,6 +2429,8 @@ class BaseTestTest(unittest.TestCase):
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
+    self.assertTrue(bt_cls.results.is_all_pass,
+                    'This test run should be considered pass.')
     self.assertEqual(3, len(bt_cls.results.executed))
     self.assertEqual(1, len(bt_cls.results.passed))
     pass_record = bt_cls.results.passed[0]
@@ -2433,8 +2439,8 @@ class BaseTestTest(unittest.TestCase):
     error_record_1, error_record_2 = bt_cls.results.error
     self.assertEqual(error_record_1.test_name, 'test_something')
     self.assertEqual(error_record_2.test_name, 'test_something_retry_1')
-    self.assertEqual(error_record_1.signature, error_record_2.retry_parent)
-    self.assertEqual(error_record_2.signature, pass_record.retry_parent)
+    self.assertIs(error_record_1, error_record_2.retry_parent)
+    self.assertIs(error_record_2, pass_record.retry_parent)
 
   def test_retry_all_fail(self):
     max_count = 3
@@ -2453,14 +2459,16 @@ class BaseTestTest(unittest.TestCase):
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
+    self.assertFalse(bt_cls.results.is_all_pass,
+                     'This test run should be considered fail.')
     self.assertEqual(3, len(bt_cls.results.executed))
     self.assertEqual(3, len(bt_cls.results.error))
     error_record_1, error_record_2, error_record_3 = bt_cls.results.error
     self.assertEqual(error_record_1.test_name, 'test_something')
     self.assertEqual(error_record_2.test_name, 'test_something_retry_1')
     self.assertEqual(error_record_3.test_name, 'test_something_retry_2')
-    self.assertEqual(error_record_1.signature, error_record_2.retry_parent)
-    self.assertEqual(error_record_2.signature, error_record_3.retry_parent)
+    self.assertIs(error_record_1, error_record_2.retry_parent)
+    self.assertIs(error_record_2, error_record_3.retry_parent)
 
   def test_uid(self):
 
