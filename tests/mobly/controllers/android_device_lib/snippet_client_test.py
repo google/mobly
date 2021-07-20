@@ -338,7 +338,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
     # Test 'setsid' exists
     client = self._make_client()
-    client._adb.shell = mock.Mock(return_value=b'setsid')
+    client._adb = mock.MagicMock()
+    client._adb.shell.return_value = b'setsid'
+    client._adb.current_user_id = MOCK_USER_ID
     client.start_app_and_connect()
     cmd_setsid = '%s am instrument --user %s -w -e action start %s/%s' % (
         snippet_client._SETSID_COMMAND, MOCK_USER_ID, MOCK_PACKAGE_NAME,

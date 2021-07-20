@@ -87,11 +87,27 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     self._ad = ad
     self._adb = ad.adb
     self._proc = None
+    self._user_id = None
 
   @property
   def is_alive(self):
     """Does the client have an active connection to the snippet server."""
     return self._conn is not None
+
+  @property
+  def user_id(self):
+    """The user id to use for this snippet client.
+
+    This value is cached and, once set, does not change through the lifecycles
+    of this snippet client object. This caching also reduces the number of adb
+    calls needed.
+
+    Because all the operations of the snippet client should be done for a
+    partucular user.
+    """
+    if self._user_id is None:
+      self._user_id = self._adb.current_user_id
+    return self._user_id
 
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying user IDs.
@@ -108,7 +124,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     sdk_int = int(self._ad.build_info['build_version_sdk'])
     if sdk_int < 24:
       return ''
-    return '--user %s' % self._adb.current_user_id
+    return '--user %s' % self.user_id
 
   def start_app_and_connect(self):
     """Starts snippet apk on the device and connects to it.
@@ -254,7 +270,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
   def _check_app_installed(self):
     # Check that the Mobly Snippet app is installed for the current user.
-    user_id = self._adb.current_user_id
+    user_id = self._user_id
     out = self._adb.shell('pm list package --user %s' % user_id)
     if not utils.grep('^package:%s$' % self.package, out):
       raise AppStartPreCheckError(
@@ -313,7 +329,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       # considering any blank output line to be EOF.
       line = line.strip()
       if (line.startswith('INSTRUMENTATION_RESULT:') or
-         line.startswith('SNIPPET ')):
+          line.startswith('SNIPPET ')):
         self.log.debug('Accepted line from instrumentation output: "%s"', line)
         return line
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
