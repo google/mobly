@@ -124,7 +124,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     sdk_int = int(self._ad.build_info['build_version_sdk'])
     if sdk_int < 24:
       return ''
-    return '--user %s' % self.user_id
+    return f'--user {self.user_id}'
 
   def start_app_and_connect(self):
     """Starts snippet apk on the device and connects to it.
@@ -270,7 +270,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
   def _check_app_installed(self):
     # Check that the Mobly Snippet app is installed for the current user.
-    user_id = self._user_id
+    user_id = self.user_id
     out = self._adb.shell('pm list package --user %s' % user_id)
     if not utils.grep('^package:%s$' % self.package, out):
       raise AppStartPreCheckError(
