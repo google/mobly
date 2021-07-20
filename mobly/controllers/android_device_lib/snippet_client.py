@@ -270,33 +270,30 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
 
   def _check_app_installed(self):
     # Check that the Mobly Snippet app is installed for the current user.
-    user_id = self.user_id
-    out = self._adb.shell('pm list package --user %s' % user_id)
+    out = self._adb.shell(f'pm list package --user {self.user_id}')
     if not utils.grep('^package:%s$' % self.package, out):
       raise AppStartPreCheckError(
-          self._ad,
-          '%s is not installed for user %s.' % (self.package, user_id))
+          self._ad, f'{self.package} is not installed for user {self.user_id}.')
     # Check that the app is instrumented.
     out = self._adb.shell('pm list instrumentation')
     matched_out = utils.grep(
-        '^instrumentation:%s/%s' %
-        (self.package, _INSTRUMENTATION_RUNNER_PACKAGE), out)
+        f'^instrumentation:{self.package}/{_INSTRUMENTATION_RUNNER_PACKAGE}',
+        out)
     if not matched_out:
       raise AppStartPreCheckError(
-          self._ad,
-          '%s is installed, but it is not instrumented.' % self.package)
+          self._ad, f'{self.package} is installed, but it is not instrumented.')
     match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
                       matched_out[0])
     target_name = match.group(3)
     # Check that the instrumentation target is installed if it's not the
     # same as the snippet package.
     if target_name != self.package:
-      out = self._adb.shell('pm list package --user %s' % user_id)
+      out = self._adb.shell(f'pm list package --user {self.user_id}')
       if not utils.grep('^package:%s$' % target_name, out):
         raise AppStartPreCheckError(
             self._ad,
-            'Instrumentation target %s is not installed for user %s.' %
-            (target_name, user_id))
+            f'Instrumentation target {target_name} is not installed for user '
+            f'{self.user_id}.')
 
   def _do_start_app(self, launch_cmd):
     adb_cmd = [adb.ADB]
