@@ -1,6 +1,26 @@
 # Mobly Release History
 
 
+## Mobly Release 1.11: Py2 Deprecation and Repeat/Retry Support
+
+This release focuses on code quality improvement, refactoring, and legacy
+code removal.
+
+Py2-specific workarounds and deprecated APIs are removed in this release.
+We are also refactoring to use 2-space indentation and unit test system.
+
+### New
+* Framework support for test case level `repeat` and `retry`.
+
+### Breaking Changes
+* Removal of Py2 support
+* Removal of the `monsoon` controller
+
+### Fixes
+* Various improvements in Android device controller
+* More metadata collected for test runs
+
+
 ## Mobly Release 1.10.1: Incremental fixes
 
 This release contains minor fixes and improvements.
