@@ -274,6 +274,21 @@ class BaseTestTest(unittest.TestCase):
     mock_decorated.assert_called_once_with('test_decorated')
     mock_undecorated.assert_called_once_with('test_undecorated')
 
+  def test_get_existing_tests_do_not_call_properties(self):
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_something(self):
+        pass
+
+      @property
+      def not_a_test(self):
+        # This property should not be called during get_existing_tests()
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+
   def test_missing_requested_test_func(self):
 
     class MockBaseTest(base_test.BaseTestClass):
