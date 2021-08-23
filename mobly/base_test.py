@@ -905,7 +905,7 @@ class BaseTestClass:
       A list of strings, each is a test method name.
     """
     test_names = []
-    for name, _ in inspect.getmembers(self, callable):
+    for name, _ in inspect.getmembers(type(self), callable):
       if name.startswith('test_'):
         test_names.append(name)
     return test_names + list(self._generated_test_table.keys())
