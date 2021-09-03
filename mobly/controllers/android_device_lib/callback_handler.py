@@ -89,7 +89,7 @@ class CallbackHandler:
                                               timeout_ms)
 
   def _callEventGetAll(self, callback_id, event_name):
-    """Calls snippet lib's eventWaitAndGet.
+    """Calls snippet lib's eventGetAll.
 
     Override this method to use this class with various snippet lib
     implementations.
