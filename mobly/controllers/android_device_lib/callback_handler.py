@@ -69,6 +69,40 @@ class CallbackHandler:
   def callback_id(self):
     return self._id
 
+  def _callEventWaitAndGet(self, callback_id, event_name, timeout):
+    """Calls snippet lib's eventWaitAndGet.
+
+    Override this method to use this class with various snippet lib
+    implementations.
+
+    Args:
+      callback_id: The callback identifier.
+      event_name: The callback name.
+      timeout: The number of seconds to wait for the event.
+
+    Returns:
+      The event dictionary.
+    """
+    # Convert to milliseconds for Java side.
+    timeout_ms = int(timeout * 1000)
+    return self._event_client.eventWaitAndGet(callback_id, event_name,
+                                              timeout_ms)
+
+  def _callEventGetAll(self, callback_id, event_name):
+    """Calls snippet lib's eventGetAll.
+
+    Override this method to use this class with various snippet lib
+    implementations.
+
+    Args:
+      callback_id: The callback identifier.
+      event_name: The callback name.
+
+    Returns:
+      A list of event dictionaries.
+    """
+    return self._event_client.eventGetAll(callback_id, event_name)
+
   def waitAndGet(self, event_name, timeout=DEFAULT_TIMEOUT):
     """Blocks until an event of the specified name has been received and
     return the event, or timeout.
@@ -90,11 +124,8 @@ class CallbackHandler:
         raise Error(
             self._ad, 'Specified timeout %s is longer than max timeout %s.' %
             (timeout, MAX_TIMEOUT))
-    # Convert to milliseconds for java side.
-    timeout_ms = int(timeout * 1000)
     try:
-      raw_event = self._event_client.eventWaitAndGet(self._id, event_name,
-                                                     timeout_ms)
+      raw_event = self._callEventWaitAndGet(self._id, event_name, timeout)
     except Exception as e:
       if 'EventSnippetException: timeout.' in str(e):
         raise TimeoutError(
@@ -163,5 +194,5 @@ class CallbackHandler:
       A list of SnippetEvent, each representing an event from the Java
       side.
     """
-    raw_events = self._event_client.eventGetAll(self._id, event_name)
+    raw_events = self._callEventGetAll(self._id, event_name)
     return [snippet_event.from_dict(msg) for msg in raw_events]
