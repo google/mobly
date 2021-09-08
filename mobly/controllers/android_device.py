@@ -439,7 +439,7 @@ class AndroidDevice:
   See the docs of `service_manager` and `base_service` for details.
 
   Attributes:
-    serial: A string that's the serial number of the Androi device.
+    serial: A string that's the serial number of the Android device.
     log_path: A string that is the path where all logs collected on this
       android device should be stored.
     log: A logger adapted from root logger with an added prefix specific
