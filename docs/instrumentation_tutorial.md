@@ -168,7 +168,7 @@ class InstrumentationTest(base_instrumentation_test.BaseInstrumentationTestClass
 
     def test_instrumentation(self):
         # Iterate over the dut devices with a corresponding index.
-        for index, dut in zip(range(len(self.duts)), self.duts):
+        for index, dut in enumerate(self.duts):
             # Specify a prefix to help disambiguate the runs.
             self.run_instrumentation_test(dut, 'com.example.package.tests',
                 prefix='test_run_%s' % index)
