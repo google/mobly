@@ -862,6 +862,15 @@ class BaseTestClass:
         raise Error('%s Test name "%s" already exists, cannot be duplicated!' %
                     (root_msg, test_name))
       test_func = functools.partial(test_logic, *args)
+      # If the `test_logic` method is decorated by `retry` or `repeat`
+      # decorators, copy the attributes added by the decorators to the
+      # generated test methods as well, so the generated test methods
+      # also have the retry/repeat behavior.
+      for attr_name in (
+        ATTR_MAX_RETRY_CNT, ATTR_MAX_CONSEC_ERROR, ATTR_REPEAT_CNT):
+        attr = getattr(test_logic, attr_name, None)
+        if attr is not None:
+          setattr(test_func, attr_name, attr)
       if uid_func is not None:
         uid = uid_func(*args)
         if uid is None:
