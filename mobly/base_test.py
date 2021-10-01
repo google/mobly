@@ -862,6 +862,11 @@ class BaseTestClass:
         raise Error('%s Test name "%s" already exists, cannot be duplicated!' %
                     (root_msg, test_name))
       test_func = functools.partial(test_logic, *args)
+      for attr_name in (
+        ATTR_MAX_RETRY_CNT, ATTR_MAX_CONSEC_ERROR, ATTR_REPEAT_CNT):
+        attr = getattr(test_logic, attr_name, None)
+        if attr is not None:
+          setattr(test_func, attr_name, attr)
       if uid_func is not None:
         uid = uid_func(*args)
         if uid is None:
