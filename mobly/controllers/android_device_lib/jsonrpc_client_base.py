@@ -56,6 +56,7 @@ import json
 import socket
 import threading
 
+from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import callback_handler
 from mobly.controllers.android_device_lib import errors
 
@@ -264,7 +265,8 @@ class JsonRpcClientBase(abc.ABC):
     """Stops the adb port forwarding of the host port used by this client.
     """
     if self.host_port:
-      self._ad.adb.forward(['--remove', 'tcp:%d' % self.host_port])
+      if self.host_port in adb.list_occupied_adb_ports():
+        self._ad.adb.forward(['--remove', 'tcp:%d' % self.host_port])
       self.host_port = None
 
   def _client_send(self, msg):

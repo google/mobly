@@ -176,8 +176,11 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     # when `__del__` is called after the test is done, which triggers
     # `disconnect`.
     client._conn.close.side_effect = [Exception('ha'), None]
-    with self.assertRaisesRegex(Exception, 'ha'):
-      client.stop_app()
+    with mock.patch(
+        'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports',
+        return_value=[client.host_port]):
+      with self.assertRaisesRegex(Exception, 'ha'):
+        client.stop_app()
     adb_proxy.forward.assert_called_once_with(['--remove', 'tcp:1'])
 
   @mock.patch('socket.create_connection')

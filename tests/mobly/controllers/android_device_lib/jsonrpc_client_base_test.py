@@ -97,7 +97,10 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
   def test_clear_host_port_positive(self):
     client = FakeRpcClient()
     client.host_port = 1
-    client.clear_host_port()
+    with mock.patch(
+        'mobly.controllers.android_device_lib.adb.list_occupied_adb_ports',
+        return_value=[client.host_port]):
+      client.clear_host_port()
     client._ad.adb.forward.assert_called_once_with(['--remove', 'tcp:1'])
     self.assertIsNone(client.host_port)
 
