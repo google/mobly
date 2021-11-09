@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc.
+# Copyright 2021 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +17,38 @@ import unittest
 
 from mobly import signals
 
-# Have an instance of unittest.TestCase so we could reuse some logic from
-# python's own unittest.
+# Have an instance of unittest.TestCase so we could reuse some logic
+# from python's own unittest.
 _pyunit_proxy = unittest.TestCase()
+_pyunit_proxy.maxDiff = None
+
+
+def _call_unittest_assertion(assertion_method,
+                             *args,
+                             msg=None,
+                             extras=None,
+                             **kwargs):
+  """Wrapper for converting a unittest assertion into a Mobly one.
+
+  Args:
+    assertion_method: unittest.TestCase assertion method to call.
+    *args: Positional arguments for the assertion call.
+    msg: A string that adds additional info about the failure.
+    extras: An optional field for extra information to be included in
+      test result.
+  """
+  my_msg = None
+  try:
+    assertion_method(*args, **kwargs)
+  except AssertionError as e:
+    my_msg = str(e)
+    if msg:
+      my_msg = "%s %s" % (my_msg, msg)
+
+  # This raise statement is outside of the above except statement to
+  # prevent Python3's exception message from having two tracebacks.
+  if my_msg is not None:
+    raise signals.TestFailure(my_msg, extras=extras)
 
 
 def assert_equal(first, second, msg=None, extras=None):
@@ -35,18 +64,231 @@ def assert_equal(first, second, msg=None, extras=None):
     extras: An optional field for extra information to be included in
       test result.
   """
-  my_msg = None
-  try:
-    _pyunit_proxy.assertEqual(first, second)
-  except AssertionError as e:
-    my_msg = str(e)
-    if msg:
-      my_msg = "%s %s" % (my_msg, msg)
+  _call_unittest_assertion(_pyunit_proxy.assertEqual,
+                           first,
+                           second,
+                           msg=msg,
+                           extras=extras)
 
-  # This raise statement is outside of the above except statement to prevent
-  # Python3's exception message from having two tracebacks.
-  if my_msg is not None:
-    raise signals.TestFailure(my_msg, extras=extras)
+
+def assert_not_equal(first, second, msg=None, extras=None):
+  """Assert that first is not equal (!=) to second."""
+  _call_unittest_assertion(_pyunit_proxy.assertNotEqual,
+                           first,
+                           second,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_almost_equal(first,
+                        second,
+                        places=None,
+                        msg=None,
+                        delta=None,
+                        extras=None):
+  """Assert that first is almost equal to second.
+
+  Fails if the two objects are unequal as determined by their difference
+  rounded to the given number of decimal places (default 7) and
+  comparing to zero, or by comparing that the difference between the two
+  objects is more than the given delta.
+  If the two objects compare equal then they automatically compare
+  almost equal.
+
+  Args:
+    first: The first value to compare.
+    second: The second value to compare.
+    places: How many decimal places to take into account for comparison.
+      Note that decimal places (from zero) are usually not the same
+      as significant digits (measured from the most significant digit).
+    msg: A string that adds additional info about the failure.
+    delta: Delta to use for comparison instead of decimal places.
+    extras: An optional field for extra information to be included in
+      test result.
+  """
+  _call_unittest_assertion(_pyunit_proxy.assertAlmostEqual,
+                           first,
+                           second,
+                           places=places,
+                           msg=msg,
+                           delta=delta,
+                           extras=extras)
+
+
+def assert_not_almost_equal(first,
+                            second,
+                            places=None,
+                            msg=None,
+                            delta=None,
+                            extras=None):
+  """Assert that first is not almost equal to second.
+
+  Args:
+    first: The first value to compare.
+    second: The second value to compare.
+    places: How many decimal places to take into account for comparison.
+      Note that decimal places (from zero) are usually not the same
+      as significant digits (measured from the most significant digit).
+    msg: A string that adds additional info about the failure.
+    delta: Delta to use for comparison instead of decimal places.
+    extras: An optional field for extra information to be included in
+      test result.
+  """
+  _call_unittest_assertion(_pyunit_proxy.assertNotAlmostEqual,
+                           first,
+                           second,
+                           places=places,
+                           msg=msg,
+                           delta=delta,
+                           extras=extras)
+
+
+def assert_in(member, container, msg=None, extras=None):
+  """Assert that member is in container."""
+  _call_unittest_assertion(_pyunit_proxy.assertIn,
+                           member,
+                           container,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_not_in(member, container, msg=None, extras=None):
+  """Assert that member is not in container."""
+  _call_unittest_assertion(_pyunit_proxy.assertNotIn,
+                           member,
+                           container,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_is(expr1, expr2, msg=None, extras=None):
+  """Assert that expr1 is expr2."""
+  _call_unittest_assertion(_pyunit_proxy.assertIs,
+                           expr1,
+                           expr2,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_is_not(expr1, expr2, msg=None, extras=None):
+  """Assert that expr1 is not expr2."""
+  _call_unittest_assertion(_pyunit_proxy.assertIsNot,
+                           expr1,
+                           expr2,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_count_equal(first, second, msg=None, extras=None):
+  """Assert that two iterables have the same element count.
+
+  Element order does not matter.
+  Similar to assert_equal(Counter(list(first)), Counter(list(second))).
+
+  Args:
+    first: The first iterable to compare.
+    second: The second iterable to compare.
+    msg: A string that adds additional info about the failure.
+    extras: An optional field for extra information to be included in
+      test result.
+
+  Example:
+    assert_count_equal([0, 1, 1], [1, 0, 1]) passes the assertion.
+    assert_count_equal([0, 0, 1], [0, 1]) raises an assertion error.
+  """
+  _call_unittest_assertion(_pyunit_proxy.assertCountEqual,
+                           first,
+                           second,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_less(a, b, msg=None, extras=None):
+  """Assert that a < b."""
+  _call_unittest_assertion(_pyunit_proxy.assertLess,
+                           a,
+                           b,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_less_equal(a, b, msg=None, extras=None):
+  """Assert that a <= b."""
+  _call_unittest_assertion(_pyunit_proxy.assertLessEqual,
+                           a,
+                           b,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_greater(a, b, msg=None, extras=None):
+  """Assert that a > b."""
+  _call_unittest_assertion(_pyunit_proxy.assertGreater,
+                           a,
+                           b,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_greater_equal(a, b, msg=None, extras=None):
+  """Assert that a >= b."""
+  _call_unittest_assertion(_pyunit_proxy.assertGreaterEqual,
+                           a,
+                           b,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_is_none(obj, msg=None, extras=None):
+  """Assert that obj is None."""
+  _call_unittest_assertion(_pyunit_proxy.assertIsNone,
+                           obj,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_is_not_none(obj, msg=None, extras=None):
+  """Assert that obj is not None."""
+  _call_unittest_assertion(_pyunit_proxy.assertIsNotNone,
+                           obj,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_is_instance(obj, cls, msg=None, extras=None):
+  """Assert that obj is an instance of cls."""
+  _call_unittest_assertion(_pyunit_proxy.assertIsInstance,
+                           obj,
+                           cls,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_not_is_instance(obj, cls, msg=None, extras=None):
+  """Assert that obj is not an instance of cls."""
+  _call_unittest_assertion(_pyunit_proxy.assertNotIsInstance,
+                           obj,
+                           cls,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_regex(text, expected_regex, msg=None, extras=None):
+  """Fail the test unless the text matches the regular expression."""
+  _call_unittest_assertion(_pyunit_proxy.assertRegex,
+                           text,
+                           expected_regex,
+                           msg=msg,
+                           extras=extras)
+
+
+def assert_not_regex(text, unexpected_regex, msg=None, extras=None):
+  """Fail the test if the text matches the regular expression."""
+  _call_unittest_assertion(_pyunit_proxy.assertNotRegex,
+                           text,
+                           unexpected_regex,
+                           msg=msg,
+                           extras=extras)
 
 
 def assert_raises(expected_exception, extras=None, *args, **kwargs):
