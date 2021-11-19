@@ -18,6 +18,7 @@ AttenuatorDevice(s).
 User code shouldn't need to directly access this class.
 """
 
+import logging
 import telnetlib
 from mobly.controllers import attenuator
 
@@ -71,6 +72,9 @@ class TelnetScpiClient:
 
     match_idx, match_val, ret_text = self._tn.expect(
         [_ascii_string("\S+" + self.rx_cmd_separator)], 1)
+
+    logging.debug('Telnet Command: %s. Response: (%s,%s,%s)', cmd_str,
+                  match_idx, match_val, ret_text)
 
     if match_idx == -1:
       raise attenuator.Error("Telnet command failed to return valid data")
