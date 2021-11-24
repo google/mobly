@@ -120,6 +120,7 @@ class AttenuatorDevice:
                              self._telnet_client.host)
     if idx + 1 > self.path_count or idx < 0:
       raise IndexError("Attenuator index out of range!", self.path_count, idx)
-    atten_val_str = self._telnet_client.cmd("CHAN:%s:ATT?" % (idx + 1))
+    telnet_cmd = ":ATT?" if self.path_count == 1 else "CHAN:%s:ATT?" % (idx + 1)
+    atten_val_str = self._telnet_client.cmd(telnet_cmd)
     atten_val = float(atten_val_str)
     return atten_val
