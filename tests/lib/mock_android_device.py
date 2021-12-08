@@ -26,6 +26,7 @@ DEFAULT_MOCK_PROPERTIES = {
     'ro.build.type': 'userdebug',
     'ro.build.product': 'FakeModel',
     'ro.build.version.codename': 'Z',
+    'ro.build.version.incremental': '1234567',
     'ro.build.version.sdk': '28',
     'ro.product.name': 'FakeModel',
     'ro.debuggable': '1',
