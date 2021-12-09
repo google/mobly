@@ -375,6 +375,8 @@ class AndroidDeviceTest(unittest.TestCase):
     build_info = ad.build_info
     self.assertEqual(build_info['build_id'], 'AB42')
     self.assertEqual(build_info['build_type'], 'userdebug')
+    self.assertEqual(build_info['build_fingerprint'],
+                     'FakeModel:Dessert/AB42/1234567:userdebug/dev-keys')
     self.assertEqual(build_info['build_version_codename'], 'Z')
     self.assertEqual(build_info['build_version_incremental'], '1234567')
     self.assertEqual(build_info['build_version_sdk'], '28')
@@ -400,6 +402,7 @@ class AndroidDeviceTest(unittest.TestCase):
     build_info = ad.build_info
     self.assertEqual(build_info['build_id'], 'AB42')
     self.assertEqual(build_info['build_type'], 'userdebug')
+    self.assertEqual(build_info['build_fingerprint'], '')
     self.assertEqual(build_info['build_version_codename'], '')
     self.assertEqual(build_info['build_version_incremental'], '')
     self.assertEqual(build_info['build_version_sdk'], '')
