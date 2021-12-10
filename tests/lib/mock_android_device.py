@@ -24,8 +24,10 @@ import os
 DEFAULT_MOCK_PROPERTIES = {
     'ro.build.id': 'AB42',
     'ro.build.type': 'userdebug',
+    'ro.build.fingerprint': 'FakeModel:Dessert/AB42/1234567:userdebug/dev-keys',
     'ro.build.product': 'FakeModel',
     'ro.build.version.codename': 'Z',
+    'ro.build.version.incremental': '1234567',
     'ro.build.version.sdk': '28',
     'ro.product.name': 'FakeModel',
     'ro.debuggable': '1',

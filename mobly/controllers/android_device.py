@@ -48,7 +48,9 @@ ANDROID_DEVICE_NOT_LIST_CONFIG_MSG = 'Configuration should be a list, abort!'
 CACHED_SYSTEM_PROPS = [
     'ro.build.id',
     'ro.build.type',
+    'ro.build.fingerprint',
     'ro.build.version.codename',
+    'ro.build.version.incremental',
     'ro.build.version.sdk',
     'ro.build.product',
     'ro.build.characteristics',
@@ -766,8 +768,11 @@ class AndroidDevice:
       build_info = self.adb.getprops(CACHED_SYSTEM_PROPS)
       info['build_id'] = build_info['ro.build.id']
       info['build_type'] = build_info['ro.build.type']
+      info['build_fingerprint'] = build_info.get('ro.build.fingerprint', '')
       info['build_version_codename'] = build_info.get(
           'ro.build.version.codename', '')
+      info['build_version_incremental'] = build_info.get(
+          'ro.build.version.incremental', '')
       info['build_version_sdk'] = build_info.get('ro.build.version.sdk', '')
       info['build_product'] = build_info.get('ro.build.product', '')
       info['build_characteristics'] = build_info.get('ro.build.characteristics',
