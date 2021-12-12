@@ -23,12 +23,9 @@ import sys
 import subprocess
 import tempfile
 import threading
-import time
 import unittest
 
-import portpicker
 import psutil
-from mobly import base_instrumentation_test
 
 from mobly import base_test
 from mobly import signals
