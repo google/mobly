@@ -346,23 +346,19 @@ def run_command(cmd,
       std error.
 
   Raises:
-    psutil.TimeoutExpired: The command timed out.
+    subprocess.TimeoutExpired: The command timed out.
   """
-  # Only import psutil when actually needed.
-  # psutil may cause import error in certain env. This way the utils module
-  # doesn't crash upon import.
-  import psutil
   if stdout is None:
     stdout = subprocess.PIPE
   if stderr is None:
     stderr = subprocess.PIPE
-  process = psutil.Popen(cmd,
-                         stdout=stdout,
-                         stderr=stderr,
-                         shell=shell,
-                         cwd=cwd,
-                         env=env,
-                         universal_newlines=universal_newlines)
+  process = subprocess.Popen(cmd,
+                             stdout=stdout,
+                             stderr=stderr,
+                             shell=shell,
+                             cwd=cwd,
+                             env=env,
+                             universal_newlines=universal_newlines)
   timer = None
   timer_triggered = threading.Event()
   if timeout and timeout > 0:
@@ -377,12 +373,15 @@ def run_command(cmd,
     timer.start()
   # If the command takes longer than the timeout, then the timer thread
   # will kill the subprocess, which will make it terminate.
-  (out, err) = process.communicate()
+  out, err = process.communicate()
   if timer is not None:
     timer.cancel()
   if timer_triggered.is_set():
-    raise psutil.TimeoutExpired(timeout, pid=process.pid)
-  return (process.returncode, out, err)
+    raise subprocess.TimeoutExpired(cmd=cwd,
+                                    timeout=timeout,
+                                    output=out,
+                                    stderr=err)
+  return process.returncode, out, err
 
 
 def start_standing_subprocess(cmd, shell=False, env=None):

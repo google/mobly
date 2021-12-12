@@ -19,7 +19,6 @@ import threading
 import time
 
 from mobly import utils
-import psutil
 
 # Command to use for running ADB commands.
 ADB = 'adb'
@@ -185,7 +184,7 @@ class AdbProxy:
       raise ValueError('Timeout is not a positive value: %s' % timeout)
     try:
       (ret, out, err) = utils.run_command(args, shell=shell, timeout=timeout)
-    except psutil.TimeoutExpired:
+    except subprocess.TimeoutExpired:
       raise AdbTimeoutError(cmd=args, timeout=timeout, serial=self.serial)
 
     if stderr:
