@@ -46,7 +46,7 @@ class HelloWorldTest(base_test.BaseTestClass):
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
     # Start Mobly Bundled Snippets (MBS).
-    self.dut.load_snippet('mbs', 'com.google.android.mobly.snippet.bundled')
+    self.dut.load_snippet('mbs', android_device.MBS_PACKAGE)
  
   def test_hello(self):
     self.dut.mbs.makeToast('Hello World!')
@@ -94,7 +94,7 @@ class HelloWorldTest(base_test.BaseTestClass):
   def setup_class(self):
     self.ads = self.register_controller(android_device)
     self.dut = self.ads[0]
-    self.dut.load_snippet('mbs', 'com.google.android.mobly.snippet.bundled')
+    self.dut.load_snippet('mbs', android_device.MBS_PACKAGE)
  
   def test_hello(self):
     self.dut.mbs.makeToast('Hello World!')
@@ -251,10 +251,8 @@ class HelloWorldTest(base_test.BaseTestClass):
         # The device that is expected to be discovered
         self.target = android_device.get_device(self.ads, label='target')
         self.target.debug_tag = 'target'
-        self.target.load_snippet('mbs',
-                                 'com.google.android.mobly.snippet.bundled')
-        self.discoverer.load_snippet(
-            'mbs', 'com.google.android.mobly.snippet.bundled')
+        self.target.load_snippet('mbs', android_device.MBS_PACKAGE)
+        self.discoverer.load_snippet('mbs', android_device.MBS_PACKAGE)
 
     def setup_test(self):
         # Make sure bluetooth is on.
@@ -358,8 +356,7 @@ class ManyGreetingsTest(base_test.BaseTestClass):
     def setup_class(self):
         self.ads = self.register_controller(android_device)
         self.dut = self.ads[0]
-        self.dut.load_snippet(
-            'mbs', 'com.google.android.mobly.snippet.bundled')
+        self.dut.load_snippet('mbs', android_device.MBS_PACKAGE)
 
     # The common logic shared by a group of generated tests.
     def make_toast_logic(self, greeting, name):
