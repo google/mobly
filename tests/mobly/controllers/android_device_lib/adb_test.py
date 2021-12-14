@@ -147,21 +147,26 @@ class AdbTest(unittest.TestCase):
 
   @mock.patch('mobly.utils.run_command')
   def test_exec_cmd_timed_out(self, mock_run_command):
-    mock_run_command.side_effect = adb.psutil.TimeoutExpired('Timed out')
+    mock_run_command.side_effect = subprocess.TimeoutExpired(cmd='mock_command',
+                                                             timeout=0.01)
     mock_serial = '1234Abcd'
+
     with self.assertRaisesRegex(
         adb.AdbTimeoutError, 'Timed out executing command "adb -s '
         '1234Abcd fake-cmd" after 0.01s.') as context:
       adb.AdbProxy(mock_serial).fake_cmd(timeout=0.01)
+
     self.assertEqual(context.exception.serial, mock_serial)
     self.assertIn(mock_serial, context.exception.cmd)
 
   @mock.patch('mobly.utils.run_command')
   def test_exec_cmd_timed_out_without_serial(self, mock_run_command):
-    mock_run_command.side_effect = adb.psutil.TimeoutExpired('Timed out')
+    mock_run_command.side_effect = subprocess.TimeoutExpired(cmd='mock_command',
+                                                             timeout=0.01)
+
     with self.assertRaisesRegex(
-        adb.AdbTimeoutError, 'Timed out executing command "adb '
-        'fake-cmd" after 0.01s.') as context:
+        adb.AdbTimeoutError,
+        'Timed out executing command "adb fake-cmd" after 0.01s.'):
       adb.AdbProxy().fake_cmd(timeout=0.01)
 
   def test_exec_cmd_with_negative_timeout_value(self):

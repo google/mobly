@@ -68,17 +68,19 @@ class UtilsTest(unittest.TestCase):
     self.assertEqual(ret, 0)
 
   def test_run_command_with_timeout_expired(self):
-    with self.assertRaises(psutil.TimeoutExpired):
+    with self.assertRaises(subprocess.TimeoutExpired):
       _ = utils.run_command(self.sleep_cmd(4), timeout=0.01)
 
   @mock.patch('threading.Timer')
-  @mock.patch('psutil.Popen')
+  @mock.patch('subprocess.Popen')
   def test_run_command_with_default_params(self, mock_Popen, mock_Timer):
     mock_command = mock.MagicMock(spec=dict)
     mock_proc = mock_Popen.return_value
     mock_proc.communicate.return_value = ('fake_out', 'fake_err')
     mock_proc.returncode = 0
+
     out = utils.run_command(mock_command)
+
     self.assertEqual(out, (0, 'fake_out', 'fake_err'))
     mock_Popen.assert_called_with(
         mock_command,
@@ -92,7 +94,7 @@ class UtilsTest(unittest.TestCase):
     mock_Timer.assert_not_called()
 
   @mock.patch('threading.Timer')
-  @mock.patch('psutil.Popen')
+  @mock.patch('subprocess.Popen')
   def test_run_command_with_custom_params(self, mock_Popen, mock_Timer):
     mock_command = mock.MagicMock(spec=dict)
     mock_stdout = mock.MagicMock(spec=int)
@@ -104,6 +106,7 @@ class UtilsTest(unittest.TestCase):
     mock_proc = mock_Popen.return_value
     mock_proc.communicate.return_value = ('fake_out', 'fake_err')
     mock_proc.returncode = 127
+
     out = utils.run_command(mock_command,
                             stdout=mock_stdout,
                             stderr=mock_stderr,
@@ -111,6 +114,7 @@ class UtilsTest(unittest.TestCase):
                             timeout=mock_timeout,
                             env=mock_env,
                             universal_newlines=mock_universal_newlines)
+
     self.assertEqual(out, (127, 'fake_out', 'fake_err'))
     mock_Popen.assert_called_with(
         mock_command,
@@ -124,13 +128,13 @@ class UtilsTest(unittest.TestCase):
     mock_Timer.assert_called_with(1234, mock.ANY)
 
   def test_run_command_with_universal_newlines_false(self):
-    (ret, out, err) = utils.run_command(
-        self.sleep_cmd(0.01), universal_newlines=False)
+    (ret, out, err) = utils.run_command(self.sleep_cmd(0.01),
+                                        universal_newlines=False)
     self.assertIsInstance(out, bytes)
 
   def test_run_command_with_universal_newlines_true(self):
-    (ret, out, err) = utils.run_command(
-        self.sleep_cmd(0.01), universal_newlines=True)
+    (ret, out, err) = utils.run_command(self.sleep_cmd(0.01),
+                                        universal_newlines=True)
     self.assertIsInstance(out, str)
 
   def test_start_standing_subproc(self):
