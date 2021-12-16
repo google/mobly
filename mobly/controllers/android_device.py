@@ -768,7 +768,7 @@ class AndroidDevice:
 
   @property
   def build_info(self):
-    """Get the build info of this Android device, including build id and type.
+    """Gets the build info of this Android device, including build id and type.
 
     This is not available if the device is in bootloader mode.
 
