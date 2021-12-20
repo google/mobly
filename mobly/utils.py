@@ -29,6 +29,9 @@ import subprocess
 import threading
 import time
 import traceback
+from typing import overload, Tuple
+# TODO(ericth): Use Literal from typing if we only run on Python 3.8 or later.
+from typing_extensions import Literal
 
 import portpicker
 
@@ -302,6 +305,33 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
                                        exception.__traceback__)))
       raise RuntimeError('\n\n'.join(error_messages))
     return return_vals
+
+
+# Provide hint for pytype checker to avoid the Union[bytes, str] case.
+@overload
+def run_command(cmd,
+                stdout=...,
+                stderr=...,
+                shell=...,
+                timeout=...,
+                cwd=...,
+                env=...,
+                universal_newlines: Literal[False] = ...
+               ) -> Tuple[int, bytes, bytes]:
+  ...
+
+
+@overload
+def run_command(cmd,
+                stdout=...,
+                stderr=...,
+                shell=...,
+                timeout=...,
+                cwd=...,
+                env=...,
+                universal_newlines: Literal[True] = ...
+               ) -> Tuple[int, str, str]:
+  ...
 
 
 def run_command(cmd,
