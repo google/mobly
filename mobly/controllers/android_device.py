@@ -448,7 +448,7 @@ class BuildInfoConstants(enum.Enum):
   BUILD_VERSION_SDK = 'build_version_sdk', 'ro.build.version.sdk'
   BUILD_PRODUCT = 'build_product', 'ro.build.product'
   BUILD_CHARACTERISTICS = 'build_characteristics', 'ro.build.characteristics'
-  DEBUGGABLE = 'debugabble', 'ro.debuggable'
+  DEBUGGABLE = 'debuggable', 'ro.debuggable'
   PRODUCT_NAME = 'product_name', 'ro.product.name'
   HARDWARE = 'hardware', 'ro.hardware'
 
