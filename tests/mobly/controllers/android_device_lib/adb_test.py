@@ -56,22 +56,7 @@ MOCK_ADB_SHELL_COMMAND_CHECK = 'adb shell command -v ls'
 
 
 class AdbTest(unittest.TestCase):
-  """Unit tests for mobly.controllers.android_device_lib.adb.
-  """
-
-  def _mock_process(self, mock_psutil_process, mock_popen):
-    # the created proc object in adb._exec_cmd()
-    mock_proc = mock.Mock()
-    mock_popen.return_value = mock_proc
-
-    # the created process object in adb._exec_cmd()
-    mock_psutil_process.return_value = mock.Mock()
-
-    mock_proc.communicate = mock.Mock(
-        return_value=(MOCK_DEFAULT_STDOUT.encode('utf-8'),
-                      MOCK_DEFAULT_STDERR.encode('utf-8')))
-    mock_proc.returncode = 0
-    return (mock_psutil_process, mock_popen)
+  """Unit tests for mobly.controllers.android_device_lib.adb."""
 
   def _mock_execute_and_process_stdout_process(self, mock_popen):
     # the created proc object in adb._execute_and_process_stdout()
