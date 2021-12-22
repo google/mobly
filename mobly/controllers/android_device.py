@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import contextlib
+import enum
 import logging
 import os
 import re
@@ -430,6 +431,32 @@ def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
   utils.concurrent_exec(take_br, args)
 
 
+class BuildInfoConstants(enum.Enum):
+  """Enums for build info constants used for AndroidDevice build info.
+  
+  Attributes:
+    build_info_key: The key used for the build_info dictionary in AndroidDevice.
+    system_prop_key: The key used for getting the build info from system
+      properties.
+  """
+
+  BUILD_ID = 'build_id', 'ro.build.id'
+  BUILD_TYPE = 'build_type', 'ro.build.type'
+  BUILD_FINGERPRINT = 'build_fingerprint', 'ro.build.fingerprint'
+  BUILD_VERSION_CODENAME = 'build_version_codename', 'ro.build.version.codename'
+  BUILD_VERSION_INCREMENTAL = 'build_version_incremental', 'ro.build.version.incremental'
+  BUILD_VERSION_SDK = 'build_version_sdk', 'ro.build.version.sdk'
+  BUILD_PRODUCT = 'build_product', 'ro.build.product'
+  BUILD_CHARACTERISTICS = 'build_characteristics', 'ro.build.characteristics'
+  DEBUGGABLE = 'debuggable', 'ro.debuggable'
+  PRODUCT_NAME = 'product_name', 'ro.product.name'
+  HARDWARE = 'hardware', 'ro.hardware'
+
+  def __init__(self, build_info_key, system_prop_key):
+    self.build_info_key = build_info_key
+    self.system_prop_key = system_prop_key
+
+
 class AndroidDevice:
   """Class representing an android device.
 
@@ -751,8 +778,7 @@ class AndroidDevice:
 
   @property
   def build_info(self):
-    """Get the build info of this Android device, including build id and
-    build type.
+    """Gets the build info of this Android device, including build id and type.
 
     This is not available if the device is in bootloader mode.
 
@@ -766,20 +792,9 @@ class AndroidDevice:
     if self._build_info is None or self._is_rebooting:
       info = {}
       build_info = self.adb.getprops(CACHED_SYSTEM_PROPS)
-      info['build_id'] = build_info['ro.build.id']
-      info['build_type'] = build_info['ro.build.type']
-      info['build_fingerprint'] = build_info.get('ro.build.fingerprint', '')
-      info['build_version_codename'] = build_info.get(
-          'ro.build.version.codename', '')
-      info['build_version_incremental'] = build_info.get(
-          'ro.build.version.incremental', '')
-      info['build_version_sdk'] = build_info.get('ro.build.version.sdk', '')
-      info['build_product'] = build_info.get('ro.build.product', '')
-      info['build_characteristics'] = build_info.get('ro.build.characteristics',
-                                                     '')
-      info['debuggable'] = build_info.get('ro.debuggable', '')
-      info['product_name'] = build_info.get('ro.product.name', '')
-      info['hardware'] = build_info.get('ro.hardware', '')
+      for build_info_constant in BuildInfoConstants:
+        info[build_info_constant.build_info_key] = build_info.get(
+            build_info_constant.system_prop_key, '')
       self._build_info = info
       return info
     return self._build_info
