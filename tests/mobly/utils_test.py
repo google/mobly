@@ -40,15 +40,14 @@ ADB_MODULE_PACKAGE_NAME = 'mobly.controllers.android_device_lib.adb'
 
 
 class UtilsTest(unittest.TestCase):
-  """This test class has unit tests for the implementation of everything
-  under mobly.utils.
-  """
+  """Unit tests for the implementation of everything under mobly.utils."""
 
   def setUp(self):
-    system = platform.system()
+    super().setUp()
     self.tmp_dir = tempfile.mkdtemp()
 
   def tearDown(self):
+    super().tearDown()
     shutil.rmtree(self.tmp_dir)
 
   def sleep_cmd(self, wait_secs):
@@ -59,11 +58,13 @@ class UtilsTest(unittest.TestCase):
       return ['sleep', str(wait_secs)]
 
   def test_run_command(self):
-    (ret, out, err) = utils.run_command(self.sleep_cmd(0.01))
+    ret, _, _ = utils.run_command(self.sleep_cmd(0.01))
+
     self.assertEqual(ret, 0)
 
   def test_run_command_with_timeout(self):
-    (ret, out, err) = utils.run_command(self.sleep_cmd(0.01), timeout=4)
+    ret, _, _ = utils.run_command(self.sleep_cmd(0.01), timeout=4)
+
     self.assertEqual(ret, 0)
 
   def test_run_command_with_timeout_expired(self):
@@ -72,16 +73,16 @@ class UtilsTest(unittest.TestCase):
 
   @mock.patch('threading.Timer')
   @mock.patch('subprocess.Popen')
-  def test_run_command_with_default_params(self, mock_Popen, mock_Timer):
+  def test_run_command_with_default_params(self, mock_popen, mock_timer):
     mock_command = mock.MagicMock(spec=dict)
-    mock_proc = mock_Popen.return_value
+    mock_proc = mock_popen.return_value
     mock_proc.communicate.return_value = ('fake_out', 'fake_err')
     mock_proc.returncode = 0
 
     out = utils.run_command(mock_command)
 
     self.assertEqual(out, (0, 'fake_out', 'fake_err'))
-    mock_Popen.assert_called_with(
+    mock_popen.assert_called_with(
         mock_command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -90,11 +91,11 @@ class UtilsTest(unittest.TestCase):
         env=None,
         universal_newlines=False,
     )
-    mock_Timer.assert_not_called()
+    mock_timer.assert_not_called()
 
   @mock.patch('threading.Timer')
   @mock.patch('subprocess.Popen')
-  def test_run_command_with_custom_params(self, mock_Popen, mock_Timer):
+  def test_run_command_with_custom_params(self, mock_popen, mock_timer):
     mock_command = mock.MagicMock(spec=dict)
     mock_stdout = mock.MagicMock(spec=int)
     mock_stderr = mock.MagicMock(spec=int)
@@ -102,7 +103,7 @@ class UtilsTest(unittest.TestCase):
     mock_timeout = 1234
     mock_env = mock.MagicMock(spec=dict)
     mock_universal_newlines = mock.MagicMock(spec=bool)
-    mock_proc = mock_Popen.return_value
+    mock_proc = mock_popen.return_value
     mock_proc.communicate.return_value = ('fake_out', 'fake_err')
     mock_proc.returncode = 127
 
@@ -115,7 +116,7 @@ class UtilsTest(unittest.TestCase):
                             universal_newlines=mock_universal_newlines)
 
     self.assertEqual(out, (127, 'fake_out', 'fake_err'))
-    mock_Popen.assert_called_with(
+    mock_popen.assert_called_with(
         mock_command,
         stdout=mock_stdout,
         stderr=mock_stderr,
@@ -124,16 +125,17 @@ class UtilsTest(unittest.TestCase):
         env=mock_env,
         universal_newlines=mock_universal_newlines,
     )
-    mock_Timer.assert_called_with(1234, mock.ANY)
+    mock_timer.assert_called_with(1234, mock.ANY)
 
   def test_run_command_with_universal_newlines_false(self):
-    (ret, out, err) = utils.run_command(self.sleep_cmd(0.01),
-                                        universal_newlines=False)
+    _, out, _ = utils.run_command(self.sleep_cmd(0.01),
+                                  universal_newlines=False)
+
     self.assertIsInstance(out, bytes)
 
   def test_run_command_with_universal_newlines_true(self):
-    (ret, out, err) = utils.run_command(self.sleep_cmd(0.01),
-                                        universal_newlines=True)
+    _, out, _ = utils.run_command(self.sleep_cmd(0.01), universal_newlines=True)
+
     self.assertIsInstance(out, str)
 
   def test_start_standing_subproc(self):
@@ -147,9 +149,10 @@ class UtilsTest(unittest.TestCase):
       p.wait()
 
   @mock.patch('subprocess.Popen')
-  def test_start_standing_subproc_without_env(self, mock_Popen):
-    p = utils.start_standing_subprocess(self.sleep_cmd(0.01))
-    mock_Popen.assert_called_with(
+  def test_start_standing_subproc_without_env(self, mock_popen):
+    utils.start_standing_subprocess(self.sleep_cmd(0.01))
+
+    mock_popen.assert_called_with(
         self.sleep_cmd(0.01),
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -159,10 +162,12 @@ class UtilsTest(unittest.TestCase):
     )
 
   @mock.patch('subprocess.Popen')
-  def test_start_standing_subproc_with_custom_env(self, mock_Popen):
+  def test_start_standing_subproc_with_custom_env(self, mock_popen):
     mock_env = mock.MagicMock(spec=dict)
-    p = utils.start_standing_subprocess(self.sleep_cmd(0.01), env=mock_env)
-    mock_Popen.assert_called_with(
+
+    utils.start_standing_subprocess(self.sleep_cmd(0.01), env=mock_env)
+
+    mock_popen.assert_called_with(
         self.sleep_cmd(0.01),
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -264,7 +269,7 @@ class UtilsTest(unittest.TestCase):
         mock_call_recorder(a)
       return int(a)
 
-    results = utils.concurrent_exec(fake_int, [
+    utils.concurrent_exec(fake_int, [
         (1,),
         ('123',),
         ('not_int',),
@@ -313,7 +318,7 @@ class UtilsTest(unittest.TestCase):
         mock_call_recorder(a)
       return int(a)
 
-    results = utils.concurrent_exec(fake_int, [
+    utils.concurrent_exec(fake_int, [
         (1,),
         ('not_int1',),
         ('not_int2',),
@@ -436,17 +441,14 @@ class UtilsTest(unittest.TestCase):
   @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.is_adb_available', return_value=True)
   @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports')
   @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
-  def test_get_available_port_positive(self, mock_is_adb_available,
-                                       mock_list_occupied_adb_ports,
-                                       mock_pick_unused_port):
+  def test_get_available_port_positive(self, *_):
     self.assertEqual(utils.get_available_host_port(), MOCK_AVAILABLE_PORT)
 
   @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.is_adb_available', return_value=False)
-  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports')
   @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
-  def test_get_available_port_positive_no_adb(self, mock_is_adb_available,
-                                              mock_list_occupied_adb_ports,
-                                              mock_pick_unused_port):
+  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports')
+  def test_get_available_port_positive_no_adb(self,
+                                              mock_list_occupied_adb_ports, *_):
     self.assertEqual(utils.get_available_host_port(), MOCK_AVAILABLE_PORT)
     mock_list_occupied_adb_ports.assert_not_called()
 
@@ -454,15 +456,12 @@ class UtilsTest(unittest.TestCase):
   @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports',
               return_value=[MOCK_AVAILABLE_PORT])
   @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
-  def test_get_available_port_negative(self, mock_is_adb_available,
-                                       mock_list_occupied_adb_ports,
-                                       mock_pick_unused_port):
+  def test_get_available_port_negative(self, *_):
     with self.assertRaisesRegex(utils.Error, 'Failed to find.* retries'):
       utils.get_available_host_port()
 
   @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports')
-  def test_get_available_port_returns_free_port(self,
-                                                mock_list_occupied_adb_ports):
+  def test_get_available_port_returns_free_port(self, _):
     """Verifies logic to pick a free port on the host.
 
     Test checks we can bind to either an ipv4 or ipv6 socket on the port
