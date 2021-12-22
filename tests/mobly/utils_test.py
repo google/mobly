@@ -14,18 +14,15 @@
 
 from concurrent import futures
 import io
-import mock
 import os
 import platform
 import shutil
 import socket
-import sys
 import subprocess
+import sys
 import tempfile
 import threading
 import unittest
-
-import psutil
 
 from mobly import base_test
 from mobly import signals
@@ -35,6 +32,8 @@ from tests.lib import integration_test
 from tests.lib import mock_controller
 from tests.lib import mock_instrumentation_test
 from tests.lib import multiple_subclasses_module
+import mock
+import psutil
 
 MOCK_AVAILABLE_PORT = 5
 ADB_MODULE_PACKAGE_NAME = 'mobly.controllers.android_device_lib.adb'
