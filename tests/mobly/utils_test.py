@@ -102,6 +102,53 @@ class UtilsTest(unittest.TestCase):
     else:
       return ['sleep', str(wait_secs)]
 
+  @unittest.skipIf(os.name == "nt",
+                   'collect_process_tree only available on Unix like system.')
+  @mock.patch('subprocess.check_output')
+  def test_collect_process_tree_without_child(self, mock_check_output):
+    mock_check_output.side_effect = (subprocess.CalledProcessError(
+        -1, 'fake_cmd'))
+
+    pid_list = utils.collect_process_tree(123)
+
+    self.assertListEqual(pid_list, [])
+
+  @unittest.skipIf(os.name == "nt",
+                   'collect_process_tree only available on Unix like system.')
+  @mock.patch('subprocess.check_output')
+  def test_collect_process_tree_returns_list(self, mock_check_output):
+    # Creates subprocess 777 with descendants looks like:
+    # subprocess 777
+    #   ├─ 780 (child)
+    #   │  ├─ 888 (grandchild)
+    #   │  │    ├─ 913 (great grandchild)
+    #   │  │    └─ 999 (great grandchild)
+    #   │  └─ 890 (grandchild)
+    #   ├─ 791 (child)
+    #   └─ 799 (child)
+    mock_check_output.side_effect = (
+        # ps -o pid --ppid 777 --noheaders
+        b'780\n 791\n 799\n',
+        # ps -o pid --ppid 780 --noheaders
+        b'888\n 890\n',
+        # ps -o pid --ppid 791 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+        # ps -o pid --ppid 799 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+        # ps -o pid --ppid 888 --noheaders
+        b'913\n 999\n',
+        # ps -o pid --ppid 890 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+        # ps -o pid --ppid 913 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+        # ps -o pid --ppid 999 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+    )
+
+    pid_list = utils.collect_process_tree(777)
+
+    self.assertListEqual(pid_list, [780, 791, 799, 888, 890, 913, 999])
+
   def test_run_command(self):
     ret, _, _ = utils.run_command(self.sleep_cmd(0.01))
 
