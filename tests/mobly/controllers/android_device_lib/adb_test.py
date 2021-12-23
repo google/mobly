@@ -14,9 +14,9 @@
 
 import collections
 import io
-import mock
 import subprocess
 import unittest
+from unittest import mock
 
 from mobly.controllers.android_device_lib import adb
 

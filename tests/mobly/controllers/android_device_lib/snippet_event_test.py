@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import time
 import unittest
 
 from mobly.controllers.android_device_lib import snippet_event
@@ -37,5 +35,5 @@ class SnippetEventTest(unittest.TestCase):
         "creation_time: 12345678, data: {'foo': 'bar'})")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   unittest.main()

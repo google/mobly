@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# This module holds util functions that are used in more than one test module.
+"""Holds util functions that are used in more than one test module."""
 
 from mobly import records
 

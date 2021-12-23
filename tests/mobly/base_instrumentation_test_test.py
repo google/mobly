@@ -12,20 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import mock
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
+from mobly import signals
 from mobly.base_instrumentation_test import _InstrumentationBlock
 from mobly.base_instrumentation_test import _InstrumentationKnownStatusKeys
 from mobly.base_instrumentation_test import _InstrumentationStructurePrefixes
-from mobly.base_instrumentation_test import BaseInstrumentationTestClass
-from mobly import config_parser
-from mobly import signals
-from mobly.controllers import android_device
-from mobly.controllers.android_device_lib import adb
 from tests.lib import mock_instrumentation_test
 
 # A random prefix to test that prefixes are added properly.

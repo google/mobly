@@ -15,11 +15,9 @@
 # This module has common mock objects and functions used in unit tests for
 # mobly.controllers.android_device module.
 
-from builtins import bytes
-
 import logging
-import mock
 import os
+from unittest import mock
 
 DEFAULT_MOCK_PROPERTIES = {
     'ro.build.id': 'AB42',
