@@ -17,6 +17,7 @@ import io
 import os
 import platform
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -33,10 +34,28 @@ from tests.lib import mock_controller
 from tests.lib import mock_instrumentation_test
 from tests.lib import multiple_subclasses_module
 import mock
-import psutil
 
 MOCK_AVAILABLE_PORT = 5
 ADB_MODULE_PACKAGE_NAME = 'mobly.controllers.android_device_lib.adb'
+
+
+def _is_process_running(pid):
+  """Whether the process with given PID is running."""
+  if os.name == 'nt':
+    return str(pid) in subprocess.check_output([
+        'tasklist',
+        '/fi',
+        f'PID eq {pid}',
+    ]).decode()
+
+  try:
+    # os.kill throws OSError if the process with PID pid is not running.
+    # signal.SIG_DFL is one of two standard signal handling options, it will
+    # simply perform the default function for the signal.
+    os.kill(pid, signal.SIG_DFL)
+  except OSError:
+    return False
+  return True
 
 
 class UtilsTest(unittest.TestCase):
@@ -140,9 +159,9 @@ class UtilsTest(unittest.TestCase):
 
   def test_start_standing_subproc(self):
     try:
-      p = utils.start_standing_subprocess(self.sleep_cmd(0.01))
-      p1 = psutil.Process(p.pid)
-      self.assertTrue(p1.is_running())
+      p = utils.start_standing_subprocess(self.sleep_cmd(4))
+      self.assertTrue(_is_process_running(p.pid))
+      os.kill(p.pid, signal.SIGTERM)
     finally:
       p.stdout.close()
       p.stderr.close()
@@ -178,16 +197,14 @@ class UtilsTest(unittest.TestCase):
 
   def test_stop_standing_subproc(self):
     p = utils.start_standing_subprocess(self.sleep_cmd(4))
-    p1 = psutil.Process(p.pid)
     utils.stop_standing_subprocess(p)
-    self.assertFalse(p1.is_running())
+    self.assertFalse(_is_process_running(p.pid))
 
-  def test_stop_standing_subproc_wihtout_pipe(self):
+  def test_stop_standing_subproc_without_pipe(self):
     p = subprocess.Popen(self.sleep_cmd(4))
     self.assertIsNone(p.stdout)
-    p1 = psutil.Process(p.pid)
     utils.stop_standing_subprocess(p)
-    self.assertFalse(p1.is_running())
+    self.assertFalse(_is_process_running(p.pid))
 
   @unittest.skipIf(sys.version_info >= (3, 4) and sys.version_info < (3, 5),
                    'Python 3.4 does not support `None` max_workers.')
