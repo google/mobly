@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str
-
 import json
-import mock
 import socket
 import unittest
+from unittest import mock
 
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from tests.lib import jsonrpc_client_test_base

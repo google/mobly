@@ -12,22 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str
-
 import copy
 import io
-import mock
 import os
 import shutil
 import tempfile
-import threading
 import unittest
-import yaml
+from unittest import mock
 
 from mobly import records
 from mobly import signals
-
 from tests.lib import utils
+import yaml
 
 
 class RecordTestError(Exception):
