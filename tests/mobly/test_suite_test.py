@@ -13,18 +13,16 @@
 # limitations under the License.
 
 import os
-import mock
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from mobly import base_test
 from mobly import config_parser
 from mobly import records
 from mobly import test_runner
-
 from tests.lib import mock_controller
-from tests.lib import utils
 
 
 class TestSuiteTest(unittest.TestCase):

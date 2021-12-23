@@ -16,12 +16,11 @@ import copy
 import functools
 import io
 import os
-import mock
 import re
 import shutil
 import tempfile
 import unittest
-import yaml
+from unittest import mock
 
 from mobly import asserts
 from mobly import base_test
@@ -29,10 +28,10 @@ from mobly import config_parser
 from mobly import expects
 from mobly import records
 from mobly import signals
-
 from tests.lib import utils
 from tests.lib import mock_controller
 from tests.lib import mock_second_controller
+import yaml
 
 MSG_EXPECTED_EXCEPTION = "This is an expected exception."
 MSG_EXPECTED_TEST_FAILURE = "This is an expected test failure."

@@ -13,12 +13,11 @@
 # limitations under the License.
 """Unit tests for controller manager."""
 
-import mock
 import unittest
+from unittest import mock
 
 from mobly import controller_manager
 from mobly import signals
-
 from tests.lib import mock_controller
 
 

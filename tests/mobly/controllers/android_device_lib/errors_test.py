@@ -13,8 +13,8 @@
 # limitations under the License.
 """Unit tests for Mobly android_device_lib.errors."""
 
-import mock
 import unittest
+from unittest import mock
 
 from mobly.controllers.android_device_lib import errors
 

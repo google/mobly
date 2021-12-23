@@ -24,6 +24,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
 from mobly import base_test
 from mobly import signals
@@ -33,7 +34,6 @@ from tests.lib import integration_test
 from tests.lib import mock_controller
 from tests.lib import mock_instrumentation_test
 from tests.lib import multiple_subclasses_module
-import mock
 
 MOCK_AVAILABLE_PORT = 5
 ADB_MODULE_PACKAGE_NAME = 'mobly.controllers.android_device_lib.adb'

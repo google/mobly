@@ -14,22 +14,21 @@
 
 import io
 import logging
-import mock
 import os
 import platform
 import shutil
 import tempfile
 import time
 import unittest
-import yaml
+from unittest import mock
 
 from mobly import config_parser
 from mobly import records
 from mobly import test_runner
-
 from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import teardown_class_failure_test
+import yaml
 
 if platform.system() == 'Windows':
   import win32file

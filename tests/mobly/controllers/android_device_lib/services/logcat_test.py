@@ -12,21 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
 import logging
-import mock
 import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from mobly import records
-from mobly import utils
 from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib.services import logcat
-
 from tests.lib import mock_android_device
 
 # The expected result of the cat adb operation.

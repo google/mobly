@@ -12,27 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str as new_str
-
 import io
 import logging
-import mock
 import os
 import shutil
-import sys
 import tempfile
 import unittest
-import yaml
+from unittest import mock
 
 from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
-from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import base_service
 from mobly.controllers.android_device_lib.services import logcat
-
 from tests.lib import mock_android_device
+import yaml
 
 MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
 
