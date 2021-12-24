@@ -14,6 +14,8 @@
 
 from concurrent import futures
 import io
+import logging
+import multiprocessing
 import os
 import platform
 import shutil
@@ -23,6 +25,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from unittest import mock
 
@@ -56,6 +59,29 @@ def _is_process_running(pid):
   except OSError:
     return False
   return True
+
+
+def _fork_children_processes(name, successors):
+  """Forks children processes and its descendants recursively.
+
+  Args:
+    name: The name of this process.
+    successors: The args for the descendant processes.
+  """
+  logging.info('Process "%s" started, PID: %d!', name, os.getpid())
+  children_process = [
+      multiprocessing.Process(target=_fork_children_processes, args=args)
+      for args in successors
+  ]
+  for child_process in children_process:
+    child_process.start()
+
+  if 'child' in name:
+    time.sleep(4)
+
+  for child_process in children_process:
+    child_process.join()
+  logging.info('Process "%s" exit.', name)
 
 
 class UtilsTest(unittest.TestCase):
@@ -205,6 +231,40 @@ class UtilsTest(unittest.TestCase):
     self.assertIsNone(p.stdout)
     utils.stop_standing_subprocess(p)
     self.assertFalse(_is_process_running(p.pid))
+
+  def test_stop_standing_subproc_and_descendants(self):
+    # Creates subprocess A with descendants looks like:
+    # subprocess A
+    #   ├─ B (child)
+    #   │  ├─ X (grandchild)
+    #   │  │    ├─ 1 (great grandchild)
+    #   │  │    └─ 2 (great grandchild)
+    #   │  └─ Y (grandchild)
+    #   ├─ C (child)
+    #   └─ D (child)
+    process_tree_args = ('subprocess_a', [
+        ('child_b', [
+            ('grand_child_x', [
+                ('great_grand_child_1', []),
+                ('great_grand_child_2', []),
+            ]),
+            ('grand_child_y', []),
+        ]),
+        ('child_c', []),
+        ('child_d', []),
+    ])
+    subprocess_a = multiprocessing.Process(target=_fork_children_processes,
+                                           args=process_tree_args)
+    subprocess_a.start()
+    mock_subprocess_a_popen = mock.MagicMock()
+    mock_subprocess_a_popen.pid = subprocess_a.pid
+    # Sleep a while to create all processes.
+    time.sleep(0.01)
+
+    utils.stop_standing_subprocess(mock_subprocess_a_popen)
+
+    subprocess_a.join(timeout=1)
+    mock_subprocess_a_popen.wait.assert_called_once()
 
   @unittest.skipIf(sys.version_info >= (3, 4) and sys.version_info < (3, 5),
                    'Python 3.4 does not support `None` max_workers.')
