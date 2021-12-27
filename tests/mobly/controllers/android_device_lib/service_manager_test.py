@@ -14,8 +14,8 @@
 """Unit tests for Mobly's ServiceManager."""
 
 import importlib
-import mock
 import unittest
+from unittest import mock
 
 from mobly import expects
 from mobly.controllers.android_device_lib import service_manager

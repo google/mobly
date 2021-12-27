@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import mock
-import unittest
 
-from mobly.controllers.android_device_lib.services import sl4a_service
+import unittest
+from unittest import mock
+
 from mobly.controllers.android_device_lib import service_manager
+from mobly.controllers.android_device_lib.services import sl4a_service
 
 
 @mock.patch('mobly.controllers.android_device_lib.sl4a_client.Sl4aClient')

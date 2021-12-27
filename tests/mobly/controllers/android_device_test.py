@@ -12,27 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str as new_str
-
 import io
 import logging
-import mock
 import os
 import shutil
-import sys
 import tempfile
 import unittest
-import yaml
+from unittest import mock
 
 from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
-from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import base_service
 from mobly.controllers.android_device_lib.services import logcat
-
 from tests.lib import mock_android_device
+import yaml
 
 MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
 
@@ -375,7 +370,10 @@ class AndroidDeviceTest(unittest.TestCase):
     build_info = ad.build_info
     self.assertEqual(build_info['build_id'], 'AB42')
     self.assertEqual(build_info['build_type'], 'userdebug')
+    self.assertEqual(build_info['build_fingerprint'],
+                     'FakeModel:Dessert/AB42/1234567:userdebug/dev-keys')
     self.assertEqual(build_info['build_version_codename'], 'Z')
+    self.assertEqual(build_info['build_version_incremental'], '1234567')
     self.assertEqual(build_info['build_version_sdk'], '28')
     self.assertEqual(build_info['build_product'], 'FakeModel')
     self.assertEqual(build_info['build_characteristics'], 'emulator,phone')
@@ -399,7 +397,9 @@ class AndroidDeviceTest(unittest.TestCase):
     build_info = ad.build_info
     self.assertEqual(build_info['build_id'], 'AB42')
     self.assertEqual(build_info['build_type'], 'userdebug')
+    self.assertEqual(build_info['build_fingerprint'], '')
     self.assertEqual(build_info['build_version_codename'], '')
+    self.assertEqual(build_info['build_version_incremental'], '')
     self.assertEqual(build_info['build_version_sdk'], '')
     self.assertEqual(build_info['build_product'], '')
     self.assertEqual(build_info['build_characteristics'], '')

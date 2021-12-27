@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import os
-import mock
 import unittest
+from unittest import mock
 
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import jsonrpc_shell_base

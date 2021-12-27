@@ -17,7 +17,6 @@ import logging
 from mobly import asserts
 from mobly import base_test
 from mobly import test_runner
-
 from tests.lib import mock_controller
 
 

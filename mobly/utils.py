@@ -29,6 +29,9 @@ import subprocess
 import threading
 import time
 import traceback
+from typing import overload, Tuple
+# TODO(ericth): Use Literal from typing if we only run on Python 3.8 or later.
+from typing_extensions import Literal
 
 import portpicker
 
@@ -304,6 +307,33 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
     return return_vals
 
 
+# Provide hint for pytype checker to avoid the Union[bytes, str] case.
+@overload
+def run_command(cmd,
+                stdout=...,
+                stderr=...,
+                shell=...,
+                timeout=...,
+                cwd=...,
+                env=...,
+                universal_newlines: Literal[False] = ...
+               ) -> Tuple[int, bytes, bytes]:
+  ...
+
+
+@overload
+def run_command(cmd,
+                stdout=...,
+                stderr=...,
+                shell=...,
+                timeout=...,
+                cwd=...,
+                env=...,
+                universal_newlines: Literal[True] = ...
+               ) -> Tuple[int, str, str]:
+  ...
+
+
 def run_command(cmd,
                 stdout=None,
                 stderr=None,
@@ -346,23 +376,19 @@ def run_command(cmd,
       std error.
 
   Raises:
-    psutil.TimeoutExpired: The command timed out.
+    subprocess.TimeoutExpired: The command timed out.
   """
-  # Only import psutil when actually needed.
-  # psutil may cause import error in certain env. This way the utils module
-  # doesn't crash upon import.
-  import psutil
   if stdout is None:
     stdout = subprocess.PIPE
   if stderr is None:
     stderr = subprocess.PIPE
-  process = psutil.Popen(cmd,
-                         stdout=stdout,
-                         stderr=stderr,
-                         shell=shell,
-                         cwd=cwd,
-                         env=env,
-                         universal_newlines=universal_newlines)
+  process = subprocess.Popen(cmd,
+                             stdout=stdout,
+                             stderr=stderr,
+                             shell=shell,
+                             cwd=cwd,
+                             env=env,
+                             universal_newlines=universal_newlines)
   timer = None
   timer_triggered = threading.Event()
   if timeout and timeout > 0:
@@ -377,12 +403,15 @@ def run_command(cmd,
     timer.start()
   # If the command takes longer than the timeout, then the timer thread
   # will kill the subprocess, which will make it terminate.
-  (out, err) = process.communicate()
+  out, err = process.communicate()
   if timer is not None:
     timer.cancel()
   if timer_triggered.is_set():
-    raise psutil.TimeoutExpired(timeout, pid=process.pid)
-  return (process.returncode, out, err)
+    raise subprocess.TimeoutExpired(cmd=cwd,
+                                    timeout=timeout,
+                                    output=out,
+                                    stderr=err)
+  return process.returncode, out, err
 
 
 def start_standing_subprocess(cmd, shell=False, env=None):

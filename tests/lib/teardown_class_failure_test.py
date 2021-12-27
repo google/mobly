@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A test used to verify the output file includes teardown_class failures."""
+
 from mobly import base_test
 from mobly import test_runner
 
