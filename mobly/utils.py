@@ -313,13 +313,13 @@ def _kill_process_tree(proc):
   for child_pid in _collect_process_tree(proc.pid):
     try:
       os.kill(child_pid, signal.SIGTERM)
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
       failed.append(child_pid)
       logging.exception('Failed to kill standing subprocess %d', child_pid)
 
   try:
     proc.kill()
-  except Exception:
+  except Exception:  # pylint: disable=broad-except
     failed.append(proc.pid)
     logging.exception('Failed to kill standing subprocess %d', proc.pid)
 
