@@ -109,7 +109,7 @@ class UtilsTest(unittest.TestCase):
     mock_check_output.side_effect = (subprocess.CalledProcessError(
         -1, 'fake_cmd'))
 
-    pid_list = utils.collect_process_tree(123)
+    pid_list = utils._collect_process_tree(123)
 
     self.assertListEqual(pid_list, [])
 
@@ -145,7 +145,7 @@ class UtilsTest(unittest.TestCase):
         subprocess.CalledProcessError(-1, 'fake_cmd'),
     )
 
-    pid_list = utils.collect_process_tree(777)
+    pid_list = utils._collect_process_tree(777)
 
     self.assertListEqual(pid_list, [780, 791, 799, 888, 890, 913, 999])
 

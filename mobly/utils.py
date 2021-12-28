@@ -258,7 +258,7 @@ def rand_ascii_str(length):
 
 
 # Thead/Process related functions.
-def collect_process_tree(starting_pid):
+def _collect_process_tree(starting_pid):
   """Collects PID list of the descendant processes from the given PID.
 
   This function only available on Unix like system.
@@ -310,7 +310,7 @@ def _kill_process_tree(proc):
     return
 
   failed = []
-  for child_pid in collect_process_tree(proc.pid):
+  for child_pid in _collect_process_tree(proc.pid):
     try:
       os.kill(child_pid, signal.SIGTERM)
     except Exception:
