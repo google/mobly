@@ -149,6 +149,69 @@ class UtilsTest(unittest.TestCase):
 
     self.assertListEqual(pid_list, [780, 791, 799, 888, 890, 913, 999])
 
+  @mock.patch.object(os, 'kill')
+  @mock.patch.object(utils, '_collect_process_tree')
+  def test_kill_process_tree_on_unix_succeeds(self, mock_collect_process_tree,
+                                              mock_os_kill):
+    mock_collect_process_tree.return_value = [799, 888, 890]
+    mock_proc = mock.MagicMock()
+    mock_proc.pid = 123
+
+    with mock.patch.object(os, 'name', new='posix'):
+      utils._kill_process_tree(mock_proc)
+
+    mock_os_kill.assert_has_calls([
+        mock.call(799, signal.SIGTERM),
+        mock.call(888, signal.SIGTERM),
+        mock.call(890, signal.SIGTERM),
+    ])
+    mock_proc.kill.assert_called_once()
+
+  @mock.patch.object(os, 'kill')
+  @mock.patch.object(utils, '_collect_process_tree')
+  def test_kill_process_tree_on_unix_kill_children_failed_throws_error(
+      self, mock_collect_process_tree, mock_os_kill):
+    mock_collect_process_tree.return_value = [799, 888, 890]
+    mock_os_kill.side_effect = [None, OSError(), None]
+    mock_proc = mock.MagicMock()
+    mock_proc.pid = 123
+
+    with mock.patch.object(os, 'name', new='posix'):
+      with self.assertRaises(utils.Error):
+        utils._kill_process_tree(mock_proc)
+
+    mock_proc.kill.assert_called_once()
+
+  @mock.patch.object(utils, '_collect_process_tree')
+  def test_kill_process_tree_on_unix_kill_proc_failed_throws_error(
+      self, mock_collect_process_tree):
+    mock_collect_process_tree.return_value = []
+    mock_proc = mock.MagicMock()
+    mock_proc.pid = 123
+    mock_proc.kill.side_effect = subprocess.SubprocessError()
+
+    with mock.patch.object(os, 'name', new='posix'):
+      with self.assertRaises(utils.Error):
+        utils._kill_process_tree(mock_proc)
+
+    mock_proc.kill.assert_called_once()
+
+  @mock.patch('subprocess.check_output')
+  def test_kill_process_tree_on_windows_calls_taskkill(self, mock_check_output):
+    mock_proc = mock.MagicMock()
+    mock_proc.pid = 123
+
+    with mock.patch.object(os, 'name', new='nt'):
+      utils._kill_process_tree(mock_proc)
+
+    mock_check_output.assert_called_once_with([
+        'taskkill',
+        '/F',
+        '/T',
+        '/PID',
+        '123',
+    ])
+
   def test_run_command(self):
     ret, _, _ = utils.run_command(self.sleep_cmd(0.01))
 
