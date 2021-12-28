@@ -29,11 +29,11 @@ import subprocess
 import threading
 import time
 import traceback
-from typing import overload, Tuple
-# TODO(ericth): Use Literal from typing if we only run on Python 3.8 or later.
-from typing_extensions import Literal
+from typing import Tuple, overload
 
 import portpicker
+# TODO(ericth): Use Literal from typing if we only run on Python 3.8 or later.
+from typing_extensions import Literal
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
@@ -292,7 +292,7 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
       params = future_to_params[future]
       try:
         return_vals.append(future.result())
-      except Exception as exc:
+      except Exception as exc:  # pylint: disable=broad-except
         logging.exception('%s generated an exception: %s', params,
                           traceback.format_exc())
         return_vals.append(exc)
