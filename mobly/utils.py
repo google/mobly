@@ -24,6 +24,7 @@ import pipes
 import platform
 import random
 import re
+import signal
 import string
 import subprocess
 import threading
@@ -257,6 +258,75 @@ def rand_ascii_str(length):
 
 
 # Thead/Process related functions.
+def _collect_process_tree(starting_pid):
+  """Collects PID list of the descendant processes from the given PID.
+
+  This function only available on Unix like system.
+
+  Args:
+    starting_pid: The PID to start recursively traverse.
+
+  Returns:
+    A list of pid of the descendant processes.
+  """
+  ret = []
+  stack = [starting_pid]
+
+  while stack:
+    pid = stack.pop()
+    try:
+      ps_results = subprocess.check_output([
+          'ps',
+          '-o',
+          'pid',
+          '--ppid',
+          str(pid),
+          '--noheaders',
+      ]).decode().strip()
+    except subprocess.CalledProcessError:
+      # Ignore if there is not child process.
+      continue
+
+    children_pid_list = list(map(int, ps_results.split('\n ')))
+    stack.extend(children_pid_list)
+    ret.extend(children_pid_list)
+
+  return ret
+
+
+def _kill_process_tree(proc):
+  """Kills the subprocess and its descendants."""
+  if os.name == 'nt':
+    # The taskkill command with "/T" option ends the specified process and any
+    # child processes started by it:
+    # https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/taskkill
+    subprocess.check_output([
+        'taskkill',
+        '/F',
+        '/T',
+        '/PID',
+        str(proc.pid),
+    ])
+    return
+
+  failed = []
+  for child_pid in _collect_process_tree(proc.pid):
+    try:
+      os.kill(child_pid, signal.SIGTERM)
+    except Exception:
+      failed.append(child_pid)
+      logging.exception('Failed to kill standing subprocess %d', child_pid)
+
+  try:
+    proc.kill()
+  except Exception:
+    failed.append(proc.pid)
+    logging.exception('Failed to kill standing subprocess %d', proc.pid)
+
+  if failed:
+    raise Error('Failed to kill standing subprocesses: %s' % failed)
+
+
 def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
   """Executes a function with different parameters pseudo-concurrently.
 
@@ -464,40 +534,10 @@ def stop_standing_subprocess(proc):
   Raises:
     Error: if the subprocess could not be stopped.
   """
-  # Only import psutil when actually needed.
-  # psutil may cause import error in certain env. This way the utils module
-  # doesn't crash upon import.
-  import psutil
-  pid = proc.pid
-  logging.debug('Stopping standing subprocess %d', pid)
-  process = psutil.Process(pid)
-  failed = []
-  try:
-    children = process.children(recursive=True)
-  except AttributeError:
-    # Handle versions <3.0.0 of psutil.
-    children = process.get_children(recursive=True)
-  for child in children:
-    try:
-      child.kill()
-      child.wait(timeout=10)
-    except psutil.NoSuchProcess:
-      # Ignore if the child process has already terminated.
-      pass
-    except Exception:
-      failed.append(child.pid)
-      logging.exception('Failed to kill standing subprocess %d', child.pid)
-  try:
-    process.kill()
-    process.wait(timeout=10)
-  except psutil.NoSuchProcess:
-    # Ignore if the process has already terminated.
-    pass
-  except Exception:
-    failed.append(pid)
-    logging.exception('Failed to kill standing subprocess %d', pid)
-  if failed:
-    raise Error('Failed to kill standing subprocesses: %s' % failed)
+  logging.debug('Stopping standing subprocess %d', proc.pid)
+
+  _kill_process_tree(proc)
+
   # Call wait and close pipes on the original Python object so we don't get
   # runtime warnings.
   if proc.stdout:
@@ -505,7 +545,7 @@ def stop_standing_subprocess(proc):
   if proc.stderr:
     proc.stderr.close()
   proc.wait()
-  logging.debug('Stopped standing subprocess %d', pid)
+  logging.debug('Stopped standing subprocess %d', proc.pid)
 
 
 def wait_for_standing_subprocess(proc, timeout=None):
