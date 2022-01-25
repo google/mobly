@@ -149,7 +149,8 @@ def _validate_device_existence(serials):
     serials: list of strings, the serials of all the devices that are expected
       to exist.
   """
-  valid_ad_identifiers = list_adb_devices() + list_adb_devices_by_usb_id()
+  valid_ad_identifiers = (list_adb_devices() + list_adb_devices_by_usb_id() +
+                          list_fastboot_devices())
   for serial in serials:
     if serial not in valid_ad_identifiers:
       raise Error(f'Android device serial "{serial}" is specified in '
