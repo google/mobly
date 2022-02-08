@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import io
-import mock
 import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from mobly import suite_runner
-
-from tests.lib import integration_test
 from tests.lib import integration2_test
+from tests.lib import integration_test
 
 
 class SuiteRunnerTest(unittest.TestCase):

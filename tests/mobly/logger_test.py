@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
 import os
-import pytz
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from mobly import logger
+import pytz
 
 
 class LoggerTest(unittest.TestCase):
-  """Verifies code in mobly.logger module.
-  """
+  """Verifies code in mobly.logger module."""
 
   def setUp(self):
     self.log_dir = tempfile.mkdtemp()

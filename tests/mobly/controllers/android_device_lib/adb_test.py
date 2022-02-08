@@ -14,9 +14,9 @@
 
 import collections
 import io
-import mock
 import subprocess
 import unittest
+from unittest import mock
 
 from mobly.controllers.android_device_lib import adb
 
@@ -56,22 +56,7 @@ MOCK_ADB_SHELL_COMMAND_CHECK = 'adb shell command -v ls'
 
 
 class AdbTest(unittest.TestCase):
-  """Unit tests for mobly.controllers.android_device_lib.adb.
-  """
-
-  def _mock_process(self, mock_psutil_process, mock_popen):
-    # the created proc object in adb._exec_cmd()
-    mock_proc = mock.Mock()
-    mock_popen.return_value = mock_proc
-
-    # the created process object in adb._exec_cmd()
-    mock_psutil_process.return_value = mock.Mock()
-
-    mock_proc.communicate = mock.Mock(
-        return_value=(MOCK_DEFAULT_STDOUT.encode('utf-8'),
-                      MOCK_DEFAULT_STDERR.encode('utf-8')))
-    mock_proc.returncode = 0
-    return (mock_psutil_process, mock_popen)
+  """Unit tests for mobly.controllers.android_device_lib.adb."""
 
   def _mock_execute_and_process_stdout_process(self, mock_popen):
     # the created proc object in adb._execute_and_process_stdout()
@@ -147,21 +132,26 @@ class AdbTest(unittest.TestCase):
 
   @mock.patch('mobly.utils.run_command')
   def test_exec_cmd_timed_out(self, mock_run_command):
-    mock_run_command.side_effect = adb.psutil.TimeoutExpired('Timed out')
+    mock_run_command.side_effect = subprocess.TimeoutExpired(cmd='mock_command',
+                                                             timeout=0.01)
     mock_serial = '1234Abcd'
+
     with self.assertRaisesRegex(
         adb.AdbTimeoutError, 'Timed out executing command "adb -s '
         '1234Abcd fake-cmd" after 0.01s.') as context:
       adb.AdbProxy(mock_serial).fake_cmd(timeout=0.01)
+
     self.assertEqual(context.exception.serial, mock_serial)
     self.assertIn(mock_serial, context.exception.cmd)
 
   @mock.patch('mobly.utils.run_command')
   def test_exec_cmd_timed_out_without_serial(self, mock_run_command):
-    mock_run_command.side_effect = adb.psutil.TimeoutExpired('Timed out')
+    mock_run_command.side_effect = subprocess.TimeoutExpired(cmd='mock_command',
+                                                             timeout=0.01)
+
     with self.assertRaisesRegex(
-        adb.AdbTimeoutError, 'Timed out executing command "adb '
-        'fake-cmd" after 0.01s.') as context:
+        adb.AdbTimeoutError,
+        'Timed out executing command "adb fake-cmd" after 0.01s.'):
       adb.AdbProxy().fake_cmd(timeout=0.01)
 
   def test_exec_cmd_with_negative_timeout_value(self):

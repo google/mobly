@@ -24,13 +24,17 @@ import pipes
 import platform
 import random
 import re
+import signal
 import string
 import subprocess
 import threading
 import time
 import traceback
+from typing import Tuple, overload
 
 import portpicker
+# TODO(ericth): Use Literal from typing if we only run on Python 3.8 or later.
+from typing_extensions import Literal
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
@@ -254,6 +258,75 @@ def rand_ascii_str(length):
 
 
 # Thead/Process related functions.
+def _collect_process_tree(starting_pid):
+  """Collects PID list of the descendant processes from the given PID.
+
+  This function only available on Unix like system.
+
+  Args:
+    starting_pid: The PID to start recursively traverse.
+
+  Returns:
+    A list of pid of the descendant processes.
+  """
+  ret = []
+  stack = [starting_pid]
+
+  while stack:
+    pid = stack.pop()
+    try:
+      ps_results = subprocess.check_output([
+          'ps',
+          '-o',
+          'pid',
+          '--ppid',
+          str(pid),
+          '--noheaders',
+      ]).decode().strip()
+    except subprocess.CalledProcessError:
+      # Ignore if there is not child process.
+      continue
+
+    children_pid_list = list(map(int, ps_results.split('\n ')))
+    stack.extend(children_pid_list)
+    ret.extend(children_pid_list)
+
+  return ret
+
+
+def _kill_process_tree(proc):
+  """Kills the subprocess and its descendants."""
+  if os.name == 'nt':
+    # The taskkill command with "/T" option ends the specified process and any
+    # child processes started by it:
+    # https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/taskkill
+    subprocess.check_output([
+        'taskkill',
+        '/F',
+        '/T',
+        '/PID',
+        str(proc.pid),
+    ])
+    return
+
+  failed = []
+  for child_pid in _collect_process_tree(proc.pid):
+    try:
+      os.kill(child_pid, signal.SIGTERM)
+    except Exception:  # pylint: disable=broad-except
+      failed.append(child_pid)
+      logging.exception('Failed to kill standing subprocess %d', child_pid)
+
+  try:
+    proc.kill()
+  except Exception:  # pylint: disable=broad-except
+    failed.append(proc.pid)
+    logging.exception('Failed to kill standing subprocess %d', proc.pid)
+
+  if failed:
+    raise Error('Failed to kill standing subprocesses: %s' % failed)
+
+
 def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
   """Executes a function with different parameters pseudo-concurrently.
 
@@ -289,7 +362,7 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
       params = future_to_params[future]
       try:
         return_vals.append(future.result())
-      except Exception as exc:
+      except Exception as exc:  # pylint: disable=broad-except
         logging.exception('%s generated an exception: %s', params,
                           traceback.format_exc())
         return_vals.append(exc)
@@ -302,6 +375,33 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
                                        exception.__traceback__)))
       raise RuntimeError('\n\n'.join(error_messages))
     return return_vals
+
+
+# Provide hint for pytype checker to avoid the Union[bytes, str] case.
+@overload
+def run_command(cmd,
+                stdout=...,
+                stderr=...,
+                shell=...,
+                timeout=...,
+                cwd=...,
+                env=...,
+                universal_newlines: Literal[False] = ...
+               ) -> Tuple[int, bytes, bytes]:
+  ...
+
+
+@overload
+def run_command(cmd,
+                stdout=...,
+                stderr=...,
+                shell=...,
+                timeout=...,
+                cwd=...,
+                env=...,
+                universal_newlines: Literal[True] = ...
+               ) -> Tuple[int, str, str]:
+  ...
 
 
 def run_command(cmd,
@@ -346,23 +446,19 @@ def run_command(cmd,
       std error.
 
   Raises:
-    psutil.TimeoutExpired: The command timed out.
+    subprocess.TimeoutExpired: The command timed out.
   """
-  # Only import psutil when actually needed.
-  # psutil may cause import error in certain env. This way the utils module
-  # doesn't crash upon import.
-  import psutil
   if stdout is None:
     stdout = subprocess.PIPE
   if stderr is None:
     stderr = subprocess.PIPE
-  process = psutil.Popen(cmd,
-                         stdout=stdout,
-                         stderr=stderr,
-                         shell=shell,
-                         cwd=cwd,
-                         env=env,
-                         universal_newlines=universal_newlines)
+  process = subprocess.Popen(cmd,
+                             stdout=stdout,
+                             stderr=stderr,
+                             shell=shell,
+                             cwd=cwd,
+                             env=env,
+                             universal_newlines=universal_newlines)
   timer = None
   timer_triggered = threading.Event()
   if timeout and timeout > 0:
@@ -377,12 +473,15 @@ def run_command(cmd,
     timer.start()
   # If the command takes longer than the timeout, then the timer thread
   # will kill the subprocess, which will make it terminate.
-  (out, err) = process.communicate()
+  out, err = process.communicate()
   if timer is not None:
     timer.cancel()
   if timer_triggered.is_set():
-    raise psutil.TimeoutExpired(timeout, pid=process.pid)
-  return (process.returncode, out, err)
+    raise subprocess.TimeoutExpired(cmd=cwd,
+                                    timeout=timeout,
+                                    output=out,
+                                    stderr=err)
+  return process.returncode, out, err
 
 
 def start_standing_subprocess(cmd, shell=False, env=None):
@@ -435,40 +534,10 @@ def stop_standing_subprocess(proc):
   Raises:
     Error: if the subprocess could not be stopped.
   """
-  # Only import psutil when actually needed.
-  # psutil may cause import error in certain env. This way the utils module
-  # doesn't crash upon import.
-  import psutil
-  pid = proc.pid
-  logging.debug('Stopping standing subprocess %d', pid)
-  process = psutil.Process(pid)
-  failed = []
-  try:
-    children = process.children(recursive=True)
-  except AttributeError:
-    # Handle versions <3.0.0 of psutil.
-    children = process.get_children(recursive=True)
-  for child in children:
-    try:
-      child.kill()
-      child.wait(timeout=10)
-    except psutil.NoSuchProcess:
-      # Ignore if the child process has already terminated.
-      pass
-    except Exception:
-      failed.append(child.pid)
-      logging.exception('Failed to kill standing subprocess %d', child.pid)
-  try:
-    process.kill()
-    process.wait(timeout=10)
-  except psutil.NoSuchProcess:
-    # Ignore if the process has already terminated.
-    pass
-  except Exception:
-    failed.append(pid)
-    logging.exception('Failed to kill standing subprocess %d', pid)
-  if failed:
-    raise Error('Failed to kill standing subprocesses: %s' % failed)
+  logging.debug('Stopping standing subprocess %d', proc.pid)
+
+  _kill_process_tree(proc)
+
   # Call wait and close pipes on the original Python object so we don't get
   # runtime warnings.
   if proc.stdout:
@@ -476,7 +545,7 @@ def stop_standing_subprocess(proc):
   if proc.stderr:
     proc.stderr.close()
   proc.wait()
-  logging.debug('Stopped standing subprocess %d', pid)
+  logging.debug('Stopped standing subprocess %d', proc.pid)
 
 
 def wait_for_standing_subprocess(proc, timeout=None):

@@ -14,25 +14,24 @@
 
 import io
 import logging
-import mock
 import os
 import re
 import shutil
 import tempfile
 import unittest
-import yaml
+from unittest import mock
 
 from mobly import config_parser
 from mobly import records
 from mobly import signals
 from mobly import test_runner
-
 from tests.lib import mock_android_device
 from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import integration2_test
 from tests.lib import integration3_test
 from tests.lib import multiple_subclasses_module
+import yaml
 
 
 class TestRunnerTest(unittest.TestCase):

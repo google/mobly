@@ -12,27 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str as new_str
-
 import io
 import logging
-import mock
 import os
 import shutil
-import sys
 import tempfile
 import unittest
-import yaml
+from unittest import mock
 
 from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
-from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib.services import base_service
 from mobly.controllers.android_device_lib.services import logcat
-
 from tests.lib import mock_android_device
+import yaml
 
 MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
 
@@ -137,20 +132,26 @@ class AndroidDeviceTest(unittest.TestCase):
     with self.assertRaisesRegex(android_device.Error, expected_msg):
       android_device.create([1])
 
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
   @mock.patch('mobly.controllers.android_device.AndroidDevice')
-  def test_get_instances(self, mock_ad_class, mock_list_adb_usb, mock_list_adb):
+  def test_get_instances(self, mock_ad_class, mock_list_adb_usb, mock_list_adb,
+                         mock_list_fastboot):
+    mock_list_fastboot.return_value = ['0']
     mock_list_adb.return_value = ['1']
     mock_list_adb_usb.return_value = []
-    android_device.get_instances(['1'])
-    mock_ad_class.assert_called_with('1')
+    android_device.get_instances(['0', '1'])
+    mock_ad_class.assert_any_call('0')
+    mock_ad_class.assert_any_call('1')
 
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
   @mock.patch('mobly.controllers.android_device.AndroidDevice')
   def test_get_instances_do_not_exist(self, mock_ad_class, mock_list_adb_usb,
-                                      mock_list_adb):
+                                      mock_list_adb, mock_list_fastboot):
+    mock_list_fastboot.return_value = []
     mock_list_adb.return_value = []
     mock_list_adb_usb.return_value = []
     with self.assertRaisesRegex(
@@ -159,12 +160,14 @@ class AndroidDeviceTest(unittest.TestCase):
     ):
       android_device.get_instances(['1'])
 
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
   @mock.patch('mobly.controllers.android_device.AndroidDevice')
   def test_get_instances_with_configs(self, mock_ad_class, mock_list_adb_usb,
-                                      mock_list_adb):
-    mock_list_adb.return_value = ['1', '2']
+                                      mock_list_adb, mock_list_fastboot):
+    mock_list_fastboot.return_value = ['1']
+    mock_list_adb.return_value = ['2']
     mock_list_adb_usb.return_value = []
     configs = [{'serial': '1'}, {'serial': '2'}]
     android_device.get_instances_with_configs(configs)
@@ -178,12 +181,15 @@ class AndroidDeviceTest(unittest.TestCase):
         f'Required value "serial" is missing in AndroidDevice config {config}'):
       android_device.get_instances_with_configs([config])
 
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
   @mock.patch('mobly.controllers.android_device.AndroidDevice')
   def test_get_instances_with_configsdo_not_exist(self, mock_ad_class,
                                                   mock_list_adb_usb,
-                                                  mock_list_adb):
+                                                  mock_list_adb,
+                                                  mock_list_fastboot):
+    mock_list_fastboot.return_value = []
     mock_list_adb.return_value = []
     mock_list_adb_usb.return_value = []
     config = {'serial': '1'}
@@ -375,7 +381,10 @@ class AndroidDeviceTest(unittest.TestCase):
     build_info = ad.build_info
     self.assertEqual(build_info['build_id'], 'AB42')
     self.assertEqual(build_info['build_type'], 'userdebug')
+    self.assertEqual(build_info['build_fingerprint'],
+                     'FakeModel:Dessert/AB42/1234567:userdebug/dev-keys')
     self.assertEqual(build_info['build_version_codename'], 'Z')
+    self.assertEqual(build_info['build_version_incremental'], '1234567')
     self.assertEqual(build_info['build_version_sdk'], '28')
     self.assertEqual(build_info['build_product'], 'FakeModel')
     self.assertEqual(build_info['build_characteristics'], 'emulator,phone')
@@ -399,7 +408,9 @@ class AndroidDeviceTest(unittest.TestCase):
     build_info = ad.build_info
     self.assertEqual(build_info['build_id'], 'AB42')
     self.assertEqual(build_info['build_type'], 'userdebug')
+    self.assertEqual(build_info['build_fingerprint'], '')
     self.assertEqual(build_info['build_version_codename'], '')
+    self.assertEqual(build_info['build_version_incremental'], '')
     self.assertEqual(build_info['build_version_sdk'], '')
     self.assertEqual(build_info['build_product'], '')
     self.assertEqual(build_info['build_characteristics'], '')

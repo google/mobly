@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from mobly import test_runner
-
 from tests.lib import integration_test
 
 
