@@ -159,7 +159,7 @@ class AdbProxy:
   def __init__(self, serial=''):
     self.serial = serial
 
-  def _exec_cmd(self, args, shell, timeout, stderr):
+  def _exec_cmd(self, args, shell, timeout, stderr) -> bytes:
     """Executes adb commands.
 
     Args:
@@ -200,7 +200,7 @@ class AdbProxy:
                      ret_code=ret,
                      serial=self.serial)
 
-  def _execute_and_process_stdout(self, args, shell, handler):
+  def _execute_and_process_stdout(self, args, shell, handler) -> bytes:
     """Executes adb commands and processes the stdout with a handler.
 
     Args:
@@ -285,12 +285,12 @@ class AdbProxy:
           adb_cmd.extend(args)
     return adb_cmd
 
-  def _exec_adb_cmd(self, name, args, shell, timeout, stderr):
+  def _exec_adb_cmd(self, name, args, shell, timeout, stderr) -> bytes:
     adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
     out = self._exec_cmd(adb_cmd, shell=shell, timeout=timeout, stderr=stderr)
     return out
 
-  def _execute_adb_and_process_stdout(self, name, args, shell, handler):
+  def _execute_adb_and_process_stdout(self, name, args, shell, handler) -> bytes:
     adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
     err = self._execute_and_process_stdout(adb_cmd,
                                            shell=shell,
@@ -324,7 +324,7 @@ class AdbProxy:
     return results
 
   @property
-  def current_user_id(self):
+  def current_user_id(self) -> int:
     """The integer ID of the current Android user.
 
     Some adb commands require specifying a user ID to work properly. Use
@@ -343,7 +343,7 @@ class AdbProxy:
     # Multi-user is not supported in SDK < 21, only user 0 exists.
     return 0
 
-  def connect(self, address):
+  def connect(self, address) -> bytes:
     """Executes the `adb connect` command with proper status checking.
 
     Args:
@@ -414,7 +414,7 @@ class AdbProxy:
         time.sleep(DEFAULT_GETPROPS_RETRY_SLEEP_SEC)
     return results
 
-  def has_shell_command(self, command):
+  def has_shell_command(self, command) -> bool:
     """Checks to see if a given check command exists on the device.
 
     Args:
@@ -431,7 +431,7 @@ class AdbProxy:
       # an exit code > 1.
       return False
 
-  def forward(self, args=None, shell=False):
+  def forward(self, args=None, shell=False) -> bytes:
     with ADB_PORT_LOCK:
       return self._exec_adb_cmd('forward',
                                 args,
@@ -439,7 +439,7 @@ class AdbProxy:
                                 timeout=None,
                                 stderr=None)
 
-  def instrument(self, package, options=None, runner=None, handler=None):
+  def instrument(self, package, options=None, runner=None, handler=None) -> bytes:
     """Runs an instrumentation command on the device.
 
     This is a convenience wrapper to avoid parameter formatting.
@@ -496,7 +496,7 @@ class AdbProxy:
                                                   shell=False,
                                                   handler=handler)
 
-  def root(self):
+  def root(self) -> bytes:
     """Enables ADB root mode on the device.
 
     This method will retry to execute the command `adb root` when an
@@ -529,7 +529,7 @@ class AdbProxy:
 
   def __getattr__(self, name):
 
-    def adb_call(args=None, shell=False, timeout=None, stderr=None):
+    def adb_call(args=None, shell=False, timeout=None, stderr=None) -> bytes:
       """Wrapper for an ADB command.
 
       Args:
