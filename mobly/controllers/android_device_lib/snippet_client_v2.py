@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc.
+# Copyright 2022 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""JSON RPC interface to Mobly Snippet Lib."""
+"""JSON RPC Client for Android Devices."""
+
+# When the Python library `socket.create_connection` call is made, it indirectly
+# calls `import encodings.idna` through the `socket.getaddrinfo` method.
+# However, this chain of function calls is apparently not thread-safe in
+# embedded Python environments. So, pre-emptively import and cache the encoder.
+# See https://bugs.python.org/issue17305 for more details.
+try:
+  import encodings.idna
+except ImportError:
+  # Some implementations of Python (e.g. IronPython) do not support the`idna`
+  # encoding, so ignore import failures based on that.
+  pass
 
 import re
 import time
+import socket
+import json
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
+from mobly.controllers.android_device_lib import callback_handler
 from mobly.controllers.android_device_lib import jsonrpc_client_base
+from mobly.snippet import client_base
 
 _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')
@@ -56,6 +72,26 @@ _SETSID_COMMAND = 'setsid'
 
 _NOHUP_COMMAND = 'nohup'
 
+# UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
+UNKNOWN_UID = -1
+
+# TODO: consider move this timeout config to general place
+
+# Maximum time to wait for the socket to open on the device.
+_SOCKET_CONNECTION_TIMEOUT = 60
+
+# Maximum time to wait for a response message on the socket.
+_SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
+
+class JsonRpcCommand:
+  """Commands that can be invoked on all jsonrpc clients.
+
+  INIT: Initializes a new session.
+  CONTINUE: Creates a connection.
+  """
+  INIT = 'initiate'
+  CONTINUE = 'continue'
+
 
 class AppStartPreCheckError(jsonrpc_client_base.Error):
   """Raised when pre checks for the snippet failed."""
@@ -65,7 +101,7 @@ class ProtocolVersionError(jsonrpc_client_base.AppStartError):
   """Raised when the protocol reported by the snippet is unknown."""
 
 
-class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
+class SnippetClientV2(client_base.ClientBase):
   """A client for interacting with snippet APKs using Mobly Snippet Lib.
 
   See superclass documentation for a list of public attributes.
@@ -74,20 +110,22 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
   mobly-snippet-lib, SnippetRunner.java.
   """
 
-  def __init__(self, package, ad):
+  def __init__(self, package, device):
     """Initializes a SnippetClient.
 
     Args:
-      package: (str) The package name of the apk where the snippets are
+      snippet_name: (str) The package name of the apk where the snippets are
         defined.
       ad: (AndroidDevice) the device object associated with this client.
     """
-    super().__init__(app_name=package, ad=ad)
+    super().__init__(snippet_name=package, device=device)
     self.package = package
-    self._ad = ad
-    self._adb = ad.adb
+    self._adb = device.adb
     self._proc = None
     self._user_id = None
+    self._client = None  # prevent close errors on connect failure
+    self._conn = None
+    self._event_client = None
 
   @property
   def is_alive(self):
@@ -109,6 +147,216 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       self._user_id = self._adb.current_user_id
     return self._user_id
 
+  def _before_starting_server(self):
+    self._check_app_installed()
+    self._disable_hidden_api_blacklist()
+
+  def _do_start_server(self):
+    """ Starts the snippet server.
+
+    This function starts the snippet server with adb command, checks the
+    protocol version of the server, and parses device port from the server
+    output.
+    """
+    persists_shell_cmd = self._get_persist_command()
+    # TODO: print protocol info into in base
+    # Use info here so people can follow along with the snippet startup
+    # process. Starting snippets can be slow, especially if there are
+    # multiple, and this avoids the perception that the framework is hanging
+    # for a long time doing nothing.
+    self.log.info('Launching snippet apk %s with protocol %d.%d', self.snippet_name,
+                  _PROTOCOL_MAJOR_VERSION, _PROTOCOL_MINOR_VERSION)
+    cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
+                             user=self._get_user_command_string(),
+                             snippet_package=self.snippet_name)
+    self._proc = self._run_abd_cmd(cmd)
+
+    # Check protocol version and get the device port
+    line = self._read_protocol_line()
+    match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$', line)
+    if not match or match.group(1) != '1':
+      raise ProtocolVersionError(self._device, line)
+
+    line = self._read_protocol_line()
+    match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
+    if not match:
+      raise ProtocolVersionError(self._device, line)
+    self.device_port = int(match.group(1))
+
+  def _run_abd_cmd(self, cmd):
+    adb_cmd = [adb.ADB]
+    if self._adb.serial:
+      adb_cmd += ['-s', self._adb.serial]
+    adb_cmd += ['shell', cmd]
+    return utils.start_standing_subprocess(adb_cmd, shell=False)
+
+  def _build_connection(self, host_port=None):
+    self._forward_device_port(host_port)
+    self._build_socket_connection()
+    self._send_handshake_request()
+
+  def _forward_device_port(self, host_port=None):
+    """Forwards the device port to a new host port."""
+    self.host_port = host_port or utils.get_available_host_port()
+    self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
+
+  def _build_socket_connection(self):
+    self._counter = self._id_counter()
+    try:
+      self._conn = socket.create_connection(('localhost', self.host_port),
+                                            _SOCKET_CONNECTION_TIMEOUT)
+    except ConnectionRefusedError as err:
+      # Retry using '127.0.0.1' for IPv4 enabled machines that only resolve
+      # 'localhost' to '[::1]'.
+      self.log.debug(
+          'Failed to connect to localhost, trying 127.0.0.1: {}'.format(
+              str(err)))
+      self._conn = socket.create_connection(('127.0.0.1', self.host_port),
+                                            _SOCKET_CONNECTION_TIMEOUT)
+
+    self._conn.settimeout(_SOCKET_READ_TIMEOUT)
+    self._client = self._conn.makefile(mode='brw')
+
+  def _send_handshake_request(self, uid=None, cmd=None):
+    if uid is None:
+      uid = UNKNOWN_UID
+    if not cmd:
+      cmd = JsonRpcCommand.INIT
+    try:
+      resp = self._send_rpc_request(json.dumps({'cmd': cmd, 'uid': uid}))
+    except jsonrpc_client_base.ProtocolError as e:
+      if jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER in str(e):
+        raise jsonrpc_client_base.ProtocolError(self._device, jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+      else:
+        raise
+
+    if not resp:
+      raise jsonrpc_client_base.ProtocolError(self._device, jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+    result = json.loads(resp)
+    if result['status']:
+      self.uid = result['uid']
+    else:
+      self.uid = UNKNOWN_UID
+
+  def _check_app_installed(self):
+    # Check that the Mobly Snippet app is installed for the current user.
+    out = self._adb.shell(f'pm list package --user {self.user_id}')
+    if not utils.grep('^package:%s$' % self.snippet_name, out):
+      raise AppStartPreCheckError(
+          self._device, f'{self.snippet_name} is not installed for user {self.user_id}.')
+    # Check that the app is instrumented.
+    out = self._adb.shell('pm list instrumentation')
+    matched_out = utils.grep(
+        f'^instrumentation:{self.snippet_name}/{_INSTRUMENTATION_RUNNER_PACKAGE}',
+        out)
+    if not matched_out:
+      raise AppStartPreCheckError(
+          self._device, f'{self.snippet_name} is installed, but it is not instrumented.')
+    match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
+                      matched_out[0])
+    target_name = match.group(3)
+    # Check that the instrumentation target is installed if it's not the
+    # same as the snippet package.
+    if target_name != self.snippet_name:
+      out = self._adb.shell(f'pm list package --user {self.user_id}')
+      if not utils.grep('^package:%s$' % target_name, out):
+        raise AppStartPreCheckError(
+            self._device,
+            f'Instrumentation target {target_name} is not installed for user '
+            f'{self.user_id}.')
+
+  def _disable_hidden_api_blacklist(self):
+    """If necessary and possible, disables hidden api blacklist."""
+    version_codename = self._device.build_info['build_version_codename']
+    sdk_version = int(self._device.build_info['build_version_sdk'])
+    # we check version_codename in addition to sdk_version because P builds
+    # in development report sdk_version 27, but still enforce the blacklist.
+    if self._device.is_rootable and (sdk_version >= 28 or version_codename == 'P'):
+      self._device.adb.shell(
+          'settings put global hidden_api_blacklist_exemptions "*"')
+
+  def _send_rpc_request(self, request):
+    try:
+      self._client.write(request.encode("utf8") + b'\n')
+      self._client.flush()
+    except socket.error as e:
+      raise Error(
+          self._device,
+          'Encountered socket error "%s" sending RPC message "%s"' % (e, request))
+
+    try:
+      response = self._client.readline()
+      if not response:
+        raise jsonrpc_client_base.ProtocolError(self._device, jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER)
+      response = str(response, encoding='utf8')
+      return response
+    except socket.error as e:
+      raise Error(self._device,
+                  'Encountered socket error reading RPC response "%s"' % e)
+
+  def _handle_callback(self, callback_id, ret_value, method_name):
+    if self._event_client is None:
+      self._event_client = self._start_event_client()
+    return callback_handler.CallbackHandler(callback_id=callback_id,
+                                            event_client=self._event_client,
+                                            ret_value=ret_value,
+                                            method_name=method_name,
+                                            ad=self._device)
+  def _start_event_client(self):
+    """Overrides superclass."""
+    event_client = SnippetClientV2(snippet_name=self.snippet_name, device=self._device)
+    event_client.host_port = self.host_port
+    event_client.device_port = self.device_port
+    event_client._build_socket_connection()
+    event_client._send_handshake_request(self.uid, JsonRpcCommand.CONTINUE)
+    return event_client
+
+  def _stop_server(self):
+    # Kill the pending 'adb shell am instrument -w' process if there is one.
+    # Although killing the snippet apk would abort this process anyway, we
+    # want to call stop_standing_subprocess() to perform a health check,
+    # print the failure stack trace if there was any, and reap it from the
+    # process table.
+
+    # Close the socket connection.
+    self._close_socket_connection()
+
+    # kill the server subprocess
+    self._kill_server_subprocess()
+
+    # send a kill singal to the server running on the testing device
+    self._kill_server()
+
+  def _close_socket_connection(self):
+    try:
+      if self._conn:
+        self._conn.close()
+        self._conn = None
+    finally:
+      # Always clear the host port as part of the disconnect step.
+      self._stop_port_forwarding()
+
+  def _stop_port_forwarding(self):
+    """Stops the adb port forwarding of the host port used by this client.
+    """
+    if self.host_port:
+      self._device.adb.forward(['--remove', 'tcp:%d' % self.host_port])
+      self.host_port = None
+
+
+  def _kill_server_subprocess(self):
+    if self._proc:
+      utils.stop_standing_subprocess(self._proc)
+      self._proc = None
+
+  def _kill_server(self):
+    out = self._adb.shell(
+        _STOP_CMD.format(snippet_package=self.snippet_name,
+                         user=self._get_user_command_string())).decode('utf-8')
+    if 'OK (0 tests)' not in out:
+      raise errors.DeviceError(
+          self._device, 'Failed to stop existing apk. Unexpected output: %s' % out)
+
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying user IDs.
 
@@ -121,186 +369,10 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       String, the command param section to be formatted into the adb
       commands.
     """
-    sdk_int = int(self._ad.build_info['build_version_sdk'])
+    sdk_int = int(self._device.build_info['build_version_sdk'])
     if sdk_int < 24:
       return ''
     return f'--user {self.user_id}'
-
-  def start_app_and_connect(self):
-    """Starts snippet apk on the device and connects to it.
-
-    This wraps the main logic with safe handling
-
-    Raises:
-      AppStartPreCheckError, when pre-launch checks fail.
-    """
-    try:
-      self._start_app_and_connect()
-    except AppStartPreCheckError:
-      # Precheck errors don't need cleanup, directly raise.
-      raise
-    except Exception as e:
-      # Log the stacktrace of `e` as re-raising doesn't preserve trace.
-      self._ad.log.exception('Failed to start app and connect.')
-      # If errors happen, make sure we clean up before raising.
-      try:
-        self.stop_app()
-      except Exception:
-        self._ad.log.exception(
-            'Failed to stop app after failure to start and connect.')
-      # Explicitly raise the original error from starting app.
-      raise e
-
-  def _start_app_and_connect(self):
-    """Starts snippet apk on the device and connects to it.
-
-    After prechecks, this launches the snippet apk with an adb cmd in a
-    standing subprocess, checks the cmd response from the apk for protocol
-    version, then sets up the socket connection over adb port-forwarding.
-
-    Args:
-      ProtocolVersionError, if protocol info or port info cannot be
-        retrieved from the snippet apk.
-    """
-    self._check_app_installed()
-    self.disable_hidden_api_blacklist()
-
-    persists_shell_cmd = self._get_persist_command()
-    # Use info here so people can follow along with the snippet startup
-    # process. Starting snippets can be slow, especially if there are
-    # multiple, and this avoids the perception that the framework is hanging
-    # for a long time doing nothing.
-    self.log.info('Launching snippet apk %s with protocol %d.%d', self.package,
-                  _PROTOCOL_MAJOR_VERSION, _PROTOCOL_MINOR_VERSION)
-    cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
-                             user=self._get_user_command_string(),
-                             snippet_package=self.package)
-    start_time = time.perf_counter()
-    self._proc = self._do_start_app(cmd)
-
-    # Check protocol version and get the device port
-    line = self._read_protocol_line()
-    match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$', line)
-    if not match or match.group(1) != '1':
-      raise ProtocolVersionError(self._ad, line)
-
-    line = self._read_protocol_line()
-    match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
-    if not match:
-      raise ProtocolVersionError(self._ad, line)
-    self.device_port = int(match.group(1))
-
-    # Forward the device port to a new host port, and connect to that port
-    self.host_port = utils.get_available_host_port()
-    self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
-    self.connect()
-
-    # Yaaay! We're done!
-    self.log.debug('Snippet %s started after %.1fs on host port %s',
-                   self.package,
-                   time.perf_counter() - start_time, self.host_port)
-
-  def restore_app_connection(self, port=None):
-    """Restores the app after device got reconnected.
-
-    Instead of creating new instance of the client:
-      - Uses the given port (or find a new available host_port if none is
-      given).
-      - Tries to connect to remote server with selected port.
-
-    Args:
-      port: If given, this is the host port from which to connect to remote
-        device port. If not provided, find a new available port as host
-        port.
-
-    Raises:
-      AppRestoreConnectionError: When the app was not able to be started.
-    """
-    self.host_port = port or utils.get_available_host_port()
-    self._adb.forward(['tcp:%d' % self.host_port, 'tcp:%d' % self.device_port])
-    try:
-      self.connect()
-    except Exception:
-      # Log the original error and raise AppRestoreConnectionError.
-      self.log.exception('Failed to re-connect to app.')
-      raise jsonrpc_client_base.AppRestoreConnectionError(
-          self._ad,
-          ('Failed to restore app connection for %s at host port %s, '
-           'device port %s') % (self.package, self.host_port, self.device_port))
-
-    # Because the previous connection was lost, update self._proc
-    self._proc = None
-    self._restore_event_client()
-
-  def stop_app(self):
-    # Kill the pending 'adb shell am instrument -w' process if there is one.
-    # Although killing the snippet apk would abort this process anyway, we
-    # want to call stop_standing_subprocess() to perform a health check,
-    # print the failure stack trace if there was any, and reap it from the
-    # process table.
-    self.log.debug('Stopping snippet apk %s', self.package)
-    # Close the socket connection.
-    self.disconnect()
-    if self._proc:
-      utils.stop_standing_subprocess(self._proc)
-      self._proc = None
-    out = self._adb.shell(
-        _STOP_CMD.format(snippet_package=self.package,
-                         user=self._get_user_command_string())).decode('utf-8')
-    if 'OK (0 tests)' not in out:
-      raise errors.DeviceError(
-          self._ad, 'Failed to stop existing apk. Unexpected output: %s' % out)
-
-  def _start_event_client(self):
-    """Overrides superclass."""
-    event_client = SnippetClient(package=self.package, ad=self._ad)
-    event_client.host_port = self.host_port
-    event_client.device_port = self.device_port
-    event_client.connect(self.uid, jsonrpc_client_base.JsonRpcCommand.CONTINUE)
-    return event_client
-
-  def _restore_event_client(self):
-    """Restores previously created event client."""
-    if not self._event_client:
-      self._event_client = self._start_event_client()
-      return
-    self._event_client.host_port = self.host_port
-    self._event_client.device_port = self.device_port
-    self._event_client.connect()
-
-  def _check_app_installed(self):
-    # Check that the Mobly Snippet app is installed for the current user.
-    out = self._adb.shell(f'pm list package --user {self.user_id}')
-    if not utils.grep('^package:%s$' % self.package, out):
-      raise AppStartPreCheckError(
-          self._ad, f'{self.package} is not installed for user {self.user_id}.')
-    # Check that the app is instrumented.
-    out = self._adb.shell('pm list instrumentation')
-    matched_out = utils.grep(
-        f'^instrumentation:{self.package}/{_INSTRUMENTATION_RUNNER_PACKAGE}',
-        out)
-    if not matched_out:
-      raise AppStartPreCheckError(
-          self._ad, f'{self.package} is installed, but it is not instrumented.')
-    match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
-                      matched_out[0])
-    target_name = match.group(3)
-    # Check that the instrumentation target is installed if it's not the
-    # same as the snippet package.
-    if target_name != self.package:
-      out = self._adb.shell(f'pm list package --user {self.user_id}')
-      if not utils.grep('^package:%s$' % target_name, out):
-        raise AppStartPreCheckError(
-            self._ad,
-            f'Instrumentation target {target_name} is not installed for user '
-            f'{self.user_id}.')
-
-  def _do_start_app(self, launch_cmd):
-    adb_cmd = [adb.ADB]
-    if self._adb.serial:
-      adb_cmd += ['-s', self._adb.serial]
-    adb_cmd += ['shell', launch_cmd]
-    return utils.start_standing_subprocess(adb_cmd, shell=False)
 
   def _read_protocol_line(self):
     """Reads the next line of instrumentation output relevant to snippets.
@@ -319,7 +391,7 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       line = self._proc.stdout.readline().decode('utf-8')
       if not line:
         raise jsonrpc_client_base.AppStartError(
-            self._ad, 'Unexpected EOF waiting for app to start')
+            self._device, 'Unexpected EOF waiting for app to start')
       # readline() uses an empty string to mark EOF, and a single newline
       # to mark regular empty lines in the output. Don't move the strip()
       # call above the truthiness check, or this method will start
@@ -365,3 +437,47 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       print(help_text)
     else:
       return help_text
+
+  def restore_server_connection(self, port=None):
+    """Restores the app after device got reconnected.
+
+    Instead of creating new instance of the client:
+      - Uses the given port (or find a new available host_port if none is
+      given).
+      - Tries to connect to remote server with selected port.
+
+    Args:
+      port: If given, this is the host port from which to connect to remote
+        device port. If not provided, find a new available port as host
+        port.
+
+    Raises:
+      AppRestoreConnectionError: When the app was not able to be started.
+    """
+    try:
+      self._build_connection(port)
+    except Exception:
+      # Log the original error and raise AppRestoreConnectionError.
+      self.log.exception('Failed to re-connect to app.')
+      raise jsonrpc_client_base.AppRestoreConnectionError(
+          self._device,
+          ('Failed to restore app connection for %s at host port %s, '
+           'device port %s') % (self.snippet_name, self.host_port, self.device_port))
+
+    # Because the previous connection was lost, update self._proc
+    self._proc = None
+    self._restore_event_client()
+
+  def _restore_event_client(self):
+    """Restores previously created event client."""
+    if not self._event_client:
+      self._event_client = self._start_event_client()
+      return
+    self._event_client.host_port = self.host_port
+    self._event_client.device_port = self.device_port
+    self._event_client._build_socket_connection()
+    self._event_client._send_handshake_request()
+
+  # Rest methods are for compatibility with the public interface of client v1.
+  def disconnect(self):
+    self._close_socket_connection()

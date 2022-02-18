@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc.
+# Copyright 2022 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Base class for clients that communicate with apps over a JSON RPC interface.
+"""Base class for clients that communicate with servers over a JSON RPC interface.
 
 The JSON protocol expected by this module is:
 
@@ -19,364 +19,184 @@ The JSON protocol expected by this module is:
 
   Request:
   {
-    "id": <monotonically increasing integer containing the ID of
-         this request>
-    "method": <string containing the name of the method to execute>
-    "params": <JSON array containing the arguments to the method>
+    'id': <Required. Monotonically increasing integer containing the ID of this
+          request.>,
+    'method': <Required. String containing the name of the method to execute.>,
+    'params': <Required. JSON array containing the arguments to the method,
+              `null` if no positional arguments for the RPC method.>,
+    'kwargs': <Optional. JSON dict containing the keyword arguments for the
+              method, `null` if no positional arguments for the RPC method.>,
   }
 
   Response:
   {
-    "id": <int id of request that this response maps to>,
-    "result": <Arbitrary JSON object containing the result of
-           executing the method. If the method could not be
-           executed or returned void, contains 'null'.>,
-    "error": <String containing the error thrown by executing the
-          method. If no error occurred, contains 'null'.>
-    "callback": <String that represents a callback ID used to
-           identify events associated with a particular
-           CallbackHandler object.>
+    'error': <Required. String containing the error thrown by executing the
+             method, `null` if no error occurred.>,
+    'id': <Required. Int id of request that this response maps to.>,
+    'result': <Required. Arbitrary JSON object containing the result of
+              executing the method, `null` if the method could not be executed
+              or returned void.>,
+    'callback': <Required. String that represents a callback ID used to
+                identify events associated with a particular CallbackHandler
+                object, `null` if this is not a async RPC.>,
   }
 """
-
-# When the Python library `socket.create_connection` call is made, it indirectly
-# calls `import encodings.idna` through the `socket.getaddrinfo` method.
-# However, this chain of function calls is apparently not thread-safe in
-# embedded Python environments. So, pre-emptively import and cache the encoder.
-# See https://bugs.python.org/issue17305 for more details.
-try:
-  import encodings.idna
-except ImportError:
-  # Some implementations of Python (e.g. IronPython) do not support the`idna`
-  # encoding, so ignore import failures based on that.
-  pass
 
 import abc
 import json
 import socket
 import threading
+import enum
+import time
+import contextlib
 
 from mobly.controllers.android_device_lib import callback_handler
 from mobly.controllers.android_device_lib import errors
-
-# UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
-UNKNOWN_UID = -1
-
-# Maximum time to wait for the socket to open on the device.
-_SOCKET_CONNECTION_TIMEOUT = 60
-
-# Maximum time to wait for a response message on the socket.
-_SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
+from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 # Maximum logging length of Rpc response in DEBUG level when verbose logging is
 # off.
 _MAX_RPC_RESP_LOGGING_LENGTH = 1024
 
+# The required filed names of Rpc response.
+RPC_RESPONSE_REQUIRED_FIELDS = ['id', 'error', 'result', 'callback']
 
-class Error(errors.DeviceError):
-  pass
-
-
-class AppStartError(Error):
-  """Raised when the app is not able to be started."""
-
-
-class AppRestoreConnectionError(Error):
-  """Raised when failed to restore app from disconnection."""
+# Used for remind users to switch from deprecated interfaces to new interfaces.
+DEPRECATED_MESSAGE_TEMPLATE = (
+    '{old_interface} is deprecated and will be removed in a future version.'
+    'Use {new_interface} instead.'
+)
 
 
-class ApiError(Error):
-  """Raised when remote API reports an error."""
+
+class StartServerStages(enum.Enum):
+  # TODO docstring
+  BEFORE_STARTING_SERVER = 'before_starting_server'
+  DO_START_SERVER = 'do_start_server'
+  BUILD_CONNECTION = 'build_connection'
+  AFTER_STARTING_SERVER = 'after_starting_server'
 
 
-class ProtocolError(Error):
-  """Raised when there is some error in exchanging data with server."""
-  NO_RESPONSE_FROM_HANDSHAKE = 'No response from handshake.'
-  NO_RESPONSE_FROM_SERVER = ('No response from server. '
-                             'Check the device logcat for crashes.')
-  MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
+class ClientBase(abc.ABC):
+  """Base class for Json Rpc clients that connect to remote servers.
 
-
-class JsonRpcCommand:
-  """Commands that can be invoked on all jsonrpc clients.
-
-  INIT: Initializes a new session.
-  CONTINUE: Creates a connection.
-  """
-  INIT = 'initiate'
-  CONTINUE = 'continue'
-
-
-class JsonRpcClientBase(abc.ABC):
-  """Base class for jsonrpc clients that connect to remote servers.
-
-  Connects to a remote device running a jsonrpc-compatible app. Before opening
-  a connection a port forward must be setup to go over usb. This be done using
-  adb.forward([local, remote]). Once the port has been forwarded it can be
-  used in this object as the port of communication.
+  Connects to a remote device running a jsonrpc-compatible server. Before
+  sending rpcs, users need to call client's interface to start server. The
+  server runs on the remote device. After finishing sending all rpcs, users
+  need to call the interface to stop server.
 
   Attributes:
+    snippet_name: (str) The user-visible name of this client.
     host_port: (int) The host port of this RPC client.
     device_port: (int) The device port of this RPC client.
-    app_name: (str) The user-visible name of the app being communicated
-          with.
-    uid: (int) The uid of this session.
+    log: (Logger) The logger of the corresponding device controller.
+    verbose_logging: (bool) If True, prints more detailed log
+      information. Default is False.
   """
 
-  def __init__(self, app_name, ad):
+  def __init__(self, snippet_name, device):
     """
     Args:
-      app_name: (str) The user-visible name of the app being communicated
+      server_name: (str) The user-visible name of the snippet library being communicated
         with.
-      ad: (AndroidDevice) The device object associated with a client.
+      device: (DeviceController) The device object associated with a client.
     """
+
+    self.snippet_name = snippet_name
     self.host_port = None
     self.device_port = None
-    self.app_name = app_name
-    self._ad = ad
-    self.log = self._ad.log
-    self.uid = None
-    self._client = None  # prevent close errors on connect failure
-    self._conn = None
+    self.log = self._device.log
+    self.verbose_logging = True
+    self._device = device
     self._counter = None
     self._lock = threading.Lock()
     self._event_client = None
-    self.verbose_logging = True
 
   def __del__(self):
     self.disconnect()
 
-  # Methods to be implemented by subclasses.
+  @contextlib.contextmanager
+  def _start_server_run_one_stage(self, stage_name, stop_server_if_failed):
+    start_stage_msg = 'Running the stage start_server/%s.'
+    finish_stage_msg = 'Finished the stage start_server/%s.'
+    error_msg = 'Error in stage start_server/%s, the server starting process fails.'
+    error_stop_server_msg = 'Failed to stop server after failure of stage start_server/%s.'
 
-  def start_app_and_connect(self):
-    """Starts the server app on the android device and connects to it.
+    self.log.info(start_stage_msg, stage_name)
+    try:
+      yield
+    except Exception as e:
+      # Log the stacktrace of `e` as re-raising doesn't preserve trace.
+      self.log.error(error_msg, stage_name)
+      if stop_server_if_failed:
+        try:
+          self.stop_server()
+        except Exception:
+          self.log.exception(error_stop_server_msg, stage_name)
+
+      # Explicitly raise the original error from starting app.
+      raise e
+
+    self.log.info(finish_stage_msg, stage_name)
+
+
+  def start_server(self):
+    """Starts the server on the testing device and connects to it.
 
     After this, the self.host_port and self.device_port attributes must be
     set.
+    """
+    self.log.info('Running the stage start_server.')
+    start_time = time.perf_counter()
 
-    Must be implemented by subclasses.
+    with self._start_server_run_one_stage(StartServerStages.BEFORE_STARTING_SERVER, False):
+      self._before_starting_server()
 
-    Raises:
-      AppStartError: When the app was not able to be started.
+    with self._start_server_run_one_stage(StartServerStages.DO_START_SERVER, True):
+      self._do_start_server()
+
+    with self._start_server_run_one_stage(StartServerStages.BUILD_CONNECTION, True):
+      self.build_connection()
+
+    with self._start_server_run_one_stage(StartServerStages.AFTER_STARTING_SERVER, True):
+      self._after_starting_server()
+
+    self.log.debug('Snippet %s started after %.1fs on host port %s.',
+             self.snippet_name, time.perf_counter() - start_time, self.host_port)
+
+  # Methods to be implemented by subclasses.
+
+  def _before_starting_server(self):
+    # TODO(docstring)
+    pass
+
+  def _do_start_server(self):
+    # TODO(docstring)
+    pass
+
+  def build_connection(self):
+    # TODO(docstring)
+    # TODO uid and cmd should not be args of this function
     """
 
-  def stop_app(self):
-    """Kills any running instance of the app.
-
-    Must be implemented by subclasses.
-    """
-
-  def restore_app_connection(self, port=None):
-    """Reconnects to the app after device USB was disconnected.
-
-    Instead of creating new instance of the client:
-      - Uses the given port (or finds a new available host_port if none is
-      given).
-      - Tries to connect to remote server with selected port.
-
-    Must be implemented by subclasses.
-
-    Args:
-      port: If given, this is the host port from which to connect to remote
-        device port. If not provided, find a new available port as host
-        port.
-
-    Raises:
-      AppRestoreConnectionError: When the app was not able to be
-      reconnected.
-    """
-
-  def _start_event_client(self):
-    """Starts a separate JsonRpc client to the same session for propagating
-    events.
-
-    This is an optional function that should only implement if the client
-    utilizes the snippet event mechanism.
-
-    Returns:
-      A JsonRpc Client object that connects to the same session as the
-      one on which this function is called.
-    """
-
-  # Rest of the client methods.
-
-  def connect(self, uid=UNKNOWN_UID, cmd=JsonRpcCommand.INIT):
-    """Opens a connection to a JSON RPC server.
-
-    Opens a connection to a remote client. The connection attempt will time
-    out if it takes longer than _SOCKET_CONNECTION_TIMEOUT seconds. Each
-    subsequent operation over this socket will time out after
-    _SOCKET_READ_TIMEOUT seconds as well.
-
-    Args:
-      uid: int, The uid of the session to join, or UNKNOWN_UID to start a
-        new session.
-      cmd: JsonRpcCommand, The command to use for creating the connection.
-
-    Raises:
-      IOError: Raised when the socket times out from io error
-      socket.timeout: Raised when the socket waits to long for connection.
-      ProtocolError: Raised when there is an error in the protocol.
+    This function resets the RPC id counter.
     """
     self._counter = self._id_counter()
-    try:
-      self._conn = socket.create_connection(('localhost', self.host_port),
-                                            _SOCKET_CONNECTION_TIMEOUT)
-    except ConnectionRefusedError as err:
-      # Retry using '127.0.0.1' for IPv4 enabled machines that only resolve
-      # 'localhost' to '[::1]'.
-      self.log.debug(
-          'Failed to connect to localhost, trying 127.0.0.1: {}'.format(
-              str(err)))
-      self._conn = socket.create_connection(('127.0.0.1', self.host_port),
-                                            _SOCKET_CONNECTION_TIMEOUT)
+    self._build_connection()
 
-    self._conn.settimeout(_SOCKET_READ_TIMEOUT)
-    self._client = self._conn.makefile(mode='brw')
+  def _build_connection(self, host_port=None):
+    # TODO(docstring)
+    pass
 
-    resp = self._cmd(cmd, uid)
-    if not resp:
-      raise ProtocolError(self._ad, ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
-    result = json.loads(str(resp, encoding='utf8'))
-    if result['status']:
-      self.uid = result['uid']
-    else:
-      self.uid = UNKNOWN_UID
-
-  def disconnect(self):
-    """Close the connection to the snippet server on the device.
-
-    This is a unilateral disconnect from the client side, without tearing down
-    the snippet server running on the device.
-
-    The connection to the snippet server can be re-established by calling
-    `SnippetClient.restore_app_connection`.
-    """
-    try:
-      if self._conn:
-        self._conn.close()
-        self._conn = None
-    finally:
-      # Always clear the host port as part of the disconnect step.
-      self.clear_host_port()
-
-  def clear_host_port(self):
-    """Stops the adb port forwarding of the host port used by this client.
-    """
-    if self.host_port:
-      self._ad.adb.forward(['--remove', 'tcp:%d' % self.host_port])
-      self.host_port = None
-
-  def _client_send(self, msg):
-    """Sends an Rpc message through the connection.
-
-    Args:
-      msg: string, the message to send.
-
-    Raises:
-      Error: a socket error occurred during the send.
-    """
-    try:
-      self._client.write(msg.encode("utf8") + b'\n')
-      self._client.flush()
-      self.log.debug('Snippet sent %s.', msg)
-    except socket.error as e:
-      raise Error(
-          self._ad,
-          'Encountered socket error "%s" sending RPC message "%s"' % (e, msg))
-
-  def _client_receive(self):
-    """Receives the server's response of an Rpc message.
-
-    Returns:
-      Raw byte string of the response.
-
-    Raises:
-      Error: a socket error occurred during the read.
-    """
-    try:
-      response = self._client.readline()
-      if self.verbose_logging:
-        self.log.debug('Snippet received: %s', response)
-      else:
-        if _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
-          self.log.debug('Snippet received: %s', response)
-        else:
-          self.log.debug('Snippet received: %s... %d chars are truncated',
-                         response[:_MAX_RPC_RESP_LOGGING_LENGTH],
-                         len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
-      return response
-    except socket.error as e:
-      raise Error(self._ad,
-                  'Encountered socket error reading RPC response "%s"' % e)
-
-  def _cmd(self, command, uid=None):
-    """Send a command to the server.
-
-    Args:
-      command: str, The name of the command to execute.
-      uid: int, the uid of the session to send the command to.
-
-    Returns:
-      The line that was written back.
-    """
-    if not uid:
-      uid = self.uid
-    self._client_send(json.dumps({'cmd': command, 'uid': uid}))
-    return self._client_receive()
-
-  def _rpc(self, method, *args):
-    """Sends an rpc to the app.
-
-    Args:
-      method: str, The name of the method to execute.
-      args: any, The args of the method.
-
-    Returns:
-      The result of the rpc.
-
-    Raises:
-      ProtocolError: Something went wrong with the protocol.
-      ApiError: The rpc went through, however executed with errors.
-    """
-    with self._lock:
-      apiid = next(self._counter)
-      data = {'id': apiid, 'method': method, 'params': args}
-      request = json.dumps(data)
-      self._client_send(request)
-      response = self._client_receive()
-    if not response:
-      raise ProtocolError(self._ad, ProtocolError.NO_RESPONSE_FROM_SERVER)
-    result = json.loads(str(response, encoding='utf8'))
-    if result['error']:
-      raise ApiError(self._ad, result['error'])
-    if result['id'] != apiid:
-      raise ProtocolError(self._ad, ProtocolError.MISMATCHED_API_ID)
-    if result.get('callback') is not None:
-      if self._event_client is None:
-        self._event_client = self._start_event_client()
-      return callback_handler.CallbackHandler(callback_id=result['callback'],
-                                              event_client=self._event_client,
-                                              ret_value=result['result'],
-                                              method_name=method,
-                                              ad=self._ad)
-    return result['result']
-
-  def disable_hidden_api_blacklist(self):
-    """If necessary and possible, disables hidden api blacklist."""
-    version_codename = self._ad.build_info['build_version_codename']
-    sdk_version = int(self._ad.build_info['build_version_sdk'])
-    # we check version_codename in addition to sdk_version because P builds
-    # in development report sdk_version 27, but still enforce the blacklist.
-    if self._ad.is_rootable and (sdk_version >= 28 or version_codename == 'P'):
-      self._ad.adb.shell(
-          'settings put global hidden_api_blacklist_exemptions "*"')
+  def _after_starting_server(self):
+    # TODO(docstring)
+    pass
 
   def __getattr__(self, name):
     """Wrapper for python magic to turn method calls into RPC calls."""
 
-    def rpc_call(*args):
-      return self._rpc(name, *args)
+    def rpc_call(*args, **kwargs):
+      return self._rpc(name, *args, **kwargs)
 
     return rpc_call
 
@@ -399,5 +219,141 @@ class JsonRpcClientBase(abc.ABC):
     Args:
       verbose: bool. If True, turns on verbose logging, if False turns off
     """
-    self._ad.log.info('Set verbose logging to %s.', verbose)
+    self._device.log.info('Sets verbose logging to %s.', verbose)
     self.verbose_logging = verbose
+
+    ######################### TODO: remove original functions ##############
+
+  def restore_server_connection(self, port=None):
+    """Reconnects to the app after device USB was disconnected.
+
+    Instead of creating new instance of the client:
+      - Uses the given port (or finds a new available host_port if none is
+      given).
+      - Tries to connect to remote server with selected port.
+
+    Must be implemented by subclasses.
+
+    Args:
+      port: If given, this is the host port from which to connect to remote
+        device port. If not provided, find a new available port as host
+        port.
+
+    Raises:
+      AppRestoreConnectionError: When the app was not able to be
+      reconnected.
+    """
+
+  # Rest of the client methods.
+
+  def _rpc(self, method, *args, **kwargs):
+    """Sends an rpc to the app.
+
+    Args:
+      method: str, The name of the method to execute.
+      args: any, The args of the method.
+
+    Returns:
+      The result of the rpc.
+
+    Raises:
+      ProtocolError: Something went wrong with the protocol.
+      ApiError: The rpc went through, however executed with errors.
+    """
+    try:
+      self._check_server_proc_running()
+    except Exception:
+      self.log.exception('Server process running check failed, skip sending rpc method(%s) to device(%s).', method, self._device)
+      raise
+
+    with self._lock:
+      apiid = next(self._counter)
+      request = self._gen_rpc_request(apiid, method, *args, **kwargs)
+      self.log.debug('Snippet Client send following request to device(%s): %s.',
+        self._device, request)
+
+      response = self._send_rpc_request(request)
+      if self.verbose_logging:
+        self.log.debug('Snippet received: %s', response)
+      else:
+        if _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
+          self.log.debug('Snippet received: %s', response)
+        else:
+          self.log.debug('Snippet received: %s... %d chars are truncated',
+                         response[:_MAX_RPC_RESP_LOGGING_LENGTH],
+                         len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
+
+    return self._parse_rpc_response(apiid, method, response)
+
+  def _check_server_proc_running(self):
+    pass
+
+  def _gen_rpc_request(self, apiid, method, *args, **kwargs):
+    data = {'id': apiid, 'method': method, 'params': args}
+    if kwargs:
+      data['kwargs'] = kwargs
+    request = json.dumps(data)
+    return request
+
+  def _send_rpc_request(self, request):
+    """
+
+    Returns:
+      A string for the rpc response. If got bytes object from the server, subclass must decode it into string.
+    """
+    pass
+
+  def _parse_rpc_response(self, apiid, method, response):
+    """
+    Args:
+      response: (str)A string for the rpc response.
+    """
+    if not response:
+      raise jsonrpc_client_base.ProtocolError(self._ad, jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER)
+    result = json.loads(response)
+    for field_name in RPC_RESPONSE_REQUIRED_FIELDS:
+      if field_name not in result:
+        raise jsonrpc_client_base.ProtocolError(self._device, jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % field_name)
+
+    if result['error']:
+      raise jsonrpc_client_base.ApiError(self._ad, result['error'])
+    if result['id'] != apiid:
+      raise jsonrpc_client_base.ProtocolError(self._ad, jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID)
+    if result['callback'] is not None:
+      return self._handle_callback(result['callback'], result['result'], method)
+    return result['result']
+
+  def _handle_callback(self, callback_id, ret_value, method_name):
+    pass
+
+  def stop_server(self):
+    """Kills any running instance of the app.
+
+    Must be implemented by subclasses.
+    """
+    self.log.info('Stopping snippet(%s) on device(%s).', self.snippet_name, self.device)
+    self._stop_server()
+
+  def _stop_server(self):
+    pass
+
+  def disconnect(self):
+    # TODO: docstring
+    # This is for closing connection with remote device. Must be implemented in subclass.
+    pass
+
+  # TODO: Provide these interfaces as they are used by snippet_management_service.
+  # Will deprecate these interfaces after siwtching to client v2.
+  def stop_app(self):
+    self.log.warning(DEPRECATED_MESSAGE_TEMPLATE.format(old_interface='stop_app', new_interface='stop_server'))
+    self.stop_server()
+
+  def restore_app_connection(self):
+    self.log.warning(DEPRECATED_MESSAGE_TEMPLATE.format(old_interface='restore_app_connection', new_interface='restore_server_connection'))
+    self.restore_server_connection()
+
+  def start_app_and_connect(self):
+    self.log.warning(DEPRECATED_MESSAGE_TEMPLATE.format(old_interface='start_app_and_connect', new_interface='start_server'))
+    self.start_server()
+
+

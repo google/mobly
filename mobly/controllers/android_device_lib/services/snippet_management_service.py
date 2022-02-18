@@ -12,11 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module for the snippet management service."""
+import os
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import snippet_client
+from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.controllers.android_device_lib.services import base_service
 
 MISSING_SNIPPET_CLIENT_MSG = 'No snippet client is registered with name "%s".'
+
+
+def set_using_client_v2(client_v2_flag):
+  os.environ['USE_CLIENT_V2'] = 'T' if client_v2_flag else 'F'
+
+
+def is_using_client_v2():
+  return os.environ.get('USE_CLIENT_V2', 'F').upper() == 'T'
 
 
 class Error(errors.ServiceError):
@@ -78,8 +88,16 @@ class SnippetManagementService(base_service.BaseService):
         raise Error(
             self, 'Snippet package "%s" has already been loaded under name'
             ' "%s".' % (package, snippet_name))
-    client = snippet_client.SnippetClient(package=package, ad=self._device)
-    client.start_app_and_connect()
+    self._device.log.info('Starting Snippet Client.')
+    if is_using_client_v2():
+      print('Using V2.')
+      self._device.log.info('Using Snippet Client V2.')
+      client = snippet_client_v2.SnippetClientV2(snippet_name=package, device=self._device)
+      client.start_server()
+    else:
+      print('Using V1.')
+      client = snippet_client.SnippetClient(package=package, ad=self._device)
+      client.start_app_and_connect()
     self._snippet_clients[name] = client
 
   def remove_snippet_client(self, name):
@@ -94,14 +112,20 @@ class SnippetManagementService(base_service.BaseService):
     if name not in self._snippet_clients:
       raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
     client = self._snippet_clients.pop(name)
-    client.stop_app()
+    if is_using_client_v2():
+      client.stop_server()
+    else:
+      client.stop_app()
 
   def start(self):
     """Starts all the snippet clients under management."""
     for client in self._snippet_clients.values():
       if not client.is_alive:
         self._device.log.debug('Starting SnippetClient<%s>.', client.package)
-        client.start_app_and_connect()
+        if is_using_client_v2():
+          client.start_server()
+        else:
+          client.start_app_and_connect()
       else:
         self._device.log.debug(
             'Not startng SnippetClient<%s> because it is already alive.',
@@ -112,7 +136,10 @@ class SnippetManagementService(base_service.BaseService):
     for client in self._snippet_clients.values():
       if client.is_alive:
         self._device.log.debug('Stopping SnippetClient<%s>.', client.package)
-        client.stop_app()
+        if is_using_client_v2():
+          client.stop_server()
+        else:
+          client.stop_app()
       else:
         self._device.log.debug(
             'Not stopping SnippetClient<%s> because it is not alive.',
