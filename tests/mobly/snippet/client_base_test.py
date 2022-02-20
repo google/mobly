@@ -22,14 +22,21 @@ from unittest import mock
 import json
 import logging
 
-MOCK_RESP = '{"id": 10, "result": 123, "error": null, "status": 1, "callback": null}'
-MOCK_RESP_TEMPLATE = '{"id": %d, "result": %d, "error": null, "status": 1, "uid": 1, "callback": null}'
-MOCK_RESP_WITHOUT_ID = '{"result": 123, "error": null, "callback": null}'
+MOCK_RESP = (
+    '{"id": 10, "result": 123, "error": null, "status": 1,'
+    '"callback": null}')
+MOCK_RESP_TEMPLATE = (
+    '{"id": %d, "result": %d, "error": null, "status": 1, "uid": 1,'
+    '"callback": null}')
+MOCK_RESP_WITHOUT_ID = (
+    '{"result": 123, "error": null, "callback": null}')
 MOCK_RESP_WITHOUT_RESULT = '{"id": 10, "error": null, "callback": null}'
 MOCK_RESP_WITHOUT_ERROR = '{"id": 10, "result": 123, "callback": null}'
 MOCK_RESP_WITHOUT_CALLBACK = '{"id": 10, "result": 123, "error": null}'
-MOCK_RESP_WITH_ERROR = '{"id": 10, "result": 123, "error": "some_error", "status": 1, "uid": 1, "callback": null}'
-MOCK_RESP_WITH_CALLBACK = '{"id": 10, "result": 123, "error": null, "status": 1, "callback": "1-0"}'
+MOCK_RESP_WITH_ERROR = ('{"id": 10, "result": 123, "error": "some_error",'
+    '"status": 1, "uid": 1, "callback": null}')
+MOCK_RESP_WITH_CALLBACK = ('{"id": 10, "result": 123, "error": null,'
+    '"status": 1, "callback": "1-0"}')
 
 
 class FakeClient(client_base.ClientBase):
