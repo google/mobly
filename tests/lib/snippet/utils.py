@@ -28,17 +28,3 @@ def generate_fix_length_rpc_response(response_length):
   random_msg = ''.join(random.choice(chars) for i in range(length))
   mock_response = MOCK_RESP_FLEXIABLE_RESULT_LENGTH % random_msg
   return mock_response
-
-def mock_android_device_for_client_test(package_name, snippet_runner, adb_proxy=None):
-    adb_proxy = adb_proxy or mock_android_device.MockAdbProxy(
-        instrumented_packages=[(package_name,
-                                snippet_runner,
-                                package_name)])
-    ad = mock.Mock()
-    ad.adb = adb_proxy
-    ad.adb.current_user_id = MOCK_USER_ID
-    ad.build_info = {
-        'build_version_codename': ad.adb.getprop('ro.build.version.codename'),
-        'build_version_sdk': ad.adb.getprop('ro.build.version.sdk'),
-    }
-    return ad

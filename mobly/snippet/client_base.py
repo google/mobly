@@ -14,7 +14,7 @@
 """Base class for clients that communicate with servers over a JSON RPC
 interface.
 
-The JSON protocol expected by this module is:
+The JSON RPC protocol expected by this module is:
 
 .. code-block:: json
 
@@ -330,7 +330,7 @@ class ClientBase(abc.ABC):
 
       self.log.debug('Sending rpc %s.', request)
       response = self._send_rpc_request(request)
-      self.log.debug('Rpc sent.', request)
+      self.log.debug('Rpc sent.')
 
       if self.verbose_logging:
         self.log.debug('Snippet received: %s', response)
