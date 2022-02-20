@@ -49,9 +49,7 @@ class SnippetManagementServiceTest(unittest.TestCase):
 
   @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
   def test_stop_with_live_client(self, mock_class):
-    print('mock_class', mock_class)
     mock_client = mock_class.return_value
-    print('mock_client', mock_client)
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
     manager.add_snippet_client('foo', MOCK_PACKAGE)
