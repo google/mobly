@@ -22,6 +22,7 @@ MOCK_RESP_FLEXIABLE_RESULT_LENGTH = (
 
 MOCK_USER_ID = 0
 
+
 def generate_fix_length_rpc_response(response_length):
   length = response_length - len(MOCK_RESP_FLEXIABLE_RESULT_LENGTH) + 2
   chars = string.ascii_letters + string.digits

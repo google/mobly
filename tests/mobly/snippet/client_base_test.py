@@ -22,7 +22,6 @@ from unittest import mock
 import json
 import logging
 
-
 MOCK_RESP = '{"id": 10, "result": 123, "error": null, "status": 1, "callback": null}'
 MOCK_RESP_TEMPLATE = '{"id": %d, "result": %d, "error": null, "status": 1, "uid": 1, "callback": null}'
 MOCK_RESP_WITHOUT_ID = '{"result": 123, "error": null, "callback": null}'
@@ -48,7 +47,8 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, '_do_start_server')
   @mock.patch.object(FakeClient, 'build_connection')
   @mock.patch.object(FakeClient, '_after_starting_server')
-  def test_start_server_stage_order(self, mock_after_func, mock_build_conn_func, mock_do_start_func, mock_before_func):
+  def test_start_server_stage_order(self, mock_after_func, mock_build_conn_func,
+                                    mock_do_start_func, mock_before_func):
     """Test that starting server runs its stages in expected order."""
     order_manager = mock.Mock()
     order_manager.attach_mock(mock_before_func, 'mock_before_func')
@@ -60,10 +60,10 @@ class ClientBaseTest(unittest.TestCase):
     client.start_server()
 
     expected_call_order = [
-      mock.call.mock_before_func(),
-      mock.call.mock_do_start_func(),
-      mock.call.mock_build_conn_func(),
-      mock.call.mock_after_func(),
+        mock.call.mock_before_func(),
+        mock.call.mock_do_start_func(),
+        mock.call.mock_build_conn_func(),
+        mock.call.mock_after_func(),
     ]
     self.assertListEqual(order_manager.mock_calls, expected_call_order)
 
@@ -115,7 +115,8 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'stop_server')
   @mock.patch.object(FakeClient, '_before_starting_server')
-  def test_start_server_before_starting_server_fail(self, mock_before_func, mock_stop_server):
+  def test_start_server_before_starting_server_fail(self, mock_before_func,
+                                                    mock_stop_server):
     """Test starting server's stage before_starting_server fails.
 
     Test that when the building connection fails with exception, it should not stop server
@@ -130,7 +131,8 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'stop_server')
   @mock.patch.object(FakeClient, '_do_start_server')
-  def test_start_server_do_start_server_fail(self, mock_do_start_func, mock_stop_server):
+  def test_start_server_do_start_server_fail(self, mock_do_start_func,
+                                             mock_stop_server):
     """Test starting server's stage do_start_server fails.
 
     Test that when the building connection fails with exception, it should stop server
@@ -139,7 +141,8 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'stop_server')
   @mock.patch.object(FakeClient, 'build_connection')
-  def test_start_server_build_connection_fail(self, mock_build_conn_func, mock_stop_server):
+  def test_start_server_build_connection_fail(self, mock_build_conn_func,
+                                              mock_stop_server):
     """Test starting server's stage build_connection fails.
 
     Test that when the building connection fails with exception, it should stop server
@@ -154,7 +157,8 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'stop_server')
   @mock.patch.object(FakeClient, '_after_starting_server')
-  def test_start_server_after_starting_server_fail(self, mock_after_func, mock_stop_server):
+  def test_start_server_after_starting_server_fail(self, mock_after_func,
+                                                   mock_stop_server):
     """Test starting server's stage after_starting_server fails.
 
     Test that when the stage after building connection fails with exception, it should stop server
@@ -171,7 +175,8 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, '_gen_rpc_request')
   @mock.patch.object(FakeClient, '_send_rpc_request')
   @mock.patch.object(FakeClient, '_parse_rpc_response')
-  def test_rpc_stage_dependencies(self, mock_parse_response, mock_send_request, mock_gen_request, mock_precheck):
+  def test_rpc_stage_dependencies(self, mock_parse_response, mock_send_request,
+                                  mock_gen_request, mock_precheck):
     """Test rpc stage dependencies.
 
     In the rpc stage, the sending rpc function utils the output of generating rpc request,
@@ -200,7 +205,8 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, '_gen_rpc_request')
   @mock.patch.object(FakeClient, '_send_rpc_request')
   @mock.patch.object(FakeClient, '_parse_rpc_response')
-  def test_rpc_precheck_fail(self, mock_parse_response, mock_send_request, mock_gen_request, mock_precheck):
+  def test_rpc_precheck_fail(self, mock_parse_response, mock_send_request,
+                             mock_gen_request, mock_precheck):
     """Test rpc precheck fails.
 
     Test that when an rpc precheck fails with exception, the rpc function should throws that
@@ -208,7 +214,8 @@ class ClientBaseTest(unittest.TestCase):
     """
     client = FakeClient()
     client.start_server()
-    mock_precheck.side_effect = jsonrpc_client_base.ServerDiedError(mock.Mock(), 'server_died')
+    mock_precheck.side_effect = jsonrpc_client_base.ServerDiedError(
+        mock.Mock(), 'server_died')
 
     with self.assertRaises(jsonrpc_client_base.ServerDiedError):
       client.some_rpc(1, 2)
@@ -224,7 +231,7 @@ class ClientBaseTest(unittest.TestCase):
     with all request fields.
     """
     client = FakeClient()
-    request_str = client._gen_rpc_request(0, 'test_rpc', 1, 2, test_key = 3)
+    request_str = client._gen_rpc_request(0, 'test_rpc', 1, 2, test_key=3)
     self.assertIs(type(request_str), str)
     request = json.loads(request_str)
     self.assertEqual(request['id'], 0)
@@ -255,10 +262,14 @@ class ClientBaseTest(unittest.TestCase):
     """
     client = FakeClient()
 
-    with self.assertRaisesRegex(jsonrpc_client_base.ProtocolError, jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
       client._parse_rpc_response(0, 'some_rpc', '')
 
-    with self.assertRaisesRegex(jsonrpc_client_base.ProtocolError, jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
       client._parse_rpc_response(0, 'some_rpc', None)
 
   def test_parse_response_miss_fields(self):
@@ -269,16 +280,24 @@ class ClientBaseTest(unittest.TestCase):
     """
     client = FakeClient()
 
-    with self.assertRaisesRegex(jsonrpc_client_base.ProtocolError, jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'id'):
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'id'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_ID)
 
-    with self.assertRaisesRegex(jsonrpc_client_base.ProtocolError, jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'result'):
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'result'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_RESULT)
 
-    with self.assertRaisesRegex(jsonrpc_client_base.ProtocolError, jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'error'):
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'error'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_ERROR)
 
-    with self.assertRaisesRegex(jsonrpc_client_base.ProtocolError, jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'callback'):
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'callback'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_CALLBACK)
 
   def test_parse_response_error(self):
@@ -291,7 +310,6 @@ class ClientBaseTest(unittest.TestCase):
 
     with self.assertRaisesRegex(jsonrpc_client_base.ApiError, 'some_error'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITH_ERROR)
-
 
   def test_parse_response_callback(self):
     """Test rpc that is given a callback response.
@@ -306,7 +324,8 @@ class ClientBaseTest(unittest.TestCase):
       expected_callback = mock.Mock()
       mock_handle_callback.return_value = expected_callback
 
-      rpc_result = client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITH_CALLBACK)
+      rpc_result = client._parse_rpc_response(10, 'some_rpc',
+                                              MOCK_RESP_WITH_CALLBACK)
       mock_handle_callback.assert_called_with('1-0', 123, 'some_rpc')
       # ensure the rpc function return what _handle_callback returns
       self.assertIs(expected_callback, rpc_result)
@@ -329,7 +348,9 @@ class ClientBaseTest(unittest.TestCase):
     wrong_id = 20
     resp = MOCK_RESP_TEMPLATE % (right_id, 123)
 
-    with self.assertRaisesRegex(jsonrpc_client_base.ProtocolError, jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
+    with self.assertRaisesRegex(
+        jsonrpc_client_base.ProtocolError,
+        jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
       client._parse_rpc_response(wrong_id, 'some_rpc', resp)
 
   @mock.patch.object(FakeClient, '_send_rpc_request')
@@ -341,11 +362,11 @@ class ClientBaseTest(unittest.TestCase):
     client.set_snippet_client_verbose_logging(True)
     client.start_server()
 
-    resp = snippet_utils.generate_fix_length_rpc_response(client_base._MAX_RPC_RESP_LOGGING_LENGTH * 2)
+    resp = snippet_utils.generate_fix_length_rpc_response(
+        client_base._MAX_RPC_RESP_LOGGING_LENGTH * 2)
     mock_send_request.return_value = resp
     client.some_rpc(1, 2)
     mock_log.debug.assert_called_with('Snippet received: %s', resp)
-
 
   @mock.patch.object(FakeClient, '_send_rpc_request')
   def test_rpc_truncated_logging_short_response(self, mock_send_request):
@@ -356,7 +377,8 @@ class ClientBaseTest(unittest.TestCase):
     client.set_snippet_client_verbose_logging(False)
     client.start_server()
 
-    resp = snippet_utils.generate_fix_length_rpc_response(int(client_base._MAX_RPC_RESP_LOGGING_LENGTH // 2))
+    resp = snippet_utils.generate_fix_length_rpc_response(
+        int(client_base._MAX_RPC_RESP_LOGGING_LENGTH // 2))
     mock_send_request.return_value = resp
     client.some_rpc(1, 2)
     mock_log.debug.assert_called_with('Snippet received: %s', resp)
@@ -371,7 +393,8 @@ class ClientBaseTest(unittest.TestCase):
     client.set_snippet_client_verbose_logging(False)
     client.start_server()
 
-    resp = snippet_utils.generate_fix_length_rpc_response(client_base._MAX_RPC_RESP_LOGGING_LENGTH)
+    resp = snippet_utils.generate_fix_length_rpc_response(
+        client_base._MAX_RPC_RESP_LOGGING_LENGTH)
     mock_send_request.return_value = resp
     client.some_rpc(1, 2)
     mock_log.debug.assert_called_with('Snippet received: %s', resp)
@@ -389,8 +412,10 @@ class ClientBaseTest(unittest.TestCase):
     resp = snippet_utils.generate_fix_length_rpc_response(max_len * 40)
     mock_send_request.return_value = resp
     client.some_rpc(1, 2)
-    mock_log.debug.assert_called_with('Snippet received: %s... %d chars are truncated',
-      resp[:client_base._MAX_RPC_RESP_LOGGING_LENGTH], len(resp) - max_len)
+    mock_log.debug.assert_called_with(
+        'Snippet received: %s... %d chars are truncated',
+        resp[:client_base._MAX_RPC_RESP_LOGGING_LENGTH],
+        len(resp) - max_len)
 
   @mock.patch.object(FakeClient, '_send_rpc_request')
   def test_rpc_call_increment_counter(self, mock_send_request):
