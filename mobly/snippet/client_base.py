@@ -79,10 +79,10 @@ class StartServerStages:
 class ClientBase(abc.ABC):
   """Base class for Json Rpc clients that connect to remote servers.
 
-  Connects to a remote device running a jsonrpc-compatible server. Before
-  sending rpcs, users need to call client's interface to start server. The
-  server runs on the remote device. After finishing sending all rpcs, users
-  need to call the interface to stop server.
+  Connects to a remote device running a jsonrpc-compatible server. Call the
+  function `start_server` to start the server on remote device before sending
+  any rpc.  After sending all rpcs, call the function `stop_server` to stop
+  all the running instances.
 
   Attributes:
     package: (str) The user-visible name of the snippet library being
@@ -127,14 +127,14 @@ class ClientBase(abc.ABC):
       stop_server_if_failed: (bool) Whether to stop server if this context
         manager catches an Exception.
     """
-    flag = '[START SERVER]'
-    start_stage_msg = flag + 'Running the stage %s.'
-    finish_stage_msg = flag + 'Finished the stage %s.'
-    error_msg = flag + 'Error in stage %s.'
-    error_stop_server_msg = (flag +
+    prefix = '[START SERVER]'
+    start_stage_msg = prefix + 'Running the stage %s.'
+    finish_stage_msg = prefix + 'Finished the stage %s.'
+    error_msg = prefix + 'Error in stage %s.'
+    error_stop_server_msg = (prefix +
                              'Failed to stop server after failure in stage %s.')
 
-    self.log.info(start_stage_msg % stage_name)
+    self.log.debug(start_stage_msg, stage_name)
     try:
       yield
     except Exception as e:
@@ -149,19 +149,16 @@ class ClientBase(abc.ABC):
       # Explicitly raise the original error from starting app.
       raise e
 
-    self.log.info(finish_stage_msg, stage_name)
+    self.log.debug(finish_stage_msg, stage_name)
 
   def start_server(self):
-    """Starts the server on the testing device and connects to it.
+    """Starts the server on the remote device and connects to it.
 
-    This process contain four stages:
-      - before_starting_server: prepares for starting the server, e.g.
-      precheck, modify remote device's settings.
+    This process contains four stages:
+      - before_starting_server: prepares for starting the server.
       - do_start_server: starts the server on the remote device.
-      - build_connection: builds a connection with the server, typically this
-      stage sends a handshake request to ensure the server is ready.
-      - after_starting_server: does the things after the server is ready, e.g.
-      get device information.
+      - build_connection: builds a connection with the server.
+      - after_starting_server: does the things after the server is available.
 
     After this, the self.host_port and self.device_port attributes must be
     set.
@@ -173,7 +170,7 @@ class ClientBase(abc.ABC):
       jsonrpc_client_base.ProtocolError: When there's some error in
         the sending the handshake.
     """
-    self.log.info('Starting the server.')
+    self.log.debug('Starting the server.')
     start_time = time.perf_counter()
 
     with self._start_server_run_one_stage(
@@ -199,6 +196,9 @@ class ClientBase(abc.ABC):
   def _before_starting_server(self):
     """Prepares for starting the server.
 
+    For example, subclass can precheck the device setting, modify device
+    setting at this stage.
+
     Must be implemented by subclasses.
     """
 
@@ -212,10 +212,10 @@ class ClientBase(abc.ABC):
     """
 
   def build_connection(self, host_port=None):
-    """Builds a connection with the server on the remote device.
+    """A proxy function to guarantee the base implementation of
+    _build_connection is called.
 
-    This is a proxy function to guarantee the base implementation of
-    build_connection is called. This function resets the RPC id counter.
+    This function resets the RPC id counter.
 
     Args:
       host_port: (int) If given, this is the host port from which to connect
@@ -230,7 +230,7 @@ class ClientBase(abc.ABC):
 
     The command to start the server has been already sent before calling this
     function. So the client builds a connection to it and sends a handshake
-    to ensure the server is ready for upcoming rpcs.
+    to ensure the server is available for upcoming rpcs.
 
     Must be implemented by subclasses.
 
@@ -241,7 +241,9 @@ class ClientBase(abc.ABC):
     """
 
   def _after_starting_server(self):
-    """Does the things after the server is ready.
+    """Does the things after the server is available.
+
+    For example, subclass can get device information from the server.
 
     Must be implemented by subclasses.
     """
@@ -255,7 +257,7 @@ class ClientBase(abc.ABC):
     return rpc_call
 
   def _id_counter(self):
-    """Return a id generator."""
+    """Returns an id generator."""
     i = 0
     while True:
       yield i
@@ -264,7 +266,7 @@ class ClientBase(abc.ABC):
   def set_snippet_client_verbose_logging(self, verbose):
     """Switches verbose logging. True for logging full RPC response.
 
-    By default it will only write max_rpc_return_value_length for Rpc return
+    By default it will only write max_rpc_return_value_length for Rpc returned
     strings. If you need to see full message returned from Rpc, please turn
     on verbose logging.
 
@@ -272,7 +274,7 @@ class ClientBase(abc.ABC):
     contains full Rpc response in Json format, included 1st element "id".
 
     Args:
-      verbose: (bool) If True, turns on verbose logging, if False turns off
+      verbose: (bool) If True, turns on verbose logging, if False turns off.
     """
     self.log.info('Sets verbose logging to %s.', verbose)
     self.verbose_logging = verbose
@@ -293,8 +295,8 @@ class ClientBase(abc.ABC):
         port.
 
     Raises:
-      jsonrpc_client_base.AppRestoreConnectionError: When the app was not able
-      to be reconnected.
+      jsonrpc_client_base.AppRestoreConnectionError: When the server was not
+      able to be reconnected.
     """
 
   def _rpc(self, method, *args, **kwargs):
@@ -328,7 +330,7 @@ class ClientBase(abc.ABC):
 
       self.log.debug('Sending rpc %s.', request)
       response = self._send_rpc_request(request)
-      self.log.debug('Rpc %s sent.', request)
+      self.log.debug('Rpc sent.', request)
 
       if self.verbose_logging:
         self.log.debug('Snippet received: %s', response)
@@ -373,9 +375,9 @@ class ClientBase(abc.ABC):
   def _send_rpc_request(self, request):
     """Sends Json rpc request to the server and gets response.
 
-    The request and response are bot in string format. So if the connection
-    with server provides interface with bytes, please transform it to string
-    in the implementation of this funcion.
+    Note that the request and response are both in string format. So if the
+    connection with server provides interfaces in bytes format, please
+    transform them to string in the implementation of this funcion.
 
     Must be implemented by subclasses.
 
@@ -385,7 +387,6 @@ class ClientBase(abc.ABC):
     Returns:
       A string of the rpc response.
     """
-    pass
 
   def _parse_rpc_response(self, apiid, method, response):
     """Parses the rpc response from the server.
@@ -395,13 +396,18 @@ class ClientBase(abc.ABC):
 
     Args:
       appid: (int) The actual id of this rpc. It should be the same with the id
-        in response, otherwise throws an error.
+        in the response, otherwise throws an error.
       method: (str) The method name of this rpc.
       response: (str) A string of the Json rpc response.
 
     Returns:
       The result of the rpc. If sync rpc, returns the result field of
       the response. If async rpc, returns the callback handler object.
+
+    Raises:
+      jsonrpc_client_base.ProtocolError: Something went wrong with the
+        protocol.
+
     """
     if not response:
       raise jsonrpc_client_base.ProtocolError(
@@ -430,7 +436,8 @@ class ClientBase(abc.ABC):
 
     Args:
       callback_id: (str) The callback ID for creating callback handler object.
-      ret_value: (JSON Array) The result field of the rpc response.
+      ret_value: (str) JSON Array string of the result field of the rpc
+        response.
       method_name: (str) The method name of this rpc.
 
     Returns:
@@ -441,9 +448,9 @@ class ClientBase(abc.ABC):
     """Proxy function to guarantee the base implementation of
     _stop_server is called.
     """
-    self.log.info('Stopping snippet %s.', self.package)
+    self.log.debug('Stopping snippet %s.', self.package)
     self._stop_server()
-    self.log.info('Snippet %s stopped.', self.package)
+    self.log.debug('Snippet %s stopped.', self.package)
 
   def _stop_server(self):
     """Kills any running instance of the server.
@@ -466,12 +473,14 @@ class ClientBase(abc.ABC):
   # TODO(minghaoli): Clears these interfaces after siwtching to client v2.
   # Provides these interfaces as they are used by snippet_management_service.
   def stop_app(self):
+    """A deprecated interface which is the same as stop_server."""
     self.log.warning(
         DEPRECATED_MESSAGE_TEMPLATE.format(old_interface='stop_app',
                                            new_interface='stop_server'))
     self.stop_server()
 
   def restore_app_connection(self):
+    """A deprecated interface which is the same as restore_server_connection."""
     self.log.warning(
         DEPRECATED_MESSAGE_TEMPLATE.format(
             old_interface='restore_app_connection',
@@ -479,6 +488,7 @@ class ClientBase(abc.ABC):
     self.restore_server_connection()
 
   def start_app_and_connect(self):
+    """A deprecated interface which is the same as start_server."""
     self.log.warning(
         DEPRECATED_MESSAGE_TEMPLATE.format(
             old_interface='start_app_and_connect',
