@@ -127,10 +127,12 @@ class ClientBase(abc.ABC):
       stop_server_if_failed: (bool) Whether to stop server if this context
         manager catches an Exception.
     """
-    start_stage_msg = 'Running the stage %s when starting the server.'
-    finish_stage_msg = 'Finished the stage %s when starting the server.'
-    error_msg = 'Error in stage %s when starting the server.'
-    error_stop_server_msg = 'Failed to stop server after failure of stage %s.'
+    flag = '[START SERVER]'
+    start_stage_msg = flag + 'Running the stage %s.'
+    finish_stage_msg = flag + 'Finished the stage %s.'
+    error_msg = flag + 'Error in stage %s.'
+    error_stop_server_msg = (flag +
+                             'Failed to stop server after failure in stage %s.')
 
     self.log.info(start_stage_msg % stage_name)
     try:
@@ -171,7 +173,7 @@ class ClientBase(abc.ABC):
       jsonrpc_client_base.ProtocolError: When there's some error in
         the sending the handshake.
     """
-    self.log.info('Running the stage start_server.')
+    self.log.info('Starting the server.')
     start_time = time.perf_counter()
 
     with self._start_server_run_one_stage(
