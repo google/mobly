@@ -68,7 +68,6 @@ def main(argv=None):
   # Execute the test class with configs.
   ok = True
   for config in test_configs:
-    _parse_snippet_client_runtime_params(config.user_params)
     runner = TestRunner(log_dir=config.log_path,
                         testbed_name=config.testbed_name)
     with runner.mobly_logger():
@@ -83,14 +82,6 @@ def main(argv=None):
         ok = False
   if not ok:
     sys.exit(1)
-
-
-#TODO: Better to put this into Mobile Harness java code.
-def _parse_snippet_client_runtime_params(params):
-  """Parse the runtime params related to snippet client."""
-  if params.get('USE_CLIENT_V2', 'F').upper() == 'T':
-    from mobly.controllers.android_device_lib.services import snippet_management_service
-    snippet_management_service.set_using_client_v2(True)
 
 
 def parse_mobly_cli_args(argv):
