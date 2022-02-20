@@ -92,7 +92,8 @@ class SnippetManagementService(base_service.BaseService):
     if is_using_client_v2():
       print('Using V2.')
       self._device.log.info('Using Snippet Client V2.')
-      client = snippet_client_v2.SnippetClientV2(snippet_name=package, device=self._device)
+      client = snippet_client_v2.SnippetClientV2(snippet_name=package,
+                                                 device=self._device)
       client.start_server()
     else:
       print('Using V1.')
