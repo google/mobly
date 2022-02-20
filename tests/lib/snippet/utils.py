@@ -17,8 +17,10 @@ import random
 from unittest import mock
 from tests.lib import mock_android_device
 
+
 MOCK_RESP_FLEXIABLE_RESULT_LENGTH = (
     '{"id": 0, "result": "%s", "error": null, "status": 0, "callback": null}')
+
 
 MOCK_USER_ID = 0
 

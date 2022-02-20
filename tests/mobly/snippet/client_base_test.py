@@ -78,8 +78,8 @@ class ClientBaseTest(unittest.TestCase):
   def test_start_server_one_stage_fail_with_stopping(self, mock_stop_server):
     """Test starting server's stage do_start_server fails.
 
-    Test that when the building connection fails with exception, it should stop server
-    before exiting.
+    Test that when the building connection fails with exception, it should
+    stop server before exiting.
     """
     client = FakeClient()
     with self.assertRaisesRegex(Exception, 'Some error'):
@@ -92,8 +92,8 @@ class ClientBaseTest(unittest.TestCase):
   def test_start_server_one_stage_fail_without_stopping(self, mock_stop_server):
     """Test starting server's stage do_start_server fails.
 
-    Test that when the building connection fails with exception, it should stop server
-    before exiting.
+    Test that when the building connection fails with exception, it should
+    stop server before exiting.
     """
     client = FakeClient()
     with self.assertRaisesRegex(Exception, 'Some error'):
@@ -106,8 +106,8 @@ class ClientBaseTest(unittest.TestCase):
   def test_start_server_one_stage_fail_stop_also_fail(self, mock_stop_server):
     """Test starting server's stage do_start_server fails.
 
-    Test that when the building connection fails with exception, it should stop server
-    before exiting.
+    Test that when the building connection fails with exception, it should
+    stop server before exiting.
     """
     client = FakeClient()
     mock_stop_server.side_effect = Exception('Another error')
@@ -126,8 +126,8 @@ class ClientBaseTest(unittest.TestCase):
                                                     mock_stop_server):
     """Test starting server's stage before_starting_server fails.
 
-    Test that when the building connection fails with exception, it should not stop server
-    before exiting.
+    Test that when the building connection fails with exception, it should not
+    stop server before exiting.
     """
     client = FakeClient()
     mock_before_func.side_effect = Exception('ha')
@@ -142,8 +142,8 @@ class ClientBaseTest(unittest.TestCase):
                                              mock_stop_server):
     """Test starting server's stage do_start_server fails.
 
-    Test that when the building connection fails with exception, it should stop server
-    before exiting.
+    Test that when the building connection fails with exception, it should
+    stop server before exiting.
     """
 
   @mock.patch.object(FakeClient, 'stop_server')
@@ -152,8 +152,8 @@ class ClientBaseTest(unittest.TestCase):
                                               mock_stop_server):
     """Test starting server's stage build_connection fails.
 
-    Test that when the building connection fails with exception, it should stop server
-    before exiting.
+    Test that when the building connection fails with exception, it should
+    stop server before exiting.
     """
     client = FakeClient()
     mock_build_conn_func.side_effect = Exception('ha')
@@ -168,8 +168,8 @@ class ClientBaseTest(unittest.TestCase):
                                                    mock_stop_server):
     """Test starting server's stage after_starting_server fails.
 
-    Test that when the stage after building connection fails with exception, it should stop server
-    before exiting.
+    Test that when the stage after building connection fails with exception,
+    it should stop server before exiting.
     """
     client = FakeClient()
     mock_after_func.side_effect = Exception('ha')
@@ -186,15 +186,17 @@ class ClientBaseTest(unittest.TestCase):
                                   mock_gen_request, mock_precheck):
     """Test rpc stage dependencies.
 
-    In the rpc stage, the sending rpc function utils the output of generating rpc request,
-    and the output of the sending function if used by the parse rpc response function. This
-    test case checks above dependencies.
+    In the rpc stage, the sending rpc function utils the output of generating
+    rpc request, and the output of the sending function if used by the parse
+    rpc response function. This test case checks above dependencies.
     """
     client = FakeClient()
     client.start_server()
 
     expected_response = MOCK_RESP_TEMPLATE % (0, 123)
-    expected_request = "{'id': 10, 'method': 'some_rpc', 'params': [1, 2], 'kwargs': {'test_key': 3}"
+    expected_request = (
+      "{'id': 10, 'method': 'some_rpc', 'params': [1, 2],"
+      "'kwargs': {'test_key': 3}")
     expected_result = 123
 
     mock_gen_request.return_value = expected_request
@@ -216,8 +218,8 @@ class ClientBaseTest(unittest.TestCase):
                              mock_gen_request, mock_precheck):
     """Test rpc precheck fails.
 
-    Test that when an rpc precheck fails with exception, the rpc function should throws that
-    error and skip sending rpc.
+    Test that when an rpc precheck fails with exception, the rpc function
+    should throws that error and skip sending rpc.
     """
     client = FakeClient()
     client.start_server()
