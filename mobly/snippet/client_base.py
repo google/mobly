@@ -352,6 +352,10 @@ class ClientBase(abc.ABC):
     without affecting performance. Otherwise it is fine to not check anything.
 
     Must be implemented by subclasses.
+
+    Raises:
+      jsonrpc_client_base.ServerDiedError: When the snippet server died before
+        all tests finish.
     """
 
   def _gen_rpc_request(self, apiid, method, *args, **kwargs):
