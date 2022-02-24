@@ -89,10 +89,6 @@ class ApiError(Error):
   """Raised when remote API reports an error."""
 
 
-class ServerDiedError(Error):
-  """Raised if snippet server died before all tests finish."""
-
-
 class ProtocolError(Error):
   """Raised when there is some error in exchanging data with server."""
   NO_RESPONSE_FROM_HANDSHAKE = 'No response from handshake.'

@@ -62,18 +62,13 @@ _MAX_RPC_RESP_LOGGING_LENGTH = 1024
 # The required filed names of Rpc response.
 RPC_RESPONSE_REQUIRED_FIELDS = ['id', 'error', 'result', 'callback']
 
-# Used for remind users to switch from deprecated interfaces to new interfaces.
-DEPRECATED_MESSAGE_TEMPLATE = (
-    '{old_interface} is deprecated and will be removed in a future version.'
-    'Use {new_interface} instead.')
 
-
-class StartServerStages:
+class StartServerStages(enum.Enum):
   """The stages for the starting server process."""
-  BEFORE_STARTING_SERVER = 'before_starting_server'
-  DO_START_SERVER = 'do_start_server'
-  BUILD_CONNECTION = 'build_connection'
-  AFTER_STARTING_SERVER = 'after_starting_server'
+  BEFORE_STARTING_SERVER = 1
+  DO_START_SERVER = 2
+  BUILD_CONNECTION = 3
+  AFTER_STARTING_SERVER = 4
 
 
 class ClientBase(abc.ABC):
@@ -116,40 +111,39 @@ class ClientBase(abc.ABC):
     self.disconnect()
 
   @contextlib.contextmanager
-  def _start_server_run_one_stage(self, stage_name, stop_server_if_failed):
-    """Context manager for running each stage of starting server.
+  def _stage_context_when_starting_server(self, stage, stop_server_if_failed):
+    """Context manager for running each stage when starting server.
 
     This context manager is responsible for the log of stage information
     and call stop server if needed.
 
     Args:
-      stage_name: (str) The stage name showing in the log.
+      stage: (StartServerStages) The stage which is running under this context manager.
       stop_server_if_failed: (bool) Whether to stop server if this context
         manager catches an Exception.
     """
     prefix = '[START SERVER]'
-    start_stage_msg = prefix + 'Running the stage %s.'
-    finish_stage_msg = prefix + 'Finished the stage %s.'
-    error_msg = prefix + 'Error in stage %s.'
-    error_stop_server_msg = (prefix +
-                             'Failed to stop server after failure in stage %s.')
+    start_stage_msg = f'{prefix}Running the stage %s.'
+    finish_stage_msg = f'{prefix}Finished the stage %s.'
+    error_msg = f'{prefix}Error in stage %s.'
+    error_stop_server_msg = (f'{prefix}Failed to stop server after'
+                             f'failure in stage %s.')
 
-    self.log.debug(start_stage_msg, stage_name)
+    self.log.debug(start_stage_msg, stage.name)
     try:
       yield
     except Exception as e:
-      # Log the stacktrace of `e` as re-raising doesn't preserve trace.
-      self.log.error(error_msg, stage_name)
+      self.log.error(error_msg, stage.name)
       if stop_server_if_failed:
         try:
           self.stop_server()
         except Exception:
-          self.log.exception(error_stop_server_msg, stage_name)
+          self.log.exception(error_stop_server_msg, stage)
 
-      # Explicitly raise the original error from starting app.
-      raise e
+      # Explicitly re-raises the original error from starting server
+      raise
 
-    self.log.debug(finish_stage_msg, stage_name)
+    self.log.debug(finish_stage_msg, stage.name)
 
   def start_server(self):
     """Starts the server on the remote device and connects to it.
@@ -173,19 +167,19 @@ class ClientBase(abc.ABC):
     self.log.debug('Starting the server.')
     start_time = time.perf_counter()
 
-    with self._start_server_run_one_stage(
+    with self._stage_context_when_starting_server(
         StartServerStages.BEFORE_STARTING_SERVER, False):
       self._before_starting_server()
 
-    with self._start_server_run_one_stage(StartServerStages.DO_START_SERVER,
-                                          True):
+    with self._stage_context_when_starting_server(
+        StartServerStages.DO_START_SERVER, True):
       self._do_start_server()
 
-    with self._start_server_run_one_stage(StartServerStages.BUILD_CONNECTION,
-                                          True):
+    with self._stage_context_when_starting_server(
+        StartServerStages.BUILD_CONNECTION, True):
       self.build_connection()
 
-    with self._start_server_run_one_stage(
+    with self._stage_context_when_starting_server(
         StartServerStages.AFTER_STARTING_SERVER, True):
       self._after_starting_server()
 
@@ -352,10 +346,6 @@ class ClientBase(abc.ABC):
     without affecting performance. Otherwise it is fine to not check anything.
 
     Must be implemented by subclasses.
-
-    Raises:
-      jsonrpc_client_base.ServerDiedError: When the snippet server died before
-        all tests finish.
     """
 
   def _gen_rpc_request(self, apiid, method, *args, **kwargs):
@@ -473,28 +463,3 @@ class ClientBase(abc.ABC):
 
     Must be implemented by subclasses.
     """
-
-  # TODO(minghaoli): Clears these interfaces after siwtching to client v2.
-  # Provides these interfaces as they are used by snippet_management_service.
-  def stop_app(self):
-    """A deprecated interface which is the same as stop_server."""
-    self.log.warning(
-        DEPRECATED_MESSAGE_TEMPLATE.format(old_interface='stop_app',
-                                           new_interface='stop_server'))
-    self.stop_server()
-
-  def restore_app_connection(self):
-    """A deprecated interface which is the same as restore_server_connection."""
-    self.log.warning(
-        DEPRECATED_MESSAGE_TEMPLATE.format(
-            old_interface='restore_app_connection',
-            new_interface='restore_server_connection'))
-    self.restore_server_connection()
-
-  def start_app_and_connect(self):
-    """A deprecated interface which is the same as start_server."""
-    self.log.warning(
-        DEPRECATED_MESSAGE_TEMPLATE.format(
-            old_interface='start_app_and_connect',
-            new_interface='start_server'))
-    self.start_server()

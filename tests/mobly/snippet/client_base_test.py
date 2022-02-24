@@ -22,21 +22,19 @@ from unittest import mock
 import json
 import logging
 
-MOCK_RESP = (
-    '{"id": 10, "result": 123, "error": null, "status": 1,'
-    '"callback": null}')
+MOCK_RESP = ('{"id": 10, "result": 123, "error": null, "status": 1,'
+             '"callback": null}')
 MOCK_RESP_TEMPLATE = (
     '{"id": %d, "result": %d, "error": null, "status": 1, "uid": 1,'
     '"callback": null}')
-MOCK_RESP_WITHOUT_ID = (
-    '{"result": 123, "error": null, "callback": null}')
+MOCK_RESP_WITHOUT_ID = ('{"result": 123, "error": null, "callback": null}')
 MOCK_RESP_WITHOUT_RESULT = '{"id": 10, "error": null, "callback": null}'
 MOCK_RESP_WITHOUT_ERROR = '{"id": 10, "result": 123, "callback": null}'
 MOCK_RESP_WITHOUT_CALLBACK = '{"id": 10, "result": 123, "error": null}'
 MOCK_RESP_WITH_ERROR = ('{"id": 10, "result": 123, "error": "some_error",'
-    '"status": 1, "uid": 1, "callback": null}')
+                        '"status": 1, "uid": 1, "callback": null}')
 MOCK_RESP_WITH_CALLBACK = ('{"id": 10, "result": 123, "error": null,'
-    '"status": 1, "callback": "1-0"}')
+                           '"status": 1, "callback": "1-0"}')
 
 
 class FakeClient(client_base.ClientBase):
@@ -82,8 +80,10 @@ class ClientBaseTest(unittest.TestCase):
     stop server before exiting.
     """
     client = FakeClient()
+    stage = mock.Mock()
+    stage.name = 'test_stage'
     with self.assertRaisesRegex(Exception, 'Some error'):
-      with client._start_server_run_one_stage('test_stage', True):
+      with client._stage_context_when_starting_server(stage, True):
         raise Exception('Some error')
 
     mock_stop_server.assert_called()
@@ -96,8 +96,10 @@ class ClientBaseTest(unittest.TestCase):
     stop server before exiting.
     """
     client = FakeClient()
+    stage = mock.Mock()
+    stage.name = 'test_stage'
     with self.assertRaisesRegex(Exception, 'Some error'):
-      with client._start_server_run_one_stage('test_stage', False):
+      with client._stage_context_when_starting_server(stage, False):
         raise Exception('Some error')
 
     mock_stop_server.assert_not_called()
@@ -112,10 +114,12 @@ class ClientBaseTest(unittest.TestCase):
     client = FakeClient()
     mock_stop_server.side_effect = Exception('Another error')
 
+    stage = mock.MagicMock()
+    stage.name = 'test_stage'
     # Should catch the error raised by the mock_stop_server,
     # then raise original error
     with self.assertRaisesRegex(Exception, 'Some error'):
-      with client._start_server_run_one_stage('test_stage', True):
+      with client._stage_context_when_starting_server(stage, True):
         raise Exception('Some error')
 
     mock_stop_server.assert_called_once()
@@ -194,9 +198,8 @@ class ClientBaseTest(unittest.TestCase):
     client.start_server()
 
     expected_response = MOCK_RESP_TEMPLATE % (0, 123)
-    expected_request = (
-      "{'id': 10, 'method': 'some_rpc', 'params': [1, 2],"
-      "'kwargs': {'test_key': 3}")
+    expected_request = ("{'id': 10, 'method': 'some_rpc', 'params': [1, 2],"
+                        "'kwargs': {'test_key': 3}")
     expected_result = 123
 
     mock_gen_request.return_value = expected_request
