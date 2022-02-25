@@ -48,10 +48,10 @@ class FakeClient(client_base.ClientBase):
 class ClientBaseTest(unittest.TestCase):
   """Unit tests for mobly.snippet.client_base."""
 
-  @mock.patch.object(FakeClient, '_before_starting_server')
-  @mock.patch.object(FakeClient, '_do_start_server')
-  @mock.patch.object(FakeClient, 'build_connection')
-  @mock.patch.object(FakeClient, '_after_starting_server')
+  @mock.patch.object(FakeClient, 'before_starting_server')
+  @mock.patch.object(FakeClient, 'do_start_server')
+  @mock.patch.object(FakeClient, '_build_connection')
+  @mock.patch.object(FakeClient, 'after_starting_server')
   def test_start_server_stage_order(self, mock_after_func, mock_build_conn_func,
                                     mock_do_start_func, mock_before_func):
     """Test that starting server runs its stages in expected order."""
@@ -83,7 +83,7 @@ class ClientBaseTest(unittest.TestCase):
     stage = mock.Mock()
     stage.name = 'test_stage'
     with self.assertRaisesRegex(Exception, 'Some error'):
-      with client._stage_context_when_starting_server(stage, True):
+      with client._execute_one_stage(stage, '', True):
         raise Exception('Some error')
 
     mock_stop_server.assert_called()
@@ -99,7 +99,7 @@ class ClientBaseTest(unittest.TestCase):
     stage = mock.Mock()
     stage.name = 'test_stage'
     with self.assertRaisesRegex(Exception, 'Some error'):
-      with client._stage_context_when_starting_server(stage, False):
+      with client._execute_one_stage(stage, '', False):
         raise Exception('Some error')
 
     mock_stop_server.assert_not_called()
@@ -119,13 +119,13 @@ class ClientBaseTest(unittest.TestCase):
     # Should catch the error raised by the mock_stop_server,
     # then raise original error
     with self.assertRaisesRegex(Exception, 'Some error'):
-      with client._stage_context_when_starting_server(stage, True):
+      with client._execute_one_stage(stage, '', True):
         raise Exception('Some error')
 
     mock_stop_server.assert_called_once()
 
   @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, '_before_starting_server')
+  @mock.patch.object(FakeClient, 'before_starting_server')
   def test_start_server_before_starting_server_fail(self, mock_before_func,
                                                     mock_stop_server):
     """Test starting server's stage before_starting_server fails.
@@ -141,7 +141,7 @@ class ClientBaseTest(unittest.TestCase):
     mock_stop_server.assert_not_called()
 
   @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, '_do_start_server')
+  @mock.patch.object(FakeClient, 'do_start_server')
   def test_start_server_do_start_server_fail(self, mock_do_start_func,
                                              mock_stop_server):
     """Test starting server's stage do_start_server fails.
@@ -151,10 +151,10 @@ class ClientBaseTest(unittest.TestCase):
     """
 
   @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, 'build_connection')
+  @mock.patch.object(FakeClient, '_build_connection')
   def test_start_server_build_connection_fail(self, mock_build_conn_func,
                                               mock_stop_server):
-    """Test starting server's stage build_connection fails.
+    """Test starting server's stage _build_connection fails.
 
     Test that when the building connection fails with exception, it should
     stop server before exiting.
@@ -167,7 +167,7 @@ class ClientBaseTest(unittest.TestCase):
     mock_stop_server.assert_called()
 
   @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, '_after_starting_server')
+  @mock.patch.object(FakeClient, 'after_starting_server')
   def test_start_server_after_starting_server_fail(self, mock_after_func,
                                                    mock_stop_server):
     """Test starting server's stage after_starting_server fails.
@@ -182,9 +182,9 @@ class ClientBaseTest(unittest.TestCase):
       client.start_server()
     mock_stop_server.assert_called()
 
-  @mock.patch.object(FakeClient, '_check_server_proc_running')
+  @mock.patch.object(FakeClient, 'check_server_proc_running')
   @mock.patch.object(FakeClient, '_gen_rpc_request')
-  @mock.patch.object(FakeClient, '_send_rpc_request')
+  @mock.patch.object(FakeClient, 'send_rpc_request')
   @mock.patch.object(FakeClient, '_parse_rpc_response')
   def test_rpc_stage_dependencies(self, mock_parse_response, mock_send_request,
                                   mock_gen_request, mock_precheck):
@@ -213,9 +213,9 @@ class ClientBaseTest(unittest.TestCase):
     mock_parse_response.assert_called_with(0, 'some_rpc', expected_response)
     self.assertEqual(rpc_result, expected_result)
 
-  @mock.patch.object(FakeClient, '_check_server_proc_running')
+  @mock.patch.object(FakeClient, 'check_server_proc_running')
   @mock.patch.object(FakeClient, '_gen_rpc_request')
-  @mock.patch.object(FakeClient, '_send_rpc_request')
+  @mock.patch.object(FakeClient, 'send_rpc_request')
   @mock.patch.object(FakeClient, '_parse_rpc_response')
   def test_rpc_precheck_fail(self, mock_parse_response, mock_send_request,
                              mock_gen_request, mock_precheck):
@@ -226,10 +226,9 @@ class ClientBaseTest(unittest.TestCase):
     """
     client = FakeClient()
     client.start_server()
-    mock_precheck.side_effect = jsonrpc_client_base.ServerDiedError(
-        mock.Mock(), 'server_died')
+    mock_precheck.side_effect = Exception('server_died')
 
-    with self.assertRaises(jsonrpc_client_base.ServerDiedError):
+    with self.assertRaises(Exception):
       client.some_rpc(1, 2)
 
     mock_gen_request.assert_not_called()
@@ -331,19 +330,19 @@ class ClientBaseTest(unittest.TestCase):
     """
     client = FakeClient()
 
-    # call _handle_callback function if "callback" field exists
-    with mock.patch.object(client, '_handle_callback') as mock_handle_callback:
+    # call handle_callback function if "callback" field exists
+    with mock.patch.object(client, 'handle_callback') as mock_handle_callback:
       expected_callback = mock.Mock()
       mock_handle_callback.return_value = expected_callback
 
       rpc_result = client._parse_rpc_response(10, 'some_rpc',
                                               MOCK_RESP_WITH_CALLBACK)
       mock_handle_callback.assert_called_with('1-0', 123, 'some_rpc')
-      # ensure the rpc function return what _handle_callback returns
+      # ensure the rpc function return what handle_callback returns
       self.assertIs(expected_callback, rpc_result)
 
-    # call _handle_callback function if "callback" field exists
-    with mock.patch.object(client, '_handle_callback') as mock_handle_callback:
+    # call handle_callback function if "callback" field exists
+    with mock.patch.object(client, 'handle_callback') as mock_handle_callback:
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP)
 
       mock_handle_callback.assert_not_called()
@@ -365,7 +364,7 @@ class ClientBaseTest(unittest.TestCase):
         jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
       client._parse_rpc_response(wrong_id, 'some_rpc', resp)
 
-  @mock.patch.object(FakeClient, '_send_rpc_request')
+  @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_verbose_logging_with_long_string(self, mock_send_request):
     """Test rpc response is fully wrote into DEBUG level log."""
     client = FakeClient()
@@ -380,7 +379,7 @@ class ClientBaseTest(unittest.TestCase):
     client.some_rpc(1, 2)
     mock_log.debug.assert_called_with('Snippet received: %s', resp)
 
-  @mock.patch.object(FakeClient, '_send_rpc_request')
+  @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_short_response(self, mock_send_request):
     """Test rpc response is fully logged when length is short."""
     client = FakeClient()
@@ -395,7 +394,7 @@ class ClientBaseTest(unittest.TestCase):
     client.some_rpc(1, 2)
     mock_log.debug.assert_called_with('Snippet received: %s', resp)
 
-  @mock.patch.object(FakeClient, '_send_rpc_request')
+  @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_fit_size_response(self, mock_send_request):
     """Test rpc response is full logged when length is equal to threshold.
     """
@@ -411,7 +410,7 @@ class ClientBaseTest(unittest.TestCase):
     client.some_rpc(1, 2)
     mock_log.debug.assert_called_with('Snippet received: %s', resp)
 
-  @mock.patch.object(FakeClient, '_send_rpc_request')
+  @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_long_response(self, mock_send_request):
     """Test rpc response is truncated with given length in DEBUG level log."""
     client = FakeClient()
@@ -429,7 +428,7 @@ class ClientBaseTest(unittest.TestCase):
         resp[:client_base._MAX_RPC_RESP_LOGGING_LENGTH],
         len(resp) - max_len)
 
-  @mock.patch.object(FakeClient, '_send_rpc_request')
+  @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_call_increment_counter(self, mock_send_request):
     """Test rpc counter.
 
@@ -444,11 +443,11 @@ class ClientBaseTest(unittest.TestCase):
 
     self.assertEqual(next(client._counter), 10)
 
-  @mock.patch.object(FakeClient, '_send_rpc_request')
+  @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_build_connection_reset_counter(self, mock_send_request):
     """Test rpc counter.
 
-    Test that build_connection reset the the counter to zero.
+    Test that _build_connection reset the the counter to zero.
     """
     client = FakeClient()
     client.start_server()
@@ -458,7 +457,7 @@ class ClientBaseTest(unittest.TestCase):
       client.some_rpc()
 
     self.assertEqual(next(client._counter), 10)
-    client.build_connection()
+    client._build_connection()
     self.assertEqual(next(client._counter), 0)
 
 

@@ -108,31 +108,32 @@ class ClientBase(abc.ABC):
     self._event_client = None
 
   def __del__(self):
-    self.disconnect()
+    self.close_connection()
 
   @contextlib.contextmanager
-  def _stage_context_when_starting_server(self, stage, stop_server_if_failed):
-    """Context manager for running each stage when starting server.
+  def _execute_one_stage(self, stage, log_prefix, stop_server_if_failed):
+    """Context manager for executing one stage.
 
-    This context manager is responsible for the log of stage information
-    and call stop server if needed.
+    This context manager is responsible for logging stage information
+    and stopping server if specified.
 
     Args:
-      stage: (StartServerStages) The stage which is running under this context manager.
+      stage: (StartServerStages) The stage which is running under this
+        context manager.
+      log_prefix: (str) The prefix string of log information.
       stop_server_if_failed: (bool) Whether to stop server if this context
         manager catches an Exception.
     """
-    prefix = '[START SERVER]'
-    start_stage_msg = f'{prefix}Running the stage %s.'
-    finish_stage_msg = f'{prefix}Finished the stage %s.'
-    error_msg = f'{prefix}Error in stage %s.'
-    error_stop_server_msg = (f'{prefix}Failed to stop server after'
+    start_stage_msg = f'{log_prefix}Running the stage %s.'
+    finish_stage_msg = f'{log_prefix}Finished the stage %s.'
+    error_msg = f'{log_prefix}Error in stage %s.'
+    error_stop_server_msg = (f'{log_prefix}Failed to stop server after'
                              f'failure in stage %s.')
 
     self.log.debug(start_stage_msg, stage.name)
     try:
       yield
-    except Exception as e:
+    except Exception:
       self.log.error(error_msg, stage.name)
       if stop_server_if_failed:
         try:
@@ -140,7 +141,6 @@ class ClientBase(abc.ABC):
         except Exception:
           self.log.exception(error_stop_server_msg, stage)
 
-      # Explicitly re-raises the original error from starting server
       raise
 
     self.log.debug(finish_stage_msg, stage.name)
@@ -166,28 +166,29 @@ class ClientBase(abc.ABC):
     """
     self.log.debug('Starting the server.')
     start_time = time.perf_counter()
+    log_prefix = '[START_SERVER]'
 
-    with self._stage_context_when_starting_server(
-        StartServerStages.BEFORE_STARTING_SERVER, False):
-      self._before_starting_server()
+    with self._execute_one_stage(StartServerStages.BEFORE_STARTING_SERVER,
+                                 log_prefix, False):
+      self.before_starting_server()
 
-    with self._stage_context_when_starting_server(
-        StartServerStages.DO_START_SERVER, True):
-      self._do_start_server()
+    with self._execute_one_stage(StartServerStages.DO_START_SERVER, log_prefix,
+                                 True):
+      self.do_start_server()
 
-    with self._stage_context_when_starting_server(
-        StartServerStages.BUILD_CONNECTION, True):
-      self.build_connection()
+    with self._execute_one_stage(StartServerStages.BUILD_CONNECTION, log_prefix,
+                                 True):
+      self._build_connection()
 
-    with self._stage_context_when_starting_server(
-        StartServerStages.AFTER_STARTING_SERVER, True):
-      self._after_starting_server()
+    with self._execute_one_stage(StartServerStages.AFTER_STARTING_SERVER,
+                                 log_prefix, True):
+      self.after_starting_server()
 
     self.log.debug('Snippet %s started after %.1fs on host port %s.',
                    self.package,
                    time.perf_counter() - start_time, self.host_port)
 
-  def _before_starting_server(self):
+  def before_starting_server(self):
     """Prepares for starting the server.
 
     For example, subclass can precheck the device setting, modify device
@@ -196,7 +197,7 @@ class ClientBase(abc.ABC):
     Must be implemented by subclasses.
     """
 
-  def _do_start_server(self):
+  def do_start_server(self):
     """Starts the server on the remote device.
 
     The client has completed the preparations, so the client calls this
@@ -205,11 +206,11 @@ class ClientBase(abc.ABC):
     Must be implemented by subclasses.
     """
 
-  def build_connection(self, host_port=None):
-    """A proxy function to guarantee the base implementation of
+  def _build_connection(self, host_port=None):
+    """Proxy function to guarantee the base implementation of
     _build_connection is called.
 
-    This function resets the RPC id counter.
+    This function resets the RPC id counter before calling `build_connection`.
 
     Args:
       host_port: (int) If given, this is the host port from which to connect
@@ -217,9 +218,9 @@ class ClientBase(abc.ABC):
         host port.
     """
     self._counter = self._id_counter()
-    self._build_connection(host_port)
+    self.build_connection(host_port)
 
-  def _build_connection(self, host_port=None):
+  def build_connection(self, host_port=None):
     """Builds a connection with the server on the remote device.
 
     The command to start the server has been already sent before calling this
@@ -234,7 +235,7 @@ class ClientBase(abc.ABC):
         host port.
     """
 
-  def _after_starting_server(self):
+  def after_starting_server(self):
     """Does the things after the server is available.
 
     For example, subclass can get device information from the server.
@@ -311,7 +312,7 @@ class ClientBase(abc.ABC):
         errors.
     """
     try:
-      self._check_server_proc_running()
+      self.check_server_proc_running()
     except Exception:
       self.log.exception(
           'Server process running check failed, skip sending rpc method(%s).',
@@ -323,7 +324,7 @@ class ClientBase(abc.ABC):
       request = self._gen_rpc_request(apiid, method, *args, **kwargs)
 
       self.log.debug('Sending rpc %s.', request)
-      response = self._send_rpc_request(request)
+      response = self.send_rpc_request(request)
       self.log.debug('Rpc sent.')
 
       if self.verbose_logging:
@@ -338,7 +339,7 @@ class ClientBase(abc.ABC):
 
     return self._parse_rpc_response(apiid, method, response)
 
-  def _check_server_proc_running(self):
+  def check_server_proc_running(self):
     """Checks whether the server is still running.
 
     If the server is not running, throws an error. As this function is called
@@ -366,7 +367,7 @@ class ClientBase(abc.ABC):
     request = json.dumps(data)
     return request
 
-  def _send_rpc_request(self, request):
+  def send_rpc_request(self, request):
     """Sends Json rpc request to the server and gets response.
 
     Note that the request and response are both in string format. So if the
@@ -420,10 +421,10 @@ class ClientBase(abc.ABC):
       raise jsonrpc_client_base.ProtocolError(
           self._device, jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID)
     if result['callback'] is not None:
-      return self._handle_callback(result['callback'], result['result'], method)
+      return self.handle_callback(result['callback'], result['result'], method)
     return result['result']
 
-  def _handle_callback(self, callback_id, ret_value, method_name):
+  def handle_callback(self, callback_id, ret_value, method_name):
     """Creates callback handler for an async rpc.
 
     Must be implemented by subclasses.
@@ -440,22 +441,22 @@ class ClientBase(abc.ABC):
 
   def stop_server(self):
     """Proxy function to guarantee the base implementation of
-    _stop_server is called.
+    do_stop_server is called.
     """
     self.log.debug('Stopping snippet %s.', self.package)
-    self._stop_server()
+    self.do_stop_server()
     self.log.debug('Snippet %s stopped.', self.package)
 
-  def _stop_server(self):
+  def do_stop_server(self):
     """Kills any running instance of the server.
 
     Must be implemented by subclasses.
     """
 
-  def disconnect(self):
+  def close_connection(self):
     """Closes the connection to the snippet server on the device.
 
-    This is a unilateral disconnect from the client side, without tearing down
+    This is a unilateral closing from the client side, without tearing down
     the snippet server running on the device.
 
     The connection to the snippet server can be re-established by calling
