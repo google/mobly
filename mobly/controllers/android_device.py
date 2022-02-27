@@ -242,6 +242,9 @@ def list_fastboot_devices():
   """List all android devices connected to the computer that are in in
   fastboot mode. These are detected by fastboot.
 
+  This function doesn't raise any error if `fastboot` binary doesn't exist,
+  because `FastbootProxy` itself doesn't raise any error.
+
   Returns:
     A list of android device serials. Empty if there's none.
   """
