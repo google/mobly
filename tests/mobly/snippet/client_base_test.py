@@ -46,6 +46,10 @@ class FakeClient(client_base.ClientBase):
     super().__init__(package='FakeClient', device=mock_device)
 
 
+# Set abstractmethods to empty set in order to instantiate during testing.
+FakeClient.__abstractmethods__ = set()
+
+
 class ClientBaseTest(unittest.TestCase):
   """Unit tests for mobly.snippet.client_base."""
 

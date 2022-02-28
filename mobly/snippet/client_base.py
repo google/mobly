@@ -185,22 +185,20 @@ class ClientBase(abc.ABC):
                    self.package,
                    time.perf_counter() - start_time, self.host_port)
 
+  @abc.abstractmethod
   def before_starting_server(self):
     """Prepares for starting the server.
 
     For example, subclass can check or modify the device settings at this
     stage.
-
-    Must be implemented by subclasses.
     """
 
+  @abc.abstractmethod
   def do_start_server(self):
     """Starts the server on the remote device.
 
     The client has completed the preparations, so the client calls this
     function to start the server.
-
-    Must be implemented by subclasses.
     """
 
   def _build_connection(self):
@@ -212,6 +210,7 @@ class ClientBase(abc.ABC):
     self._counter = self._id_counter()
     self.build_connection()
 
+  @abc.abstractmethod
   def build_connection(self):
     """Builds a connection with the server on the remote device.
 
@@ -222,16 +221,13 @@ class ClientBase(abc.ABC):
     This function uses self.host_port for communicating with the server. If
     self.host_port is 0 or None, this function finds an available host port to
     build connection and set self.host_port to the found port.
-
-    Must be implemented by subclasses.
     """
 
+  @abc.abstractmethod
   def after_starting_server(self):
     """Does the things after the server is available.
 
     For example, subclass can get device information from the server.
-
-    Must be implemented by subclasses.
     """
 
   def __getattr__(self, name):
@@ -265,6 +261,7 @@ class ClientBase(abc.ABC):
     self.log.info('Sets verbose logging to %s.', verbose)
     self.verbose_logging = verbose
 
+  @abc.abstractmethod
   def restore_server_connection(self, port=None):
     """Reconnects to the server after device was disconnected.
 
@@ -272,8 +269,6 @@ class ClientBase(abc.ABC):
       - Uses the given port (or finds a new available host_port if none is
       given).
       - Tries to connect to remote server with selected port.
-
-    Must be implemented by subclasses.
 
     Args:
       port: (int) If given, this is the host port from which to connect to
@@ -328,14 +323,13 @@ class ClientBase(abc.ABC):
 
     return self._parse_rpc_response(rpc_id, rpc_func_name, response)
 
+  @abc.abstractmethod
   def check_server_proc_running(self):
     """Checks whether the server is still running.
 
     If the server is not running, throws an error. As this function is called
     each time the client tries to send an rpc, this should be a quick check
     without affecting performance. Otherwise it is fine to not check anything.
-
-    Must be implemented by subclasses.
     """
 
   def _gen_rpc_request(self, rpc_id, rpc_func_name, *args, **kwargs):
@@ -357,14 +351,13 @@ class ClientBase(abc.ABC):
     request = json.dumps(data)
     return request
 
+  @abc.abstractmethod
   def send_rpc_request(self, request):
     """Sends Json rpc request to the server and gets response.
 
     Note that the request and response are both in string format. So if the
     connection with server provides interfaces in bytes format, please
     transform them to string in the implementation of this funcion.
-
-    Must be implemented by subclasses.
 
     Args:
       request: (str) A string of the rpc request.
@@ -415,10 +408,9 @@ class ClientBase(abc.ABC):
       return self.handle_callback(result['callback'], result['result'], rpc_func_name)
     return result['result']
 
+  @abc.abstractmethod
   def handle_callback(self, callback_id, ret_value, rpc_func_name):
     """Creates callback handler for an async rpc.
-
-    Must be implemented by subclasses.
 
     Args:
       callback_id: (str) The callback ID for creating callback handler object.
@@ -439,12 +431,11 @@ class ClientBase(abc.ABC):
     self.do_stop_server()
     self.log.debug('Snippet %s stopped.', self.package)
 
+  @abc.abstractmethod
   def do_stop_server(self):
-    """Kills any running instance of the server.
+    """Kills any running instance of the server."""
 
-    Must be implemented by subclasses.
-    """
-
+  @abc.abstractmethod
   def close_connection(self):
     """Closes the connection to the snippet server on the device.
 
@@ -453,6 +444,4 @@ class ClientBase(abc.ABC):
 
     The connection to the snippet server can be re-established by calling
     `restore_server_connection`.
-
-    Must be implemented by subclasses.
     """
