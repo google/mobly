@@ -50,7 +50,6 @@ import enum
 import time
 import contextlib
 
-from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 # Maximum logging length of Rpc response in DEBUG level when verbose logging is
@@ -182,15 +181,15 @@ class ClientBase(abc.ABC):
                                  log_prefix, True):
       self.after_starting_server()
 
-    self.log.debug('Snippet %s started after %.1fs on host port %s.',
+    self.log.debug('Snippet %s started after %.1fs on host port %d.',
                    self.package,
                    time.perf_counter() - start_time, self.host_port)
 
   def before_starting_server(self):
     """Prepares for starting the server.
 
-    For example, subclass can precheck the device setting, modify device
-    setting at this stage.
+    For example, subclass can check or modify the device settings at this
+    stage.
 
     Must be implemented by subclasses.
     """
@@ -204,33 +203,27 @@ class ClientBase(abc.ABC):
     Must be implemented by subclasses.
     """
 
-  def _build_connection(self, host_port=None):
+  def _build_connection(self):
     """Proxy function to guarantee the base implementation of
     _build_connection is called.
 
     This function resets the RPC id counter before calling `build_connection`.
-
-    Args:
-      host_port: (int) If given, this is the host port from which to connect
-        to remote device port. If not provided, find a new available port as
-        host port.
     """
     self._counter = self._id_counter()
-    self.build_connection(host_port)
+    self.build_connection()
 
-  def build_connection(self, host_port=None):
+  def build_connection(self):
     """Builds a connection with the server on the remote device.
 
     The command to start the server has been already sent before calling this
     function. So the client builds a connection to it and sends a handshake
     to ensure the server is available for upcoming rpcs.
 
-    Must be implemented by subclasses.
+    This function uses self.host_port for communicating with the server. If
+    self.host_port is 0 or None, this function finds an available host port to
+    build connection and set self.host_port to the found port.
 
-    Args:
-      host_port: (int) If given, this is the host port from which to connect
-        to remote device port. If not provided, find a new available port as
-        host port.
+    Must be implemented by subclasses.
     """
 
   def after_starting_server(self):
@@ -259,11 +252,11 @@ class ClientBase(abc.ABC):
   def set_snippet_client_verbose_logging(self, verbose):
     """Switches verbose logging. True for logging full RPC response.
 
-    By default it will only write max_rpc_return_value_length for Rpc returned
-    strings. If you need to see full message returned from Rpc, please turn
-    on verbose logging.
+    By default it will write full message returned from Rpc. Turning off the
+    verbose logging will result in wrting _MAX_RPC_RESP_LOGGING_LENGTH
+    characters of each Rpc returned string.
 
-    max_rpc_return_value_length will set to 1024 by default, the length
+    _MAX_RPC_RESP_LOGGING_LENGTH will set to 1024 by default, the length
     contains full Rpc response in Json format, included 1st element "id".
 
     Args:
@@ -273,7 +266,7 @@ class ClientBase(abc.ABC):
     self.verbose_logging = verbose
 
   def restore_server_connection(self, port=None):
-    """Reconnects to the server after device USB was disconnected.
+    """Reconnects to the server after device was disconnected.
 
     Instead of creating new instance of the client:
       - Uses the given port (or finds a new available host_port if none is
@@ -292,13 +285,14 @@ class ClientBase(abc.ABC):
       able to be reconnected.
     """
 
-  def _rpc(self, method, *args, **kwargs):
+  def _rpc(self, rpc_func_name, *args, **kwargs):
     """Sends an rpc to the server.
 
     Args:
-      method: (str) The name of the method to execute.
-      args: (any) The positional arguments of the method.
-      kwargs: (any) The keyword arguments of the method.
+      rpc_func_name: (str) The name of the snippet function to execute on the
+        server.
+      args: (any) The positional arguments of the rpc request.
+      kwargs: (any) The keyword arguments of the rpc request.
 
     Returns:
       The result of the rpc.
@@ -314,28 +308,25 @@ class ClientBase(abc.ABC):
     except Exception:
       self.log.exception(
           'Server process running check failed, skip sending rpc method(%s).',
-          method)
+          rpc_func_name)
       raise
 
     with self._lock:
-      apiid = next(self._counter)
-      request = self._gen_rpc_request(apiid, method, *args, **kwargs)
+      rpc_id = next(self._counter)
+      request = self._gen_rpc_request(rpc_id, rpc_func_name, *args, **kwargs)
 
-      self.log.debug('Sending rpc %s.', request)
+      self.log.debug('Sending rpc request %s.', request)
       response = self.send_rpc_request(request)
-      self.log.debug('Rpc sent.')
+      self.log.debug('Rpc request sent.')
 
-      if self.verbose_logging:
+      if self.verbose_logging or _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
         self.log.debug('Snippet received: %s', response)
       else:
-        if _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
-          self.log.debug('Snippet received: %s', response)
-        else:
-          self.log.debug('Snippet received: %s... %d chars are truncated',
-                         response[:_MAX_RPC_RESP_LOGGING_LENGTH],
-                         len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
+        self.log.debug('Snippet received: %s... %d chars are truncated',
+                       response[:_MAX_RPC_RESP_LOGGING_LENGTH],
+                       len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
 
-    return self._parse_rpc_response(apiid, method, response)
+    return self._parse_rpc_response(rpc_id, rpc_func_name, response)
 
   def check_server_proc_running(self):
     """Checks whether the server is still running.
@@ -347,19 +338,20 @@ class ClientBase(abc.ABC):
     Must be implemented by subclasses.
     """
 
-  def _gen_rpc_request(self, apiid, method, *args, **kwargs):
-    """Genereates Json rpc request.
+  def _gen_rpc_request(self, rpc_id, rpc_func_name, *args, **kwargs):
+    """Generates Json rpc request.
 
     Args:
-      appid: (int) The id the this rpc.
-      method: (str) The name of the method to execute.
-      args: (any) The positional arguments of the method.
-      kwargs: (any) The keyword arguments of the method.
+      rpc_id: (int) The id of this rpc.
+      rpc_func_name: (str) The name of the snippet function to execute
+        on server.
+      args: (any) The positional arguments of the rpc.
+      kwargs: (any) The keyword arguments of the rpc.
 
     Returns:
       A string of the Json rpc request.
     """
-    data = {'id': apiid, 'method': method, 'params': args}
+    data = {'id': rpc_id, 'method': rpc_func_name, 'params': args}
     if kwargs:
       data['kwargs'] = kwargs
     request = json.dumps(data)
@@ -381,16 +373,17 @@ class ClientBase(abc.ABC):
       A string of the rpc response.
     """
 
-  def _parse_rpc_response(self, apiid, method, response):
+  def _parse_rpc_response(self, rpc_id, rpc_func_name, response):
     """Parses the rpc response from the server.
 
     This function parses the response of the server and checks the response
     with the Mobly JSON RPC Protocol.
 
     Args:
-      appid: (int) The actual id of this rpc. It should be the same with the id
+      rpc_id: (int) The actual id of this rpc. It should be the same with the id
         in the response, otherwise throws an error.
-      method: (str) The method name of this rpc.
+      rpc_func_name: (str) The name of the function that this rpc triggered
+        on the snippet server.
       response: (str) A string of the Json rpc response.
 
     Returns:
@@ -400,12 +393,12 @@ class ClientBase(abc.ABC):
     Raises:
       jsonrpc_client_base.ProtocolError: Something went wrong with the
         protocol.
-
     """
     if not response:
       raise jsonrpc_client_base.ProtocolError(
           self._device,
           jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER)
+
     result = json.loads(response)
     for field_name in RPC_RESPONSE_REQUIRED_FIELDS:
       if field_name not in result:
@@ -415,14 +408,14 @@ class ClientBase(abc.ABC):
 
     if result['error']:
       raise jsonrpc_client_base.ApiError(self._device, result['error'])
-    if result['id'] != apiid:
+    if result['id'] != rpc_id:
       raise jsonrpc_client_base.ProtocolError(
           self._device, jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID)
     if result['callback'] is not None:
-      return self.handle_callback(result['callback'], result['result'], method)
+      return self.handle_callback(result['callback'], result['result'], rpc_func_name)
     return result['result']
 
-  def handle_callback(self, callback_id, ret_value, method_name):
+  def handle_callback(self, callback_id, ret_value, rpc_func_name):
     """Creates callback handler for an async rpc.
 
     Must be implemented by subclasses.
@@ -431,7 +424,8 @@ class ClientBase(abc.ABC):
       callback_id: (str) The callback ID for creating callback handler object.
       ret_value: (str) JSON Array string of the result field of the rpc
         response.
-      method_name: (str) The method name of this rpc.
+      rpc_func_name: (str) The name of the snippet function executed on the
+        server.
 
     Returns:
       The callback handler object.

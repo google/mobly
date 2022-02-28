@@ -14,21 +14,21 @@
 
 """Unit tests for mobly.snippet.client_base."""
 
-from mobly.snippet import client_base
-from mobly.controllers.android_device_lib import jsonrpc_client_base
-from tests.lib import jsonrpc_client_test_base
-from tests.lib.snippet import utils as snippet_utils
-import unittest
-from unittest import mock
 import json
 import logging
+import unittest
+from unittest import mock
+
+from mobly.snippet import client_base
+from mobly.controllers.android_device_lib import jsonrpc_client_base
+from tests.lib.snippet import utils as snippet_utils
 
 MOCK_RESP = ('{"id": 10, "result": 123, "error": null, "status": 1,'
              '"callback": null}')
 MOCK_RESP_TEMPLATE = (
     '{"id": %d, "result": %d, "error": null, "status": 1, "uid": 1,'
     '"callback": null}')
-MOCK_RESP_WITHOUT_ID = ('{"result": 123, "error": null, "callback": null}')
+MOCK_RESP_WITHOUT_ID = '{"result": 123, "error": null, "callback": null}'
 MOCK_RESP_WITHOUT_RESULT = '{"id": 10, "error": null, "callback": null}'
 MOCK_RESP_WITHOUT_ERROR = '{"id": 10, "result": 123, "callback": null}'
 MOCK_RESP_WITHOUT_CALLBACK = '{"id": 10, "result": 123, "error": null}'
@@ -63,6 +63,7 @@ class ClientBaseTest(unittest.TestCase):
     order_manager.attach_mock(mock_after_func, 'mock_after_func')
 
     client = FakeClient()
+    client.host_port = 12345
     client.start_server()
 
     expected_call_order = [
@@ -74,12 +75,8 @@ class ClientBaseTest(unittest.TestCase):
     self.assertListEqual(order_manager.mock_calls, expected_call_order)
 
   @mock.patch.object(FakeClient, 'stop_server')
-  def test_start_server_one_stage_fail_with_stopping(self, mock_stop_server):
-    """Test starting server's stage do_start_server fails.
-
-    Test that when the building connection fails with exception, it should
-    stop server before exiting.
-    """
+  def test_execute_one_stage_fail_with_stopping(self, mock_stop_server):
+    """Test execute_one_stage fails with calling stop_server function."""
     client = FakeClient()
     stage = mock.Mock()
     stage.name = 'test_stage'
@@ -90,12 +87,8 @@ class ClientBaseTest(unittest.TestCase):
     mock_stop_server.assert_called()
 
   @mock.patch.object(FakeClient, 'stop_server')
-  def test_start_server_one_stage_fail_without_stopping(self, mock_stop_server):
-    """Test starting server's stage do_start_server fails.
-
-    Test that when the building connection fails with exception, it should
-    stop server before exiting.
-    """
+  def test_execute_one_stage_fail_without_stopping(self, mock_stop_server):
+    """Test execute_one_stage fails without calling stop_server function."""
     client = FakeClient()
     stage = mock.Mock()
     stage.name = 'test_stage'
@@ -106,12 +99,8 @@ class ClientBaseTest(unittest.TestCase):
     mock_stop_server.assert_not_called()
 
   @mock.patch.object(FakeClient, 'stop_server')
-  def test_start_server_one_stage_fail_stop_also_fail(self, mock_stop_server):
-    """Test starting server's stage do_start_server fails.
-
-    Test that when the building connection fails with exception, it should
-    stop server before exiting.
-    """
+  def test_execute_one_stage_fail_stop_also_fail(self, mock_stop_server):
+    """Test execute_one_stage fails while stop_server also fails."""
     client = FakeClient()
     mock_stop_server.side_effect = Exception('Another error')
 
@@ -131,8 +120,8 @@ class ClientBaseTest(unittest.TestCase):
                                                     mock_stop_server):
     """Test starting server's stage before_starting_server fails.
 
-    Test that when the building connection fails with exception, it should not
-    stop server before exiting.
+    Test that when the before_starting_server stage fails with exception, it
+    should not stop server before exiting.
     """
     client = FakeClient()
     mock_before_func.side_effect = Exception('ha')
@@ -147,9 +136,15 @@ class ClientBaseTest(unittest.TestCase):
                                              mock_stop_server):
     """Test starting server's stage do_start_server fails.
 
-    Test that when the building connection fails with exception, it should
+    Test that when the do_start_server stage fails with exception, it should
     stop server before exiting.
     """
+    client = FakeClient()
+    mock_do_start_func.side_effect = Exception('ha')
+
+    with self.assertRaisesRegex(Exception, 'ha'):
+      client.start_server()
+    mock_stop_server.assert_called()
 
   @mock.patch.object(FakeClient, 'stop_server')
   @mock.patch.object(FakeClient, '_build_connection')
@@ -196,6 +191,7 @@ class ClientBaseTest(unittest.TestCase):
     rpc response function. This test case checks above dependencies.
     """
     client = FakeClient()
+    client.host_port = 12345
     client.start_server()
 
     expected_response = MOCK_RESP_TEMPLATE % (0, 123)
@@ -226,6 +222,7 @@ class ClientBaseTest(unittest.TestCase):
     should throws that error and skip sending rpc.
     """
     client = FakeClient()
+    client.host_port = 12345
     client.start_server()
     mock_precheck.side_effect = Exception('server_died')
 
@@ -382,7 +379,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_short_response(self, mock_send_request):
-    """Test rpc response is fully logged when length is short."""
+    """Test rpc response is fully logged with small length."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
@@ -397,8 +394,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_fit_size_response(self, mock_send_request):
-    """Test rpc response is full logged when length is equal to threshold.
-    """
+    """Test rpc response is fullly logged with large length."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
@@ -436,10 +432,13 @@ class ClientBaseTest(unittest.TestCase):
     Test that with each rpc call the counter is incremented by 1.
     """
     client = FakeClient()
+    client.host_port = 12345
     client.start_server()
+    mock_send_request.side_effect = (
+        MOCK_RESP_TEMPLATE % (i, 123) for i in range(10)
+    )
 
     for i in range(0, 10):
-      mock_send_request.return_value = MOCK_RESP_TEMPLATE % (i, 123)
       client.some_rpc()
 
     self.assertEqual(next(client._counter), 10)
@@ -451,10 +450,13 @@ class ClientBaseTest(unittest.TestCase):
     Test that _build_connection reset the the counter to zero.
     """
     client = FakeClient()
+    client.host_port = 12345
     client.start_server()
+    mock_send_request.side_effect = (
+        MOCK_RESP_TEMPLATE % (i, 123) for i in range(10)
+    )
 
     for i in range(0, 10):
-      mock_send_request.return_value = MOCK_RESP_TEMPLATE % (i, 123)
       client.some_rpc()
 
     self.assertEqual(next(client._counter), 10)

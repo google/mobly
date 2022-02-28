@@ -169,7 +169,7 @@ class JsonRpcClientBase(abc.ABC):
     """
 
   def restore_app_connection(self, port=None):
-    """Reconnects to the app after device USB was disconnected.
+    """Reconnects to the app after device was disconnected.
 
     Instead of creating new instance of the client:
       - Uses the given port (or finds a new available host_port if none is
@@ -391,11 +391,11 @@ class JsonRpcClientBase(abc.ABC):
   def set_snippet_client_verbose_logging(self, verbose):
     """Switches verbose logging. True for logging full RPC response.
 
-    By default it will only write max_rpc_return_value_length for Rpc return
-    strings. If you need to see full message returned from Rpc, please turn
-    on verbose logging.
+    By default it will write full message returned from Rpc. Turning off the
+    verbose logging will result in wrting _MAX_RPC_RESP_LOGGING_LENGTH
+    characters of each Rpc returned string.
 
-    max_rpc_return_value_length will set to 1024 by default, the length
+    _MAX_RPC_RESP_LOGGING_LENGTH will set to 1024 by default, the length
     contains full Rpc response in Json format, included 1st element "id".
 
     Args:
