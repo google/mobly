@@ -77,21 +77,21 @@ class ClientBase(abc.ABC):
   all the running instances.
 
   Attributes:
-    package: (str) The user-visible name of the snippet library being
+    package: string, the user-visible name of the snippet library being
       communicated with.
-    host_port: (int) The host port of this RPC client.
-    device_port: (int) The device port of this RPC client.
-    log: (Logger) The logger of the corresponding device controller.
-    verbose_logging: (bool) If True, prints more detailed log
+    host_port: int, the host port of this RPC client.
+    device_port: int, the device port of this RPC client.
+    log: Logger, the logger of the corresponding device controller.
+    verbose_logging: bool, if True, prints more detailed log
       information. Default is False.
   """
 
   def __init__(self, package, device):
     """
     Args:
-      package: (str) The user-visible name of the snippet library being
+      package: string, the user-visible name of the snippet library being
         communicated with.
-      device: (DeviceController) The device object associated with a client.
+      device: DeviceController, the device object associated with a client.
     """
 
     self.package = package
@@ -115,10 +115,10 @@ class ClientBase(abc.ABC):
     and stopping server if specified.
 
     Args:
-      stage: (StartServerStages) The stage which is running under this
+      stage: StartServerStages, the stage which is running under this
         context manager.
-      log_prefix: (str) The prefix string of log information.
-      stop_server_if_failed: (bool) Whether to stop server if this context
+      log_prefix: string, the prefix string of log information.
+      stop_server_if_failed: bool, whether to stop server if this context
         manager catches an Exception.
     """
     start_stage_msg = f'{log_prefix}Running the stage %s.'
@@ -155,10 +155,10 @@ class ClientBase(abc.ABC):
     set.
 
     Raises:
-      snippet_client.ProtocolVersionError: When the server's protocol is
+      snippet_client.ProtocolVersionError: when the server's protocol is
         unknown.
-      snippet_client.AppStartPreCheckError: When the precheck fails.
-      jsonrpc_client_base.ProtocolError: When there's some error in
+      snippet_client.AppStartPreCheckError: when the precheck fails.
+      jsonrpc_client_base.ProtocolError: when there's some error in
         the sending the handshake.
     """
     self.log.debug('Starting the server.')
@@ -256,7 +256,7 @@ class ClientBase(abc.ABC):
     contains full Rpc response in Json format, included 1st element "id".
 
     Args:
-      verbose: (bool) If True, turns on verbose logging, if False turns off.
+      verbose: bool, if True, turns on verbose logging, if False turns off.
     """
     self.log.info('Sets verbose logging to %s.', verbose)
     self.verbose_logging = verbose
@@ -271,12 +271,12 @@ class ClientBase(abc.ABC):
       - Tries to connect to remote server with selected port.
 
     Args:
-      port: (int) If given, this is the host port from which to connect to
+      port: int, if given, this is the host port from which to connect to
         remote device port. If not provided, find a new available port as host
         port.
 
     Raises:
-      jsonrpc_client_base.AppRestoreConnectionError: When the server was not
+      jsonrpc_client_base.AppRestoreConnectionError: when the server was not
       able to be reconnected.
     """
 
@@ -284,18 +284,18 @@ class ClientBase(abc.ABC):
     """Sends an rpc to the server.
 
     Args:
-      rpc_func_name: (str) The name of the snippet function to execute on the
+      rpc_func_name: string, the name of the snippet function to execute on the
         server.
-      args: (any) The positional arguments of the rpc request.
-      kwargs: (any) The keyword arguments of the rpc request.
+      args: any, the positional arguments of the rpc request.
+      kwargs: any, the keyword arguments of the rpc request.
 
     Returns:
       The result of the rpc.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: Something went wrong with the
+      jsonrpc_client_base.ProtocolError: something went wrong with the
         protocol.
-      jsonrpc_client_base.ApiError: The rpc went through, however executed with
+      jsonrpc_client_base.ApiError: the rpc went through, however executed with
         errors.
     """
     try:
@@ -336,11 +336,11 @@ class ClientBase(abc.ABC):
     """Generates Json rpc request.
 
     Args:
-      rpc_id: (int) The id of this rpc.
-      rpc_func_name: (str) The name of the snippet function to execute
+      rpc_id: int, the id of this rpc.
+      rpc_func_name: string, the name of the snippet function to execute
         on server.
-      args: (any) The positional arguments of the rpc.
-      kwargs: (any) The keyword arguments of the rpc.
+      args: any, the positional arguments of the rpc.
+      kwargs: any, the keyword arguments of the rpc.
 
     Returns:
       A string of the Json rpc request.
@@ -360,7 +360,7 @@ class ClientBase(abc.ABC):
     transform them to string in the implementation of this funcion.
 
     Args:
-      request: (str) A string of the rpc request.
+      request: string, a string of the rpc request.
 
     Returns:
       A string of the rpc response.
@@ -373,11 +373,11 @@ class ClientBase(abc.ABC):
     with the Mobly JSON RPC Protocol.
 
     Args:
-      rpc_id: (int) The actual id of this rpc. It should be the same with the id
+      rpc_id: int, the actual id of this rpc. It should be the same with the id
         in the response, otherwise throws an error.
-      rpc_func_name: (str) The name of the function that this rpc triggered
+      rpc_func_name: string, the name of the function that this rpc triggered
         on the snippet server.
-      response: (str) A string of the Json rpc response.
+      response: str, a string of the Json rpc response.
 
     Returns:
       The result of the rpc. If sync rpc, returns the result field of
@@ -413,10 +413,10 @@ class ClientBase(abc.ABC):
     """Creates callback handler for an async rpc.
 
     Args:
-      callback_id: (str) The callback ID for creating callback handler object.
-      ret_value: (str) JSON Array string of the result field of the rpc
+      callback_id: string, the callback ID for creating callback handler object.
+      ret_value: string, JSON Array string of the result field of the rpc
         response.
-      rpc_func_name: (str) The name of the snippet function executed on the
+      rpc_func_name: string, the name of the snippet function executed on the
         server.
 
     Returns:
