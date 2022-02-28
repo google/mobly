@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Base class for clients that communicate with servers over a JSON RPC
-interface.
+
+"""The JSON RPC client base for communicating with snippet servers.
 
 The JSON RPC protocol expected by this module is:
 
@@ -45,13 +45,11 @@ The JSON RPC protocol expected by this module is:
 
 import abc
 import json
-import socket
 import threading
 import enum
 import time
 import contextlib
 
-from mobly.controllers.android_device_lib import callback_handler
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 

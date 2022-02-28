@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Base class for clients that communicate with apps over a JSON RPC interface.
 
 The JSON protocol expected by this module is:
@@ -95,7 +96,7 @@ class ProtocolError(Error):
   NO_RESPONSE_FROM_SERVER = ('No response from server. '
                              'Check the device logcat for crashes.')
   MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
-  RESPONSE_MISS_FIELD = 'Miss required field in the RPC response: %s.'
+  RESPONSE_MISS_FIELD = 'Missing required field in the RPC response: %s.'
 
 
 class JsonRpcCommand:
