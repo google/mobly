@@ -46,7 +46,7 @@ class FakeClient(client_base.ClientBase):
     super().__init__(package='FakeClient', device=mock_device)
 
 
-# Set abstractmethods to empty set in order to instantiate during testing.
+# Set abstractmethods to empty set in order to instantiate it during testing.
 FakeClient.__abstractmethods__ = set()
 
 
@@ -240,7 +240,7 @@ class ClientBaseTest(unittest.TestCase):
   def test_gen_request(self):
     """Test generate rcp request
 
-    Test that _gen_rpc_request returns a string represents a json dict
+    Test that _gen_rpc_request returns a string represents a JSON dict
     with all request fields.
     """
     client = FakeClient()
@@ -343,7 +343,7 @@ class ClientBaseTest(unittest.TestCase):
       # ensure the rpc function return what handle_callback returns
       self.assertIs(expected_callback, rpc_result)
 
-    # call handle_callback function if "callback" field exists
+    # Do not call handle_callback function if no "callback" field
     with mock.patch.object(client, 'handle_callback') as mock_handle_callback:
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP)
 

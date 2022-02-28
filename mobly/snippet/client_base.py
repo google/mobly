@@ -69,12 +69,12 @@ class StartServerStages(enum.Enum):
 
 
 class ClientBase(abc.ABC):
-  """Base class for Json Rpc clients that connect to remote servers.
+  """Base class for JSON Rpc clients that connect to remote servers.
 
-  Connects to a remote device running a jsonrpc-compatible server. Call the
-  function `start_server` to start the server on remote device before sending
-  any rpc.  After sending all rpcs, call the function `stop_server` to stop
-  all the running instances.
+  Connects to a remote device running a jsonrpc-compatible server. Users call
+  the function `start_server` to start the server on remote device before
+  sending any rpc. After sending all rpcs, users call the function `stop_server`
+  to stop all the running instances.
 
   Attributes:
     package: string, the user-visible name of the snippet library being
@@ -202,8 +202,7 @@ class ClientBase(abc.ABC):
     """
 
   def _build_connection(self):
-    """Proxy function to guarantee the base implementation of
-    _build_connection is called.
+    """Proxy function of build_connection.
 
     This function resets the RPC id counter before calling `build_connection`.
     """
@@ -253,7 +252,7 @@ class ClientBase(abc.ABC):
     characters of each Rpc returned string.
 
     _MAX_RPC_RESP_LOGGING_LENGTH will set to 1024 by default, the length
-    contains full Rpc response in Json format, included 1st element "id".
+    contains full Rpc response in JSON format, included 1st element "id".
 
     Args:
       verbose: bool, if True, turns on verbose logging, if False turns off.
@@ -265,7 +264,7 @@ class ClientBase(abc.ABC):
   def restore_server_connection(self, port=None):
     """Reconnects to the server after device was disconnected.
 
-    Instead of creating new instance of the client:
+    Instead of creating a new instance of the client:
       - Uses the given port (or finds a new available host_port if none is
       given).
       - Tries to connect to remote server with selected port.
@@ -281,7 +280,7 @@ class ClientBase(abc.ABC):
     """
 
   def _rpc(self, rpc_func_name, *args, **kwargs):
-    """Sends an rpc to the server.
+    """Sends a rpc to the server.
 
     Args:
       rpc_func_name: string, the name of the snippet function to execute on the
@@ -333,7 +332,7 @@ class ClientBase(abc.ABC):
     """
 
   def _gen_rpc_request(self, rpc_id, rpc_func_name, *args, **kwargs):
-    """Generates Json rpc request.
+    """Generates the JSON rpc request.
 
     Args:
       rpc_id: int, the id of this rpc.
@@ -343,7 +342,7 @@ class ClientBase(abc.ABC):
       kwargs: any, the keyword arguments of the rpc.
 
     Returns:
-      A string of the Json rpc request.
+      A string of the JSON rpc request.
     """
     data = {'id': rpc_id, 'method': rpc_func_name, 'params': args}
     if kwargs:
@@ -353,7 +352,7 @@ class ClientBase(abc.ABC):
 
   @abc.abstractmethod
   def send_rpc_request(self, request):
-    """Sends Json rpc request to the server and gets response.
+    """Sends the JSON rpc request to the server and gets response.
 
     Note that the request and response are both in string format. So if the
     connection with server provides interfaces in bytes format, please
@@ -377,14 +376,14 @@ class ClientBase(abc.ABC):
         in the response, otherwise throws an error.
       rpc_func_name: string, the name of the function that this rpc triggered
         on the snippet server.
-      response: str, a string of the Json rpc response.
+      response: str, a string of the JSON rpc response.
 
     Returns:
       The result of the rpc. If sync rpc, returns the result field of
       the response. If async rpc, returns the callback handler object.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: Something went wrong with the
+      jsonrpc_client_base.ProtocolError: something went wrong with the
         protocol.
     """
     if not response:
@@ -410,7 +409,7 @@ class ClientBase(abc.ABC):
 
   @abc.abstractmethod
   def handle_callback(self, callback_id, ret_value, rpc_func_name):
-    """Creates callback handler for an async rpc.
+    """Creates a callback handler for the async rpc.
 
     Args:
       callback_id: string, the callback ID for creating callback handler object.
@@ -424,9 +423,7 @@ class ClientBase(abc.ABC):
     """
 
   def stop_server(self):
-    """Proxy function to guarantee the base implementation of
-    do_stop_server is called.
-    """
+    """Proxy function of do_stop_server."""
     self.log.debug('Stopping snippet %s.', self.package)
     self.do_stop_server()
     self.log.debug('Snippet %s stopped.', self.package)
