@@ -438,7 +438,7 @@ class ClientBaseTest(unittest.TestCase):
         MOCK_RESP_TEMPLATE % (i, 123) for i in range(10)
     )
 
-    for i in range(0, 10):
+    for _ in range(0, 10):
       client.some_rpc()
 
     self.assertEqual(next(client._counter), 10)
@@ -456,7 +456,7 @@ class ClientBaseTest(unittest.TestCase):
         MOCK_RESP_TEMPLATE % (i, 123) for i in range(10)
     )
 
-    for i in range(0, 10):
+    for _ in range(0, 10):
       client.some_rpc()
 
     self.assertEqual(next(client._counter), 10)
