@@ -50,7 +50,9 @@ import enum
 import time
 import contextlib
 
-from mobly.controllers.android_device_lib import errors
+# TODO(mhaoli): We should migrate the things (e.g. errors) out of
+# jsonrpc_client_base and do not import modules from android_device_lib.
+from mobly.controllers.android_device_lib import jsonrpc_client_base
 
 # Maximum logging length of Rpc response in DEBUG level when verbose logging is
 # off.
@@ -58,31 +60,6 @@ _MAX_RPC_RESP_LOGGING_LENGTH = 1024
 
 # The required field names of Rpc response.
 RPC_RESPONSE_REQUIRED_FIELDS = ['id', 'error', 'result', 'callback']
-
-
-class Error(errors.DeviceError):
-  pass
-
-
-class AppStartError(Error):
-  """Raised when the app is not able to be started."""
-
-
-class AppRestoreConnectionError(Error):
-  """Raised when failed to restore app from disconnection."""
-
-
-class ApiError(Error):
-  """Raised when remote API reports an error."""
-
-
-class ProtocolError(Error):
-  """Raised when there is some error in exchanging data with server."""
-  NO_RESPONSE_FROM_HANDSHAKE = 'No response from handshake.'
-  NO_RESPONSE_FROM_SERVER = ('No response from server. '
-                             'Check the device logcat for crashes.')
-  MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
-  RESPONSE_MISS_FIELD = 'Missing required field in the RPC response: %s.'
 
 
 class StartServerStages(enum.Enum):
@@ -132,7 +109,6 @@ class ClientBase(abc.ABC):
   def __del__(self):
     self.close_connection()
 
-
   def start_server(self):
     """Starts the server on the remote device and connects to it.
 
@@ -146,8 +122,10 @@ class ClientBase(abc.ABC):
     set.
 
     Raises:
-      ProtocolError: when there's some error in sending the handshake.
+      jsonrpc_client_base.ProtocolError: when there's some error in sending
+        the handshake.
     """
+
     @contextlib.contextmanager
     def _execute_one_stage(stage):
       """Context manager for executing one stage.
@@ -281,7 +259,8 @@ class ClientBase(abc.ABC):
         port.
 
     Raises:
-      AppRestoreConnectionError: when the server was not able to be reconnected.
+      jsonrpc_client_base.AppRestoreConnectionError: when the server was not
+        able to be reconnected.
     """
 
   def _rpc(self, rpc_func_name, *args, **kwargs):
@@ -297,8 +276,9 @@ class ClientBase(abc.ABC):
       The result of the rpc.
 
     Raises:
-      ProtocolError: something went wrong with the protocol.
-      ApiError: the rpc went through, however executed with errors.
+      jsonrpc_client_base.ProtocolError: something went wrong with the protocol.
+      jsonrpc_client_base.ApiError: the rpc went through, however executed
+        with errors.
     """
     try:
       self.check_server_proc_running()
@@ -386,27 +366,30 @@ class ClientBase(abc.ABC):
       the response. If async rpc, returns the callback handler object.
 
     Raises:
-      ProtocolError: something went wrong with the protocol.
+      jsonrpc_client_base.ProtocolError: something went wrong with the protocol.
+      jsonrpc_client_base.ApiError: the rpc went through, however executed
+        with errors.
     """
     if not response:
-      raise ProtocolError(
+      raise jsonrpc_client_base.ProtocolError(
           self._device,
-          ProtocolError.NO_RESPONSE_FROM_SERVER)
+          jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER)
 
     result = json.loads(response)
     for field_name in RPC_RESPONSE_REQUIRED_FIELDS:
       if field_name not in result:
-        raise ProtocolError(
+        raise jsonrpc_client_base.ProtocolError(
             self._device,
-            ProtocolError.RESPONSE_MISS_FIELD % field_name)
+            jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % field_name)
 
     if result['error']:
-      raise ApiError(self._device, result['error'])
+      raise jsonrpc_client_base.ApiError(self._device, result['error'])
     if result['id'] != rpc_id:
-      raise ProtocolError(
-          self._device, ProtocolError.MISMATCHED_API_ID)
+      raise jsonrpc_client_base.ProtocolError(
+          self._device, jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID)
     if result['callback'] is not None:
-      return self.handle_callback(result['callback'], result['result'], rpc_func_name)
+      return self.handle_callback(result['callback'], result['result'],
+                                  rpc_func_name)
     return result['result']
 
   @abc.abstractmethod
