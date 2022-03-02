@@ -354,7 +354,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_verbose_logging_with_long_string(self, mock_send_request):
-    """Test rpc response is fully wrote into DEBUG level log."""
+    """Test rpc response isn't truncated when verbose logging is on."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
@@ -399,7 +399,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_long_response(self, mock_send_request):
-    """Test rpc response is truncated with given length in DEBUG level log."""
+    """Test rpc response is truncated with length larger than the threshold."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log

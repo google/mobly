@@ -181,7 +181,7 @@ class ClientBase(abc.ABC):
       try:
         self.stop_server()
       except Exception:
-        # Prints this exception, ignore it and re-raise the original exception.
+        # Only prints this exception and re-raises the original exception
         self.log.exception('[START_SERVER] Failed to stop server because of '
                            'new exception.')
 
