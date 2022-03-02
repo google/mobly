@@ -20,7 +20,6 @@ import unittest
 from unittest import mock
 
 from mobly.snippet import client_base
-from mobly.controllers.android_device_lib import jsonrpc_client_base
 from tests.lib.snippet import utils as snippet_utils
 
 MOCK_RESP = ('{"id": 10, "result": 123, "error": null, "status": 1,'
@@ -45,13 +44,40 @@ class FakeClient(client_base.ClientBase):
     mock_device.log = logging
     super().__init__(package='FakeClient', device=mock_device)
 
+  # Override abstract methods to enable initialization
+  def before_starting_server(self):
+    pass
 
-# Set abstractmethods to empty set in order to instantiate it during testing.
-FakeClient.__abstractmethods__ = set()
+  def do_start_server(self):
+    pass
+
+  def build_connection(self):
+    pass
+
+  def after_starting_server(self):
+    pass
+
+  def restore_server_connection(self, port=None):
+    pass
+
+  def check_server_proc_running(self):
+    pass
+
+  def send_rpc_request(self, request):
+    pass
+
+  def handle_callback(self, callback_id, ret_value, rpc_func_name):
+    pass
+
+  def do_stop_server(self):
+    pass
+
+  def close_connection(self):
+    pass
 
 
 class ClientBaseTest(unittest.TestCase):
-  """Unit tests for mobly.snippet.client_base."""
+  """Unit tests for mobly.snippet.client_base.ClientBase."""
 
   @mock.patch.object(FakeClient, 'before_starting_server')
   @mock.patch.object(FakeClient, 'do_start_server')
@@ -77,46 +103,6 @@ class ClientBaseTest(unittest.TestCase):
         mock.call.mock_after_func(),
     ]
     self.assertListEqual(order_manager.mock_calls, expected_call_order)
-
-  @mock.patch.object(FakeClient, 'stop_server')
-  def test_execute_one_stage_fail_with_stopping(self, mock_stop_server):
-    """Test execute_one_stage fails with calling stop_server function."""
-    client = FakeClient()
-    stage = mock.Mock()
-    stage.name = 'test_stage'
-    with self.assertRaisesRegex(Exception, 'Some error'):
-      with client._execute_one_stage(stage, '', True):
-        raise Exception('Some error')
-
-    mock_stop_server.assert_called()
-
-  @mock.patch.object(FakeClient, 'stop_server')
-  def test_execute_one_stage_fail_without_stopping(self, mock_stop_server):
-    """Test execute_one_stage fails without calling stop_server function."""
-    client = FakeClient()
-    stage = mock.Mock()
-    stage.name = 'test_stage'
-    with self.assertRaisesRegex(Exception, 'Some error'):
-      with client._execute_one_stage(stage, '', False):
-        raise Exception('Some error')
-
-    mock_stop_server.assert_not_called()
-
-  @mock.patch.object(FakeClient, 'stop_server')
-  def test_execute_one_stage_fail_stop_also_fail(self, mock_stop_server):
-    """Test execute_one_stage fails while stop_server also fails."""
-    client = FakeClient()
-    mock_stop_server.side_effect = Exception('Another error')
-
-    stage = mock.MagicMock()
-    stage.name = 'test_stage'
-    # Should catch the error raised by the mock_stop_server,
-    # then raise original error
-    with self.assertRaisesRegex(Exception, 'Some error'):
-      with client._execute_one_stage(stage, '', True):
-        raise Exception('Some error')
-
-    mock_stop_server.assert_called_once()
 
   @mock.patch.object(FakeClient, 'stop_server')
   @mock.patch.object(FakeClient, 'before_starting_server')
@@ -276,13 +262,13 @@ class ClientBaseTest(unittest.TestCase):
     client = FakeClient()
 
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
+        client_base.ProtocolError,
+        client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
       client._parse_rpc_response(0, 'some_rpc', '')
 
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
+        client_base.ProtocolError,
+        client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
       client._parse_rpc_response(0, 'some_rpc', None)
 
   def test_parse_response_miss_fields(self):
@@ -294,23 +280,23 @@ class ClientBaseTest(unittest.TestCase):
     client = FakeClient()
 
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'id'):
+        client_base.ProtocolError,
+        client_base.ProtocolError.RESPONSE_MISS_FIELD % 'id'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_ID)
 
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'result'):
+        client_base.ProtocolError,
+        client_base.ProtocolError.RESPONSE_MISS_FIELD % 'result'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_RESULT)
 
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'error'):
+        client_base.ProtocolError,
+        client_base.ProtocolError.RESPONSE_MISS_FIELD % 'error'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_ERROR)
 
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'callback'):
+        client_base.ProtocolError,
+        client_base.ProtocolError.RESPONSE_MISS_FIELD % 'callback'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_CALLBACK)
 
   def test_parse_response_error(self):
@@ -321,7 +307,7 @@ class ClientBaseTest(unittest.TestCase):
     """
     client = FakeClient()
 
-    with self.assertRaisesRegex(jsonrpc_client_base.ApiError, 'some_error'):
+    with self.assertRaisesRegex(client_base.ApiError, 'some_error'):
       client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITH_ERROR)
 
   def test_parse_response_callback(self):
@@ -362,8 +348,8 @@ class ClientBaseTest(unittest.TestCase):
     resp = MOCK_RESP_TEMPLATE % (right_id, 123)
 
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
+        client_base.ProtocolError,
+        client_base.ProtocolError.MISMATCHED_API_ID):
       client._parse_rpc_response(wrong_id, 'some_rpc', resp)
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
@@ -383,7 +369,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_short_response(self, mock_send_request):
-    """Test rpc response is fully logged with small length."""
+    """Test rpc response isn't truncated with small length."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
@@ -398,7 +384,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_fit_size_response(self, mock_send_request):
-    """Test rpc response is fullly logged with large length."""
+    """Test rpc response isn't truncated with length close to the threshold."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log

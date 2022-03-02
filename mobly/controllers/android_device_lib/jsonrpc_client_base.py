@@ -58,7 +58,7 @@ import socket
 import threading
 
 from mobly.controllers.android_device_lib import callback_handler
-from mobly.controllers.android_device_lib import errors
+from mobly.snippet import client_base
 
 # UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
 UNKNOWN_UID = -1
@@ -74,29 +74,20 @@ _SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
 _MAX_RPC_RESP_LOGGING_LENGTH = 1024
 
 
-class Error(errors.DeviceError):
-  pass
+# Add alias for errors in client_base in order not to break compatibility
+Error = client_base.Error
 
 
-class AppStartError(Error):
-  """Raised when the app is not able to be started."""
+AppStartError = client_base.AppStartError
 
 
-class AppRestoreConnectionError(Error):
-  """Raised when failed to restore app from disconnection."""
+AppRestoreConnectionError = client_base.AppRestoreConnectionError
 
 
-class ApiError(Error):
-  """Raised when remote API reports an error."""
+ApiError = client_base.ApiError
 
 
-class ProtocolError(Error):
-  """Raised when there is some error in exchanging data with server."""
-  NO_RESPONSE_FROM_HANDSHAKE = 'No response from handshake.'
-  NO_RESPONSE_FROM_SERVER = ('No response from server. '
-                             'Check the device logcat for crashes.')
-  MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
-  RESPONSE_MISS_FIELD = 'Missing required field in the RPC response: %s.'
+ProtocolError = client_base.ProtocolError
 
 
 class JsonRpcCommand:
