@@ -38,6 +38,13 @@ class SnippetManagementService(base_service.BaseService):
     self._snippet_clients = {}
     super().__init__(device)
 
+  def set_client_v2(self, flag):
+    if self._snippet_clients:
+      raise Error(self,
+                  'Must call `set_client_v2` before adding any snippet. ')
+    self._use_client_v2 = flag
+    self._device.log.debug('Set use_client_v2 to %s', self._use_client_v2)
+
   @property
   def is_alive(self):
     """True if any client is running, False otherwise."""

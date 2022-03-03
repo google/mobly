@@ -61,6 +61,10 @@ def main(argv=None):
     sys.exit(0)
   # Load test config file.
   test_configs = config_parser.load_test_config_file(args.config, args.test_bed)
+  # Modify controller config according to the command line argument
+  update_controller_config_attribute(test_configs,
+                                     config_parser.USE_SNIPPET_CLIENT_V2,
+                                     args.use_mobly_snippet_client_v2)
   # Parse test specifiers if exist.
   tests = None
   if args.tests:
@@ -82,6 +86,15 @@ def main(argv=None):
         ok = False
   if not ok:
     sys.exit(1)
+
+
+def update_controller_config_attribute(test_configs, key, value):
+  if value is None:
+    return
+  for test_config in test_configs:
+    for device_config_list in test_config.controller_configs.values():
+      for device_config in device_config_list:
+        device_config[key] = value
 
 
 def parse_mobly_cli_args(argv):
@@ -113,6 +126,11 @@ def parse_mobly_cli_args(argv):
       action='store_true',
       help='Print the names of the tests defined in a script without '
       'executing them.')
+  parser.add_argument(
+      '--use_mobly_snippet_client_v2',
+      action='store_true',
+      help='Whether to use snippet client v1 or v2. If True, use v2. Default '
+      'to False.')
   parser.add_argument('--tests',
                       '--test_case',
                       nargs='+',

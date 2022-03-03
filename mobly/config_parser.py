@@ -28,6 +28,10 @@ ENV_MOBLY_LOGPATH = 'MOBLY_LOGPATH'
 _DEFAULT_LOG_PATH = '/tmp/logs/mobly/'
 
 
+# The key in controller config about whether to use snippet client V2
+USE_SNIPPET_CLIENT_V2 = 'use_snippet_client_v2'
+
+
 class MoblyConfigError(Exception):
   """Raised when there is a problem in test configuration file."""
 
