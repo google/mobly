@@ -385,7 +385,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_fit_size_response(self, mock_send_request):
-    """Test rpc response isn't truncated with length close to the threshold."""
+    """Test rpc response isn't truncated with length equal to the threshold."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
