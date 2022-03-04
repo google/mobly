@@ -234,10 +234,15 @@ class ClientBaseTest(unittest.TestCase):
     request_str = client._gen_rpc_request(0, 'test_rpc', 1, 2, test_key=3)
     self.assertIs(type(request_str), str)
     request = json.loads(request_str)
-    self.assertEqual(request['id'], 0)
-    self.assertEqual(request['method'], 'test_rpc')
-    self.assertEqual(request['params'], [1, 2])
-    self.assertDictEqual(request['kwargs'], {'test_key': 3})
+    expected_result = {
+        'id': 0,
+        'method': 'test_rpc',
+        'params': [1, 2],
+        'kwargs': {
+            'test_key': 3,
+        },
+    }
+    self.assertDictEqual(request, expected_result)
 
   def test_gen_request_without_kwargs(self):
     """Test no keyword arguments.
@@ -249,10 +254,8 @@ class ClientBaseTest(unittest.TestCase):
     request_str = client._gen_rpc_request(0, 'test_rpc', 1, 2)
     self.assertIs(type(request_str), str)
     request = json.loads(request_str)
-    self.assertEqual(request['id'], 0)
-    self.assertEqual(request['method'], 'test_rpc')
-    self.assertEqual(request['params'], [1, 2])
-    self.assertTrue('kwargs' not in request)
+    expected_result = {'id': 0, 'method': 'test_rpc', 'params': [1, 2]}
+    self.assertDictEqual(request, expected_result)
 
   def test_parse_rpc_no_response(self):
     """Test rpc that does not get a response.
