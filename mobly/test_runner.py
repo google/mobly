@@ -61,10 +61,6 @@ def main(argv=None):
     sys.exit(0)
   # Load test config file.
   test_configs = config_parser.load_test_config_file(args.config, args.test_bed)
-  # Modify controller config according to the command line argument
-  update_controller_config_attribute(test_configs,
-                                     config_parser.USE_SNIPPET_CLIENT_V2,
-                                     args.use_mobly_snippet_client_v2)
   # Parse test specifiers if exist.
   tests = None
   if args.tests:
@@ -72,6 +68,11 @@ def main(argv=None):
   # Execute the test class with configs.
   ok = True
   for config in test_configs:
+    # Set flag of using snippet client v2 according to the command line argument
+    if args.use_mobly_snippet_client_v2:
+      update_controller_config_attribute(config,
+                                     config_parser.USE_SNIPPET_CLIENT_V2,
+                                     True)
     runner = TestRunner(log_dir=config.log_path,
                         testbed_name=config.testbed_name)
     with runner.mobly_logger():
@@ -88,13 +89,30 @@ def main(argv=None):
     sys.exit(1)
 
 
-def update_controller_config_attribute(test_configs, key, value):
-  if value is None:
-    return
-  for test_config in test_configs:
-    for device_config_list in test_config.controller_configs.values():
-      for device_config in device_config_list:
-        device_config[key] = value
+def update_controller_config_attribute(test_config, key, value):
+  """Updates each controller config with the given key and value.
+
+  This function updates each controller config in the given TestRunConfig. This
+  function expects that each controller config is a dictionary, otherwise
+  it throws an error.
+
+  Args:
+    test_config: config_parser.TestRunConfig, the object which contains all the
+      controller configs to be updated.
+    key: str, the key of the attribute to be updated into the controller
+      config dictionary.
+    value: Any, the value of the attribute to be updated into the controller
+      config dictionary.
+
+  Raises:
+    Error: when there is a non-dictionary controller config.
+  """
+  for device_config_list in test_config.controller_configs.values():
+    for device_config in device_config_list:
+      if not isinstance(device_config, dict):
+        raise Error('Tried to update contronller config while it is not a dict.'
+                    'Got controller config: %s', str(device_config))
+      device_config[key] = value
 
 
 def parse_mobly_cli_args(argv):

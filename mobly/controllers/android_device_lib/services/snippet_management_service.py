@@ -43,7 +43,7 @@ class SnippetManagementService(base_service.BaseService):
       raise Error(self,
                   'Must call `set_client_v2` before adding any snippet. ')
     self._use_client_v2 = flag
-    self._device.log.debug('Set use_client_v2 to %s', self._use_client_v2)
+    self._device.log.debug('Set use_client_v2 to %s', str(self._use_client_v2))
 
   @property
   def is_alive(self):
