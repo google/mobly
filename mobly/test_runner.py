@@ -18,6 +18,7 @@ import logging
 import os
 import sys
 import time
+from typing import Any
 
 from mobly import base_test
 from mobly import config_parser
@@ -89,7 +90,7 @@ def main(argv=None):
     sys.exit(1)
 
 
-def update_controller_config_attribute(test_config, key, value):
+def update_controller_config_attribute(test_config: config_parser.TestRunConfig, key: str, value: Any):
   """Updates each controller config with the given key and value.
 
   This function updates each controller config in the given TestRunConfig. This

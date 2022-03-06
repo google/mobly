@@ -161,6 +161,34 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager.foo.ha('param')
     mock_client.ha.assert_called_once_with('param')
 
+  def test_set_client_v2_flag(self):
+    """Tests setting client v2 flag works normally."""
+    manager = snippet_management_service.SnippetManagementService(
+        mock.MagicMock())
+    # assert the default value is False
+    self.assertEqual(manager._use_client_v2, False)
+
+    # test set flag to True
+    manager.set_client_v2_flag(True)
+    self.assertEqual(manager._use_client_v2, True)
+
+    # test set flag to False
+    manager.set_client_v2_flag(False)
+    self.assertEqual(manager._use_client_v2, False)
+
+  @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+  def test_set_client_v2_flag_after_adding_client(self, mock_class):
+    """Tests setting client v2 flag after adding a client is not allowed."""
+    manager = snippet_management_service.SnippetManagementService(
+        mock.MagicMock())
+
+    manager.add_snippet_client('foo', MOCK_PACKAGE)
+    with self.assertRaises(snippet_management_service.Error):
+      manager.set_client_v2_flag(True)
+
+    with self.assertRaises(snippet_management_service.Error):
+      manager.set_client_v2_flag(False)
+
 
 if __name__ == '__main__':
   unittest.main()

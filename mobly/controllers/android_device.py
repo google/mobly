@@ -883,7 +883,7 @@ class AndroidDevice:
       if k == config_parser.USE_SNIPPET_CLIENT_V2:
         # This is a special config related to snippet client, do not set it
         # to AndroidDevice itself.
-        self._set_snippet_client_v2(v)
+        self._set_snippet_client_v2_flag(v)
         continue
 
       if hasattr(self, k) and k not in _ANDROID_DEVICE_SETTABLE_PROPS:
@@ -892,8 +892,9 @@ class AndroidDevice:
                    'again.') % (k, getattr(self, k)))
       setattr(self, k, v)
 
-  def _set_snippet_client_v2(self, value):
-    self.services.snippets.set_client_v2(value)
+  def _set_snippet_client_v2_flag(self, flag: bool):
+    """Passes the snippet client v2 flag to snippet management service."""
+    self.services.snippets.set_client_v2_flag(flag)
 
   def root_adb(self):
     """Change adb to root mode for this device if allowed.

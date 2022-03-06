@@ -20,12 +20,14 @@ import tempfile
 import unittest
 from unittest import mock
 
+from mobly import config_parser
 from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib.services import base_service
 from mobly.controllers.android_device_lib.services import logcat
+from mobly.controllers.android_device_lib.services import snippet_management_service
 from tests.lib import mock_android_device
 import yaml
 
@@ -1370,6 +1372,34 @@ class AndroidDeviceTest(unittest.TestCase):
     except UnicodeDecodeError:
       raised = True
     self.assertTrue(raised, 'did not raise an exception when parsing gbk bytes')
+
+  @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+  @mock.patch.object(snippet_management_service.SnippetManagementService, 'set_client_v2_flag')
+  def test_AndroidDevice_set_snippet_client_v2(self, mock_set_func, mock_adb):
+    """Tests AndroidDevice passes snippet client flag to management service."""
+    del mock_adb  # mock it to avoid errors when instantiating AndroidDevice
+    ad = android_device.AndroidDevice(serial='1')
+    config = {config_parser.USE_SNIPPET_CLIENT_V2: True}
+    ad.load_config(config)
+
+    ad = android_device.AndroidDevice(serial='1')
+    config = {config_parser.USE_SNIPPET_CLIENT_V2: False}
+    ad.load_config(config)
+
+    expected_call_args = [mock.call(True, ), mock.call(False, )]
+    self.assertListEqual(mock_set_func.call_args_list, expected_call_args)
+
+  @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+                return_value=mock_android_device.MockAdbProxy('1'))
+  @mock.patch.object(snippet_management_service.SnippetManagementService, 'set_client_v2_flag')
+  def test_AndroidDevice_do_not_set_snippet_client_v2(self, mock_set_func, mock_adb):
+    """Tests AndroidDevice doesn't pass snippet client flag without config."""
+    del mock_adb  # mock it to avoid errors when instantiating AndroidDevice
+    ad = android_device.AndroidDevice(serial='1')
+    config = {'test_key_not_related_to_snippet_client': True}
+    ad.load_config(config)
+    mock_set_func.assert_not_called()
 
 
 if __name__ == '__main__':
