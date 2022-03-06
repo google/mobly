@@ -27,7 +27,8 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib.services import base_service
 from mobly.controllers.android_device_lib.services import logcat
-from mobly.controllers.android_device_lib.services import snippet_management_service
+from mobly.controllers.android_device_lib.services import (
+    snippet_management_service)
 from tests.lib import mock_android_device
 import yaml
 
