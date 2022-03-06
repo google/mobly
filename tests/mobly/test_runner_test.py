@@ -420,9 +420,7 @@ class TestRunnerTest(unittest.TestCase):
     """Tests updating config function throws error with non-dict config."""
     # The controller config is a pick all symbol '*'
     self.base_mock_test_config.controller_configs = {'AndroidDevice': '*'}
-    with self.assertRaisesRegex(
-        test_runner.Error,
-        'Tried to update contronller config while it is not a dict.'):
+    with self.assertRaises(test_runner.Error):
       test_runner.update_controller_config_attribute(self.base_mock_test_config,
                                                      'test_key', True)
 
@@ -430,9 +428,7 @@ class TestRunnerTest(unittest.TestCase):
     self.base_mock_test_config.controller_configs = {
         'AndroidDevice': ['7AAAAAAAA', '8AAAAAAAA']
     }
-    with self.assertRaisesRegex(
-        test_runner.Error,
-        'Tried to update contronller config while it is not a dict.'):
+    with self.assertRaises(test_runner.Error):
       test_runner.update_controller_config_attribute(self.base_mock_test_config,
                                                      'test_key', True)
 

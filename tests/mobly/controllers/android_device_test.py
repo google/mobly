@@ -1374,9 +1374,8 @@ class AndroidDeviceTest(unittest.TestCase):
               return_value=mock_android_device.MockAdbProxy('1'))
   @mock.patch.object(snippet_management_service.SnippetManagementService,
                      'set_client_v2_flag')
-  def test_AndroidDevice_set_snippet_client_v2(self, mock_set_func, mock_adb):
+  def test_AndroidDevice_set_snippet_client_v2(self, mock_set_func, _):
     """Tests AndroidDevice passes snippet client flag to management service."""
-    del mock_adb  # mock it to avoid errors when instantiating AndroidDevice
     ad = android_device.AndroidDevice(serial='1')
     config = {config_parser.USE_SNIPPET_CLIENT_V2: True}
     ad.load_config(config)
@@ -1392,10 +1391,8 @@ class AndroidDeviceTest(unittest.TestCase):
               return_value=mock_android_device.MockAdbProxy('1'))
   @mock.patch.object(snippet_management_service.SnippetManagementService,
                      'set_client_v2_flag')
-  def test_AndroidDevice_do_not_set_snippet_client_v2(self, mock_set_func,
-                                                      mock_adb):
+  def test_AndroidDevice_do_not_set_snippet_client_v2(self, mock_set_func, _):
     """Tests AndroidDevice doesn't pass snippet client flag without config."""
-    del mock_adb  # mock it to avoid errors when instantiating AndroidDevice
     ad = android_device.AndroidDevice(serial='1')
     config = {'test_key_not_related_to_snippet_client': True}
     ad.load_config(config)

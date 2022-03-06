@@ -168,11 +168,11 @@ class SnippetManagementServiceTest(unittest.TestCase):
     # assert the default value is False
     self.assertEqual(manager._use_client_v2, False)
 
-    # test set flag to True
+    # test setting flag to True
     manager.set_client_v2_flag(True)
     self.assertEqual(manager._use_client_v2, True)
 
-    # test set flag to False
+    # test setting flag to False
     manager.set_client_v2_flag(False)
     self.assertEqual(manager._use_client_v2, False)
 
@@ -181,8 +181,8 @@ class SnippetManagementServiceTest(unittest.TestCase):
     """Tests setting client v2 flag after adding a client is not allowed."""
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-
     manager.add_snippet_client('foo', MOCK_PACKAGE)
+
     with self.assertRaises(snippet_management_service.Error):
       manager.set_client_v2_flag(True)
 

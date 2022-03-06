@@ -27,7 +27,7 @@ from mobly import utils
 ENV_MOBLY_LOGPATH = 'MOBLY_LOGPATH'
 _DEFAULT_LOG_PATH = '/tmp/logs/mobly/'
 
-# The key in controller config about whether to use snippet client V2
+# The key in controller config for whether to use snippet client v2
 USE_SNIPPET_CLIENT_V2 = 'use_snippet_client_v2'
 
 

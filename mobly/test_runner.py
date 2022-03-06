@@ -94,17 +94,15 @@ def update_controller_config_attribute(test_config: config_parser.TestRunConfig,
                                        key: str, value: Any) -> None:
   """Updates each controller config with the given key and value.
 
-  This function updates each controller config in the given TestRunConfig. This
-  function expects that each controller config is a dictionary, otherwise
-  it throws an error.
+  This function updates each controller config in the given TestRunConfig. It
+  expects that each controller config is a dictionary, otherwise it throws
+  an error.
 
   Args:
-    test_config: config_parser.TestRunConfig, the object which contains all the
-      controller configs to be updated.
-    key: str, the key of the attribute to be updated into the controller
-      config dictionary.
-    value: Any, the value of the attribute to be updated into the controller
-      config dictionary.
+    test_config: the object which contains all the controller configs to be
+      updated.
+    key: the key of the attribute to be updated into each controller config.
+    value: the value of the attribute to be updated into each controller config.
 
   Raises:
     Error: when there is a non-dictionary controller config.
@@ -113,8 +111,8 @@ def update_controller_config_attribute(test_config: config_parser.TestRunConfig,
     for device_config in device_config_list:
       if not isinstance(device_config, dict):
         raise Error(
-            'Tried to update contronller config while it is not a dict.'
-            'Got controller config: %s', str(device_config))
+            'Trying to update a non-dictionary controller config (%s), which '
+            'is not allowed.', str(device_config))
       device_config[key] = value
 
 
@@ -150,7 +148,7 @@ def parse_mobly_cli_args(argv):
   parser.add_argument(
       '--use_mobly_snippet_client_v2',
       action='store_true',
-      help='Whether to use snippet client v1 or v2. If True, use v2. Default '
+      help='Whether to use snippet client v2. True for using v2. Default '
       'to False.')
   parser.add_argument('--tests',
                       '--test_case',

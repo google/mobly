@@ -57,7 +57,7 @@ class SnippetManagementService(base_service.BaseService):
     if self._snippet_clients:
       raise Error(
           self, 'There is already a snippet client in use. Please call '
-          '`set_client_v2_flag` before adding any snippet client. ')
+          '`set_client_v2_flag` before adding any snippet client.')
     self._use_client_v2 = flag
     self._device.log.debug('Set use_client_v2 flag to %s',
                            str(self._use_client_v2))
