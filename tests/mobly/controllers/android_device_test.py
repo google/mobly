@@ -873,8 +873,8 @@ class AndroidDeviceTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.logger.get_log_file_timestamp')
   def test_AndroidDevice_take_screenshot_with_prefix(
-      self, get_log_file_timestamp_mock, create_dir_mock, FastbootProxy,
-      MockAdbProxy):
+    self, get_log_file_timestamp_mock, create_dir_mock,
+    FastbootProxy, MockAdbProxy):
     get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
     mock_serial = '1'
     ad = android_device.AndroidDevice(serial=mock_serial)
@@ -1155,19 +1155,22 @@ class AndroidDeviceTest(unittest.TestCase):
     mock_serial = '1'
     ad = android_device.AndroidDevice(serial=mock_serial)
     self.assertEqual(ad.debug_tag, '1')
-    with self.assertRaisesRegex(android_device.DeviceError,
-                                r'<AndroidDevice\|1> Something'):
+    with self.assertRaisesRegex(
+        android_device.DeviceError,
+        r'<AndroidDevice\|1> Something'):
       raise android_device.DeviceError(ad, 'Something')
 
     # Verify that debug tag's setter updates the debug prefix correctly.
     ad.debug_tag = 'Mememe'
-    with self.assertRaisesRegex(android_device.DeviceError,
-                                r'<AndroidDevice\|Mememe> Something'):
+    with self.assertRaisesRegex(
+        android_device.DeviceError,
+        r'<AndroidDevice\|Mememe> Something'):
       raise android_device.DeviceError(ad, 'Something')
 
     # Verify that repr is changed correctly.
-    with self.assertRaisesRegex(Exception,
-                                r'(<AndroidDevice\|Mememe>, \'Something\')'):
+    with self.assertRaisesRegex(
+        Exception,
+        r'(<AndroidDevice\|Mememe>, \'Something\')'):
       raise Exception(ad, 'Something')
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
