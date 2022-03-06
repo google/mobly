@@ -177,7 +177,7 @@ class SnippetManagementServiceTest(unittest.TestCase):
     self.assertEqual(manager._use_client_v2, False)
 
   @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
-  def test_set_client_v2_flag_after_adding_client(self, mock_class):
+  def test_set_client_v2_flag_after_adding_client(self, _):
     """Tests setting client v2 flag after adding a client is not allowed."""
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())

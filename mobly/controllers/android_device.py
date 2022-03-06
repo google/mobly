@@ -792,7 +792,7 @@ class AndroidDevice:
       device is in bootloader mode.
     """
     if self.is_bootloader:
-      self.log.error('Device is in fastboot mode, could not get build ' 'info.')
+      self.log.error('Device is in fastboot mode, could not get build info.')
       return
     if self._build_info is None or self._is_rebooting:
       info = {}
@@ -892,7 +892,7 @@ class AndroidDevice:
                    'again.') % (k, getattr(self, k)))
       setattr(self, k, v)
 
-  def _set_snippet_client_v2_flag(self, flag: bool):
+  def _set_snippet_client_v2_flag(self, flag: bool) -> None:
     """Passes the snippet client v2 flag to snippet management service."""
     self.services.snippets.set_client_v2_flag(flag)
 

@@ -872,8 +872,8 @@ class AndroidDeviceTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.logger.get_log_file_timestamp')
   def test_AndroidDevice_take_screenshot_with_prefix(
-    self, get_log_file_timestamp_mock, create_dir_mock,
-    FastbootProxy, MockAdbProxy):
+      self, get_log_file_timestamp_mock, create_dir_mock, FastbootProxy,
+      MockAdbProxy):
     get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
     mock_serial = '1'
     ad = android_device.AndroidDevice(serial=mock_serial)
@@ -1154,22 +1154,19 @@ class AndroidDeviceTest(unittest.TestCase):
     mock_serial = '1'
     ad = android_device.AndroidDevice(serial=mock_serial)
     self.assertEqual(ad.debug_tag, '1')
-    with self.assertRaisesRegex(
-        android_device.DeviceError,
-        r'<AndroidDevice\|1> Something'):
+    with self.assertRaisesRegex(android_device.DeviceError,
+                                r'<AndroidDevice\|1> Something'):
       raise android_device.DeviceError(ad, 'Something')
 
     # Verify that debug tag's setter updates the debug prefix correctly.
     ad.debug_tag = 'Mememe'
-    with self.assertRaisesRegex(
-        android_device.DeviceError,
-        r'<AndroidDevice\|Mememe> Something'):
+    with self.assertRaisesRegex(android_device.DeviceError,
+                                r'<AndroidDevice\|Mememe> Something'):
       raise android_device.DeviceError(ad, 'Something')
 
     # Verify that repr is changed correctly.
-    with self.assertRaisesRegex(
-        Exception,
-        r'(<AndroidDevice\|Mememe>, \'Something\')'):
+    with self.assertRaisesRegex(Exception,
+                                r'(<AndroidDevice\|Mememe>, \'Something\')'):
       raise Exception(ad, 'Something')
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -1374,8 +1371,9 @@ class AndroidDeviceTest(unittest.TestCase):
     self.assertTrue(raised, 'did not raise an exception when parsing gbk bytes')
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
-                return_value=mock_android_device.MockAdbProxy('1'))
-  @mock.patch.object(snippet_management_service.SnippetManagementService, 'set_client_v2_flag')
+              return_value=mock_android_device.MockAdbProxy('1'))
+  @mock.patch.object(snippet_management_service.SnippetManagementService,
+                     'set_client_v2_flag')
   def test_AndroidDevice_set_snippet_client_v2(self, mock_set_func, mock_adb):
     """Tests AndroidDevice passes snippet client flag to management service."""
     del mock_adb  # mock it to avoid errors when instantiating AndroidDevice
@@ -1387,13 +1385,15 @@ class AndroidDeviceTest(unittest.TestCase):
     config = {config_parser.USE_SNIPPET_CLIENT_V2: False}
     ad.load_config(config)
 
-    expected_call_args = [mock.call(True, ), mock.call(False, )]
+    expected_call_args = [mock.call(True,), mock.call(False,)]
     self.assertListEqual(mock_set_func.call_args_list, expected_call_args)
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
-                return_value=mock_android_device.MockAdbProxy('1'))
-  @mock.patch.object(snippet_management_service.SnippetManagementService, 'set_client_v2_flag')
-  def test_AndroidDevice_do_not_set_snippet_client_v2(self, mock_set_func, mock_adb):
+              return_value=mock_android_device.MockAdbProxy('1'))
+  @mock.patch.object(snippet_management_service.SnippetManagementService,
+                     'set_client_v2_flag')
+  def test_AndroidDevice_do_not_set_snippet_client_v2(self, mock_set_func,
+                                                      mock_adb):
     """Tests AndroidDevice doesn't pass snippet client flag without config."""
     del mock_adb  # mock it to avoid errors when instantiating AndroidDevice
     ad = android_device.AndroidDevice(serial='1')

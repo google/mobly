@@ -72,8 +72,8 @@ def main(argv=None):
     # Set flag of using snippet client v2 according to the command line argument
     if args.use_mobly_snippet_client_v2:
       update_controller_config_attribute(config,
-                                     config_parser.USE_SNIPPET_CLIENT_V2,
-                                     True)
+                                         config_parser.USE_SNIPPET_CLIENT_V2,
+                                         True)
     runner = TestRunner(log_dir=config.log_path,
                         testbed_name=config.testbed_name)
     with runner.mobly_logger():
@@ -90,7 +90,8 @@ def main(argv=None):
     sys.exit(1)
 
 
-def update_controller_config_attribute(test_config: config_parser.TestRunConfig, key: str, value: Any):
+def update_controller_config_attribute(test_config: config_parser.TestRunConfig,
+                                       key: str, value: Any) -> None:
   """Updates each controller config with the given key and value.
 
   This function updates each controller config in the given TestRunConfig. This
@@ -111,8 +112,9 @@ def update_controller_config_attribute(test_config: config_parser.TestRunConfig,
   for device_config_list in test_config.controller_configs.values():
     for device_config in device_config_list:
       if not isinstance(device_config, dict):
-        raise Error('Tried to update contronller config while it is not a dict.'
-                    'Got controller config: %s', str(device_config))
+        raise Error(
+            'Tried to update contronller config while it is not a dict.'
+            'Got controller config: %s', str(device_config))
       device_config[key] = value
 
 

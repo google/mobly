@@ -39,11 +39,11 @@ class SnippetManagementService(base_service.BaseService):
     self._use_client_v2 = False
     super().__init__(device)
 
-  def set_client_v2_flag(self, flag: bool):
+  def set_client_v2_flag(self, flag: bool) -> None:
     """Sets the flag for whether to use snippet client v2.
 
-    Do not use snippet clients of v1 and v2 at the same time. Thus call this
-    function before adding any snippet client.
+    It is not allowed to use snippet clients of v1 and v2 at the same time.
+    Thus must call this function before adding any snippet client.
 
     By default it will use snippet client v1.
 
@@ -55,9 +55,9 @@ class SnippetManagementService(base_service.BaseService):
       Error: if there is any snippet client in use.
     """
     if self._snippet_clients:
-      raise Error(self,
-                  'There is already a snippet client in use. Please call '
-                  '`set_client_v2_flag` before adding any snippet client. ')
+      raise Error(
+          self, 'There is already a snippet client in use. Please call '
+          '`set_client_v2_flag` before adding any snippet client. ')
     self._use_client_v2 = flag
     self._device.log.debug('Set use_client_v2 flag to %s',
                            str(self._use_client_v2))
