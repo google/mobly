@@ -94,15 +94,15 @@ def update_controller_config_attribute(test_config: config_parser.TestRunConfig,
                                        key: str, value: Any) -> None:
   """Updates each controller config with the given key and value.
 
-  This function updates each controller config in the given TestRunConfig. It
-  expects that each controller config is a dictionary, otherwise it throws
-  an error.
+  This function puts the given attribute, i.e. key and value, into each
+  controller config in the given TestRunConfig. It expects the type of each
+  controller config to be a dictionary, otherwise it throws an error.
 
   Args:
     test_config: the object which contains all the controller configs to be
       updated.
-    key: the key of the attribute to be updated into each controller config.
-    value: the value of the attribute to be updated into each controller config.
+    key: the key of the attribute to be put into each controller config.
+    value: the value of the attribute to be put into each controller config.
 
   Raises:
     Error: when there is a non-dictionary controller config.

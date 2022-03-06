@@ -370,7 +370,7 @@ class TestRunnerTest(unittest.TestCase):
     )
 
   def test_update_config_one_controller(self):
-    """Tests updating config function works well with one config."""
+    """Tests updating config function works well with one controller."""
     self.base_mock_test_config = mock.Mock()
     input_dict = {'AndroidDevice': [{'serial': '8AAAAAAAA'}]}
     expected_output_dict = {
@@ -386,7 +386,7 @@ class TestRunnerTest(unittest.TestCase):
                          expected_output_dict)
 
   def test_update_config_multiple_controllers(self):
-    """Tests updating config function works well with multiple configs."""
+    """Tests updating config function works well with multiple controllers."""
     input_dict = {
         'AndroidDevice': [{
             'serial': '8AAAAAAAA'
@@ -439,7 +439,8 @@ class TestRunnerTest(unittest.TestCase):
   @mock.patch('mobly.test_runner.TestRunner', return_value=mock.MagicMock())
   @mock.patch('mobly.test_runner.update_controller_config_attribute')
   def test_main_skip_update_config_when_no_arg_specified(
-      self, mock_update_func, mock_test_runner, mock_configs, mock_find_test):
+      self, mock_update_func, mock_test_runner, mock_load_conf_func,
+      mock_find_test):
     """Tests main function skips updating controller config.
 
     Main function should only update controller config if the command line
@@ -448,20 +449,21 @@ class TestRunnerTest(unittest.TestCase):
     # mock them to make the test went through normally, while the test code
     # doesn't use them directly
     del mock_test_runner
-    del mock_configs
+    del mock_load_conf_func
     del mock_find_test
     test_runner.main(['-c', 'some/path/foo.yaml'])
     mock_update_func.assert_not_called()
 
   @mock.patch('mobly.test_runner._find_test_class',
               return_value=type('SampleTest', (), {}))
+  @mock.patch('mobly.test_runner.TestRunner', return_value=mock.MagicMock())
   @mock.patch('mobly.test_runner.config_parser.load_test_config_file',
               return_value=[config_parser.TestRunConfig()])
-  @mock.patch('mobly.test_runner.TestRunner', return_value=mock.MagicMock())
   @mock.patch('mobly.test_runner.update_controller_config_attribute')
   def test_main_updates_config_when_arg_specified(self, mock_update_func,
+                                                  mock_load_conf_func,
                                                   mock_test_runner,
-                                                  mock_configs, mock_find_test):
+                                                  mock_find_test):
     """Tests main function updates controller config.
 
     Main function should update controller config if the command line
@@ -473,10 +475,13 @@ class TestRunnerTest(unittest.TestCase):
     del mock_find_test
     test_runner.main(
         ['-c', 'some/path/foo.yaml', '--use_mobly_snippet_client_v2'])
-    for mock_config in mock_configs:
-      mock_update_func.assert_called_with(mock_config,
-                                          config_parser.USE_SNIPPET_CLIENT_V2,
-                                          True)
+
+    expected_call_args_list = [
+        mock.call(config, config_parser.USE_SNIPPET_CLIENT_V2, True)
+        for config in mock_load_conf_func.return_value
+    ]
+    self.assertListEqual(mock_update_func.call_args_list,
+                         expected_call_args_list)
 
 
 if __name__ == "__main__":
