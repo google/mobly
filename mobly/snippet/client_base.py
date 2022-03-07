@@ -54,11 +54,9 @@ import contextlib
 # jsonrpc_client_base and do not import modules from android_device_lib.
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-
 # Maximum logging length of Rpc response in DEBUG level when verbose logging is
 # off.
 _MAX_RPC_RESP_LOGGING_LENGTH = 1024
-
 
 # The required field names of Rpc response.
 RPC_RESPONSE_REQUIRED_FIELDS = ['id', 'error', 'result', 'callback']
@@ -219,7 +217,6 @@ class ClientBase(abc.ABC):
       jsonrpc_client_base.ProtocolError: something went wrong when exchanging
         data with the server.
     """
-
 
   @abc.abstractmethod
   def after_starting_server(self):

@@ -23,8 +23,8 @@ def generate_fix_length_rpc_response(
   """Generates a rpc response string with specified length.
 
   This function generates a random string and formats the template with the
-  generated random string. This function uses printf style string formatting,
-  e.g. the template can be
+  generated random string to get the response string. This function uses
+  printf style string formatting, i.e. the template can be
 
   ```
   '{"id": 0, "result": "%s", "error": null, "callback": null}'
@@ -35,7 +35,7 @@ def generate_fix_length_rpc_response(
     template: str, the template used for generating the response string.
 
   Raises:
-    ValueError: if the specified length is too small to generate response.
+    ValueError: if the specified length is too small to generate a response.
   """
   length = response_length - len(template) + 2
   if length < 0:
