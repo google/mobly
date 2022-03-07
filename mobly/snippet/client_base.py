@@ -54,9 +54,11 @@ import contextlib
 # jsonrpc_client_base and do not import modules from android_device_lib.
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
+
 # Maximum logging length of Rpc response in DEBUG level when verbose logging is
 # off.
 _MAX_RPC_RESP_LOGGING_LENGTH = 1024
+
 
 # The required field names of Rpc response.
 RPC_RESPONSE_REQUIRED_FIELDS = ['id', 'error', 'result', 'callback']
@@ -122,8 +124,12 @@ class ClientBase(abc.ABC):
     set.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: when there's some error in sending
-        the handshake.
+      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
+        data with the server.
+      jsonrpc_client_base.AppStartPreCheckError: when prechecks for starting
+        the server failed.
+      jsonrpc_client_base.AppStartError: if the server is not able to be
+        started successfully.
     """
 
     @contextlib.contextmanager
@@ -175,6 +181,10 @@ class ClientBase(abc.ABC):
 
     For example, subclass can check or modify the device settings at this
     stage.
+
+    Raises:
+      jsonrpc_client_base.AppStartPreCheckError: when prechecks for starting
+        the server failed.
     """
 
   @abc.abstractmethod
@@ -204,7 +214,12 @@ class ClientBase(abc.ABC):
     This function uses self.host_port for communicating with the server. If
     self.host_port is 0 or None, this function finds an available host port to
     build connection and set self.host_port to the found port.
+
+    Raises:
+      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
+        data with the server.
     """
+
 
   @abc.abstractmethod
   def after_starting_server(self):
@@ -276,7 +291,8 @@ class ClientBase(abc.ABC):
       The result of the rpc.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: something went wrong with the protocol.
+      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
+        data with the server.
       jsonrpc_client_base.ApiError: the rpc went through, however executed
         with errors.
     """
@@ -312,6 +328,9 @@ class ClientBase(abc.ABC):
     If the server is not running, it throws an error. As this function is called
     each time the client tries to send an rpc, this should be a quick check
     without affecting performance. Otherwise it is fine to not check anything.
+
+    Raises:
+      jsonrpc_client_base.ServerDiedError: if the server died.
     """
 
   def _gen_rpc_request(self, rpc_id, rpc_func_name, *args, **kwargs):
@@ -346,6 +365,10 @@ class ClientBase(abc.ABC):
 
     Returns:
       A string of the rpc response.
+
+    Raises:
+      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
+        data with the server.
     """
 
   def _parse_rpc_response(self, rpc_id, rpc_func_name, response):
@@ -366,7 +389,8 @@ class ClientBase(abc.ABC):
       the response. If async rpc, returns the callback handler object.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: something went wrong with the protocol.
+      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
+        data with the server.
       jsonrpc_client_base.ApiError: the rpc went through, however executed
         with errors.
     """

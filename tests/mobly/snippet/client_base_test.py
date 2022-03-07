@@ -23,20 +23,6 @@ from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.snippet import client_base
 from tests.lib.snippet import utils as snippet_utils
 
-MOCK_RESP = ('{"id": 10, "result": 123, "error": null, "status": 1,'
-             '"callback": null}')
-MOCK_RESP_TEMPLATE = (
-    '{"id": %d, "result": %d, "error": null, "status": 1, "uid": 1,'
-    '"callback": null}')
-MOCK_RESP_WITHOUT_ID = '{"result": 123, "error": null, "callback": null}'
-MOCK_RESP_WITHOUT_RESULT = '{"id": 10, "error": null, "callback": null}'
-MOCK_RESP_WITHOUT_ERROR = '{"id": 10, "result": 123, "callback": null}'
-MOCK_RESP_WITHOUT_CALLBACK = '{"id": 10, "result": 123, "error": null}'
-MOCK_RESP_WITH_ERROR = ('{"id": 10, "result": 123, "error": "some_error",'
-                        '"status": 1, "uid": 1, "callback": null}')
-MOCK_RESP_WITH_CALLBACK = ('{"id": 10, "result": 123, "error": null,'
-                           '"status": 1, "callback": "1-0"}')
-
 
 class FakeClient(client_base.ClientBase):
 
@@ -185,7 +171,8 @@ class ClientBaseTest(unittest.TestCase):
     client.host_port = 12345
     client.start_server()
 
-    expected_response = MOCK_RESP_TEMPLATE % (0, 123)
+    expected_response = ('{"id": 0, "result": 123, "error": null, '
+                         '"callback": null}')
     expected_request = ("{'id': 10, 'method': 'some_rpc', 'params': [1, 2],"
                         "'kwargs': {'test_key': 3}")
     expected_result = 123
@@ -283,25 +270,29 @@ class ClientBaseTest(unittest.TestCase):
     """
     client = FakeClient()
 
+    mock_resp_without_id = '{"result": 123, "error": null, "callback": null}'
     with self.assertRaisesRegex(
         jsonrpc_client_base.ProtocolError,
         jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'id'):
-      client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_ID)
+      client._parse_rpc_response(10, 'some_rpc', mock_resp_without_id)
 
+    mock_resp_without_result = '{"id": 10, "error": null, "callback": null}'
     with self.assertRaisesRegex(
         jsonrpc_client_base.ProtocolError,
         jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'result'):
-      client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_RESULT)
+      client._parse_rpc_response(10, 'some_rpc', mock_resp_without_result)
 
+    mock_resp_without_error = '{"id": 10, "result": 123, "callback": null}'
     with self.assertRaisesRegex(
         jsonrpc_client_base.ProtocolError,
         jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'error'):
-      client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_ERROR)
+      client._parse_rpc_response(10, 'some_rpc', mock_resp_without_error)
 
+    mock_resp_without_callback = '{"id": 10, "result": 123, "error": null}'
     with self.assertRaisesRegex(
         jsonrpc_client_base.ProtocolError,
         jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'callback'):
-      client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITHOUT_CALLBACK)
+      client._parse_rpc_response(10, 'some_rpc', mock_resp_without_callback)
 
   def test_parse_response_error(self):
     """Test rpc that is given an error response.
@@ -311,8 +302,10 @@ class ClientBaseTest(unittest.TestCase):
     """
     client = FakeClient()
 
+    mock_resp_with_error = ('{"id": 10, "result": 123, "error": "some_error", '
+                            '"callback": null}')
     with self.assertRaisesRegex(jsonrpc_client_base.ApiError, 'some_error'):
-      client._parse_rpc_response(10, 'some_rpc', MOCK_RESP_WITH_ERROR)
+      client._parse_rpc_response(10, 'some_rpc', mock_resp_with_error)
 
   def test_parse_response_callback(self):
     """Test rpc that is given a callback response.
@@ -323,19 +316,22 @@ class ClientBaseTest(unittest.TestCase):
     client = FakeClient()
 
     # call handle_callback function if "callback" field exists
+    mock_resp_with_callback = ('{"id": 10, "result": 123, "error": null, '
+                               '"callback": "1-0"}')
     with mock.patch.object(client, 'handle_callback') as mock_handle_callback:
       expected_callback = mock.Mock()
       mock_handle_callback.return_value = expected_callback
 
       rpc_result = client._parse_rpc_response(10, 'some_rpc',
-                                              MOCK_RESP_WITH_CALLBACK)
+                                              mock_resp_with_callback)
       mock_handle_callback.assert_called_with('1-0', 123, 'some_rpc')
       # ensure the rpc function return what handle_callback returns
       self.assertIs(expected_callback, rpc_result)
 
     # Do not call handle_callback function if no "callback" field
+    mock_resp = '{"id": 10, "result": 123, "error": null, "callback": null}'
     with mock.patch.object(client, 'handle_callback') as mock_handle_callback:
-      client._parse_rpc_response(10, 'some_rpc', MOCK_RESP)
+      client._parse_rpc_response(10, 'some_rpc', mock_resp)
 
       mock_handle_callback.assert_not_called()
 
@@ -349,7 +345,7 @@ class ClientBaseTest(unittest.TestCase):
 
     right_id = 5
     wrong_id = 20
-    resp = MOCK_RESP_TEMPLATE % (right_id, 123)
+    resp = f'{{"id": {right_id}, "result": 1, "error": null, "callback": null}}'
 
     with self.assertRaisesRegex(
         jsonrpc_client_base.ProtocolError,
@@ -428,8 +424,8 @@ class ClientBaseTest(unittest.TestCase):
     client = FakeClient()
     client.host_port = 12345
     client.start_server()
-    mock_send_request.side_effect = (
-        MOCK_RESP_TEMPLATE % (i, 123) for i in range(10))
+    resp = '{"id": %d, "result": 123, "error": null, "callback": null}'
+    mock_send_request.side_effect = (resp % (i,) for i in range(10))
 
     for _ in range(0, 10):
       client.some_rpc()
@@ -445,8 +441,8 @@ class ClientBaseTest(unittest.TestCase):
     client = FakeClient()
     client.host_port = 12345
     client.start_server()
-    mock_send_request.side_effect = (
-        MOCK_RESP_TEMPLATE % (i, 123) for i in range(10))
+    resp = '{"id": %d, "result": 123, "error": null, "callback": null}'
+    mock_send_request.side_effect = (resp % (i,) for i in range(10))
 
     for _ in range(0, 10):
       client.some_rpc()

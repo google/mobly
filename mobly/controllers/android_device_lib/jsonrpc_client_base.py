@@ -86,6 +86,10 @@ class AppRestoreConnectionError(Error):
   """Raised when failed to restore app from disconnection."""
 
 
+class ServerDiedError(Error):
+  """Raised if snippet server died before all tests finish."""
+
+
 class ApiError(Error):
   """Raised when remote API reports an error."""
 

@@ -11,22 +11,38 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Util functions for snippet client test modules."""
 
 import string
 import random
 
 
-MOCK_RESP_TEMPLATE = (
-    '{"id": 0, "result": "%s", "error": null, "status": 0, "callback": null}')
+def generate_fix_length_rpc_response(
+    response_length,
+    template='{"id": 0, "result": "%s", "error": null, "callback": null}'):
+  """Generates a rpc response string with specified length.
 
+  This function generates a random string and formats the template with the
+  generated random string. This function uses printf style string formatting,
+  e.g. the template can be
 
-MOCK_USER_ID = 0
+  ```
+  '{"id": 0, "result": "%s", "error": null, "callback": null}'
+  ```
 
+  Args:
+    response_length: int, the length of the response string to generate.
+    template: str, the template used for generating the response string.
 
-def generate_fix_length_rpc_response(response_length):
-  length = response_length - len(MOCK_RESP_TEMPLATE) + 2
+  Raises:
+    ValueError: if the specified length is too small to generate response.
+  """
+  length = response_length - len(template) + 2
+  if length < 0:
+    raise ValueError(
+        'The response_length should be no smaller than '
+        'template_length + 2. Got response_length %d, '
+        'template_length %d.', response_length, len(template))
   chars = string.ascii_letters + string.digits
   random_msg = ''.join(random.choice(chars) for _ in range(length))
-  return MOCK_RESP_TEMPLATE % random_msg
+  return template % random_msg
