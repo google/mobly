@@ -1,6 +1,19 @@
 # Mobly Release History
 
 
+## Mobly Release 1.11.1: Support Test Case `repeat` and `retry`.
+
+### New
+* Native support for `repeat` and `retry` of test cases.
+* Additional assertion APIs.
+* `android_device` now picks up `fastboot` devices if given `*`.
+
+### Fixes
+* Removed the usage of `psutil` in favor of native `Py3` features.
+
+[Full list of changes](https://github.com/google/mobly/milestone/26?closed=1)
+
+
 ## Mobly Release 1.11: Py2 Deprecation and Repeat/Retry Support
 
 This release focuses on code quality improvement, refactoring, and legacy
@@ -19,6 +32,8 @@ We are also refactoring to use 2-space indentation and unit test system.
 ### Fixes
 * Various improvements in Android device controller
 * More metadata collected for test runs
+
+[Full list of changes](https://github.com/google/mobly/milestone/25?closed=1)
 
 
 ## Mobly Release 1.10.1: Incremental fixes
