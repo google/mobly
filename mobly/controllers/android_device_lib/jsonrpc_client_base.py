@@ -86,10 +86,6 @@ class AppRestoreConnectionError(Error):
   """Raised when failed to restore app from disconnection."""
 
 
-class ServerDiedError(Error):
-  """Raised if snippet server died before all tests finish."""
-
-
 class ApiError(Error):
   """Raised when remote API reports an error."""
 
@@ -395,12 +391,13 @@ class JsonRpcClientBase(abc.ABC):
   def set_snippet_client_verbose_logging(self, verbose):
     """Switches verbose logging. True for logging full RPC responses.
 
-    By default it will write full messages returned from Rpc. Turning off the
-    verbose logging will result in writing _MAX_RPC_RESP_LOGGING_LENGTH
-    characters of each Rpc returned string.
+    By default it will write full messages returned from RPC. Turning off the
+    verbose logging will result in writing no more than
+    _MAX_RPC_RESP_LOGGING_LENGTH characters per RPC returned string.
 
-    _MAX_RPC_RESP_LOGGING_LENGTH will set to 1024 by default, the length
-    contains the full Rpc response in JSON format, including 1st element "id".
+    _MAX_RPC_RESP_LOGGING_LENGTH will set to 1024 by default. The length
+    contains the full RPC response in JSON format, not just the RPC result
+    field.
 
     Args:
       verbose: bool, if True, turns on verbose logging, if False turns off.

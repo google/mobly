@@ -54,11 +54,11 @@ import contextlib
 # jsonrpc_client_base and do not import modules from android_device_lib.
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-# Maximum logging length of Rpc response in DEBUG level when verbose logging is
+# Maximum logging length of RPC response in DEBUG level when verbose logging is
 # off.
 _MAX_RPC_RESP_LOGGING_LENGTH = 1024
 
-# The required field names of Rpc response.
+# The required field names of RPC response.
 RPC_RESPONSE_REQUIRED_FIELDS = ['id', 'error', 'result', 'callback']
 
 
@@ -71,27 +71,27 @@ class StartServerStages(enum.Enum):
 
 
 class ClientBase(abc.ABC):
-  """Base class for JSON Rpc clients that connect to remote servers.
+  """Base class for JSON RPC clients that connect to snippet servers.
 
   Connects to a remote device running a jsonrpc-compatible server. Users call
   the function `start_server` to start the server on remote device before
-  sending any rpc. After sending all rpcs, users call the function `stop_server`
+  sending any RPC. After sending all RPCs, users call the function `stop_server`
   to stop all the running instances.
 
   Attributes:
-    package: string, the user-visible name of the snippet library being
+    package: str, the user-visible name of the snippet library being
       communicated with.
     host_port: int, the host port of this RPC client.
     device_port: int, the device port of this RPC client.
     log: Logger, the logger of the corresponding device controller.
     verbose_logging: bool, if True, prints more detailed log
-      information. Default is False.
+      information. Default is True.
   """
 
   def __init__(self, package, device):
     """
     Args:
-      package: string, the user-visible name of the snippet library being
+      package: str, the user-visible name of the snippet library being
         communicated with.
       device: DeviceController, the device object associated with a client.
     """
@@ -124,8 +124,8 @@ class ClientBase(abc.ABC):
     Raises:
       jsonrpc_client_base.ProtocolError: something went wrong when exchanging
         data with the server.
-      jsonrpc_client_base.AppStartPreCheckError: when prechecks for starting
-        the server failed.
+      mobly.controllers.android_device_lib.snippet_client.AppStartPreCheckError:
+        when prechecks for starting the server failed.
       jsonrpc_client_base.AppStartError: if the server is not able to be
         started successfully.
     """
@@ -181,8 +181,8 @@ class ClientBase(abc.ABC):
     stage.
 
     Raises:
-      jsonrpc_client_base.AppStartPreCheckError: when prechecks for starting
-        the server failed.
+      mobly.controllers.android_device_lib.snippet_client.AppStartPreCheckError:
+        when prechecks for starting the server failed.
     """
 
   @abc.abstractmethod
@@ -207,7 +207,7 @@ class ClientBase(abc.ABC):
 
     The command to start the server has been already sent before calling this
     function. So the client builds a connection to it and sends a handshake
-    to ensure the server is available for upcoming rpcs.
+    to ensure the server is available for upcoming RPCs.
 
     This function uses self.host_port for communicating with the server. If
     self.host_port is 0 or None, this function finds an available host port to
@@ -226,7 +226,7 @@ class ClientBase(abc.ABC):
     """
 
   def __getattr__(self, name):
-    """Wrapper for python magic to turn method calls into RPC calls."""
+    """Wrapper for python magic to turn method calls into RPCs."""
 
     def rpc_call(*args, **kwargs):
       return self._rpc(name, *args, **kwargs)
@@ -243,12 +243,13 @@ class ClientBase(abc.ABC):
   def set_snippet_client_verbose_logging(self, verbose):
     """Switches verbose logging. True for logging full RPC responses.
 
-    By default it will write full messages returned from Rpc. Turning off the
-    verbose logging will result in writing _MAX_RPC_RESP_LOGGING_LENGTH
-    characters of each Rpc returned string.
+    By default it will write full messages returned from RPC. Turning off the
+    verbose logging will result in writing no more than
+    _MAX_RPC_RESP_LOGGING_LENGTH characters per RPC returned string.
 
-    _MAX_RPC_RESP_LOGGING_LENGTH will set to 1024 by default, the length
-    contains the full Rpc response in JSON format, including 1st element "id".
+    _MAX_RPC_RESP_LOGGING_LENGTH will set to 1024 by default. The length
+    contains the full RPC response in JSON format, not just the RPC result
+    field.
 
     Args:
       verbose: bool, if True, turns on verbose logging, if False turns off.
@@ -261,12 +262,12 @@ class ClientBase(abc.ABC):
     """Reconnects to the server after the device was disconnected.
 
     Instead of creating a new instance of the client:
-      - Uses the given port (or finds a new available host_port if none is
+      - Uses the given port (or finds a new available host_port if 0 or None is
       given).
       - Tries to connect to the remote server with the selected port.
 
     Args:
-      port: int, if given, this is the host port from which to connect to
+      port: int, if given, this is the host port from which to connect to the
         remote device port. If not provided, find a new available port as host
         port.
 
@@ -276,28 +277,28 @@ class ClientBase(abc.ABC):
     """
 
   def _rpc(self, rpc_func_name, *args, **kwargs):
-    """Sends a rpc to the server.
+    """Sends a RPC to the server.
 
     Args:
-      rpc_func_name: string, the name of the snippet function to execute on the
+      rpc_func_name: str, the name of the snippet function to execute on the
         server.
-      args: any, the positional arguments of the rpc request.
-      kwargs: any, the keyword arguments of the rpc request.
+      args: any, the positional arguments of the RPC request.
+      kwargs: any, the keyword arguments of the RPC request.
 
     Returns:
-      The result of the rpc.
+      The result of the RPC.
 
     Raises:
       jsonrpc_client_base.ProtocolError: something went wrong when exchanging
         data with the server.
-      jsonrpc_client_base.ApiError: the rpc went through, however executed
+      jsonrpc_client_base.ApiError: the RPC went through, however executed
         with errors.
     """
     try:
       self.check_server_proc_running()
     except Exception:
-      self.log.exception(
-          'Server process running check failed, skip sending rpc method(%s).',
+      self.log.error(
+          'Server process running check failed, skip sending RPC method(%s).',
           rpc_func_name)
       raise
 
@@ -305,9 +306,9 @@ class ClientBase(abc.ABC):
       rpc_id = next(self._counter)
       request = self._gen_rpc_request(rpc_id, rpc_func_name, *args, **kwargs)
 
-      self.log.debug('Sending rpc request %s.', request)
+      self.log.debug('Sending RPC request %s.', request)
       response = self.send_rpc_request(request)
-      self.log.debug('Rpc request sent.')
+      self.log.debug('RPC request sent.')
 
       if self.verbose_logging or _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
         self.log.debug('Snippet received: %s', response)
@@ -323,25 +324,25 @@ class ClientBase(abc.ABC):
     """Checks whether the server is still running.
 
     If the server is not running, it throws an error. As this function is called
-    each time the client tries to send an rpc, this should be a quick check
+    each time the client tries to send an RPC, this should be a quick check
     without affecting performance. Otherwise it is fine to not check anything.
 
     Raises:
-      jsonrpc_client_base.ServerDiedError: if the server died.
+      mobly.snippet.errors.ServerDiedError: if the server died.
     """
 
   def _gen_rpc_request(self, rpc_id, rpc_func_name, *args, **kwargs):
-    """Generates the JSON rpc request.
+    """Generates the JSON RPC request.
 
     Args:
-      rpc_id: int, the id of this rpc.
-      rpc_func_name: string, the name of the snippet function to execute
+      rpc_id: int, the id of this RPC.
+      rpc_func_name: str, the name of the snippet function to execute
         on the server.
-      args: any, the positional arguments of the rpc.
-      kwargs: any, the keyword arguments of the rpc.
+      args: any, the positional arguments of the RPC.
+      kwargs: any, the keyword arguments of the RPC.
 
     Returns:
-      A string of the JSON rpc request.
+      A string of the JSON RPC request.
     """
     data = {'id': rpc_id, 'method': rpc_func_name, 'params': args}
     if kwargs:
@@ -351,17 +352,17 @@ class ClientBase(abc.ABC):
 
   @abc.abstractmethod
   def send_rpc_request(self, request):
-    """Sends the JSON rpc request to the server and gets a response.
+    """Sends the JSON RPC request to the server and gets a response.
 
     Note that the request and response are both in string format. So if the
     connection with server provides interfaces in bytes format, please
     transform them to string in the implementation of this function.
 
     Args:
-      request: string, a string of the rpc request.
+      request: str, a string of the RPC request.
 
     Returns:
-      A string of the rpc response.
+      A string of the RPC response.
 
     Raises:
       jsonrpc_client_base.ProtocolError: something went wrong when exchanging
@@ -369,26 +370,26 @@ class ClientBase(abc.ABC):
     """
 
   def _parse_rpc_response(self, rpc_id, rpc_func_name, response):
-    """Parses the rpc response from the server.
+    """Parses the RPC response from the server.
 
     This function parses the response of the server and checks the response
     with the Mobly JSON RPC Protocol.
 
     Args:
-      rpc_id: int, the actual id of this rpc. It should be the same with the id
+      rpc_id: int, the actual id of this RPC. It should be the same with the id
         in the response, otherwise throws an error.
-      rpc_func_name: string, the name of the function that this rpc triggered
+      rpc_func_name: str, the name of the function that this RPC triggered
         on the snippet server.
-      response: str, a string of the JSON rpc response.
+      response: str, the JSON string of the RPC response.
 
     Returns:
-      The result of the rpc. If sync rpc, returns the result field of
-      the response. If async rpc, returns the callback handler object.
+      The result of the RPC. If sync RPC, returns the result field of
+      the response. If async RPC, returns the callback handler object.
 
     Raises:
       jsonrpc_client_base.ProtocolError: something went wrong when exchanging
         data with the server.
-      jsonrpc_client_base.ApiError: the rpc went through, however executed
+      jsonrpc_client_base.ApiError: the RPC went through, however executed
         with errors.
     """
     if not response:
@@ -415,14 +416,12 @@ class ClientBase(abc.ABC):
 
   @abc.abstractmethod
   def handle_callback(self, callback_id, ret_value, rpc_func_name):
-    """Creates a callback handler for the async rpc.
+    """Creates a callback handler for the async RPC.
 
     Args:
-      callback_id: string, the callback ID for creating a callback handler
-        object.
-      ret_value: string, JSON Array string of the result field of the rpc
-        response.
-      rpc_func_name: string, the name of the snippet function executed on the
+      callback_id: str, the callback ID for creating a callback handler object.
+      ret_value: str, the JSON string for the result field of the RPC response.
+      rpc_func_name: str, the name of the snippet function executed on the
         server.
 
     Returns:

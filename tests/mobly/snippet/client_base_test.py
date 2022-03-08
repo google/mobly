@@ -129,7 +129,7 @@ class ClientBaseTest(unittest.TestCase):
                                               mock_stop_server):
     """Test starting server's stage _build_connection fails.
 
-    Test that when the building connection fails with exception, it should
+    Test that when the _build_connection fails with exception, it should
     stop server before exiting.
     """
     client = FakeClient()
@@ -145,7 +145,7 @@ class ClientBaseTest(unittest.TestCase):
                                                    mock_stop_server):
     """Test starting server's stage after_starting_server fails.
 
-    Test that when the stage after building connection fails with exception,
+    Test that when the stage after_starting_server fails with exception,
     it should stop server before exiting.
     """
     client = FakeClient()
@@ -161,11 +161,11 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, '_parse_rpc_response')
   def test_rpc_stage_dependencies(self, mock_parse_response, mock_send_request,
                                   mock_gen_request, mock_precheck):
-    """Test rpc stage dependencies.
+    """Test the internal dependencies when sending a RPC.
 
-    In the rpc stage, the sending rpc function utils the output of generating
-    rpc request, and the output of the sending function if used by the parse
-    rpc response function. This test case checks above dependencies.
+    When sending a RPC, the function send_rpc_request uses the output of
+    the function _gen_rpc_request, and the function _parse_rpc_response uses the
+    output of send_rpc_request. This test case checks above dependencies.
     """
     client = FakeClient()
     client.host_port = 12345
@@ -173,8 +173,8 @@ class ClientBaseTest(unittest.TestCase):
 
     expected_response = ('{"id": 0, "result": 123, "error": null, '
                          '"callback": null}')
-    expected_request = ("{'id': 10, 'method': 'some_rpc', 'params': [1, 2],"
-                        "'kwargs': {'test_key': 3}")
+    expected_request = ('{"id": 10, "method": "some_rpc", "params": [1, 2],'
+                        '"kwargs": {"test_key": 3}')
     expected_result = 123
 
     mock_gen_request.return_value = expected_request
@@ -194,17 +194,17 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, '_parse_rpc_response')
   def test_rpc_precheck_fail(self, mock_parse_response, mock_send_request,
                              mock_gen_request, mock_precheck):
-    """Test rpc precheck fails.
+    """Test RPC precheck fails.
 
-    Test that when an rpc precheck fails with exception, the rpc function
-    should throws that error and skip sending rpc.
+    Test that when an RPC precheck fails with exception, the RPC function
+    should throws that error and skip sending RPC.
     """
     client = FakeClient()
     client.host_port = 12345
     client.start_server()
     mock_precheck.side_effect = Exception('server_died')
 
-    with self.assertRaises(Exception):
+    with self.assertRaisesRegex(Exception, 'server_died'):
       client.some_rpc(1, 2)
 
     mock_gen_request.assert_not_called()
@@ -212,10 +212,10 @@ class ClientBaseTest(unittest.TestCase):
     mock_parse_response.assert_not_called()
 
   def test_gen_request(self):
-    """Test generate rcp request
+    """Test generating a RPC request
 
     Test that _gen_rpc_request returns a string represents a JSON dict
-    with all request fields.
+    with all requested fields.
     """
     client = FakeClient()
     request_str = client._gen_rpc_request(0, 'test_rpc', 1, 2, test_key=3)
@@ -245,11 +245,7 @@ class ClientBaseTest(unittest.TestCase):
     self.assertDictEqual(request, expected_result)
 
   def test_parse_rpc_no_response(self):
-    """Test rpc that does not get a response.
-
-    Test that when an rpc does not get a response it throws a protocol
-    error.
-    """
+    """Test _rpc when it does not get a response."""
     client = FakeClient()
 
     with self.assertRaisesRegex(
@@ -263,11 +259,7 @@ class ClientBaseTest(unittest.TestCase):
       client._parse_rpc_response(0, 'some_rpc', None)
 
   def test_parse_response_miss_fields(self):
-    """Test rpc response that miss some required fields.
-
-    Test that when an rpc miss some required fields it throws a protocol
-    error.
-    """
+    """Test the RPC response that misses some required fields."""
     client = FakeClient()
 
     mock_resp_without_id = '{"result": 123, "error": null, "callback": null}'
@@ -295,11 +287,7 @@ class ClientBaseTest(unittest.TestCase):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_callback)
 
   def test_parse_response_error(self):
-    """Test rpc that is given an error response.
-
-    Test that when an rpc receives a response with an error will raised
-    an api error.
-    """
+    """Test the RPC response with a non-empty error field."""
     client = FakeClient()
 
     mock_resp_with_error = ('{"id": 10, "result": 123, "error": "some_error", '
@@ -308,14 +296,10 @@ class ClientBaseTest(unittest.TestCase):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_with_error)
 
   def test_parse_response_callback(self):
-    """Test rpc that is given a callback response.
-
-    Test that when an rpc receives a callback response, the function to
-    handle callback will be called.
-    """
+    """Test parsing response function handles callback field well."""
     client = FakeClient()
 
-    # call handle_callback function if "callback" field exists
+    # call handle_callback function if the "callback" field is not null
     mock_resp_with_callback = ('{"id": 10, "result": 123, "error": null, '
                                '"callback": "1-0"}')
     with mock.patch.object(client, 'handle_callback') as mock_handle_callback:
@@ -325,22 +309,17 @@ class ClientBaseTest(unittest.TestCase):
       rpc_result = client._parse_rpc_response(10, 'some_rpc',
                                               mock_resp_with_callback)
       mock_handle_callback.assert_called_with('1-0', 123, 'some_rpc')
-      # ensure the rpc function return what handle_callback returns
+      # ensure the RPC function returns what handle_callback returned
       self.assertIs(expected_callback, rpc_result)
 
-    # Do not call handle_callback function if no "callback" field
+    # Do not call handle_callback function if the "callback" field is null
     mock_resp = '{"id": 10, "result": 123, "error": null, "callback": null}'
     with mock.patch.object(client, 'handle_callback') as mock_handle_callback:
       client._parse_rpc_response(10, 'some_rpc', mock_resp)
-
       mock_handle_callback.assert_not_called()
 
   def test_parse_response_id_mismatch(self):
-    """Test rpc that returns a different id than expected.
-
-    Test that if an rpc returns with an id that is different than what
-    is expected will give a protocl error.
-    """
+    """Test the RPC response with wrong id."""
     client = FakeClient()
 
     right_id = 5
@@ -354,7 +333,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_verbose_logging_with_long_string(self, mock_send_request):
-    """Test rpc response isn't truncated when verbose logging is on."""
+    """Test the RPC response isn't truncated when verbose logging is on."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
@@ -369,7 +348,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_short_response(self, mock_send_request):
-    """Test rpc response isn't truncated with small length."""
+    """Test the RPC response isn't truncated with small length."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
@@ -384,7 +363,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_fit_size_response(self, mock_send_request):
-    """Test rpc response isn't truncated with length equal to the threshold."""
+    """Test RPC response isn't truncated with length equal to the threshold."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
@@ -399,7 +378,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_long_response(self, mock_send_request):
-    """Test rpc response is truncated with length larger than the threshold."""
+    """Test RPC response is truncated with length larger than the threshold."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
@@ -417,10 +396,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_call_increment_counter(self, mock_send_request):
-    """Test rpc counter.
-
-    Test that with each rpc call the counter is incremented by 1.
-    """
+    """Test that with each RPC call the counter is incremented by 1."""
     client = FakeClient()
     client.host_port = 12345
     client.start_server()
@@ -434,10 +410,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_build_connection_reset_counter(self, mock_send_request):
-    """Test rpc counter.
-
-    Test that _build_connection reset the the counter to zero.
-    """
+    """Test that _build_connection resets the the counter to zero."""
     client = FakeClient()
     client.host_port = 12345
     client.start_server()
