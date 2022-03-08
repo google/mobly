@@ -390,7 +390,7 @@ class JsonRpcClientBase(abc.ABC):
   def set_snippet_client_verbose_logging(self, verbose):
     """Switches verbose logging. True for logging full RPC responses.
 
-    By default it will write full messages returned from RPC. Turning off the
+    By default it will write full messages returned from RPCs. Turning off the
     verbose logging will result in writing no more than
     _MAX_RPC_RESP_LOGGING_LENGTH characters per RPC returned string.
 

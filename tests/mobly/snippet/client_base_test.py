@@ -195,8 +195,8 @@ class ClientBaseTest(unittest.TestCase):
                              mock_gen_request, mock_precheck):
     """Test RPC precheck fails.
 
-    Test that when an RPC precheck fails with exception, the RPC function
-    should throw that exception and skip sending RPC.
+    Test that when a RPC precheck fails with exception, the _rpc function
+    should re-raise that exception and skip sending RPC.
     """
     client = FakeClient()
     client.host_port = 12345
@@ -211,7 +211,7 @@ class ClientBaseTest(unittest.TestCase):
     mock_parse_response.assert_not_called()
 
   def test_gen_request(self):
-    """Test generating a RPC request
+    """Test generating a RPC request.
 
     Test that _gen_rpc_request returns a string represents a JSON dict
     with all required fields.
@@ -409,7 +409,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_build_connection_reset_counter(self, mock_send_request):
-    """Test that _build_connection resets the the counter to zero."""
+    """Test that _build_connection resets the counter to zero."""
     client = FakeClient()
     client.host_port = 12345
     client.start_server()
