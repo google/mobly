@@ -13,11 +13,15 @@
 # limitations under the License.
 """Module for errors thrown from Snippet Client objects."""
 # TODO(mhaoli): Package `mobly.snippet` should not import errors from
-# android_device_lib. However all the errors thrown from snippet clients
-# inherit from DeviceError in android_device_lib for now. We should resolve
-# this legacy problem by having an base error in a general package.
+# android_device_lib. However android_device_lib.DeviceError is the base error
+# for the errors thrown from Android snippet clients and device controllers.
+# We should resolve this legacy problem.
 from mobly.controllers.android_device_lib import errors
 
 
-class ServerDiedError(errors.DeviceError):
+class ClientError(errors.DeviceError):
+  """The general error thrown from snippet client objects."""
+
+
+class ServerDiedError(ClientError):
   """Raised if snippet server died before all tests finish."""

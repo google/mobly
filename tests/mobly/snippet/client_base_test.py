@@ -196,7 +196,7 @@ class ClientBaseTest(unittest.TestCase):
     """Test RPC precheck fails.
 
     Test that when an RPC precheck fails with exception, the RPC function
-    should throws that error and skip sending RPC.
+    should throw that exception and skip sending RPC.
     """
     client = FakeClient()
     client.host_port = 12345
@@ -214,7 +214,7 @@ class ClientBaseTest(unittest.TestCase):
     """Test generating a RPC request
 
     Test that _gen_rpc_request returns a string represents a JSON dict
-    with all requested fields.
+    with all required fields.
     """
     client = FakeClient()
     request_str = client._gen_rpc_request(0, 'test_rpc', 1, 2, test_key=3)
@@ -244,7 +244,7 @@ class ClientBaseTest(unittest.TestCase):
     self.assertDictEqual(request, expected_result)
 
   def test_parse_rpc_no_response(self):
-    """Test _rpc when it does not get a response."""
+    """Test parsing an empty RPC response."""
     client = FakeClient()
 
     with self.assertRaisesRegex(
@@ -258,7 +258,7 @@ class ClientBaseTest(unittest.TestCase):
       client._parse_rpc_response(0, 'some_rpc', None)
 
   def test_parse_response_miss_fields(self):
-    """Test the RPC response that misses some required fields."""
+    """Test parsing a RPC response that misses some required fields."""
     client = FakeClient()
 
     mock_resp_without_id = '{"result": 123, "error": null, "callback": null}'
@@ -286,7 +286,7 @@ class ClientBaseTest(unittest.TestCase):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_callback)
 
   def test_parse_response_error(self):
-    """Test the RPC response with a non-empty error field."""
+    """Test parsing a RPC response with a non-empty error field."""
     client = FakeClient()
 
     mock_resp_with_error = ('{"id": 10, "result": 123, "error": "some_error", '
@@ -295,10 +295,10 @@ class ClientBaseTest(unittest.TestCase):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_with_error)
 
   def test_parse_response_callback(self):
-    """Test parsing response function handles callback field well."""
+    """Test parsing response function handles the callback field well."""
     client = FakeClient()
 
-    # call handle_callback function if the "callback" field is not null
+    # Call handle_callback function if the "callback" field is not null
     mock_resp_with_callback = ('{"id": 10, "result": 123, "error": null, '
                                '"callback": "1-0"}')
     with mock.patch.object(client, 'handle_callback') as mock_handle_callback:
@@ -308,7 +308,7 @@ class ClientBaseTest(unittest.TestCase):
       rpc_result = client._parse_rpc_response(10, 'some_rpc',
                                               mock_resp_with_callback)
       mock_handle_callback.assert_called_with('1-0', 123, 'some_rpc')
-      # ensure the RPC function returns what handle_callback returned
+      # Ensure the RPC function returns what handle_callback returned
       self.assertIs(expected_callback, rpc_result)
 
     # Do not call handle_callback function if the "callback" field is null
@@ -318,7 +318,7 @@ class ClientBaseTest(unittest.TestCase):
       mock_handle_callback.assert_not_called()
 
   def test_parse_response_id_mismatch(self):
-    """Test the RPC response with wrong id."""
+    """Test parsing a RPC response with wrong id."""
     client = FakeClient()
 
     right_id = 5
@@ -332,7 +332,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_verbose_logging_with_long_string(self, mock_send_request):
-    """Test the RPC response isn't truncated when verbose logging is on."""
+    """Test RPC response isn't truncated when verbose logging is on."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log
@@ -347,7 +347,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_truncated_logging_short_response(self, mock_send_request):
-    """Test the RPC response isn't truncated with small length."""
+    """Test RPC response isn't truncated with small length."""
     client = FakeClient()
     mock_log = mock.Mock()
     client.log = mock_log

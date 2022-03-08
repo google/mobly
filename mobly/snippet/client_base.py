@@ -419,7 +419,7 @@ class ClientBase(abc.ABC):
 
     Args:
       callback_id: str, the callback ID for creating a callback handler object.
-      ret_value: str, the JSON string for the result field of the RPC response.
+      ret_value: any, the result field of the RPC response.
       rpc_func_name: str, the name of the snippet function executed on the
         server.
 
