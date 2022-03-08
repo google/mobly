@@ -72,8 +72,8 @@ class StartServerStages(enum.Enum):
 class ClientBase(abc.ABC):
   """Base class for JSON RPC clients that connect to snippet servers.
 
-  Connects to a remote device running a jsonrpc-compatible server. Users call
-  the function `start_server` to start the server on remote device before
+  Connects to a remote device running a JSON RPC compatible server. Users call
+  the function `start_server` to start the server on the remote device before
   sending any RPC. After sending all RPCs, users call the function `stop_server`
   to stop all the running instances.
 
@@ -246,7 +246,7 @@ class ClientBase(abc.ABC):
     verbose logging will result in writing no more than
     _MAX_RPC_RESP_LOGGING_LENGTH characters per RPC returned string.
 
-    _MAX_RPC_RESP_LOGGING_LENGTH will set to 1024 by default. The length
+    _MAX_RPC_RESP_LOGGING_LENGTH will be set to 1024 by default. The length
     contains the full RPC response in JSON format, not just the RPC result
     field.
 

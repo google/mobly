@@ -97,7 +97,7 @@ class ClientBaseTest(unittest.TestCase):
     """Test starting server's stage before_starting_server fails.
 
     Test that when the before_starting_server stage fails with exception, it
-    should not stop server before exiting.
+    should not stop the server before exiting.
     """
     client = FakeClient()
     mock_before_func.side_effect = Exception('ha')
@@ -113,7 +113,7 @@ class ClientBaseTest(unittest.TestCase):
     """Test starting server's stage do_start_server fails.
 
     Test that when the do_start_server stage fails with exception, it should
-    stop server before exiting.
+    stop the server before exiting.
     """
     client = FakeClient()
     mock_do_start_func.side_effect = Exception('ha')
@@ -129,7 +129,7 @@ class ClientBaseTest(unittest.TestCase):
     """Test starting server's stage _build_connection fails.
 
     Test that when the _build_connection fails with exception, it should
-    stop server before exiting.
+    stop the server before exiting.
     """
     client = FakeClient()
     mock_build_conn_func.side_effect = Exception('ha')
@@ -145,7 +145,7 @@ class ClientBaseTest(unittest.TestCase):
     """Test starting server's stage after_starting_server fails.
 
     Test that when the stage after_starting_server fails with exception,
-    it should stop server before exiting.
+    it should stop the server before exiting.
     """
     client = FakeClient()
     mock_after_func.side_effect = Exception('ha')

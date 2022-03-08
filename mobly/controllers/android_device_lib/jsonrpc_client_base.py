@@ -394,7 +394,7 @@ class JsonRpcClientBase(abc.ABC):
     verbose logging will result in writing no more than
     _MAX_RPC_RESP_LOGGING_LENGTH characters per RPC returned string.
 
-    _MAX_RPC_RESP_LOGGING_LENGTH will set to 1024 by default. The length
+    _MAX_RPC_RESP_LOGGING_LENGTH will be set to 1024 by default. The length
     contains the full RPC response in JSON format, not just the RPC result
     field.
 
