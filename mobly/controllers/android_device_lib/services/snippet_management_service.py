@@ -48,8 +48,7 @@ class SnippetManagementService(base_service.BaseService):
     By default it will use snippet client v1.
 
     Args:
-      flag: whether to use snippet client v2, True for using v2. Default to
-        False.
+      flag: whether to use snippet client v2, True for using v2.
 
     Raises:
       Error: if there is already a snippet client in use.

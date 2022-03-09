@@ -21,6 +21,8 @@ import tempfile
 import unittest
 from unittest import mock
 
+import yaml
+
 from mobly import config_parser
 from mobly import records
 from mobly import signals
@@ -31,7 +33,6 @@ from tests.lib import integration_test
 from tests.lib import integration2_test
 from tests.lib import integration3_test
 from tests.lib import multiple_subclasses_module
-import yaml
 
 
 class TestRunnerTest(unittest.TestCase):
@@ -418,13 +419,13 @@ class TestRunnerTest(unittest.TestCase):
 
   def test_update_config_non_dict(self):
     """Tests updating config function throws error with non-dict config."""
-    # The controller config is a pick all symbol '*'
+    # The config is a pick all symbol '*'
     self.base_mock_test_config.controller_configs = {'AndroidDevice': '*'}
     with self.assertRaises(test_runner.Error):
       test_runner.update_controller_config_attribute(self.base_mock_test_config,
                                                      'test_key', True)
 
-    # The controller config is the a of serial number
+    # The config is a list of serial numbers
     self.base_mock_test_config.controller_configs = {
         'AndroidDevice': ['7AAAAAAAA', '8AAAAAAAA']
     }
@@ -441,10 +442,10 @@ class TestRunnerTest(unittest.TestCase):
   def test_main_skip_update_config_when_no_arg_specified(
       self, mock_update_func, mock_test_runner, mock_load_conf_func,
       mock_find_test):
-    """Tests main function skips updating controller config.
+    """Tests main function skips updating controller configs.
 
-    Main function should only update controller config if the command line
-    argument `use_mobly_snippet_client_v2` is specified.
+    Main function should not update controller configs if the command line
+    argument `use_mobly_snippet_client_v2` is not specified.
     """
     # mock them to make the test went through normally, while the test code
     # doesn't use them directly
@@ -457,22 +458,25 @@ class TestRunnerTest(unittest.TestCase):
   @mock.patch('mobly.test_runner._find_test_class',
               return_value=type('SampleTest', (), {}))
   @mock.patch('mobly.test_runner.TestRunner', return_value=mock.MagicMock())
-  @mock.patch('mobly.test_runner.config_parser.load_test_config_file',
-              return_value=[config_parser.TestRunConfig()])
+  @mock.patch('mobly.test_runner.config_parser.load_test_config_file')
   @mock.patch('mobly.test_runner.update_controller_config_attribute')
   def test_main_updates_config_when_arg_specified(self, mock_update_func,
                                                   mock_load_conf_func,
                                                   mock_test_runner,
                                                   mock_find_test):
-    """Tests main function updates controller config.
+    """Tests main function updates controller configs.
 
-    Main function should update controller config if the command line
+    Main function should update controller configs if the command line
     argument `use_mobly_snippet_client_v2` is specified.
     """
     # mock them to make the test went through normally, while the test code
     # doesn't use them directly
     del mock_test_runner
     del mock_find_test
+    mock_load_conf_func.return_value = [
+        config_parser.TestRunConfig(),
+        config_parser.TestRunConfig(),
+    ]
     test_runner.main(
         ['-c', 'some/path/foo.yaml', '--use_mobly_snippet_client_v2'])
 

@@ -20,6 +20,8 @@ import tempfile
 import unittest
 from unittest import mock
 
+import yaml
+
 from mobly import config_parser
 from mobly import runtime_test_info
 from mobly.controllers import android_device
@@ -30,7 +32,6 @@ from mobly.controllers.android_device_lib.services import logcat
 from mobly.controllers.android_device_lib.services import (
     snippet_management_service)
 from tests.lib import mock_android_device
-import yaml
 
 MOCK_SNIPPET_PACKAGE_NAME = 'com.my.snippet'
 
