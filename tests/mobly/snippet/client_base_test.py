@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for mobly.snippet.client_base."""
 
-import json
 import logging
 import unittest
 from unittest import mock
@@ -217,18 +216,10 @@ class ClientBaseTest(unittest.TestCase):
     with all required fields.
     """
     client = FakeClient()
-    request_str = client._gen_rpc_request(0, 'test_rpc', 1, 2, test_key=3)
-    self.assertIs(type(request_str), str)
-    request = json.loads(request_str)
-    expected_result = {
-        'id': 0,
-        'method': 'test_rpc',
-        'params': [1, 2],
-        'kwargs': {
-            'test_key': 3,
-        },
-    }
-    self.assertDictEqual(request, expected_result)
+    request = client._gen_rpc_request(0, 'test_rpc', 1, 2, test_key=3)
+    expected_result = ('{"id": 0, "kwargs": {"test_key": 3}, '
+                       '"method": "test_rpc", "params": [1, 2]}')
+    self.assertEqual(request, expected_result)
 
   def test_gen_request_without_kwargs(self):
     """Test no keyword arguments.
@@ -237,11 +228,9 @@ class ClientBaseTest(unittest.TestCase):
     keyword arguments.
     """
     client = FakeClient()
-    request_str = client._gen_rpc_request(0, 'test_rpc', 1, 2)
-    self.assertIs(type(request_str), str)
-    request = json.loads(request_str)
-    expected_result = {'id': 0, 'method': 'test_rpc', 'params': [1, 2]}
-    self.assertDictEqual(request, expected_result)
+    request = client._gen_rpc_request(0, 'test_rpc', 1, 2)
+    expected_result = '{"id": 0, "method": "test_rpc", "params": [1, 2]}'
+    self.assertEqual(request, expected_result)
 
   def test_parse_rpc_no_response(self):
     """Test parsing an empty RPC response."""
@@ -257,32 +246,32 @@ class ClientBaseTest(unittest.TestCase):
         jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
       client._parse_rpc_response(0, 'some_rpc', None)
 
-  def test_parse_response_miss_fields(self):
+  def test_parse_response_missing_fields(self):
     """Test parsing a RPC response that misses some required fields."""
     client = FakeClient()
 
     mock_resp_without_id = '{"result": 123, "error": null, "callback": null}'
     with self.assertRaisesRegex(
         jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'id'):
+        jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD % 'id'):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_id)
 
     mock_resp_without_result = '{"id": 10, "error": null, "callback": null}'
     with self.assertRaisesRegex(
         jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'result'):
+        jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD % 'result'):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_result)
 
     mock_resp_without_error = '{"id": 10, "result": 123, "callback": null}'
     with self.assertRaisesRegex(
         jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'error'):
+        jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD % 'error'):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_error)
 
     mock_resp_without_callback = '{"id": 10, "result": 123, "error": null}'
     with self.assertRaisesRegex(
         jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % 'callback'):
+        jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD % 'callback'):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_callback)
 
   def test_parse_response_error(self):

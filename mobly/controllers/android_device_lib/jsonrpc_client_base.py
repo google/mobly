@@ -95,7 +95,7 @@ class ProtocolError(Error):
   NO_RESPONSE_FROM_SERVER = ('No response from server. '
                              'Check the device logcat for crashes.')
   MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
-  RESPONSE_MISS_FIELD = 'Missing required field in the RPC response: %s.'
+  RESPONSE_MISSING_FIELD = 'Missing required field in the RPC response: %s.'
 
 
 class JsonRpcCommand:
@@ -399,7 +399,7 @@ class JsonRpcClientBase(abc.ABC):
     field.
 
     Args:
-      verbose: bool, if True, turns on verbose logging, if False turns off.
+      verbose: bool, if True, turns on verbose logging, otherwise turns off.
     """
     self._ad.log.info('Set verbose logging to %s.', verbose)
     self.verbose_logging = verbose

@@ -251,7 +251,7 @@ class ClientBase(abc.ABC):
     field.
 
     Args:
-      verbose: bool, if True, turns on verbose logging, if False turns off.
+      verbose: bool, if True, turns on verbose logging, otherwise turns off.
     """
     self.log.info('Sets verbose logging to %s.', verbose)
     self.verbose_logging = verbose
@@ -267,7 +267,7 @@ class ClientBase(abc.ABC):
 
     Args:
       port: int, if given, this is the host port from which to connect to the
-        remote device port. If not provided, find a new available port as host
+        remote device port. Otherwise, finds a new available port as host
         port.
 
     Raises:
@@ -333,6 +333,9 @@ class ClientBase(abc.ABC):
   def _gen_rpc_request(self, rpc_id, rpc_func_name, *args, **kwargs):
     """Generates the JSON RPC request.
 
+    In the generated JSON string, the fields are sorted by keys in ascending
+    order.
+
     Args:
       rpc_id: int, the id of this RPC.
       rpc_func_name: str, the name of the snippet function to execute
@@ -346,8 +349,7 @@ class ClientBase(abc.ABC):
     data = {'id': rpc_id, 'method': rpc_func_name, 'params': args}
     if kwargs:
       data['kwargs'] = kwargs
-    request = json.dumps(data)
-    return request
+    return json.dumps(data, sort_keys=True)
 
   @abc.abstractmethod
   def send_rpc_request(self, request):
@@ -401,7 +403,8 @@ class ClientBase(abc.ABC):
       if field_name not in result:
         raise jsonrpc_client_base.ProtocolError(
             self._device,
-            jsonrpc_client_base.ProtocolError.RESPONSE_MISS_FIELD % field_name)
+            jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD %
+            field_name)
 
     if result['error']:
       raise jsonrpc_client_base.ApiError(self._device, result['error'])
