@@ -287,7 +287,7 @@ def _collect_process_tree(starting_pid):
       # Ignore if there is not child process.
       continue
 
-    children_pid_list = list(map(int, ps_results.split('\n ')))
+    children_pid_list = list(map(int, ps_results.split('\n')))
     stack.extend(children_pid_list)
     ret.extend(children_pid_list)
 

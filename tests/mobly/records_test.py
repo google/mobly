@@ -50,7 +50,7 @@ class RecordsTest(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.tmp_path)
 
-  def verify_record(self, record, result, details, extras, stacktrace=None):
+  def verify_record(self, record, result, details, extras, stacktrace=None, error_type=None):
     record.update_record()
     # Verify each field.
     self.assertEqual(record.test_name, self.tn)
@@ -76,6 +76,7 @@ class RecordsTest(unittest.TestCase):
     d[records.TestResultEnums.RECORD_CLASS] = None
     d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
     d[records.TestResultEnums.RECORD_STACKTRACE] = stacktrace
+    d[records.TestResultEnums.RECORD_ERROR_TYPE] = error_type
     actual_d = record.to_dict()
     # Verify stacktrace partially match as stacktraces often have file path
     # in them.
@@ -142,7 +143,8 @@ class RecordsTest(unittest.TestCase):
                        extras=None,
                        stacktrace='in test_result_record_fail_stacktrace\n    '
                        'raise Exception(\'Something failed.\')\nException: '
-                       'Something failed.\n')
+                       'Something failed.\n',
+                       error_type='Exception')
 
   def test_result_record_fail_with_float_extra(self):
     record = records.TestResultRecord(self.tn)

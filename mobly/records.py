@@ -177,6 +177,7 @@ class TestResultEnums:
   RECORD_EXTRA_ERRORS = 'Extra Errors'
   RECORD_DETAILS = 'Details'
   RECORD_STACKTRACE = 'Stacktrace'
+  RECORD_ERROR_TYPE = 'Error Type'
   RECORD_SIGNATURE = 'Signature'
   RECORD_RETRY_PARENT = 'Retry Parent'
   RECORD_POSITION = 'Position'
@@ -350,6 +351,12 @@ class TestResultRecord:
       return self.termination_signal.stacktrace
 
   @property
+  def error_type(self):
+    """The class name of the exception that terminated the test."""
+    if self.stacktrace:
+      return self.termination_signal.exception.__class__.__qualname__
+
+  @property
   def extras(self):
     """User defined extra information of the test result.
 
@@ -494,6 +501,7 @@ class TestResultRecord:
         key: value.to_dict() for (key, value) in self.extra_errors.items()
     }
     d[TestResultEnums.RECORD_STACKTRACE] = self.stacktrace
+    d[TestResultEnums.RECORD_ERROR_TYPE] = self.error_type
     return d
 
 
