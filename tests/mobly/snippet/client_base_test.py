@@ -17,8 +17,8 @@ import logging
 import unittest
 from unittest import mock
 
-from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.snippet import client_base
+from mobly.snippet import errors
 from tests.lib.snippet import utils as snippet_utils
 
 
@@ -236,14 +236,12 @@ class ClientBaseTest(unittest.TestCase):
     """Test parsing an empty RPC response."""
     client = FakeClient()
 
-    with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
+    with self.assertRaisesRegex(errors.ProtocolError,
+                                errors.ProtocolError.NO_RESPONSE_FROM_SERVER):
       client._parse_rpc_response(0, 'some_rpc', '')
 
-    with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER):
+    with self.assertRaisesRegex(errors.ProtocolError,
+                                errors.ProtocolError.NO_RESPONSE_FROM_SERVER):
       client._parse_rpc_response(0, 'some_rpc', None)
 
   def test_parse_response_missing_fields(self):
@@ -252,26 +250,26 @@ class ClientBaseTest(unittest.TestCase):
 
     mock_resp_without_id = '{"result": 123, "error": null, "callback": null}'
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD % 'id'):
+        errors.ProtocolError,
+        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'id'):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_id)
 
     mock_resp_without_result = '{"id": 10, "error": null, "callback": null}'
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD % 'result'):
+        errors.ProtocolError,
+        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'result'):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_result)
 
     mock_resp_without_error = '{"id": 10, "result": 123, "callback": null}'
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD % 'error'):
+        errors.ProtocolError,
+        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'error'):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_error)
 
     mock_resp_without_callback = '{"id": 10, "result": 123, "error": null}'
     with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD % 'callback'):
+        errors.ProtocolError,
+        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'callback'):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_without_callback)
 
   def test_parse_response_error(self):
@@ -280,7 +278,7 @@ class ClientBaseTest(unittest.TestCase):
 
     mock_resp_with_error = ('{"id": 10, "result": 123, "error": "some_error", '
                             '"callback": null}')
-    with self.assertRaisesRegex(jsonrpc_client_base.ApiError, 'some_error'):
+    with self.assertRaisesRegex(errors.ApiError, 'some_error'):
       client._parse_rpc_response(10, 'some_rpc', mock_resp_with_error)
 
   def test_parse_response_callback(self):
@@ -314,9 +312,8 @@ class ClientBaseTest(unittest.TestCase):
     wrong_id = 20
     resp = f'{{"id": {right_id}, "result": 1, "error": null, "callback": null}}'
 
-    with self.assertRaisesRegex(
-        jsonrpc_client_base.ProtocolError,
-        jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID):
+    with self.assertRaisesRegex(errors.ProtocolError,
+                                errors.ProtocolError.MISMATCHED_API_ID):
       client._parse_rpc_response(wrong_id, 'some_rpc', resp)
 
   @mock.patch.object(FakeClient, 'send_rpc_request')

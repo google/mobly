@@ -19,5 +19,34 @@
 from mobly.controllers.android_device_lib import errors
 
 
-class ServerDiedError(errors.DeviceError):
+class Error(errors.DeviceError):
+  """Root error type for snippet clients."""
+
+
+class ServerRestoreConnectionError(Error):
+  """Raised when failed to restore the connection with the snippet server."""
+
+
+class ServerStartError(Error):
+  """Raised when failed to start the snippet server."""
+
+
+class ServerStartPreCheckError(Error):
+  """Raised when prechecks for starting the snippet server failed."""
+
+
+class ApiError(Error):
+  """Raised when remote API reported an error."""
+
+
+class ProtocolError(Error):
+  """Raised when there was an error in exchanging data with server."""
+  NO_RESPONSE_FROM_HANDSHAKE = 'No response from handshake.'
+  NO_RESPONSE_FROM_SERVER = ('No response from server. '
+                             'Check the device logcat for crashes.')
+  MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
+  RESPONSE_MISSING_FIELD = 'Missing required field in the RPC response: %s.'
+
+
+class ServerDiedError(Error):
   """Raised if the snippet server died before all tests finish."""

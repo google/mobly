@@ -49,9 +49,7 @@ import enum
 import time
 import contextlib
 
-# TODO(mhaoli): We should migrate the things (e.g. errors) out of
-# jsonrpc_client_base and do not import modules from android_device_lib.
-from mobly.controllers.android_device_lib import jsonrpc_client_base
+from mobly.snippet import errors
 
 # Maximum logging length of RPC response in DEBUG level when verbose logging is
 # off.
@@ -121,12 +119,11 @@ class ClientBase(abc.ABC):
     set.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
-        data with the server.
-      mobly.controllers.android_device_lib.snippet_client.AppStartPreCheckError:
-        when prechecks for starting the server failed.
-      jsonrpc_client_base.AppStartError: if the server is not able to be
-        started successfully.
+      errors.ProtocolError: something went wrong when exchanging data with the
+        server.
+      errors.ServerStartPreCheckError: when prechecks for starting the server
+        failed.
+      errors.ServerStartError: when failed to start the snippet server.
     """
 
     @contextlib.contextmanager
@@ -180,8 +177,8 @@ class ClientBase(abc.ABC):
     stage.
 
     Raises:
-      mobly.controllers.android_device_lib.snippet_client.AppStartPreCheckError:
-        when prechecks for starting the server failed.
+      errors.ServerStartPreCheckError: when prechecks for starting the server
+        failed.
     """
 
   @abc.abstractmethod
@@ -213,8 +210,8 @@ class ClientBase(abc.ABC):
     build connection and set self.host_port to the found port.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
-        data with the server.
+      errors.ProtocolError: something went wrong when exchanging data with the
+        server.
     """
 
   @abc.abstractmethod
@@ -271,8 +268,8 @@ class ClientBase(abc.ABC):
         port.
 
     Raises:
-      jsonrpc_client_base.AppRestoreConnectionError: when the server was not
-        able to be reconnected.
+      errors.ServerRestoreConnectionError: when failed to restore the connection
+        with the snippet server.
     """
 
   def _rpc(self, rpc_func_name, *args, **kwargs):
@@ -288,10 +285,9 @@ class ClientBase(abc.ABC):
       The result of the RPC.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
-        data with the server.
-      jsonrpc_client_base.ApiError: the RPC went through, however executed
-        with errors.
+      errors.ProtocolError: something went wrong when exchanging data with the
+        server.
+      errors.ApiError: the RPC went through, however executed with errors.
     """
     try:
       self.check_server_proc_running()
@@ -327,7 +323,7 @@ class ClientBase(abc.ABC):
     without affecting performance. Otherwise it is fine to not check anything.
 
     Raises:
-      mobly.snippet.errors.ServerDiedError: if the server died.
+      errors.ServerDiedError: if the server died.
     """
 
   def _gen_rpc_request(self, rpc_id, rpc_func_name, *args, **kwargs):
@@ -366,8 +362,8 @@ class ClientBase(abc.ABC):
       A string of the RPC response.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
-        data with the server.
+      errors.ProtocolError: something went wrong when exchanging data with the
+        server.
     """
 
   def _parse_rpc_response(self, rpc_id, rpc_func_name, response):
@@ -388,29 +384,26 @@ class ClientBase(abc.ABC):
       the response. If async RPC, returns the callback handler object.
 
     Raises:
-      jsonrpc_client_base.ProtocolError: something went wrong when exchanging
-        data with the server.
-      jsonrpc_client_base.ApiError: the RPC went through, however executed
-        with errors.
+      errors.ProtocolError: if finds something wrong when parsing the response.
+      errors.ApiError: if the response contains non-empty error information,
+        which indicates that the snippet function executed with errors.
     """
     if not response:
-      raise jsonrpc_client_base.ProtocolError(
-          self._device,
-          jsonrpc_client_base.ProtocolError.NO_RESPONSE_FROM_SERVER)
+      raise errors.ProtocolError(self._device,
+                                 errors.ProtocolError.NO_RESPONSE_FROM_SERVER)
 
     result = json.loads(response)
     for field_name in RPC_RESPONSE_REQUIRED_FIELDS:
       if field_name not in result:
-        raise jsonrpc_client_base.ProtocolError(
+        raise errors.ProtocolError(
             self._device,
-            jsonrpc_client_base.ProtocolError.RESPONSE_MISSING_FIELD %
-            field_name)
+            errors.ProtocolError.RESPONSE_MISSING_FIELD % field_name)
 
     if result['error']:
-      raise jsonrpc_client_base.ApiError(self._device, result['error'])
+      raise errors.ApiError(self._device, result['error'])
     if result['id'] != rpc_id:
-      raise jsonrpc_client_base.ProtocolError(
-          self._device, jsonrpc_client_base.ProtocolError.MISMATCHED_API_ID)
+      raise errors.ProtocolError(self._device,
+                                 errors.ProtocolError.MISMATCHED_API_ID)
     if result['callback'] is not None:
       return self.handle_callback(result['callback'], result['result'],
                                   rpc_func_name)

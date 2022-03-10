@@ -95,7 +95,6 @@ class ProtocolError(Error):
   NO_RESPONSE_FROM_SERVER = ('No response from server. '
                              'Check the device logcat for crashes.')
   MISMATCHED_API_ID = 'RPC request-response ID mismatch.'
-  RESPONSE_MISSING_FIELD = 'Missing required field in the RPC response: %s.'
 
 
 class JsonRpcCommand:
@@ -168,7 +167,7 @@ class JsonRpcClientBase(abc.ABC):
     """
 
   def restore_app_connection(self, port=None):
-    """Reconnects to the app after the device was disconnected.
+    """Reconnects to the app after device USB was disconnected.
 
     Instead of creating new instance of the client:
       - Uses the given port (or finds a new available host_port if none is
@@ -388,18 +387,17 @@ class JsonRpcClientBase(abc.ABC):
       i += 1
 
   def set_snippet_client_verbose_logging(self, verbose):
-    """Switches verbose logging. True for logging full RPC responses.
+    """Switches verbose logging. True for logging full RPC response.
 
-    By default it will write full messages returned from RPCs. Turning off the
-    verbose logging will result in writing no more than
-    _MAX_RPC_RESP_LOGGING_LENGTH characters per RPC returned string.
+    By default it will only write max_rpc_return_value_length for Rpc return
+    strings. If you need to see full message returned from Rpc, please turn
+    on verbose logging.
 
-    _MAX_RPC_RESP_LOGGING_LENGTH will be set to 1024 by default. The length
-    contains the full RPC response in JSON format, not just the RPC result
-    field.
+    max_rpc_return_value_length will set to 1024 by default, the length
+    contains full Rpc response in Json format, included 1st element "id".
 
     Args:
-      verbose: bool, if True, turns on verbose logging, otherwise turns off.
+      verbose: bool. If True, turns on verbose logging, if False turns off
     """
     self._ad.log.info('Set verbose logging to %s.', verbose)
     self.verbose_logging = verbose
