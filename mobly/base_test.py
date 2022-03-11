@@ -27,6 +27,8 @@ from mobly import records
 from mobly import runtime_test_info
 from mobly import signals
 from mobly import utils
+from mobly.controllers.android_device_lib import service_manager
+from mobly.controllers.android_device_lib.services import snippet_management_service
 
 # Macro strings for test result reporting.
 TEST_CASE_TOKEN = '[Test]'
@@ -202,6 +204,7 @@ class BaseTestClass:
     self._controller_manager = controller_manager.ControllerManager(
         class_name=self.TAG, controller_configs=configs.controller_configs)
     self.controller_configs = self._controller_manager.controller_configs
+    self._use_snippet_client_v2 = False
 
   def unpack_userparams(self,
                         req_param_names=None,
@@ -329,8 +332,23 @@ class BaseTestClass:
         * `required` is True and no corresponding config can be found.
         * Any other error occurred in the registration process.
     """
-    return self._controller_manager.register_controller(module, required,
+    controllers = self._controller_manager.register_controller(module, required,
                                                         min_number)
+    if self._use_snippet_client_v2:
+      for controller in controllers:
+        try:
+          if hasattr(controller.services)
+              and isinstance(controller.services, service_manager.ServiceManager)
+              and hasattr(controller.services.snippets)
+              and isinstance(controller.services.snippets, snippet_management_service.SnippetManagementService):
+            controller.services.snippets.set_client_v2_flag(True)
+            continue
+
+          if hasattr(controller,
+
+          if isinstance(controller,
+
+    return controllers
 
   def _record_controller_info(self):
     # Collect controller information and write to test result.
