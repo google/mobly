@@ -88,12 +88,6 @@ def main(argv=None):
     sys.exit(1)
 
 
-def update_controller_config_attribute(test_config: config_parser.TestRunConfig,
-                                       key: str, value: Any) -> None:
-  """Updates each controller config with the given key and value.
-
-  This function puts the given attribute, i.e. key and value, into each
-  controller config in the given TestRunConfig. It expects the type of each
   controller config to be a dictionary, otherwise it throws an error.
 
   Args:
@@ -101,17 +95,6 @@ def update_controller_config_attribute(test_config: config_parser.TestRunConfig,
       updated.
     key: the key of the attribute to be put into each controller config.
     value: the value of the attribute to be put into each controller config.
-
-  Raises:
-    Error: when there is a non-dictionary controller config.
-  """
-  for device_config_list in test_config.controller_configs.values():
-    for device_config in device_config_list:
-      if not isinstance(device_config, dict):
-        raise Error(
-            'Trying to update a non-dictionary controller config (%s), which '
-            'is not allowed.', str(device_config))
-      device_config[key] = value
 
 
 def parse_mobly_cli_args(argv):

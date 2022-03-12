@@ -205,7 +205,7 @@ class BaseTestClass:
         class_name=self.TAG, controller_configs=configs.controller_configs)
     self.controller_configs = self._controller_manager.controller_configs
     self._use_snippet_client_v2 = configs.use_snippet_client_v2
-    logging.info('MingHaoTest: base_test._use_snippet_client_v2: %s', str(self._use_snippet_client_v2))
+    logging.info('Demo Test: base_test._use_snippet_client_v2: %s', str(self._use_snippet_client_v2))
 
   def unpack_userparams(self,
                         req_param_names=None,

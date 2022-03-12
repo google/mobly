@@ -27,9 +27,6 @@ from mobly import utils
 ENV_MOBLY_LOGPATH = 'MOBLY_LOGPATH'
 _DEFAULT_LOG_PATH = '/tmp/logs/mobly/'
 
-# The key in controller config for whether to use snippet client v2
-USE_SNIPPET_CLIENT_V2 = 'use_snippet_client_v2'
-
 
 class MoblyConfigError(Exception):
   """Raised when there is a problem in test configuration file."""
@@ -188,6 +185,9 @@ class TestRunConfig:
     self.user_params = {}
     self.summary_writer = None
     self.test_class_name_suffix = None
+    # Add a config for using snippet client v2, this is a temporary
+    # attribute used by mobly-eng team.
+    self.use_snippet_client_v2 = False
 
   def copy(self):
     """Returns a deep copy of the current config.

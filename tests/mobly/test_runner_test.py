@@ -21,8 +21,6 @@ import tempfile
 import unittest
 from unittest import mock
 
-import yaml
-
 from mobly import config_parser
 from mobly import records
 from mobly import signals
@@ -33,6 +31,7 @@ from tests.lib import integration_test
 from tests.lib import integration2_test
 from tests.lib import integration3_test
 from tests.lib import multiple_subclasses_module
+import yaml
 
 
 class TestRunnerTest(unittest.TestCase):
@@ -369,123 +368,6 @@ class TestRunnerTest(unittest.TestCase):
         'Something went wrong.')
     mock_cls_instance._controller_manager.unregister_controllers.assert_called_once(
     )
-
-  def test_update_config_one_controller(self):
-    """Tests updating config function works well with one controller."""
-    self.base_mock_test_config = mock.Mock()
-    input_dict = {'AndroidDevice': [{'serial': '8AAAAAAAA'}]}
-    expected_output_dict = {
-        'AndroidDevice': [{
-            'serial': '8AAAAAAAA',
-            'test_key': True
-        }]
-    }
-    self.base_mock_test_config.controller_configs = input_dict
-    test_runner.update_controller_config_attribute(self.base_mock_test_config,
-                                                   'test_key', True)
-    self.assertDictEqual(self.base_mock_test_config.controller_configs,
-                         expected_output_dict)
-
-  def test_update_config_multiple_controllers(self):
-    """Tests updating config function works well with multiple controllers."""
-    input_dict = {
-        'AndroidDevice': [{
-            'serial': '8AAAAAAAA'
-        }, {
-            'serial': '9AAAAAAAA'
-        }],
-        'IosDevice': [{
-            'serial': '7AAAAAAAA'
-        }]
-    }
-    expected_output_dict = {
-        'AndroidDevice': [{
-            'serial': '8AAAAAAAA',
-            'test_key': True
-        }, {
-            'serial': '9AAAAAAAA',
-            'test_key': True
-        }],
-        'IosDevice': [{
-            'serial': '7AAAAAAAA',
-            'test_key': True
-        }]
-    }
-    self.base_mock_test_config.controller_configs = input_dict
-    test_runner.update_controller_config_attribute(self.base_mock_test_config,
-                                                   'test_key', True)
-    self.assertDictEqual(self.base_mock_test_config.controller_configs,
-                         expected_output_dict)
-
-  def test_update_config_non_dict(self):
-    """Tests updating config function throws error with non-dict config."""
-    # The config is a pick all symbol '*'
-    self.base_mock_test_config.controller_configs = {'AndroidDevice': '*'}
-    with self.assertRaises(test_runner.Error):
-      test_runner.update_controller_config_attribute(self.base_mock_test_config,
-                                                     'test_key', True)
-
-    # The config is a list of serial numbers
-    self.base_mock_test_config.controller_configs = {
-        'AndroidDevice': ['7AAAAAAAA', '8AAAAAAAA']
-    }
-    with self.assertRaises(test_runner.Error):
-      test_runner.update_controller_config_attribute(self.base_mock_test_config,
-                                                     'test_key', True)
-
-  @mock.patch('mobly.test_runner._find_test_class',
-              return_value=type('SampleTest', (), {}))
-  @mock.patch('mobly.test_runner.config_parser.load_test_config_file',
-              return_value=[config_parser.TestRunConfig()])
-  @mock.patch('mobly.test_runner.TestRunner', return_value=mock.MagicMock())
-  @mock.patch('mobly.test_runner.update_controller_config_attribute')
-  def test_main_skip_update_config_when_no_arg_specified(
-      self, mock_update_func, mock_test_runner, mock_load_conf_func,
-      mock_find_test):
-    """Tests main function skips updating controller configs.
-
-    Main function should not update controller configs if the command line
-    argument `use_mobly_snippet_client_v2` is not specified.
-    """
-    # mock them to make the test went through normally, while the test code
-    # doesn't use them directly
-    del mock_test_runner
-    del mock_load_conf_func
-    del mock_find_test
-    test_runner.main(['-c', 'some/path/foo.yaml'])
-    mock_update_func.assert_not_called()
-
-  @mock.patch('mobly.test_runner._find_test_class',
-              return_value=type('SampleTest', (), {}))
-  @mock.patch('mobly.test_runner.TestRunner', return_value=mock.MagicMock())
-  @mock.patch('mobly.test_runner.config_parser.load_test_config_file')
-  @mock.patch('mobly.test_runner.update_controller_config_attribute')
-  def test_main_updates_config_when_arg_specified(self, mock_update_func,
-                                                  mock_load_conf_func,
-                                                  mock_test_runner,
-                                                  mock_find_test):
-    """Tests main function updates controller configs.
-
-    Main function should update controller configs if the command line
-    argument `use_mobly_snippet_client_v2` is specified.
-    """
-    # mock them to make the test went through normally, while the test code
-    # doesn't use them directly
-    del mock_test_runner
-    del mock_find_test
-    mock_load_conf_func.return_value = [
-        config_parser.TestRunConfig(),
-        config_parser.TestRunConfig(),
-    ]
-    test_runner.main(
-        ['-c', 'some/path/foo.yaml', '--use_mobly_snippet_client_v2'])
-
-    expected_call_args_list = [
-        mock.call(config, config_parser.USE_SNIPPET_CLIENT_V2, True)
-        for config in mock_load_conf_func.return_value
-    ]
-    self.assertListEqual(mock_update_func.call_args_list,
-                         expected_call_args_list)
 
 
 if __name__ == "__main__":

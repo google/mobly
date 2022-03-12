@@ -20,7 +20,6 @@ import re
 import shutil
 import time
 
-from mobly import config_parser
 from mobly import logger as mobly_logger
 from mobly import runtime_test_info
 from mobly import utils
@@ -438,7 +437,7 @@ def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
 
 class BuildInfoConstants(enum.Enum):
   """Enums for build info constants used for AndroidDevice build info.
-
+  
   Attributes:
     build_info_key: The key used for the build_info dictionary in AndroidDevice.
     system_prop_key: The key used for getting the build info from system
@@ -880,21 +879,11 @@ class AndroidDevice:
       Error: The config is trying to overwrite an existing attribute.
     """
     for k, v in config.items():
-      if k == config_parser.USE_SNIPPET_CLIENT_V2:
-        # This is a special config related to snippet client, do not set it
-        # to AndroidDevice itself.
-        self._set_snippet_client_v2_flag(v)
-        continue
-
       if hasattr(self, k) and k not in _ANDROID_DEVICE_SETTABLE_PROPS:
         raise DeviceError(
             self, ('Attribute %s already exists with value %s, cannot set '
                    'again.') % (k, getattr(self, k)))
       setattr(self, k, v)
-
-  def _set_snippet_client_v2_flag(self, flag: bool) -> None:
-    """Passes the snippet client v2 flag to snippet management service."""
-    self.services.snippets.set_client_v2_flag(flag)
 
   def root_adb(self):
     """Change adb to root mode for this device if allowed.
