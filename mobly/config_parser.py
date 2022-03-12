@@ -185,8 +185,8 @@ class TestRunConfig:
     self.user_params = {}
     self.summary_writer = None
     self.test_class_name_suffix = None
-    # Add a config for using snippet client v2, this is a temporary
-    # attribute used by mobly-eng team.
+    # Config for whether to use snippet client v2, this is a temporary config
+    # which the mobly-eng team uses it to do beta testing.
     self.use_snippet_client_v2 = False
 
   def copy(self):

@@ -28,7 +28,6 @@ from mobly import runtime_test_info
 from mobly import signals
 from mobly import utils
 from mobly.controllers.android_device_lib import service_manager
-from mobly.controllers.android_device_lib.services import snippet_management_service
 
 # Macro strings for test result reporting.
 TEST_CASE_TOKEN = '[Test]'
@@ -205,7 +204,6 @@ class BaseTestClass:
         class_name=self.TAG, controller_configs=configs.controller_configs)
     self.controller_configs = self._controller_manager.controller_configs
     self._use_snippet_client_v2 = configs.use_snippet_client_v2
-    logging.info('Demo Test: base_test._use_snippet_client_v2: %s', str(self._use_snippet_client_v2))
 
   def unpack_userparams(self,
                         req_param_names=None,
@@ -334,22 +332,23 @@ class BaseTestClass:
         * Any other error occurred in the registration process.
     """
     controllers = self._controller_manager.register_controller(module, required,
-                                                        min_number)
+                                                               min_number)
     if self._use_snippet_client_v2:
       for controller in controllers:
-        if (
-            hasattr(controller, 'services')
-            and isinstance(controller.services, service_manager.ServiceManager)):
+        if (hasattr(controller, 'services') and
+            isinstance(controller.services, service_manager.ServiceManager)):
           controller.services.snippets.set_client_v2_flag(True)
           continue
 
-        if hasattr(controller, 'set_client_v2_flag'):
-          # iOS device controller doesn't have service manager and create 
+        if (hasattr(controller, 'set_client_v2_flag') and
+            callable(controller.set_client_v2_flag)):
+          # iOS device controller doesn't have a service manager and creates 
           # snippet clients itself, so set this flag to itself.
           controller.set_client_v2_flag(True)
           continue
 
-        raise Error('Controller %s does not support using snippet client v2.', str(controller))
+        raise Error('Controller %s does not support using snippet client v2.',
+                    str(controller))
 
     return controllers
 
