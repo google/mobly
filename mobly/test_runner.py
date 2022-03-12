@@ -88,15 +88,6 @@ def main(argv=None):
     sys.exit(1)
 
 
-  controller config to be a dictionary, otherwise it throws an error.
-
-  Args:
-    test_config: the object which contains all the controller configs to be
-      updated.
-    key: the key of the attribute to be put into each controller config.
-    value: the value of the attribute to be put into each controller config.
-
-
 def parse_mobly_cli_args(argv):
   """Parses cli args that are consumed by Mobly.
 
