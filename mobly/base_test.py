@@ -204,7 +204,8 @@ class BaseTestClass:
     self._controller_manager = controller_manager.ControllerManager(
         class_name=self.TAG, controller_configs=configs.controller_configs)
     self.controller_configs = self._controller_manager.controller_configs
-    self._use_snippet_client_v2 = False
+    self._use_snippet_client_v2 = configs.use_snippet_client_v2
+    logging.info('MingHaoTest: base_test._use_snippet_client_v2: %s', str(self._use_snippet_client_v2))
 
   def unpack_userparams(self,
                         req_param_names=None,
@@ -258,6 +259,8 @@ class BaseTestClass:
         logging.warning(
             'Missing optional user param "%s" in '
             'configuration, continue.', name)
+  def set_snippet_client_v2(self, flag: bool):
+    self._use_snippet_client_v2 = flag
 
   def register_controller(self, module, required=True, min_number=1):
     """Loads a controller module and returns its loaded devices.
@@ -336,17 +339,18 @@ class BaseTestClass:
                                                         min_number)
     if self._use_snippet_client_v2:
       for controller in controllers:
-        try:
-          if hasattr(controller.services)
-              and isinstance(controller.services, service_manager.ServiceManager)
-              and hasattr(controller.services.snippets)
-              and isinstance(controller.services.snippets, snippet_management_service.SnippetManagementService):
-            controller.services.snippets.set_client_v2_flag(True)
-            continue
+        if hasattr(controller, 'services')
+            and isinstance(controller.services, service_manager.ServiceManager)
+          controller.services.snippets.set_client_v2_flag(True)
+          continue
 
-          if hasattr(controller,
+        if hasattr(controller, 'set_client_v2_flag'):
+          # iOS device controller doesn't have service manager and create 
+          # snippet clients itself, so set this flag to itself.
+          controller.set_client_v2_flag(True)
+          continue
 
-          if isinstance(controller,
+        raise Error('Controller %s does not support using snippet client v2.', str(controller))
 
     return controllers
 

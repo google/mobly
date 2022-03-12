@@ -71,9 +71,7 @@ def main(argv=None):
   for config in test_configs:
     # Set flag of using snippet client v2 according to the command line argument
     if args.use_mobly_snippet_client_v2:
-      update_controller_config_attribute(config,
-                                         config_parser.USE_SNIPPET_CLIENT_V2,
-                                         True)
+      config._use_snippet_client_v2 = args.use_mobly_snippet_client_v2
     runner = TestRunner(log_dir=config.log_path,
                         testbed_name=config.testbed_name)
     with runner.mobly_logger():
