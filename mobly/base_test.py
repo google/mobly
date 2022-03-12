@@ -259,8 +259,6 @@ class BaseTestClass:
         logging.warning(
             'Missing optional user param "%s" in '
             'configuration, continue.', name)
-  def set_snippet_client_v2(self, flag: bool):
-    self._use_snippet_client_v2 = flag
 
   def register_controller(self, module, required=True, min_number=1):
     """Loads a controller module and returns its loaded devices.
@@ -339,8 +337,9 @@ class BaseTestClass:
                                                         min_number)
     if self._use_snippet_client_v2:
       for controller in controllers:
-        if hasattr(controller, 'services')
-            and isinstance(controller.services, service_manager.ServiceManager)
+        if (
+            hasattr(controller, 'services')
+            and isinstance(controller.services, service_manager.ServiceManager)):
           controller.services.snippets.set_client_v2_flag(True)
           continue
 
