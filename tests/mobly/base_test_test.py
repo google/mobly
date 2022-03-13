@@ -28,6 +28,7 @@ from mobly import config_parser
 from mobly import expects
 from mobly import records
 from mobly import signals
+from mobly.controllers.android_device_lib import service_manager
 from tests.lib import utils
 from tests.lib import mock_controller
 from tests.lib import mock_second_controller
@@ -2621,6 +2622,53 @@ class BaseTestTest(unittest.TestCase):
         pass
 
     logging_patch.debug.assert_called_with('[TestClass]#stage <<< END <<<')
+
+  @mock.patch.object(base_test.controller_manager.ControllerManager, 'register_controller', return_value=mock.MagicMock())
+  def test_register_controller_with_snippet_client_v2(self, mock_manager_func):
+    # modify base test config
+    self.mock_test_cls_configs.use_snippet_client_v2 = True
+    android_device = mock.MagicMock(spec=['services'])
+    android_device.services = mock.MagicMock()
+    android_device.services.__class__ = service_manager.ServiceManager
+    ios_device = mock.Mock(spec=['set_client_v2_flag'])
+    mock_manager_func.return_value = [android_device, ios_device]
+
+    # call reguster_controller func
+    test_instance = base_test.BaseTestClass(self.mock_test_cls_configs)
+    test_instance.register_controller(mock.Mock())
+
+    android_device.services.snippets.set_client_v2_flag.assert_called_with(True)
+    ios_device.set_client_v2_flag.assert_called_with(True)
+
+
+  @mock.patch.object(base_test.controller_manager.ControllerManager, 'register_controller', return_value=mock.MagicMock())
+  def test_register_controller_no_snippet_client_v2(self, mock_manager_func):
+    # modify base test config
+    self.mock_test_cls_configs.use_snippet_client_v2 = False
+    android_device = mock.MagicMock(spec=['services'])
+    android_device.services = mock.MagicMock()
+    android_device.services.__class__ = service_manager.ServiceManager
+    ios_device = mock.Mock(spec=['set_client_v2_flag'])
+    mock_manager_func.return_value = [android_device, ios_device]
+
+    # call reguster_controller func
+    test_instance = base_test.BaseTestClass(self.mock_test_cls_configs)
+    test_instance.register_controller(mock.Mock())
+
+    android_device.services.snippets.set_client_v2_flag.assert_not_called()
+    ios_device.set_client_v2_flag.assert_not_called()
+
+  @mock.patch.object(base_test.controller_manager.ControllerManager, 'register_controller', return_value=mock.MagicMock())
+  def test_register_controller_set_client_v2_to_unknown_controller(self, mock_manager_func):
+    # modify base test config
+    self.mock_test_cls_configs.use_snippet_client_v2 = True
+    mock_device = mock.Mock(spec=[])
+    mock_manager_func.return_value = [mock_device]
+
+    # call reguster_controller func
+    test_instance = base_test.BaseTestClass(self.mock_test_cls_configs)
+    with self.assertRaises(base_test.Error):
+      test_instance.register_controller(mock.Mock())
 
 
 if __name__ == "__main__":
