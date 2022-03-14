@@ -333,6 +333,9 @@ class BaseTestClass:
     """
     controllers = self._controller_manager.register_controller(
         module, required, min_number)
+
+    # Temporary logic for passing the snippet client v2 flag. This is used
+    # for beta testing and will be deleted after finishing beta testing.
     if self._use_snippet_client_v2:
       for controller in controllers:
         if (hasattr(controller, 'services') and
