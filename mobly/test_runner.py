@@ -18,7 +18,6 @@ import logging
 import os
 import sys
 import time
-from typing import Any
 
 from mobly import base_test
 from mobly import config_parser

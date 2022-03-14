@@ -2623,7 +2623,9 @@ class BaseTestTest(unittest.TestCase):
 
     logging_patch.debug.assert_called_with('[TestClass]#stage <<< END <<<')
 
-  @mock.patch.object(base_test.controller_manager.ControllerManager, 'register_controller', return_value=mock.MagicMock())
+  @mock.patch.object(base_test.controller_manager.ControllerManager,
+                     'register_controller',
+                     return_value=mock.MagicMock())
   def test_register_controller_with_snippet_client_v2(self, mock_manager_func):
     # modify base test config
     self.mock_test_cls_configs.use_snippet_client_v2 = True
@@ -2640,8 +2642,9 @@ class BaseTestTest(unittest.TestCase):
     android_device.services.snippets.set_client_v2_flag.assert_called_with(True)
     ios_device.set_client_v2_flag.assert_called_with(True)
 
-
-  @mock.patch.object(base_test.controller_manager.ControllerManager, 'register_controller', return_value=mock.MagicMock())
+  @mock.patch.object(base_test.controller_manager.ControllerManager,
+                     'register_controller',
+                     return_value=mock.MagicMock())
   def test_register_controller_no_snippet_client_v2(self, mock_manager_func):
     # modify base test config
     self.mock_test_cls_configs.use_snippet_client_v2 = False
@@ -2658,8 +2661,11 @@ class BaseTestTest(unittest.TestCase):
     android_device.services.snippets.set_client_v2_flag.assert_not_called()
     ios_device.set_client_v2_flag.assert_not_called()
 
-  @mock.patch.object(base_test.controller_manager.ControllerManager, 'register_controller', return_value=mock.MagicMock())
-  def test_register_controller_set_client_v2_to_unknown_controller(self, mock_manager_func):
+  @mock.patch.object(base_test.controller_manager.ControllerManager,
+                     'register_controller',
+                     return_value=mock.MagicMock())
+  def test_register_controller_client_v2_to_unknown_controller(
+      self, mock_manager_func):
     # modify base test config
     self.mock_test_cls_configs.use_snippet_client_v2 = True
     mock_device = mock.Mock(spec=[])

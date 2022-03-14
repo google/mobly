@@ -331,8 +331,8 @@ class BaseTestClass:
         * `required` is True and no corresponding config can be found.
         * Any other error occurred in the registration process.
     """
-    controllers = self._controller_manager.register_controller(module, required,
-                                                               min_number)
+    controllers = self._controller_manager.register_controller(
+        module, required, min_number)
     if self._use_snippet_client_v2:
       for controller in controllers:
         if (hasattr(controller, 'services') and
@@ -342,7 +342,7 @@ class BaseTestClass:
 
         if (hasattr(controller, 'set_client_v2_flag') and
             callable(controller.set_client_v2_flag)):
-          # iOS device controller doesn't have a service manager and creates 
+          # iOS device controller doesn't have a service manager and creates
           # snippet clients itself, so set this flag to itself.
           controller.set_client_v2_flag(True)
           continue
