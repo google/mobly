@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import random
+import string
 import unittest
 from unittest import mock
-
-from tests.lib.snippet import utils as snippet_test_utils
 
 
 class JsonRpcClientTestBase(unittest.TestCase):
@@ -74,6 +74,8 @@ class JsonRpcClientTestBase(unittest.TestCase):
     return fake_file
 
   def generate_rpc_response(self, response_length=1024):
-    mock_response = snippet_test_utils.generate_fix_length_rpc_response(
-        response_length, template=self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH)
+    length = response_length - len(self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH) + 2
+    chars = string.ascii_letters + string.digits
+    random_msg = ''.join(random.choice(chars) for i in range(length))
+    mock_response = self.MOCK_RESP_FLEXIABLE_RESULT_LENGTH % random_msg
     return bytes(mock_response, 'utf-8')

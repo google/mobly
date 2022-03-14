@@ -14,12 +14,43 @@
 """Unit tests for mobly.snippet.client_base."""
 
 import logging
+import random
+import string
 import unittest
 from unittest import mock
 
 from mobly.snippet import client_base
 from mobly.snippet import errors
-from tests.lib.snippet import utils as snippet_utils
+
+
+def _generate_fix_length_rpc_response(
+    response_length,
+    template='{"id": 0, "result": "%s", "error": null, "callback": null}'):
+  """Generates a RPC response string with specified length.
+
+  This function generates a random string and formats the template with the
+  generated random string to get the response string. This function formats
+  the template with printf style string formatting.
+
+  Args:
+    response_length: int, the length of the response string to generate.
+    template: str, the template used for generating the response string.
+
+  Returns:
+    The generated response string.
+
+  Raises:
+    ValueError: if the specified length is too small to generate a response.
+  """
+  length = response_length - len(template) + 2
+  if length < 0:
+    raise ValueError(
+        'The response_length should be no smaller than '
+        'template_length + 2. Got response_length %d, '
+        'template_length %d.', response_length, len(template))
+  chars = string.ascii_letters + string.digits
+  random_msg = ''.join(random.choice(chars) for _ in range(length))
+  return template % random_msg
 
 
 class FakeClient(client_base.ClientBase):
@@ -325,7 +356,7 @@ class ClientBaseTest(unittest.TestCase):
     client.set_snippet_client_verbose_logging(True)
     client.start_server()
 
-    resp = snippet_utils.generate_fix_length_rpc_response(
+    resp = _generate_fix_length_rpc_response(
         client_base._MAX_RPC_RESP_LOGGING_LENGTH * 2)
     mock_send_request.return_value = resp
     client.some_rpc(1, 2)
@@ -340,7 +371,7 @@ class ClientBaseTest(unittest.TestCase):
     client.set_snippet_client_verbose_logging(False)
     client.start_server()
 
-    resp = snippet_utils.generate_fix_length_rpc_response(
+    resp = _generate_fix_length_rpc_response(
         int(client_base._MAX_RPC_RESP_LOGGING_LENGTH // 2))
     mock_send_request.return_value = resp
     client.some_rpc(1, 2)
@@ -355,7 +386,7 @@ class ClientBaseTest(unittest.TestCase):
     client.set_snippet_client_verbose_logging(False)
     client.start_server()
 
-    resp = snippet_utils.generate_fix_length_rpc_response(
+    resp = _generate_fix_length_rpc_response(
         client_base._MAX_RPC_RESP_LOGGING_LENGTH)
     mock_send_request.return_value = resp
     client.some_rpc(1, 2)
@@ -371,7 +402,7 @@ class ClientBaseTest(unittest.TestCase):
     client.start_server()
 
     max_len = client_base._MAX_RPC_RESP_LOGGING_LENGTH
-    resp = snippet_utils.generate_fix_length_rpc_response(max_len * 40)
+    resp = _generate_fix_length_rpc_response(max_len * 40)
     mock_send_request.return_value = resp
     client.some_rpc(1, 2)
     mock_log.debug.assert_called_with(
