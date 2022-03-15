@@ -43,11 +43,11 @@ The JSON RPC protocol expected by this module is:
 """
 
 import abc
+import contextlib
+import enum
 import json
 import threading
-import enum
 import time
-import contextlib
 
 from mobly.snippet import errors
 
