@@ -44,18 +44,19 @@ def _generate_fix_length_rpc_response(
   """
   length = response_length - len(template) + 2
   if length < 0:
-    raise ValueError(
-        'The response_length should be no smaller than '
-        'template_length + 2. Got response_length %d, '
-        'template_length %d.', response_length, len(template))
+    raise ValueError(f'The response_length should be no smaller than '
+                     f'template_length + 2. Got response_length '
+                     f'{response_length}, template_length {len(template)}.')
   chars = string.ascii_letters + string.digits
   random_msg = ''.join(random.choice(chars) for _ in range(length))
   return template % random_msg
 
 
 class FakeClient(client_base.ClientBase):
+  """Fake client class for unit tests."""
 
   def __init__(self):
+    """Initializes the instance by mocking a device controller."""
     mock_device = mock.Mock()
     mock_device.log = logging
     super().__init__(package='FakeClient', device=mock_device)
@@ -96,6 +97,7 @@ class ClientBaseTest(unittest.TestCase):
   """Unit tests for mobly.snippet.client_base.ClientBase."""
 
   def setUp(self):
+    super().setUp()
     self.client = FakeClient()
     self.client.host_port = 12345
 
@@ -126,11 +128,7 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, 'before_starting_server')
   def test_start_server_before_starting_server_fail(self, mock_before_func,
                                                     mock_stop_server):
-    """Test starting server's stage before_starting_server fails.
-
-    Test that when the before_starting_server stage fails with exception, it
-    should not stop the server before exiting.
-    """
+    """Test starting server's stage before_starting_server fails."""
     mock_before_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
@@ -141,11 +139,7 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, 'do_start_server')
   def test_start_server_do_start_server_fail(self, mock_do_start_func,
                                              mock_stop_server):
-    """Test starting server's stage do_start_server fails.
-
-    Test that when the do_start_server stage fails with exception, it should
-    stop the server before exiting.
-    """
+    """Test starting server's stage do_start_server fails."""
     mock_do_start_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
@@ -156,11 +150,7 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, '_build_connection')
   def test_start_server_build_connection_fail(self, mock_build_conn_func,
                                               mock_stop_server):
-    """Test starting server's stage _build_connection fails.
-
-    Test that when the _build_connection fails with exception, it should
-    stop the server before exiting.
-    """
+    """Test starting server's stage _build_connection fails."""
     mock_build_conn_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
@@ -171,11 +161,7 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, 'after_starting_server')
   def test_start_server_after_starting_server_fail(self, mock_after_func,
                                                    mock_stop_server):
-    """Test starting server's stage after_starting_server fails.
-
-    Test that when the stage after_starting_server fails with exception,
-    it should stop the server before exiting.
-    """
+    """Test starting server's stage after_starting_server fails."""
     mock_after_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
@@ -193,6 +179,12 @@ class ClientBaseTest(unittest.TestCase):
     When sending a RPC, the function send_rpc_request uses the output of
     the function _gen_rpc_request, and the function _parse_rpc_response uses the
     output of send_rpc_request. This test case checks above dependencies.
+
+    Args:
+      mock_parse_response: the mock function of FakeClient._parse_rpc_response.
+      mock_send_request: the mock function of FakeClient.send_rpc_request.
+      mock_gen_request: the mock function of FakeClient._gen_rpc_request.
+      mock_precheck: the mock function of FakeClient.check_server_proc_running.
     """
     self.client.start_server()
 
@@ -219,11 +211,7 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, '_parse_rpc_response')
   def test_rpc_precheck_fail(self, mock_parse_response, mock_send_request,
                              mock_gen_request, mock_precheck):
-    """Test RPC precheck fails.
-
-    Test that when a RPC precheck fails with exception, the _rpc function
-    should re-raise that exception and skip sending RPC.
-    """
+    """Test when RPC precheck fails it will skip sending RPC."""
     self.client.start_server()
     mock_precheck.side_effect = Exception('server_died')
 

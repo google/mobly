@@ -86,7 +86,8 @@ class ClientBase(abc.ABC):
   """
 
   def __init__(self, package, device):
-    """
+    """Initializes the instance of ClientBase.
+
     Args:
       package: str, the user-visible name of the snippet library being
         communicated with.
@@ -133,6 +134,9 @@ class ClientBase(abc.ABC):
       Args:
         stage: StartServerStages, the stage which is running under this
           context manager.
+
+      Yields:
+        None.
       """
       self.log.debug('[START_SERVER] Running the stage %s.', stage.name)
       yield
@@ -278,8 +282,8 @@ class ClientBase(abc.ABC):
     Args:
       rpc_func_name: str, the name of the snippet function to execute on the
         server.
-      args: any, the positional arguments of the RPC request.
-      kwargs: any, the keyword arguments of the RPC request.
+      *args: any, the positional arguments of the RPC request.
+      **kwargs: any, the keyword arguments of the RPC request.
 
     Returns:
       The result of the RPC.
@@ -336,8 +340,8 @@ class ClientBase(abc.ABC):
       rpc_id: int, the id of this RPC.
       rpc_func_name: str, the name of the snippet function to execute
         on the server.
-      args: any, the positional arguments of the RPC.
-      kwargs: any, the keyword arguments of the RPC.
+      *args: any, the positional arguments of the RPC.
+      **kwargs: any, the keyword arguments of the RPC.
 
     Returns:
       A string of the JSON RPC request.
