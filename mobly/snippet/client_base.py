@@ -162,7 +162,7 @@ class ClientBase(abc.ABC):
       self.log.error('[START SERVER] Error occurs when starting the server.')
       try:
         self.stop_server()
-      except Exception:
+      except Exception:  # pylint: disable=broad-except
         # Only prints this exception and re-raises the original exception
         self.log.exception('[START_SERVER] Failed to stop server because of '
                            'new exception.')
