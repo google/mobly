@@ -437,7 +437,7 @@ def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
 
 class BuildInfoConstants(enum.Enum):
   """Enums for build info constants used for AndroidDevice build info.
-  
+
   Attributes:
     build_info_key: The key used for the build_info dictionary in AndroidDevice.
     system_prop_key: The key used for getting the build info from system
@@ -791,7 +791,7 @@ class AndroidDevice:
       device is in bootloader mode.
     """
     if self.is_bootloader:
-      self.log.error('Device is in fastboot mode, could not get build ' 'info.')
+      self.log.error('Device is in fastboot mode, could not get build info.')
       return
     if self._build_info is None or self._is_rebooting:
       info = {}
