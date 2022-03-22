@@ -172,46 +172,60 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, 'check_server_proc_running')
   @mock.patch.object(FakeClient, '_gen_rpc_request')
   @mock.patch.object(FakeClient, 'send_rpc_request')
-  @mock.patch.object(FakeClient, '_parse_rpc_response')
-  def test_rpc_stage_dependencies(self, mock_parse_response, mock_send_request,
-                                  mock_gen_request, mock_precheck):
+  @mock.patch.object(FakeClient, '_decode_response_string_and_validate_format')
+  @mock.patch.object(FakeClient, '_handle_rpc_response')
+  def test_rpc_stage_dependencies(self, mock_handle_resp, mock_decode_resp_str,
+                                  mock_send_request, mock_gen_request,
+                                  mock_precheck):
     """Test the internal dependencies when sending a RPC.
 
-    When sending a RPC, the function send_rpc_request uses the output of
-    the function _gen_rpc_request, and the function _parse_rpc_response uses the
-    output of send_rpc_request. This test case checks above dependencies.
+    When sending a RPC, it calls multiple functions in specific order, and
+    each function uses the output of the previously called function. This test
+    case checks above dependencies.
 
     Args:
-      mock_parse_response: the mock function of FakeClient._parse_rpc_response.
+      mock_handle_resp: the mock function of FakeClient._handle_rpc_response.
+      mock_decode_resp_str: the mock function of
+        FakeClient._decode_response_string_and_validate_format.
       mock_send_request: the mock function of FakeClient.send_rpc_request.
       mock_gen_request: the mock function of FakeClient._gen_rpc_request.
       mock_precheck: the mock function of FakeClient.check_server_proc_running.
     """
     self.client.start_server()
 
-    expected_response = ('{"id": 0, "result": 123, "error": null, '
-                         '"callback": null}')
+    expected_response_str = ('{"id": 0, "result": 123, "error": null, '
+                             '"callback": null}')
+    expected_response_dict = {
+        'id': 0,
+        'result': 123,
+        'error': None,
+        'callback': None,
+    }
     expected_request = ('{"id": 10, "method": "some_rpc", "params": [1, 2],'
                         '"kwargs": {"test_key": 3}')
     expected_result = 123
 
     mock_gen_request.return_value = expected_request
-    mock_send_request.return_value = expected_response
-    mock_parse_response.return_value = expected_result
+    mock_send_request.return_value = expected_response_str
+    mock_decode_resp_str.return_value = expected_response_dict
+    mock_handle_resp.return_value = expected_result
     rpc_result = self.client.some_rpc(1, 2, test_key=3)
 
     mock_precheck.assert_called()
     mock_gen_request.assert_called_with(0, 'some_rpc', 1, 2, test_key=3)
     mock_send_request.assert_called_with(expected_request)
-    mock_parse_response.assert_called_with(0, 'some_rpc', expected_response)
+    mock_decode_resp_str.assert_called_with(0, expected_response_str)
+    mock_handle_resp.assert_called_with('some_rpc', expected_response_dict)
     self.assertEqual(rpc_result, expected_result)
 
   @mock.patch.object(FakeClient, 'check_server_proc_running')
   @mock.patch.object(FakeClient, '_gen_rpc_request')
   @mock.patch.object(FakeClient, 'send_rpc_request')
-  @mock.patch.object(FakeClient, '_parse_rpc_response')
-  def test_rpc_precheck_fail(self, mock_parse_response, mock_send_request,
-                             mock_gen_request, mock_precheck):
+  @mock.patch.object(FakeClient, '_decode_response_string_and_validate_format')
+  @mock.patch.object(FakeClient, '_handle_rpc_response')
+  def test_rpc_precheck_fail(self, mock_handle_resp, mock_decode_resp_str,
+                             mock_send_request, mock_gen_request,
+                             mock_precheck):
     """Test when RPC precheck fails it will skip sending RPC."""
     self.client.start_server()
     mock_precheck.side_effect = Exception('server_died')
@@ -221,7 +235,8 @@ class ClientBaseTest(unittest.TestCase):
 
     mock_gen_request.assert_not_called()
     mock_send_request.assert_not_called()
-    mock_parse_response.assert_not_called()
+    mock_handle_resp.assert_not_called()
+    mock_decode_resp_str.assert_not_called()
 
   def test_gen_request(self):
     """Test generating a RPC request.
@@ -244,74 +259,90 @@ class ClientBaseTest(unittest.TestCase):
     expected_result = '{"id": 0, "method": "test_rpc", "params": [1, 2]}'
     self.assertEqual(request, expected_result)
 
-  def test_parse_rpc_no_response(self):
+  def test_rpc_no_response(self):
     """Test parsing an empty RPC response."""
     with self.assertRaisesRegex(errors.ProtocolError,
                                 errors.ProtocolError.NO_RESPONSE_FROM_SERVER):
-      self.client._parse_rpc_response(0, 'some_rpc', '')
+      self.client._decode_response_string_and_validate_format(0, '')
 
     with self.assertRaisesRegex(errors.ProtocolError,
                                 errors.ProtocolError.NO_RESPONSE_FROM_SERVER):
-      self.client._parse_rpc_response(0, 'some_rpc', None)
+      self.client._decode_response_string_and_validate_format(0, None)
 
-  def test_parse_response_missing_fields(self):
+  def test_rpc_response_missing_fields(self):
     """Test parsing a RPC response that misses some required fields."""
     mock_resp_without_id = '{"result": 123, "error": null, "callback": null}'
     with self.assertRaisesRegex(
         errors.ProtocolError,
         errors.ProtocolError.RESPONSE_MISSING_FIELD % 'id'):
-      self.client._parse_rpc_response(10, 'some_rpc', mock_resp_without_id)
+      self.client._decode_response_string_and_validate_format(
+          10, mock_resp_without_id)
 
     mock_resp_without_result = '{"id": 10, "error": null, "callback": null}'
     with self.assertRaisesRegex(
         errors.ProtocolError,
         errors.ProtocolError.RESPONSE_MISSING_FIELD % 'result'):
-      self.client._parse_rpc_response(10, 'some_rpc', mock_resp_without_result)
+      self.client._decode_response_string_and_validate_format(
+          10, mock_resp_without_result)
 
     mock_resp_without_error = '{"id": 10, "result": 123, "callback": null}'
     with self.assertRaisesRegex(
         errors.ProtocolError,
         errors.ProtocolError.RESPONSE_MISSING_FIELD % 'error'):
-      self.client._parse_rpc_response(10, 'some_rpc', mock_resp_without_error)
+      self.client._decode_response_string_and_validate_format(
+          10, mock_resp_without_error)
 
     mock_resp_without_callback = '{"id": 10, "result": 123, "error": null}'
     with self.assertRaisesRegex(
         errors.ProtocolError,
         errors.ProtocolError.RESPONSE_MISSING_FIELD % 'callback'):
-      self.client._parse_rpc_response(10, 'some_rpc',
-                                      mock_resp_without_callback)
+      self.client._decode_response_string_and_validate_format(
+          10, mock_resp_without_callback)
 
-  def test_parse_response_error(self):
+  def test_rpc_response_error(self):
     """Test parsing a RPC response with a non-empty error field."""
-    mock_resp_with_error = ('{"id": 10, "result": 123, "error": "some_error", '
-                            '"callback": null}')
+    mock_resp_with_error = {
+        'id': 10,
+        'result': 123,
+        'error': 'some_error',
+        'callback': None,
+    }
     with self.assertRaisesRegex(errors.ApiError, 'some_error'):
-      self.client._parse_rpc_response(10, 'some_rpc', mock_resp_with_error)
+      self.client._handle_rpc_response('some_rpc', mock_resp_with_error)
 
-  def test_parse_response_callback(self):
+  def test_rpc_response_callback(self):
     """Test parsing response function handles the callback field well."""
-    # Call handle_callback function if the "callback" field is not null
-    mock_resp_with_callback = ('{"id": 10, "result": 123, "error": null, '
-                               '"callback": "1-0"}')
+    # Call handle_callback function if the "callback" field is not None
+    mock_resp_with_callback = {
+        'id': 10,
+        'result': 123,
+        'error': None,
+        'callback': '1-0'
+    }
     with mock.patch.object(self.client,
                            'handle_callback') as mock_handle_callback:
       expected_callback = mock.Mock()
       mock_handle_callback.return_value = expected_callback
 
-      rpc_result = self.client._parse_rpc_response(10, 'some_rpc',
-                                                   mock_resp_with_callback)
+      rpc_result = self.client._handle_rpc_response('some_rpc',
+                                                    mock_resp_with_callback)
       mock_handle_callback.assert_called_with('1-0', 123, 'some_rpc')
       # Ensure the RPC function returns what handle_callback returned
       self.assertIs(expected_callback, rpc_result)
 
-    # Do not call handle_callback function if the "callback" field is null
-    mock_resp = '{"id": 10, "result": 123, "error": null, "callback": null}'
+    # Do not call handle_callback function if the "callback" field is None
+    mock_resp_without_callback = {
+        'id': 10,
+        'result': 123,
+        'error': None,
+        'callback': None
+    }
     with mock.patch.object(self.client,
                            'handle_callback') as mock_handle_callback:
-      self.client._parse_rpc_response(10, 'some_rpc', mock_resp)
+      self.client._handle_rpc_response('some_rpc', mock_resp_without_callback)
       mock_handle_callback.assert_not_called()
 
-  def test_parse_response_id_mismatch(self):
+  def test_rpc_response_id_mismatch(self):
     """Test parsing a RPC response with wrong id."""
     right_id = 5
     wrong_id = 20
@@ -319,7 +350,7 @@ class ClientBaseTest(unittest.TestCase):
 
     with self.assertRaisesRegex(errors.ProtocolError,
                                 errors.ProtocolError.MISMATCHED_API_ID):
-      self.client._parse_rpc_response(wrong_id, 'some_rpc', resp)
+      self.client._decode_response_string_and_validate_format(wrong_id, resp)
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_verbose_logging_with_long_string(self, mock_send_request):

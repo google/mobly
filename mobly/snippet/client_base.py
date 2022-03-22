@@ -56,7 +56,7 @@ from mobly.snippet import errors
 _MAX_RPC_RESP_LOGGING_LENGTH = 1024
 
 # The required field names of RPC response.
-RPC_RESPONSE_REQUIRED_FIELDS = ['id', 'error', 'result', 'callback']
+RPC_RESPONSE_REQUIRED_FIELDS = ('id', 'error', 'result', 'callback')
 
 
 class StartServerStages(enum.Enum):
@@ -316,7 +316,9 @@ class ClientBase(abc.ABC):
                        response[:_MAX_RPC_RESP_LOGGING_LENGTH],
                        len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
 
-    return self._parse_rpc_response(rpc_id, rpc_func_name, response)
+    response_decoded = self._decode_response_string_and_validate_format(
+        rpc_id, response)
+    return self._handle_rpc_response(rpc_func_name, response_decoded)
 
   @abc.abstractmethod
   def check_server_proc_running(self):
@@ -370,27 +372,19 @@ class ClientBase(abc.ABC):
         server.
     """
 
-  def _parse_rpc_response(self, rpc_id, rpc_func_name, response):
-    """Parses the RPC response from the server.
-
-    This function parses the response of the server and checks the response
-    with the Mobly JSON RPC Protocol.
+  def _decode_response_string_and_validate_format(self, rpc_id, response):
+    """Decodes response JSON string to python dict and validates its format.
 
     Args:
       rpc_id: int, the actual id of this RPC. It should be the same with the id
         in the response, otherwise throws an error.
-      rpc_func_name: str, the name of the function that this RPC triggered
-        on the snippet server.
       response: str, the JSON string of the RPC response.
 
     Returns:
-      The result of the RPC. If sync RPC, returns the result field of
-      the response. If async RPC, returns the callback handler object.
+      A dict decoded from the response JSON string.
 
     Raises:
-      errors.ProtocolError: if finds something wrong when parsing the response.
-      errors.ApiError: if the response contains non-empty error information,
-        which indicates that the snippet function executed with errors.
+      errors.ProtocolError: if the response format is invalid.
     """
     if not response:
       raise errors.ProtocolError(self._device,
@@ -403,19 +397,42 @@ class ClientBase(abc.ABC):
             self._device,
             errors.ProtocolError.RESPONSE_MISSING_FIELD % field_name)
 
-    if result['error']:
-      raise errors.ApiError(self._device, result['error'])
     if result['id'] != rpc_id:
       raise errors.ProtocolError(self._device,
                                  errors.ProtocolError.MISMATCHED_API_ID)
-    if result['callback'] is not None:
-      return self.handle_callback(result['callback'], result['result'],
+
+    return result
+
+  def _handle_rpc_response(self, rpc_func_name, response):
+    """Handles the content of RPC response.
+
+    If the RPC response contains error information, it throws an error. If the
+    RPC is asynchronous, it creates and returns a callback handler
+    object. Otherwise, it returns the result field of the response.
+
+    Args:
+      rpc_func_name: str, the name of the snippet function that this RPC
+        triggered on the snippet server.
+      response: dict, the object decoded from the response JSON string.
+
+    Returns:
+      The result of the RPC. If synchronous RPC, it is the result field of the
+      response. If asynchronous RPC, it is the callback handler object.
+
+    Raises:
+      errors.ApiError: if the snippet function executed with errors.
+    """
+
+    if response['error']:
+      raise errors.ApiError(self._device, response['error'])
+    if response['callback'] is not None:
+      return self.handle_callback(response['callback'], response['result'],
                                   rpc_func_name)
-    return result['result']
+    return response['result']
 
   @abc.abstractmethod
   def handle_callback(self, callback_id, ret_value, rpc_func_name):
-    """Creates a callback handler for the async RPC.
+    """Creates a callback handler for the asynchronous RPC.
 
     Args:
       callback_id: str, the callback ID for creating a callback handler object.
