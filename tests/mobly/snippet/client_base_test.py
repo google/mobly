@@ -42,14 +42,15 @@ def _generate_fix_length_rpc_response(
   Raises:
     ValueError: if the specified length is too small to generate a response.
   """
-  length = response_length - len(template) + 2
-  if length < 0:
+  # We need to -2 here because the string formatting will delete the substring
+  # '%s' in the template, of which the length is 2.
+  result_length = response_length - (len(template) - 2)
+  if result_length < 0:
     raise ValueError(f'The response_length should be no smaller than '
                      f'template_length + 2. Got response_length '
                      f'{response_length}, template_length {len(template)}.')
   chars = string.ascii_letters + string.digits
-  random_msg = ''.join(random.choice(chars) for _ in range(length))
-  return template % random_msg
+  return template % ''.join(random.choice(chars) for _ in range(result_length))
 
 
 class FakeClient(client_base.ClientBase):
