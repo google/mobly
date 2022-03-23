@@ -13,27 +13,12 @@
 # limitations under the License.
 """Snippet Client V2 for Interacting with Snippet Server on Android Device."""
 
-# When the Python library `socket.create_connection` call is made, it indirectly
-# calls `import encodings.idna` through the `socket.getaddrinfo` method.
-# However, this chain of function calls is apparently not thread-safe in
-# embedded Python environments. So, pre-emptively import and cache the encoder.
-# See https://bugs.python.org/issue17305 for more details.
-try:
-  import encodings.idna
-except ImportError:
-  # Some implementations of Python (e.g. IronPython) do not support the`idna`
-  # encoding, so ignore import failures based on that.
-  pass
-
-import json
 import re
-import socket
-import time
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import errors as android_device_lib_errors
-from mobly.controllers.android_device_lib import callback_handler
+from mobly.controllers.android_device_lib import (
+    errors as android_device_lib_errors)
 from mobly.snippet import client_base
 from mobly.snippet import errors
 
@@ -96,6 +81,7 @@ class SnippetClientV2(client_base.ClientBase):
     super().__init__(package=package, device=ad)
     self._adb = ad.adb
     self._user_id = None
+    self._proc = None
 
   @property
   def user_id(self):
@@ -127,7 +113,7 @@ class SnippetClientV2(client_base.ClientBase):
     self._disable_hidden_api_blacklist()
 
   def _check_snippet_app_installed(self):
-    """Checks that the Mobly Snippet app is installed for the current user.
+    """Checks that the Mobly Snippet app is installed on the remote device.
 
     Raises:
       errors.ServerStartPreCheckError: if the server app is not installed or
@@ -148,13 +134,12 @@ class SnippetClientV2(client_base.ClientBase):
       raise errors.ServerStartPreCheckError(
           self._device,
           f'{self.package} is installed, but it is not instrumented.')
-    match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
-                      matched_out[0])
-
-    target_name = match.group(3)
 
     # Check that the instrumentation target is installed if it's not the
     # same as the snippet package.
+    match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
+                      matched_out[0])
+    target_name = match.group(3)
     if target_name != self.package:
       out = self._adb.shell(f'pm list package --user {self.user_id}')
       if not utils.grep(f'^package:{target_name}$', out):
@@ -185,17 +170,16 @@ class SnippetClientV2(client_base.ClientBase):
         starting process is unknown.
     """
     persists_shell_cmd = self._get_persist_command()
-    # Use log.info here so people can follow along with the snippet startup
-    # process. Starting snippets can be slow, especially if there are
-    # multiple, and this avoids the perception that the framework is hanging
-    # for a long time doing nothing.
+    # Use log.info here so people can follow along with the server startup
+    # process. Starting servers can be slow, especially if there are
+    # multiple servers, this avoids the perception that the framework
+    # is hanging for a long time doing nothing.
     self.log.info('Launching snippet package %s with protocol %d.%d',
                   self.package, _PROTOCOL_MAJOR_VERSION,
                   _PROTOCOL_MINOR_VERSION)
-    cmd = _LAUNCH_CMD.format(
-        shell_cmd=persists_shell_cmd,
-        user=self._get_user_command_string(),
-        snippet_package=self.package)
+    cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
+                             user=self._get_user_command_string(),
+                             snippet_package=self.package)
     self._proc = self._run_adb_cmd(cmd)
 
     # Check protocol version and get the device port
@@ -209,7 +193,6 @@ class SnippetClientV2(client_base.ClientBase):
     if not match:
       raise errors.ServerStartProtocolError(self._device, line)
     self.device_port = int(match.group(1))
-
 
   def _run_adb_cmd(self, cmd):
     """Starts a long-running ADB subprocess and returns it immediately."""
@@ -235,17 +218,16 @@ class SnippetClientV2(client_base.ClientBase):
         _SETSID_COMMAND, _NOHUP_COMMAND)
     return ''
 
-  # TODO(mhaoli): Modify docstring
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying user IDs.
 
-    By default, `SnippetClient` operates within the current user.
-    We don't add the `--user {ID}` arg when Android's SDK is below 24,
+    By default, snippet client operates within the current user. We
+    don't add the `--user {ID}` argument when Android's SDK is below 24,
     where multi-user support is not well implemented.
 
     Returns:
-      String, the command param section to be formatted into the adb
-      commands.
+      A string of the command argument section to be formatted into
+      adb commands.
     """
     sdk_int = int(self._device.build_info['build_version_sdk'])
     if sdk_int < 24:
@@ -284,19 +266,19 @@ class SnippetClientV2(client_base.ClientBase):
 
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
-  def do_stop_server(self):
-    """Stops the snippet server and cleans allocated resources."""
-    # Although killing the snippet server would abort this process anyway, we
-    # want to call stop_standing_subprocess() to perform a health check,
-    # print the failure stack trace if there was any, and reap it from the
-    # process table. Note that it's much more important to ensure that the
-    # allocated resources on the host side are cleaned.
-    self._kill_server_subprocess()
-    self._kill_server()
-
   def after_starting_server(self):
     """See base class."""
     # This client does nothing at this stage.
+
+  def do_stop_server(self):
+    """Stops the snippet server and cleans allocated resources on host side."""
+    # Although killing the snippet server would abort this process anyway, we
+    # want to call stop_standing_subprocess() to perform a health check,
+    # print the failure stack trace if there was any, and reap it from the
+    # process table. Note that it's much more important to ensure cleaning all
+    # the allocated resources on the host side than on the remote device side.
+    self._kill_server_subprocess()
+    self._kill_server()
 
   def _kill_server_subprocess(self):
     """Kills the long running server subprocess running on host side."""
