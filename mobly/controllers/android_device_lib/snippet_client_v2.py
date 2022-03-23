@@ -55,7 +55,7 @@ _PROTOCOL_MINOR_VERSION = 0
 # "UiAutomation not connected"). To keep the shell session and redirect
 # stdin/stdout/stderr, use "setsid" or "nohup" while launching the
 # instrumentation test. Because these commands may not be available in every
-# Android system, try to use them only if exists.
+# Android system, try to use it only if at least one exists.
 _SETSID_COMMAND = 'setsid'
 
 _NOHUP_COMMAND = 'nohup'
@@ -196,7 +196,7 @@ class SnippetClientV2(client_base.ClientBase):
     self.device_port = int(match.group(1))
 
   def _run_adb_cmd(self, cmd):
-    """Starts a long-running ADB subprocess and returns it immediately."""
+    """Starts a long-running adb subprocess and returns it immediately."""
     adb_cmd = [adb.ADB]
     if self._adb.serial:
       adb_cmd += ['-s', self._adb.serial]
@@ -288,7 +288,7 @@ class SnippetClientV2(client_base.ClientBase):
       self._proc = None
 
   def _kill_server(self):
-    """Sends the stop singal to remote server.
+    """Sends the stop signal to the remote server.
 
     Raises:
       android_device_lib_errors.DeviceError: if the server exited with errors.
@@ -300,4 +300,4 @@ class SnippetClientV2(client_base.ClientBase):
     if 'OK (0 tests)' not in out:
       raise android_device_lib_errors.DeviceError(
           self._device,
-          f'Stopping existing server got unexpected output: {out}.')
+          f'Stopping the existing server got an unexpected output: {out}.')
