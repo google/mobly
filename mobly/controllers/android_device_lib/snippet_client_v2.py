@@ -17,8 +17,8 @@ import re
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import (
-    errors as android_device_lib_errors)
+from mobly.controllers.android_device_lib import (errors as
+                                                  android_device_lib_errors)
 from mobly.snippet import client_base
 from mobly.snippet import errors
 
@@ -71,15 +71,16 @@ class SnippetClientV2(client_base.ClientBase):
   mobly-snippet-lib, SnippetRunner.java.
   """
 
-  def __init__(self, package, ad):
+  def __init__(self, package, device):
     """Initializes the instance of Snippet Client V2.
 
     Args:
       package: str, see base class.
-      ad: AndroidDevice, the android device object associated with this client.
+      device: AndroidDevice, the android device object associated with this
+        client.
     """
-    super().__init__(package=package, device=ad)
-    self._adb = ad.adb
+    super().__init__(package=package, device=device)
+    self._adb = device.adb
     self._user_id = None
     self._proc = None
 
@@ -106,8 +107,8 @@ class SnippetClientV2(client_base.ClientBase):
     """Prepares for starting the server.
 
     Raises:
-      errors.ServerStartPreCheckError: if the server app is not installed or
-        recognized for the current user.
+      errors.ServerStartPreCheckError: if the server app is not installed
+        for the current user.
     """
     self._check_snippet_app_installed()
     self._disable_hidden_api_blacklist()
@@ -116,8 +117,8 @@ class SnippetClientV2(client_base.ClientBase):
     """Checks that the Mobly Snippet app is installed on the remote device.
 
     Raises:
-      errors.ServerStartPreCheckError: if the server app is not installed or
-        recognized for the current user.
+      errors.ServerStartPreCheckError: if the server app is not installed
+        for the current user.
     """
     out = self._adb.shell(f'pm list package --user {self.user_id}')
     if not utils.grep(f'^package:{self.package}$', out):
@@ -219,7 +220,7 @@ class SnippetClientV2(client_base.ClientBase):
     return ''
 
   def _get_user_command_string(self):
-    """Gets the appropriate command argument for specifying user IDs.
+    """Gets the appropriate command argument for specifying device user ID.
 
     By default, snippet client operates within the current user. We
     don't add the `--user {ID}` argument when Android's SDK is below 24,
@@ -299,4 +300,4 @@ class SnippetClientV2(client_base.ClientBase):
     if 'OK (0 tests)' not in out:
       raise android_device_lib_errors.DeviceError(
           self._device,
-          f'Failed to stop existing server. Unexpected output: {out}')
+          f'Stopping existing server got unexpected output: {out}.')

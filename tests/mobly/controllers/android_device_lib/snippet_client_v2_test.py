@@ -17,8 +17,8 @@ import unittest
 from unittest import mock
 
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import (
-    errors as android_device_lib_errors)
+from mobly.controllers.android_device_lib import (errors as
+                                                  android_device_lib_errors)
 from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.snippet import errors
 from tests.lib import mock_android_device
@@ -88,7 +88,7 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_proc.stdout.readline.side_effect = resp_lines
 
   def test_check_app_installed_normal(self):
-    """Tests that app checker runs normally with installing app correctly."""
+    """Tests that app checker runs normally when app installed correctly."""
     self._make_client()
     self.client._check_snippet_app_installed()
 
@@ -109,7 +109,7 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(errors.ServerStartPreCheckError, expected_msg):
       self.client._check_snippet_app_installed()
 
-  def test_check_app_installed_fail_target_not_installed(self):
+  def test_check_app_installed_fail_instrumentation_not_installed(self):
     """Tests that app checker fails without installing instrumentation."""
     self._make_client(
         mock_android_device.MockAdbProxy(instrumented_packages=[(
@@ -144,8 +144,8 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_shell_func.assert_not_called()
 
   @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
-  def test_disable_hidden_api_low_sdk_with_android_p(self, mock_shell_func):
-    """Tests it disables hidden api with low SDK and Android P."""
+  def test_disable_hidden_api_sdk_27_and_android_p(self, mock_shell_func):
+    """Tests it disables hidden api with SDK verion 27 and Android P."""
     self._make_client_with_extra_adb_properties({
         'ro.build.version.codename': 'P',
         'ro.build.version.sdk': '27',
@@ -181,12 +181,10 @@ class SnippetClientV2Test(unittest.TestCase):
         ])
 
     self.client.do_start_server()
-    # Notes that --user should be added to the command if SDK >= 24
     start_cmd_list = [
         'adb', 'shell',
         (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start '
-         f'{MOCK_PACKAGE_NAME}/'
-         f'{snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE}')
+         f'{MOCK_SERVER_PATH}')
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
                          [mock.call(start_cmd_list, shell=False)])
@@ -200,7 +198,7 @@ class SnippetClientV2Test(unittest.TestCase):
                      return_value=b'setsid')
   def test_do_start_server_without_user_id(self, mock_adb,
                                            mock_start_subprocess):
-    """Checks that `--user` is not added to starting command on SDK < 24."""
+    """Tests that `--user` is not added to starting command on SDK < 24."""
     self._make_client_with_extra_adb_properties({'ro.build.version.sdk': '21'})
     self._mock_server_process_starting_response(
         mock_start_subprocess,
@@ -209,7 +207,6 @@ class SnippetClientV2Test(unittest.TestCase):
         ])
 
     self.client.do_start_server()
-    # Notes that --user is not added to the command if SDK < 24
     start_cmd_list = [
         'adb', 'shell',
         f'setsid am instrument  -w -e action start {MOCK_SERVER_PATH}'
@@ -417,7 +414,7 @@ class SnippetClientV2Test(unittest.TestCase):
                      return_value=b'Closed with error.')
   def test_stop_server_stop_with_error(self, mock_android_device_shell,
                                        mock_stop_standing_subprocess):
-    """Tests stopping server process throws an error."""
+    """Tests all resources are cleaned even if stopping server has error."""
     self._make_client()
     mock_proc = mock.Mock()
     self.client._proc = mock_proc
