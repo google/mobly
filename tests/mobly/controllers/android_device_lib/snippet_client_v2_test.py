@@ -87,7 +87,7 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_proc = mock_start_subprocess.return_value
     mock_proc.stdout.readline.side_effect = resp_lines
 
-  def test_check_app_installed_normal(self):
+  def test_check_app_installed_normally(self):
     """Tests that app checker runs normally when app installed correctly."""
     self._make_client()
     self.client._check_snippet_app_installed()
@@ -121,7 +121,7 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client._check_snippet_app_installed()
 
   @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
-  def test_disable_hidden_api_normal(self, mock_shell_func):
+  def test_disable_hidden_api_normally(self, mock_shell_func):
     """Tests the disabling hidden api process works normally."""
     self._make_client_with_extra_adb_properties({
         'ro.build.version.codename': 'S',
@@ -145,7 +145,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
   def test_disable_hidden_api_sdk_27_and_android_p(self, mock_shell_func):
-    """Tests it disables hidden api with SDK verion 27 and Android P."""
+    """Tests it disables hidden api with SDK version 27 and Android P."""
     self._make_client_with_extra_adb_properties({
         'ro.build.version.codename': 'P',
         'ro.build.version.sdk': '27',
@@ -224,7 +224,7 @@ class SnippetClientV2Test(unittest.TestCase):
                                               'ret_code'))
   def test_do_start_server_without_persistence(self, mock_adb,
                                                mock_start_subprocess):
-    """Checks the starting server command without persistant commands."""
+    """Checks the starting server command without persistent commands."""
     self._make_client()
     self._mock_server_process_starting_response(
         mock_start_subprocess,
@@ -379,8 +379,8 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch.object(mock_android_device.MockAdbProxy,
                      'shell',
                      return_value=b'OK (0 tests)')
-  def test_stop_server_normal(self, mock_android_device_shell,
-                              mock_stop_standing_subprocess):
+  def test_stop_server_normally(self, mock_android_device_shell,
+                                mock_stop_standing_subprocess):
     """Tests that stopping server process works normally."""
     self._make_client()
     mock_proc = mock.Mock()
