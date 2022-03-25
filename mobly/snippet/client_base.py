@@ -142,7 +142,11 @@ class ClientBase(abc.ABC):
       yield
       self.log.debug('[START_SERVER] Finished the stage %s.', stage.name)
 
-    self.log.debug('Starting the server.')
+    # Use log.info here so people can follow along with the server startup
+    # process. Starting servers can be slow, especially if there are
+    # multiple servers, this avoids the perception that the framework
+    # is hanging for a long time doing nothing.
+    self.log.info('Starting the snippet server for package %s.', self.package)
     start_time = time.perf_counter()
 
     with _execute_one_stage(StartServerStages.BEFORE_STARTING_SERVER):

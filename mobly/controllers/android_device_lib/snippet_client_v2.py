@@ -171,13 +171,9 @@ class SnippetClientV2(client_base.ClientBase):
         starting process is unknown.
     """
     persists_shell_cmd = self._get_persist_command()
-    # Use log.info here so people can follow along with the server startup
-    # process. Starting servers can be slow, especially if there are
-    # multiple servers, this avoids the perception that the framework
-    # is hanging for a long time doing nothing.
-    self.log.info('Launching snippet package %s with protocol %d.%d',
-                  self.package, _PROTOCOL_MAJOR_VERSION,
-                  _PROTOCOL_MINOR_VERSION)
+    self.log.debug('Snippet server for package %s is using protocol %d.%d',
+                   self.package, _PROTOCOL_MAJOR_VERSION,
+                   _PROTOCOL_MINOR_VERSION)
     cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
                              user=self._get_user_command_string(),
                              snippet_package=self.package)
