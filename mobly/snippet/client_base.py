@@ -116,7 +116,11 @@ class ClientBase(abc.ABC):
       errors.ServerStartError: when failed to start the snippet server.
     """
 
-    self.log.debug('Initializing the snippet package %s.', self.package)
+    # Use log.info here so people can follow along with the server startup
+    # process. Starting servers can be slow, especially if there are
+    # multiple servers, this avoids the perception that the framework
+    # is hanging for a long time doing nothing.
+    self.log.info('Initializing the snippet package %s.', self.package)
     start_time = time.perf_counter()
 
     self.log.debug('Preparing to start the snippet server of %s.', self.package)
