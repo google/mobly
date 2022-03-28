@@ -71,16 +71,15 @@ class SnippetClientV2(client_base.ClientBase):
   mobly-snippet-lib, SnippetRunner.java.
   """
 
-  def __init__(self, package, device):
+  def __init__(self, package, ad):
     """Initializes the instance of Snippet Client V2.
 
     Args:
       package: str, see base class.
-      device: AndroidDevice, the android device object associated with this
-        client.
+      ad: AndroidDevice, the android device object associated with this client.
     """
-    super().__init__(package=package, device=device)
-    self._adb = device.adb
+    super().__init__(package=package, device=ad)
+    self._adb = ad.adb
     self._user_id = None
     self._proc = None
 
@@ -93,7 +92,7 @@ class SnippetClientV2(client_base.ClientBase):
     multiple users.
 
     Thus this value is cached and, once set, does not change through the
-    lifecycle of this snippet client object. This caching also reduces the
+    lifecycles of this snippet client object. This caching also reduces the
     number of adb calls needed.
 
     Returns:
@@ -111,7 +110,7 @@ class SnippetClientV2(client_base.ClientBase):
         for the current user.
     """
     self._check_snippet_app_installed()
-    self._disable_hidden_api_blacklist()
+    self._disable_hidden_api_blocklist()
 
   def _check_snippet_app_installed(self):
     """Checks that the Mobly Snippet app is installed on the remote device.
@@ -149,13 +148,14 @@ class SnippetClientV2(client_base.ClientBase):
             f'Instrumentation target {target_name} is not installed for user '
             f'{self.user_id}.')
 
-  def _disable_hidden_api_blacklist(self):
-    """If necessary and possible, disables hidden api blacklist."""
+  def _disable_hidden_api_blocklist(self):
+    """If necessary and possible, disables hidden api blocklist."""
+    version_codename = self._device.build_info['build_version_codename']
+    sdk_version = int(self._device.build_info['build_version_sdk'])
     # Check version_codename in addition to sdk_version because Android P builds
-    # in development report sdk_version 27, but still enforce the blacklist.
-    if self._device.is_rootable and (
-        int(self._device.build_info['build_version_sdk']) >= 28 or
-        self._device.build_info['build_version_codename'] == 'P'):
+    # in development report sdk_version 27, but still enforce the blocklist.
+    if self._device.is_rootable and (sdk_version >= 28 or
+                                     version_codename == 'P'):
       self._device.adb.shell(
           'settings put global hidden_api_blacklist_exemptions "*"')
 
@@ -226,8 +226,8 @@ class SnippetClientV2(client_base.ClientBase):
       A string of the command argument section to be formatted into
       adb commands.
     """
-    sdk_int = int(self._device.build_info['build_version_sdk'])
-    if sdk_int < 24:
+    sdk_version = int(self._device.build_info['build_version_sdk'])
+    if sdk_version < 24:
       return ''
     return f'--user {self.user_id}'
 
@@ -297,3 +297,28 @@ class SnippetClientV2(client_base.ClientBase):
       raise android_device_lib_errors.DeviceError(
           self._device,
           f'Stopping the existing server got an unexpected output: {out}.')
+
+  # TODO(mhaoli): Temporally override these abstract methods so that we can
+  # initialize the instances in unit tests. We are implementing these functions
+  # in the next PR as soon as possible.
+  def build_connection(self):
+    raise NotImplementedError('To be implemented.')
+
+  def close_connection(self):
+    raise NotImplementedError('To be implemented.')
+
+  def __del__(self):
+    # Override the destructor to not call close_connection for now.
+    pass
+
+  def send_rpc_request(self, request):
+    raise NotImplementedError('To be implemented.')
+
+  def check_server_proc_running(self):
+    raise NotImplementedError('To be implemented.')
+
+  def handle_callback(self, callback_id, ret_value, rpc_func_name):
+    raise NotImplementedError('To be implemented.')
+
+  def restore_server_connection(self, port=None):
+    raise NotImplementedError('To be implemented.')
