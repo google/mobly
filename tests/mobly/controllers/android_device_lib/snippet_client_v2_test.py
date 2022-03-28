@@ -29,30 +29,6 @@ MOCK_SERVER_PATH = (f'{MOCK_PACKAGE_NAME}/'
 MOCK_USER_ID = 0
 
 
-class _FakeClient(snippet_client_v2.SnippetClientV2):
-  """Fake client class for unit tests."""
-
-  # TODO(mhaoli): These functions are temporally overridden and will be
-  # deleted once the implementation of SnippetClientV2 finishes.
-  def build_connection(self):
-    pass
-
-  def close_connection(self):
-    pass
-
-  def send_rpc_request(self, request):
-    pass
-
-  def check_server_proc_running(self):
-    pass
-
-  def handle_callback(self, callback_id, ret_value, rpc_func_name):
-    pass
-
-  def restore_server_connection(self, port=None):
-    pass
-
-
 class SnippetClientV2Test(unittest.TestCase):
   """Unit tests for SnippetClientV2."""
 
@@ -75,7 +51,7 @@ class SnippetClientV2Test(unittest.TestCase):
             adb_proxy.getprop('ro.build.version.sdk'),
     }
 
-    self.client = _FakeClient(MOCK_PACKAGE_NAME, device)
+    self.client = snippet_client_v2.SnippetClientV2(MOCK_PACKAGE_NAME, device)
 
   def _make_client_with_extra_adb_properties(self, extra_properties):
     mock_properties = mock_android_device.DEFAULT_MOCK_PROPERTIES.copy()
@@ -128,7 +104,7 @@ class SnippetClientV2Test(unittest.TestCase):
         'ro.build.version.sdk': '31',
     })
     self.client._device.is_rootable = True
-    self.client._disable_hidden_api_blacklist()
+    self.client._disable_hidden_api_blocklist()
     mock_shell_func.assert_called_with(
         'settings put global hidden_api_blacklist_exemptions "*"')
 
@@ -140,7 +116,7 @@ class SnippetClientV2Test(unittest.TestCase):
         'ro.build.version.sdk': '26',
     })
     self.client._device.is_rootable = True
-    self.client._disable_hidden_api_blacklist()
+    self.client._disable_hidden_api_blocklist()
     mock_shell_func.assert_not_called()
 
   @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
@@ -151,7 +127,7 @@ class SnippetClientV2Test(unittest.TestCase):
         'ro.build.version.sdk': '27',
     })
     self.client._device.is_rootable = True
-    self.client._disable_hidden_api_blacklist()
+    self.client._disable_hidden_api_blocklist()
     mock_shell_func.assert_called_with(
         'settings put global hidden_api_blacklist_exemptions "*"')
 
@@ -163,7 +139,7 @@ class SnippetClientV2Test(unittest.TestCase):
         'ro.build.version.sdk': '31',
     })
     self.client._device.is_rootable = False
-    self.client._disable_hidden_api_blacklist()
+    self.client._disable_hidden_api_blocklist()
     mock_shell_func.assert_not_called()
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
