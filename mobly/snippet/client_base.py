@@ -101,9 +101,9 @@ class ClientBase(abc.ABC):
     """Initializes the snippet client to interact with the remote device.
 
     This function contains following stages:
-      - preparing for starting the snippet server.
-      - starting the snippet server on the remote device.
-      - initializing a connection with the snippet server.
+      1. preparing to start the snippet server.
+      2. starting the snippet server on the remote device.
+      3. initializing a connection with the snippet server.
 
     After this, the self.host_port and self.device_port attributes must be
     set.
@@ -119,9 +119,9 @@ class ClientBase(abc.ABC):
     self.log.debug('Initializing the snippet package %s.', self.package)
     start_time = time.perf_counter()
 
-    self.log.debug('Preparing starting the snippet server for %s.',
+    self.log.debug('Preparing to start the snippet server for %s.',
                    self.package)
-    self.prepare_starting_server()
+    self.before_starting_server()
 
     try:
       self.log.debug('Starting the snippet server for %s.', self.package)
@@ -151,8 +151,8 @@ class ClientBase(abc.ABC):
                    time.perf_counter() - start_time, self.host_port)
 
   @abc.abstractmethod
-  def prepare_starting_server(self):
-    """Prepares for starting the server.
+  def before_starting_server(self):
+    """Performs preparation steps before starting the remote server.
 
     For example, subclass can check or modify the device settings at this
     stage.

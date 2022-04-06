@@ -63,7 +63,7 @@ class FakeClient(client_base.ClientBase):
     super().__init__(package='FakeClient', device=mock_device)
 
   # Override abstract methods to enable initialization
-  def prepare_starting_server(self):
+  def before_starting_server(self):
     pass
 
   def start_server(self):
@@ -99,32 +99,32 @@ class ClientBaseTest(unittest.TestCase):
     self.client = FakeClient()
     self.client.host_port = 12345
 
-  @mock.patch.object(FakeClient, 'prepare_starting_server')
+  @mock.patch.object(FakeClient, 'before_starting_server')
   @mock.patch.object(FakeClient, 'start_server')
   @mock.patch.object(FakeClient, '_init_connection')
   def test_init_server_stage_order(self, mock_init_conn_func, mock_start_func,
-                                   mock_prepare_func):
+                                   mock_before_func):
     """Test that initialization runs its stages in expected order."""
     order_manager = mock.Mock()
-    order_manager.attach_mock(mock_prepare_func, 'mock_prepare_func')
+    order_manager.attach_mock(mock_before_func, 'mock_before_func')
     order_manager.attach_mock(mock_start_func, 'mock_start_func')
     order_manager.attach_mock(mock_init_conn_func, 'mock_init_conn_func')
 
     self.client.initialize()
 
     expected_call_order = [
-        mock.call.mock_prepare_func(),
+        mock.call.mock_before_func(),
         mock.call.mock_start_func(),
         mock.call.mock_init_conn_func(),
     ]
     self.assertListEqual(order_manager.mock_calls, expected_call_order)
 
   @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, 'prepare_starting_server')
-  def test_init_server_prepare_starting_server_fail(self, mock_prepare_func,
-                                                    mock_stop_server):
-    """Test prepare_starting_server stage of initialization fails."""
-    mock_prepare_func.side_effect = Exception('ha')
+  @mock.patch.object(FakeClient, 'before_starting_server')
+  def test_init_server_before_starting_server_fail(self, mock_before_func,
+                                                   mock_stop_server):
+    """Test before_starting_server stage of initialization fails."""
+    mock_before_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
       self.client.initialize()
