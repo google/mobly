@@ -98,12 +98,12 @@ class ClientBase(abc.ABC):
     self.close_connection()
 
   def initialize(self):
-    """Starts the server on the remote device and connects to it.
+    """Initializes the snippet client to interact with the remote device.
 
-    This process contains following stages:
-      - preparing for starting the server.
-      - starting the server on the remote device.
-      - initializing a connection with the server.
+    This function contains following stages:
+      - preparing for starting the snippet server.
+      - starting the snippet server on the remote device.
+      - initializing a connection with the snippet server.
 
     After this, the self.host_port and self.device_port attributes must be
     set.
