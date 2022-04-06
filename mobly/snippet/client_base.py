@@ -127,9 +127,8 @@ class ClientBase(abc.ABC):
       self.log.debug('Starting the snippet server for %s.', self.package)
       self.start_server()
 
-      self.log.debug(
-          'Initializing a connection with the snippet server for %s.',
-          self.package)
+      self.log.debug('Initiating a connection with the snippet server for %s.',
+                     self.package)
       self._init_connection()
 
     except Exception:
@@ -152,7 +151,7 @@ class ClientBase(abc.ABC):
 
   @abc.abstractmethod
   def before_starting_server(self):
-    """Performs preparation steps before starting the remote server.
+    """Performs the preparation steps before starting the remote server.
 
     For example, subclass can check or modify the device settings at this
     stage.
@@ -180,10 +179,10 @@ class ClientBase(abc.ABC):
 
   @abc.abstractmethod
   def init_connection(self):
-    """Initializes a connection with the server on the remote device.
+    """Initiates a connection with the server on the remote device.
 
-    This function initializes a connection to it and sends a handshake
-    to ensure the server is available for upcoming RPCs.
+    This function initiates a connection to the server and sends a handshake
+    request to ensure the server is available for upcoming RPCs.
 
     There are two types of connections used by snippet clients:
     * the client builds a connection each time it wants to send a RPC,
@@ -193,7 +192,7 @@ class ClientBase(abc.ABC):
 
     This function uses self.host_port for communicating with the server. If
     self.host_port is 0 or None, this function finds an available host port to
-    initialize connection and set self.host_port to the found port.
+    initiate the connection and set self.host_port to the found port.
 
     Raises:
       errors.ProtocolError: something went wrong when exchanging data with the
