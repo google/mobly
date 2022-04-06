@@ -63,16 +63,13 @@ class FakeClient(client_base.ClientBase):
     super().__init__(package='FakeClient', device=mock_device)
 
   # Override abstract methods to enable initialization
-  def before_starting_server(self):
+  def prepare_starting_server(self):
     pass
 
-  def do_start_server(self):
+  def start_server(self):
     pass
 
-  def build_connection(self):
-    pass
-
-  def after_starting_server(self):
+  def init_connection(self):
     pass
 
   def restore_server_connection(self, port=None):
@@ -102,71 +99,57 @@ class ClientBaseTest(unittest.TestCase):
     self.client = FakeClient()
     self.client.host_port = 12345
 
-  @mock.patch.object(FakeClient, 'before_starting_server')
-  @mock.patch.object(FakeClient, 'do_start_server')
-  @mock.patch.object(FakeClient, '_build_connection')
-  @mock.patch.object(FakeClient, 'after_starting_server')
-  def test_start_server_stage_order(self, mock_after_func, mock_build_conn_func,
-                                    mock_do_start_func, mock_before_func):
-    """Test that starting server runs its stages in expected order."""
+  @mock.patch.object(FakeClient, 'prepare_starting_server')
+  @mock.patch.object(FakeClient, 'start_server')
+  @mock.patch.object(FakeClient, '_init_connection')
+  def test_init_server_stage_order(self, mock_init_conn_func, mock_start_func,
+                                   mock_prepare_func):
+    """Test that initialization runs its stages in expected order."""
     order_manager = mock.Mock()
-    order_manager.attach_mock(mock_before_func, 'mock_before_func')
-    order_manager.attach_mock(mock_do_start_func, 'mock_do_start_func')
-    order_manager.attach_mock(mock_build_conn_func, 'mock_build_conn_func')
-    order_manager.attach_mock(mock_after_func, 'mock_after_func')
+    order_manager.attach_mock(mock_prepare_func, 'mock_prepare_func')
+    order_manager.attach_mock(mock_start_func, 'mock_start_func')
+    order_manager.attach_mock(mock_init_conn_func, 'mock_init_conn_func')
 
-    self.client.start_server()
+    self.client.initialize()
 
     expected_call_order = [
-        mock.call.mock_before_func(),
-        mock.call.mock_do_start_func(),
-        mock.call.mock_build_conn_func(),
-        mock.call.mock_after_func(),
+        mock.call.mock_prepare_func(),
+        mock.call.mock_start_func(),
+        mock.call.mock_init_conn_func(),
     ]
     self.assertListEqual(order_manager.mock_calls, expected_call_order)
 
   @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, 'before_starting_server')
-  def test_start_server_before_starting_server_fail(self, mock_before_func,
+  @mock.patch.object(FakeClient, 'prepare_starting_server')
+  def test_init_server_prepare_starting_server_fail(self, mock_prepare_func,
                                                     mock_stop_server):
-    """Test starting server's stage before_starting_server fails."""
-    mock_before_func.side_effect = Exception('ha')
+    """Test prepare_starting_server stage of initialization fails."""
+    mock_prepare_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
-      self.client.start_server()
+      self.client.initialize()
     mock_stop_server.assert_not_called()
 
   @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, 'do_start_server')
-  def test_start_server_do_start_server_fail(self, mock_do_start_func,
-                                             mock_stop_server):
-    """Test starting server's stage do_start_server fails."""
-    mock_do_start_func.side_effect = Exception('ha')
+  @mock.patch.object(FakeClient, 'start_server')
+  def test_init_server_start_server_fail(self, mock_start_func,
+                                         mock_stop_server):
+    """Test start_server stage of initialization fails."""
+    mock_start_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
-      self.client.start_server()
+      self.client.initialize()
     mock_stop_server.assert_called()
 
   @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, '_build_connection')
-  def test_start_server_build_connection_fail(self, mock_build_conn_func,
-                                              mock_stop_server):
-    """Test starting server's stage _build_connection fails."""
-    mock_build_conn_func.side_effect = Exception('ha')
+  @mock.patch.object(FakeClient, '_init_connection')
+  def test_init_server_init_connection_fail(self, mock_init_conn_func,
+                                            mock_stop_server):
+    """Test initialize function's stage _init_connection fails."""
+    mock_init_conn_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
-      self.client.start_server()
-    mock_stop_server.assert_called()
-
-  @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, 'after_starting_server')
-  def test_start_server_after_starting_server_fail(self, mock_after_func,
-                                                   mock_stop_server):
-    """Test starting server's stage after_starting_server fails."""
-    mock_after_func.side_effect = Exception('ha')
-
-    with self.assertRaisesRegex(Exception, 'ha'):
-      self.client.start_server()
+      self.client.initialize()
     mock_stop_server.assert_called()
 
   @mock.patch.object(FakeClient, 'check_server_proc_running')
@@ -191,7 +174,7 @@ class ClientBaseTest(unittest.TestCase):
       mock_gen_request: the mock function of FakeClient._gen_rpc_request.
       mock_precheck: the mock function of FakeClient.check_server_proc_running.
     """
-    self.client.start_server()
+    self.client.initialize()
 
     expected_response_str = ('{"id": 0, "result": 123, "error": null, '
                              '"callback": null}')
@@ -227,7 +210,7 @@ class ClientBaseTest(unittest.TestCase):
                              mock_send_request, mock_gen_request,
                              mock_precheck):
     """Test when RPC precheck fails it will skip sending RPC."""
-    self.client.start_server()
+    self.client.initialize()
     mock_precheck.side_effect = Exception('server_died')
 
     with self.assertRaisesRegex(Exception, 'server_died'):
@@ -358,7 +341,7 @@ class ClientBaseTest(unittest.TestCase):
     mock_log = mock.Mock()
     self.client.log = mock_log
     self.client.set_snippet_client_verbose_logging(True)
-    self.client.start_server()
+    self.client.initialize()
 
     resp = _generate_fix_length_rpc_response(
         client_base._MAX_RPC_RESP_LOGGING_LENGTH * 2)
@@ -372,7 +355,7 @@ class ClientBaseTest(unittest.TestCase):
     mock_log = mock.Mock()
     self.client.log = mock_log
     self.client.set_snippet_client_verbose_logging(False)
-    self.client.start_server()
+    self.client.initialize()
 
     resp = _generate_fix_length_rpc_response(
         int(client_base._MAX_RPC_RESP_LOGGING_LENGTH // 2))
@@ -386,7 +369,7 @@ class ClientBaseTest(unittest.TestCase):
     mock_log = mock.Mock()
     self.client.log = mock_log
     self.client.set_snippet_client_verbose_logging(False)
-    self.client.start_server()
+    self.client.initialize()
 
     resp = _generate_fix_length_rpc_response(
         client_base._MAX_RPC_RESP_LOGGING_LENGTH)
@@ -400,7 +383,7 @@ class ClientBaseTest(unittest.TestCase):
     mock_log = mock.Mock()
     self.client.log = mock_log
     self.client.set_snippet_client_verbose_logging(False)
-    self.client.start_server()
+    self.client.initialize()
 
     max_len = client_base._MAX_RPC_RESP_LOGGING_LENGTH
     resp = _generate_fix_length_rpc_response(max_len * 40)
@@ -414,7 +397,7 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_call_increment_counter(self, mock_send_request):
     """Test that with each RPC call the counter is incremented by 1."""
-    self.client.start_server()
+    self.client.initialize()
     resp = '{"id": %d, "result": 123, "error": null, "callback": null}'
     mock_send_request.side_effect = (resp % (i,) for i in range(10))
 
@@ -424,9 +407,9 @@ class ClientBaseTest(unittest.TestCase):
     self.assertEqual(next(self.client._counter), 10)
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
-  def test_build_connection_reset_counter(self, mock_send_request):
-    """Test that _build_connection resets the counter to zero."""
-    self.client.start_server()
+  def test_init_connection_reset_counter(self, mock_send_request):
+    """Test that _init_connection resets the counter to zero."""
+    self.client.initialize()
     resp = '{"id": %d, "result": 123, "error": null, "callback": null}'
     mock_send_request.side_effect = (resp % (i,) for i in range(10))
 
@@ -434,7 +417,7 @@ class ClientBaseTest(unittest.TestCase):
       self.client.some_rpc()
 
     self.assertEqual(next(self.client._counter), 10)
-    self.client._build_connection()
+    self.client._init_connection()
     self.assertEqual(next(self.client._counter), 0)
 
 
