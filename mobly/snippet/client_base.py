@@ -132,15 +132,15 @@ class ClientBase(abc.ABC):
 
     except Exception:
       self.log.error(
-          'Error occurred trying to initialize the snippet server of %s.',
-          self.package)
+          'Error occurred trying to start and connect to the snippet server '
+          'of %s.', self.package)
       try:
         self.stop_server()
       except Exception:  # pylint: disable=broad-except
         # Only prints this exception and re-raises the original exception
         self.log.exception(
-            'Failed to stop the snippet server of %s after initialization '
-            'failure.', self.package)
+            'Failed to stop the snippet server of %s after failure to start '
+            'and connect.', self.package)
 
       raise
 
