@@ -119,8 +119,7 @@ class ClientBase(abc.ABC):
     self.log.debug('Initializing the snippet package %s.', self.package)
     start_time = time.perf_counter()
 
-    self.log.debug('Preparing to start the snippet server of %s.',
-                   self.package)
+    self.log.debug('Preparing to start the snippet server of %s.', self.package)
     self.before_starting_server()
 
     try:
@@ -132,22 +131,22 @@ class ClientBase(abc.ABC):
       self._make_connection()
 
     except Exception:
-      self.log.error(
-          'Error occurs when initializing the snippet server of %s.',
-          self.package)
+      self.log.error('Error occurs when initializing the snippet server of %s.',
+                     self.package)
       try:
         self.stop_server()
       except Exception:  # pylint: disable=broad-except
         # Only prints this exception and re-raises the original exception
         self.log.exception(
-            'Failed to stop the snippet server of %s because of new exception.',
-            self.package)
+            'Failed to stop the snippet server of %s because of a new '
+            'exception.', self.package)
 
       raise
 
-    self.log.debug('Snippet package %s initialized after %.1fs on host port %d.',
-                   self.package,
-                   time.perf_counter() - start_time, self.host_port)
+    self.log.debug(
+        'Snippet package %s initialized after %.1fs on host port %d.',
+        self.package,
+        time.perf_counter() - start_time, self.host_port)
 
   @abc.abstractmethod
   def before_starting_server(self):
