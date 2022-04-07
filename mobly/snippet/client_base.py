@@ -103,7 +103,7 @@ class ClientBase(abc.ABC):
     This function contains following stages:
       1. preparing to start the snippet server.
       2. starting the snippet server on the remote device.
-      3. making a connection with the snippet server.
+      3. making a connection to the snippet server.
 
     After this, the self.host_port and self.device_port attributes must be
     set.
@@ -119,33 +119,33 @@ class ClientBase(abc.ABC):
     self.log.debug('Initializing the snippet package %s.', self.package)
     start_time = time.perf_counter()
 
-    self.log.debug('Preparing to start the snippet server for %s.',
+    self.log.debug('Preparing to start the snippet server of %s.',
                    self.package)
     self.before_starting_server()
 
     try:
-      self.log.debug('Starting the snippet server for %s.', self.package)
+      self.log.debug('Starting the snippet server of %s.', self.package)
       self.start_server()
 
-      self.log.debug('Making a connection with the snippet server for %s.',
+      self.log.debug('Making a connection to the snippet server of %s.',
                      self.package)
       self._make_connection()
 
     except Exception:
       self.log.error(
-          'Error occurs when initializing the snippet server for %s.',
+          'Error occurs when initializing the snippet server of %s.',
           self.package)
       try:
         self.stop_server()
       except Exception:  # pylint: disable=broad-except
         # Only prints this exception and re-raises the original exception
         self.log.exception(
-            'Failed to stop server for %s because of new exception.',
+            'Failed to stop the snippet server of %s because of new exception.',
             self.package)
 
       raise
 
-    self.log.debug('Snippet %s initialized after %.1fs on host port %d.',
+    self.log.debug('Snippet package %s initialized after %.1fs on host port %d.',
                    self.package,
                    time.perf_counter() - start_time, self.host_port)
 
@@ -179,7 +179,7 @@ class ClientBase(abc.ABC):
 
   @abc.abstractmethod
   def make_connection(self):
-    """Makes a connection with the server on the remote device.
+    """Makes a connection to the server on the remote device.
 
     This function makes a connection to the server and sends a handshake
     request to ensure the server is available for upcoming RPCs.
@@ -247,7 +247,7 @@ class ClientBase(abc.ABC):
 
     Raises:
       errors.ServerRestoreConnectionError: when failed to restore the connection
-        with the snippet server.
+        to the snippet server.
     """
 
   def _rpc(self, rpc_func_name, *args, **kwargs):
