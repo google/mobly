@@ -178,7 +178,7 @@ class ClientBase(abc.ABC):
 
   @abc.abstractmethod
   def make_connection(self):
-    """Makes a connection to the server on the remote device.
+    """Makes a connection to the snippet server on the remote device.
 
     This function makes a connection to the server and sends a handshake
     request to ensure the server is available for upcoming RPCs.
