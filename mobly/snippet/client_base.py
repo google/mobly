@@ -103,7 +103,7 @@ class ClientBase(abc.ABC):
     This function contains following stages:
       1. preparing to start the snippet server.
       2. starting the snippet server on the remote device.
-      3. initializing a connection with the snippet server.
+      3. making a connection with the snippet server.
 
     After this, the self.host_port and self.device_port attributes must be
     set.
@@ -127,9 +127,9 @@ class ClientBase(abc.ABC):
       self.log.debug('Starting the snippet server for %s.', self.package)
       self.start_server()
 
-      self.log.debug('Initiating a connection with the snippet server for %s.',
+      self.log.debug('Making a connection with the snippet server for %s.',
                      self.package)
-      self._init_connection()
+      self._make_connection()
 
     except Exception:
       self.log.error(
@@ -169,19 +169,19 @@ class ClientBase(abc.ABC):
     function to start the server.
     """
 
-  def _init_connection(self):
-    """Proxy function of init_connection.
+  def _make_connection(self):
+    """Proxy function of make_connection.
 
-    This function resets the RPC id counter before calling `init_connection`.
+    This function resets the RPC id counter before calling `make_connection`.
     """
     self._counter = self._id_counter()
-    self.init_connection()
+    self.make_connection()
 
   @abc.abstractmethod
-  def init_connection(self):
-    """Initiates a connection with the server on the remote device.
+  def make_connection(self):
+    """Makes a connection with the server on the remote device.
 
-    This function initiates a connection to the server and sends a handshake
+    This function makes a connection to the server and sends a handshake
     request to ensure the server is available for upcoming RPCs.
 
     There are two types of connections used by snippet clients:
@@ -192,7 +192,7 @@ class ClientBase(abc.ABC):
 
     This function uses self.host_port for communicating with the server. If
     self.host_port is 0 or None, this function finds an available host port to
-    initiate the connection and set self.host_port to the found port.
+    make the connection and set self.host_port to the found port.
 
     Raises:
       errors.ProtocolError: something went wrong when exchanging data with the

@@ -69,7 +69,7 @@ class FakeClient(client_base.ClientBase):
   def start_server(self):
     pass
 
-  def init_connection(self):
+  def make_connection(self):
     pass
 
   def restore_server_connection(self, port=None):
@@ -101,21 +101,21 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'before_starting_server')
   @mock.patch.object(FakeClient, 'start_server')
-  @mock.patch.object(FakeClient, '_init_connection')
-  def test_init_server_stage_order(self, mock_init_conn_func, mock_start_func,
+  @mock.patch.object(FakeClient, '_make_connection')
+  def test_init_server_stage_order(self, mock_make_conn_func, mock_start_func,
                                    mock_before_func):
     """Test that initialization runs its stages in expected order."""
     order_manager = mock.Mock()
     order_manager.attach_mock(mock_before_func, 'mock_before_func')
     order_manager.attach_mock(mock_start_func, 'mock_start_func')
-    order_manager.attach_mock(mock_init_conn_func, 'mock_init_conn_func')
+    order_manager.attach_mock(mock_make_conn_func, 'mock_make_conn_func')
 
     self.client.initialize()
 
     expected_call_order = [
         mock.call.mock_before_func(),
         mock.call.mock_start_func(),
-        mock.call.mock_init_conn_func(),
+        mock.call.mock_make_conn_func(),
     ]
     self.assertListEqual(order_manager.mock_calls, expected_call_order)
 
@@ -142,11 +142,11 @@ class ClientBaseTest(unittest.TestCase):
     mock_stop_server.assert_called()
 
   @mock.patch.object(FakeClient, 'stop_server')
-  @mock.patch.object(FakeClient, '_init_connection')
-  def test_init_server_init_connection_fail(self, mock_init_conn_func,
+  @mock.patch.object(FakeClient, '_make_connection')
+  def test_init_server_make_connection_fail(self, mock_make_conn_func,
                                             mock_stop_server):
-    """Test initialize function's stage _init_connection fails."""
-    mock_init_conn_func.side_effect = Exception('ha')
+    """Test _make_connection stage of initialization fails."""
+    mock_make_conn_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
       self.client.initialize()
@@ -408,7 +408,7 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_init_connection_reset_counter(self, mock_send_request):
-    """Test that _init_connection resets the counter to zero."""
+    """Test that _make_connection resets the counter to zero."""
     self.client.initialize()
     resp = '{"id": %d, "result": 123, "error": null, "callback": null}'
     mock_send_request.side_effect = (resp % (i,) for i in range(10))
@@ -417,7 +417,7 @@ class ClientBaseTest(unittest.TestCase):
       self.client.some_rpc()
 
     self.assertEqual(next(self.client._counter), 10)
-    self.client._init_connection()
+    self.client._make_connection()
     self.assertEqual(next(self.client._counter), 0)
 
 
