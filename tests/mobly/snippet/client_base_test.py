@@ -26,7 +26,7 @@ from mobly.snippet import errors
 def _generate_fix_length_rpc_response(
     response_length,
     template='{"id": 0, "result": "%s", "error": null, "callback": null}'):
-  """Generates a RPC response string with specified length.
+  """Generates an RPC response string with specified length.
 
   This function generates a random string and formats the template with the
   generated random string to get the response string. This function formats
@@ -160,9 +160,9 @@ class ClientBaseTest(unittest.TestCase):
   def test_rpc_stage_dependencies(self, mock_handle_resp, mock_decode_resp_str,
                                   mock_send_request, mock_gen_request,
                                   mock_precheck):
-    """Test the internal dependencies when sending a RPC.
+    """Test the internal dependencies when sending an RPC.
 
-    When sending a RPC, it calls multiple functions in specific order, and
+    When sending an RPC, it calls multiple functions in specific order, and
     each function uses the output of the previously called function. This test
     case checks above dependencies.
 
@@ -209,7 +209,7 @@ class ClientBaseTest(unittest.TestCase):
   def test_rpc_precheck_fail(self, mock_handle_resp, mock_decode_resp_str,
                              mock_send_request, mock_gen_request,
                              mock_precheck):
-    """Test when RPC precheck fails it will skip sending RPC."""
+    """Test when RPC precheck fails it will skip sending the RPC."""
     self.client.initialize()
     mock_precheck.side_effect = Exception('server_died')
 
@@ -222,7 +222,7 @@ class ClientBaseTest(unittest.TestCase):
     mock_decode_resp_str.assert_not_called()
 
   def test_gen_request(self):
-    """Test generating a RPC request.
+    """Test generating an RPC request.
 
     Test that _gen_rpc_request returns a string represents a JSON dict
     with all required fields.
@@ -253,7 +253,7 @@ class ClientBaseTest(unittest.TestCase):
       self.client._decode_response_string_and_validate_format(0, None)
 
   def test_rpc_response_missing_fields(self):
-    """Test parsing a RPC response that misses some required fields."""
+    """Test parsing an RPC response that misses some required fields."""
     mock_resp_without_id = '{"result": 123, "error": null, "callback": null}'
     with self.assertRaisesRegex(
         errors.ProtocolError,
@@ -283,7 +283,7 @@ class ClientBaseTest(unittest.TestCase):
           10, mock_resp_without_callback)
 
   def test_rpc_response_error(self):
-    """Test parsing a RPC response with a non-empty error field."""
+    """Test parsing an RPC response with a non-empty error field."""
     mock_resp_with_error = {
         'id': 10,
         'result': 123,
@@ -326,7 +326,7 @@ class ClientBaseTest(unittest.TestCase):
       mock_handle_callback.assert_not_called()
 
   def test_rpc_response_id_mismatch(self):
-    """Test parsing a RPC response with wrong id."""
+    """Test parsing an RPC response with wrong id."""
     right_id = 5
     wrong_id = 20
     resp = f'{{"id": {right_id}, "result": 1, "error": null, "callback": null}}'

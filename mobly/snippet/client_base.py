@@ -38,7 +38,7 @@ The JSON RPC protocol expected by this module is:
               or returned void.>,
     'callback': <Required. String that represents a callback ID used to
                 identify events associated with a particular CallbackHandler
-                object, `null` if this is not a async RPC.>,
+                object, `null` if this is not an asynchronous RPC.>,
   }
 """
 
@@ -185,8 +185,8 @@ class ClientBase(abc.ABC):
     request to ensure the server is available for upcoming RPCs.
 
     There are two types of connections used by snippet clients:
-    * the client builds a connection each time it wants to send a RPC,
-    * the client builds a connection in this stage and uses it for all the RPCs.
+    * The client makes a new connection each time it needs to send an RPC.
+    * The client makes a connection in this stage and uses it for all the RPCs.
       In this way, the client should implement `close_connection` to close
       the connection.
 
@@ -251,7 +251,7 @@ class ClientBase(abc.ABC):
     """
 
   def _rpc(self, rpc_func_name, *args, **kwargs):
-    """Sends a RPC to the server.
+    """Sends an RPC to the server.
 
     Args:
       rpc_func_name: str, the name of the snippet function to execute on the
@@ -299,7 +299,7 @@ class ClientBase(abc.ABC):
     """Checks whether the server is still running.
 
     If the server is not running, it throws an error. As this function is called
-    each time the client tries to send a RPC, this should be a quick check
+    each time the client tries to send an RPC, this should be a quick check
     without affecting performance. Otherwise it is fine to not check anything.
 
     Raises:
