@@ -326,7 +326,7 @@ class ClientBaseTest(unittest.TestCase):
       mock_handle_callback.assert_not_called()
 
   def test_rpc_response_id_mismatch(self):
-    """Test parsing an RPC response with wrong id."""
+    """Test parsing an RPC response with a wrong id."""
     right_id = 5
     wrong_id = 20
     resp = f'{{"id": {right_id}, "result": 1, "error": null, "callback": null}}'
