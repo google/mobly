@@ -187,7 +187,7 @@ class ClientBase(abc.ABC):
     There are two types of connections used by snippet clients:
     * The client makes a new connection each time it needs to send an RPC.
     * The client makes a connection in this stage and uses it for all the RPCs.
-      In this way, the client should implement `close_connection` to close
+      In this case, the client should implement `close_connection` to close
       the connection.
 
     This function uses self.host_port for communicating with the server. If
