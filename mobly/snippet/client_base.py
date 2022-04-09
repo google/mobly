@@ -38,13 +38,11 @@ The JSON RPC protocol expected by this module is:
               or returned void.>,
     'callback': <Required. String that represents a callback ID used to
                 identify events associated with a particular CallbackHandler
-                object, `null` if this is not a async RPC.>,
+                object, `null` if this is not an asynchronous RPC.>,
   }
 """
 
 import abc
-import contextlib
-import enum
 import json
 import threading
 import time
@@ -57,14 +55,6 @@ _MAX_RPC_RESP_LOGGING_LENGTH = 1024
 
 # The required field names of RPC response.
 RPC_RESPONSE_REQUIRED_FIELDS = ('id', 'error', 'result', 'callback')
-
-
-class StartServerStages(enum.Enum):
-  """The stages for the starting server process."""
-  BEFORE_STARTING_SERVER = 1
-  DO_START_SERVER = 2
-  BUILD_CONNECTION = 3
-  AFTER_STARTING_SERVER = 4
 
 
 class ClientBase(abc.ABC):
@@ -107,14 +97,13 @@ class ClientBase(abc.ABC):
   def __del__(self):
     self.close_connection()
 
-  def start_server(self):
-    """Starts the server on the remote device and connects to it.
+  def initialize(self):
+    """Initializes the snippet client to interact with the remote device.
 
-    This process contains four stages:
-      - before_starting_server: prepares for starting the server.
-      - do_start_server: starts the server on the remote device.
-      - build_connection: builds a connection with the server.
-      - after_starting_server: does the things after the server is available.
+    This function contains following stages:
+      1. preparing to start the snippet server.
+      2. starting the snippet server on the remote device.
+      3. making a connection to the snippet server.
 
     After this, the self.host_port and self.device_port attributes must be
     set.
@@ -127,55 +116,42 @@ class ClientBase(abc.ABC):
       errors.ServerStartError: when failed to start the snippet server.
     """
 
-    @contextlib.contextmanager
-    def _execute_one_stage(stage):
-      """Context manager for executing one stage.
-
-      Args:
-        stage: StartServerStages, the stage which is running under this
-          context manager.
-
-      Yields:
-        None.
-      """
-      self.log.debug('[START_SERVER] Running the stage %s.', stage.name)
-      yield
-      self.log.debug('[START_SERVER] Finished the stage %s.', stage.name)
-
-    self.log.debug('Starting the server.')
+    self.log.debug('Initializing the snippet package %s.', self.package)
     start_time = time.perf_counter()
 
-    with _execute_one_stage(StartServerStages.BEFORE_STARTING_SERVER):
-      self.before_starting_server()
+    self.log.debug('Preparing to start the snippet server of %s.', self.package)
+    self.before_starting_server()
 
     try:
-      with _execute_one_stage(StartServerStages.DO_START_SERVER):
-        self.do_start_server()
+      self.log.debug('Starting the snippet server of %s.', self.package)
+      self.start_server()
 
-      with _execute_one_stage(StartServerStages.BUILD_CONNECTION):
-        self._build_connection()
-
-      with _execute_one_stage(StartServerStages.AFTER_STARTING_SERVER):
-        self.after_starting_server()
+      self.log.debug('Making a connection to the snippet server of %s.',
+                     self.package)
+      self._make_connection()
 
     except Exception:
-      self.log.error('[START SERVER] Error occurs when starting the server.')
+      self.log.error(
+          'Error occurred trying to start and connect to the snippet server '
+          'of %s.', self.package)
       try:
         self.stop_server()
       except Exception:  # pylint: disable=broad-except
         # Only prints this exception and re-raises the original exception
-        self.log.exception('[START_SERVER] Failed to stop server because of '
-                           'new exception.')
+        self.log.exception(
+            'Failed to stop the snippet server of %s after failure to start '
+            'and connect.', self.package)
 
       raise
 
-    self.log.debug('Snippet %s started after %.1fs on host port %d.',
-                   self.package,
-                   time.perf_counter() - start_time, self.host_port)
+    self.log.debug(
+        'Snippet package %s initialized after %.1fs on host port %d.',
+        self.package,
+        time.perf_counter() - start_time, self.host_port)
 
   @abc.abstractmethod
   def before_starting_server(self):
-    """Prepares for starting the server.
+    """Performs the preparation steps before starting the remote server.
 
     For example, subclass can check or modify the device settings at this
     stage.
@@ -186,43 +162,41 @@ class ClientBase(abc.ABC):
     """
 
   @abc.abstractmethod
-  def do_start_server(self):
+  def start_server(self):
     """Starts the server on the remote device.
 
     The client has completed the preparations, so the client calls this
     function to start the server.
     """
 
-  def _build_connection(self):
-    """Proxy function of build_connection.
+  def _make_connection(self):
+    """Proxy function of make_connection.
 
-    This function resets the RPC id counter before calling `build_connection`.
+    This function resets the RPC id counter before calling `make_connection`.
     """
     self._counter = self._id_counter()
-    self.build_connection()
+    self.make_connection()
 
   @abc.abstractmethod
-  def build_connection(self):
-    """Builds a connection with the server on the remote device.
+  def make_connection(self):
+    """Makes a connection to the snippet server on the remote device.
 
-    The command to start the server has been already sent before calling this
-    function. So the client builds a connection to it and sends a handshake
-    to ensure the server is available for upcoming RPCs.
+    This function makes a connection to the server and sends a handshake
+    request to ensure the server is available for upcoming RPCs.
+
+    There are two types of connections used by snippet clients:
+    * The client makes a new connection each time it needs to send an RPC.
+    * The client makes a connection in this stage and uses it for all the RPCs.
+      In this case, the client should implement `close_connection` to close
+      the connection.
 
     This function uses self.host_port for communicating with the server. If
     self.host_port is 0 or None, this function finds an available host port to
-    build connection and set self.host_port to the found port.
+    make the connection and set self.host_port to the found port.
 
     Raises:
       errors.ProtocolError: something went wrong when exchanging data with the
         server.
-    """
-
-  @abc.abstractmethod
-  def after_starting_server(self):
-    """Does the things after the server is available.
-
-    For example, subclass can get device information from the server.
     """
 
   def __getattr__(self, name):
@@ -273,11 +247,11 @@ class ClientBase(abc.ABC):
 
     Raises:
       errors.ServerRestoreConnectionError: when failed to restore the connection
-        with the snippet server.
+        to the snippet server.
     """
 
   def _rpc(self, rpc_func_name, *args, **kwargs):
-    """Sends a RPC to the server.
+    """Sends an RPC to the server.
 
     Args:
       rpc_func_name: str, the name of the snippet function to execute on the
@@ -325,7 +299,7 @@ class ClientBase(abc.ABC):
     """Checks whether the server is still running.
 
     If the server is not running, it throws an error. As this function is called
-    each time the client tries to send a RPC, this should be a quick check
+    each time the client tries to send an RPC, this should be a quick check
     without affecting performance. Otherwise it is fine to not check anything.
 
     Raises:
