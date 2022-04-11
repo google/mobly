@@ -84,7 +84,7 @@ class FakeClient(client_base.ClientBase):
   def handle_callback(self, callback_id, ret_value, rpc_func_name):
     pass
 
-  def do_stop_server(self):
+  def stop_server(self):
     pass
 
   def close_connection(self):

@@ -418,14 +418,8 @@ class ClientBase(abc.ABC):
       The callback handler object.
     """
 
-  def stop_server(self):
-    """Proxy function of do_stop_server."""
-    self.log.debug('Stopping snippet %s.', self.package)
-    self.do_stop_server()
-    self.log.debug('Snippet %s stopped.', self.package)
-
   @abc.abstractmethod
-  def do_stop_server(self):
+  def stop_server(self):
     """Kills any running instance of the server."""
 
   @abc.abstractmethod
