@@ -62,8 +62,8 @@ class ClientBase(abc.ABC):
 
   Connects to a remote device running a JSON RPC compatible server. Users call
   the function `start_server` to start the server on the remote device before
-  sending any RPC. After sending all RPCs, users call the function `stop_server`
-  to stop all the running instances.
+  sending any RPC. After sending all RPCs, users call the function `stop`
+  to stop the snippet server and release all the requested resources.
 
   Attributes:
     package: str, the user-visible name of the snippet library being
@@ -135,11 +135,11 @@ class ClientBase(abc.ABC):
           'Error occurred trying to start and connect to the snippet server '
           'of %s.', self.package)
       try:
-        self.stop_server()
+        self.stop()
       except Exception:  # pylint: disable=broad-except
         # Only prints this exception and re-raises the original exception
         self.log.exception(
-            'Failed to stop the snippet server of %s after failure to start '
+            'Failed to stop the snippet package %s after failure to start '
             'and connect.', self.package)
 
       raise
@@ -419,8 +419,8 @@ class ClientBase(abc.ABC):
     """
 
   @abc.abstractmethod
-  def stop_server(self):
-    """Kills any running instance of the server."""
+  def stop(self):
+    """Stops the snippet server and releases all the requested resources."""
 
   @abc.abstractmethod
   def close_connection(self):
