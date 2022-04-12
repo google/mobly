@@ -420,7 +420,7 @@ class ClientBase(abc.ABC):
 
   @abc.abstractmethod
   def stop(self):
-    """Stops the snippet server and releases all the requested resources."""
+    """Releases all the resources acquired in `initialize`."""
 
   @abc.abstractmethod
   def close_connection(self):
