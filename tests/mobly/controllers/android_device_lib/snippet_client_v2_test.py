@@ -197,9 +197,9 @@ class SnippetClientV2Test(unittest.TestCase):
                      'shell',
                      side_effect=adb.AdbError('cmd', 'stdout', 'stderr',
                                               'ret_code'))
-  def test_start_server_without_persistence(self, mock_adb,
-                                            mock_start_subprocess):
-    """Checks the starting server command without persistent commands."""
+  def test_start_server_without_persisting_commands(self, mock_adb,
+                                                    mock_start_subprocess):
+    """Checks the starting server command without persisting commands."""
     self._make_client()
     self._mock_server_process_starting_response(
         mock_start_subprocess,

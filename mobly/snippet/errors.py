@@ -32,7 +32,7 @@ class ServerStartError(Error):
 
 
 class ServerStartProtocolError(ServerStartError):
-  """Raised when protocol reported by server starting process is unknown."""
+  """Raised when protocol reported by the server startup process is unknown."""
 
 
 class ServerStartPreCheckError(Error):
