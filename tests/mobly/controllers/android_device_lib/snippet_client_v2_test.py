@@ -147,7 +147,7 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch.object(mock_android_device.MockAdbProxy,
                      'shell',
                      return_value=b'setsid')
-  def test_do_start_server_with_user_id(self, mock_adb, mock_start_subprocess):
+  def test_start_server_with_user_id(self, mock_adb, mock_start_subprocess):
     """Tests that `--user` is added to starting command with SDK >= 24."""
     self._make_client_with_extra_adb_properties({'ro.build.version.sdk': '30'})
     self._mock_server_process_starting_response(
@@ -156,7 +156,7 @@ class SnippetClientV2Test(unittest.TestCase):
             b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
         ])
 
-    self.client.do_start_server()
+    self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
         (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start '
@@ -172,8 +172,7 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch.object(mock_android_device.MockAdbProxy,
                      'shell',
                      return_value=b'setsid')
-  def test_do_start_server_without_user_id(self, mock_adb,
-                                           mock_start_subprocess):
+  def test_start_server_without_user_id(self, mock_adb, mock_start_subprocess):
     """Tests that `--user` is not added to starting command on SDK < 24."""
     self._make_client_with_extra_adb_properties({'ro.build.version.sdk': '21'})
     self._mock_server_process_starting_response(
@@ -182,7 +181,7 @@ class SnippetClientV2Test(unittest.TestCase):
             b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
         ])
 
-    self.client.do_start_server()
+    self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
         f'setsid am instrument  -w -e action start {MOCK_SERVER_PATH}'
@@ -198,8 +197,8 @@ class SnippetClientV2Test(unittest.TestCase):
                      'shell',
                      side_effect=adb.AdbError('cmd', 'stdout', 'stderr',
                                               'ret_code'))
-  def test_do_start_server_without_persistence(self, mock_adb,
-                                               mock_start_subprocess):
+  def test_start_server_without_persistence(self, mock_adb,
+                                            mock_start_subprocess):
     """Checks the starting server command without persistent commands."""
     self._make_client()
     self._mock_server_process_starting_response(
@@ -208,7 +207,7 @@ class SnippetClientV2Test(unittest.TestCase):
             b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
         ])
 
-    self.client.do_start_server()
+    self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
         (f' am instrument --user {MOCK_USER_ID} -w -e action start '
@@ -223,7 +222,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_do_start_server_with_nohup(self, mock_start_subprocess):
+  def test_start_server_with_nohup(self, mock_start_subprocess):
     """Checks the starting server command with nohup."""
     self._make_client()
     self._mock_server_process_starting_response(
@@ -239,7 +238,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
     self.client._adb.shell = _mocked_shell
 
-    self.client.do_start_server()
+    self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
         (f'nohup am instrument --user {MOCK_USER_ID} -w -e action start '
@@ -251,7 +250,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_do_start_server_with_setsid(self, mock_start_subprocess):
+  def test_start_server_with_setsid(self, mock_start_subprocess):
     """Checks the starting server command with setsid."""
     self._make_client()
     self._mock_server_process_starting_response(
@@ -266,7 +265,7 @@ class SnippetClientV2Test(unittest.TestCase):
       raise adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code')
 
     self.client._adb.shell = _mocked_shell
-    self.client.do_start_server()
+    self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
         (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start '
@@ -278,7 +277,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_do_start_server_server_crash(self, mock_start_standing_subprocess):
+  def test_start_server_server_crash(self, mock_start_standing_subprocess):
     """Tests that starting server process crashes."""
     self._make_client()
     self._mock_server_process_starting_response(
@@ -287,11 +286,11 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(
         errors.ServerStartProtocolError,
         'INSTRUMENTATION_RESULT: shortMsg=Process crashed.'):
-      self.client.do_start_server()
+      self.client.start_server()
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_do_start_server_unknown_protocol_version(
+  def test_start_server_unknown_protocol_version(
       self, mock_start_standing_subprocess):
     """Tests that starting server process reports unknown protocol version."""
     self._make_client()
@@ -300,12 +299,12 @@ class SnippetClientV2Test(unittest.TestCase):
         resp_lines=[b'SNIPPET START, PROTOCOL 99 0\n'])
     with self.assertRaisesRegex(errors.ServerStartProtocolError,
                                 'SNIPPET START, PROTOCOL 99 0'):
-      self.client.do_start_server()
+      self.client.start_server()
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_do_start_server_invalid_device_port(self,
-                                               mock_start_standing_subprocess):
+  def test_start_server_invalid_device_port(self,
+                                            mock_start_standing_subprocess):
     """Tests that starting server process reports invalid device port."""
     self._make_client()
     self._mock_server_process_starting_response(
@@ -315,11 +314,11 @@ class SnippetClientV2Test(unittest.TestCase):
         ])
     with self.assertRaisesRegex(errors.ServerStartProtocolError,
                                 'SNIPPET SERVING, PORT ABC'):
-      self.client.do_start_server()
+      self.client.start_server()
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_do_start_server_with_junk(self, mock_start_standing_subprocess):
+  def test_start_server_with_junk(self, mock_start_standing_subprocess):
     """Tests that starting server process reports known protocol with junk."""
     self._make_client()
     self._mock_server_process_starting_response(
@@ -331,12 +330,12 @@ class SnippetClientV2Test(unittest.TestCase):
             b'Maybe in the middle too\n',
             b'SNIPPET SERVING, PORT 123\n',
         ])
-    self.client.do_start_server()
+    self.client.start_server()
     self.assertEqual(123, self.client.device_port)
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_do_start_server_no_valid_line(self, mock_start_standing_subprocess):
+  def test_start_server_no_valid_line(self, mock_start_standing_subprocess):
     """Tests that starting server process reports unknown protocol message."""
     self._make_client()
     self._mock_server_process_starting_response(
@@ -349,7 +348,7 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(
         errors.ServerStartError,
         'Unexpected EOF when waiting for server to start.'):
-      self.client.do_start_server()
+      self.client.start_server()
 
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch.object(mock_android_device.MockAdbProxy,
