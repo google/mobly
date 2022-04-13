@@ -269,28 +269,34 @@ class SnippetClientV2(client_base.ClientBase):
 
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
-  def do_stop_server(self):
-    """Stops the snippet server and releases allocated resources."""
-    # Although killing the snippet server would abort this process anyway, we
+  def stop(self):
+    """See base class."""
+    # TODO(mhaoli): This function is only partially implemented because we
+    # have not implemented the functionality of making connections in this
+    # class.
+    self.log.debug('Stopping snippet package %s.', self.package)
+    self._stop_server()
+    self.log.debug('Snippet package %s stopped.', self.package)
+
+  def _stop_server(self):
+    """Releases all the resources acquired in `start_server`.
+
+    Raises:
+      android_device_lib_errors.DeviceError: if the server exited with errors on
+        the device side.
+    """
+    # Although killing the snippet server would abort this subprocess anyway, we
     # want to call stop_standing_subprocess() to perform a health check,
     # print the failure stack trace if there was any, and reap it from the
     # process table. Note that it's much more important to ensure releasing all
     # the allocated resources on the host side than on the remote device side.
-    self._kill_server_subprocess()
-    self._kill_server()
 
-  def _kill_server_subprocess(self):
-    """Kills the long running server subprocess running on the host side."""
+    # Stop the standing server subprocess, which is running on the host side.
     if self._proc:
       utils.stop_standing_subprocess(self._proc)
       self._proc = None
 
-  def _kill_server(self):
-    """Sends the stop signal to the remote server.
-
-    Raises:
-      android_device_lib_errors.DeviceError: if the server exited with errors.
-    """
+    # Send the stop signal to the server, which is running on the device side.
     out = self._adb.shell(
         _STOP_CMD.format(snippet_package=self.package,
                          user=self._get_user_command_string())).decode('utf-8')

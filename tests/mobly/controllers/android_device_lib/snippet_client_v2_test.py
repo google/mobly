@@ -360,7 +360,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self._make_client()
     mock_proc = mock.Mock()
     self.client._proc = mock_proc
-    self.client.do_stop_server()
+    self.client.stop()
     self.assertIs(self.client._proc, None)
     mock_android_device_shell.assert_called_once_with(
         f'am instrument --user {MOCK_USER_ID} -w -e action stop '
@@ -376,7 +376,7 @@ class SnippetClientV2Test(unittest.TestCase):
     """Tests stopping server process when subprocess is already cleaned."""
     self._make_client()
     self.client._proc = None
-    self.client.do_stop_server()
+    self.client.stop()
     self.assertIs(self.client._proc, None)
     mock_stop_standing_subprocess.assert_not_called()
     mock_android_device_shell.assert_called_once_with(
@@ -395,7 +395,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client._proc = mock_proc
     with self.assertRaisesRegex(android_device_lib_errors.DeviceError,
                                 'Closed with error'):
-      self.client.do_stop_server()
+      self.client.stop()
 
     self.assertIs(self.client._proc, None)
     mock_stop_standing_subprocess.assert_called_once_with(mock_proc)
