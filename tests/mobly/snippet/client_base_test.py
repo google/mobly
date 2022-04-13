@@ -84,7 +84,7 @@ class FakeClient(client_base.ClientBase):
   def handle_callback(self, callback_id, ret_value, rpc_func_name):
     pass
 
-  def do_stop_server(self):
+  def stop(self):
     pass
 
   def close_connection(self):
@@ -119,38 +119,37 @@ class ClientBaseTest(unittest.TestCase):
     ]
     self.assertListEqual(order_manager.mock_calls, expected_call_order)
 
-  @mock.patch.object(FakeClient, 'stop_server')
+  @mock.patch.object(FakeClient, 'stop')
   @mock.patch.object(FakeClient, 'before_starting_server')
   def test_init_server_before_starting_server_fail(self, mock_before_func,
-                                                   mock_stop_server):
+                                                   mock_stop_func):
     """Test before_starting_server stage of initialization fails."""
     mock_before_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
       self.client.initialize()
-    mock_stop_server.assert_not_called()
+    mock_stop_func.assert_not_called()
 
-  @mock.patch.object(FakeClient, 'stop_server')
+  @mock.patch.object(FakeClient, 'stop')
   @mock.patch.object(FakeClient, 'start_server')
-  def test_init_server_start_server_fail(self, mock_start_func,
-                                         mock_stop_server):
+  def test_init_server_start_server_fail(self, mock_start_func, mock_stop_func):
     """Test start_server stage of initialization fails."""
     mock_start_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
       self.client.initialize()
-    mock_stop_server.assert_called()
+    mock_stop_func.assert_called()
 
-  @mock.patch.object(FakeClient, 'stop_server')
+  @mock.patch.object(FakeClient, 'stop')
   @mock.patch.object(FakeClient, '_make_connection')
   def test_init_server_make_connection_fail(self, mock_make_conn_func,
-                                            mock_stop_server):
+                                            mock_stop_func):
     """Test _make_connection stage of initialization fails."""
     mock_make_conn_func.side_effect = Exception('ha')
 
     with self.assertRaisesRegex(Exception, 'ha'):
       self.client.initialize()
-    mock_stop_server.assert_called()
+    mock_stop_func.assert_called()
 
   @mock.patch.object(FakeClient, 'check_server_proc_running')
   @mock.patch.object(FakeClient, '_gen_rpc_request')
