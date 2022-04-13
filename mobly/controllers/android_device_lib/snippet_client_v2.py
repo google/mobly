@@ -103,7 +103,11 @@ class SnippetClientV2(client_base.ClientBase):
     return self._user_id
 
   def before_starting_server(self):
-    """Prepares for starting the server.
+    """See base class.
+
+    This function performs following preparation steps:
+    * Check that the Mobly Snippet app is installed on the remote device.
+    * Disable hidden api blocklist if necessary and possible.
 
     Raises:
       errors.ServerStartPreCheckError: if the server app is not installed
@@ -159,8 +163,8 @@ class SnippetClientV2(client_base.ClientBase):
       self._device.adb.shell(
           'settings put global hidden_api_blacklist_exemptions "*"')
 
-  def do_start_server(self):
-    """Starts the snippet server.
+  def start_server(self):
+    """Starts the server on the remote device.
 
     This function starts the snippet server with adb command, checks the
     protocol version of the server, parses device port from the server
@@ -263,10 +267,6 @@ class SnippetClientV2(client_base.ClientBase):
 
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
-  def after_starting_server(self):
-    """See base class."""
-    # This client does nothing at this stage.
-
   def do_stop_server(self):
     """Stops the snippet server and cleans allocated resources on host side."""
     # Although killing the snippet server would abort this process anyway, we
@@ -301,7 +301,7 @@ class SnippetClientV2(client_base.ClientBase):
   # TODO(mhaoli): Temporally override these abstract methods so that we can
   # initialize the instances in unit tests. We are implementing these functions
   # in the next PR as soon as possible.
-  def build_connection(self):
+  def make_connection(self):
     raise NotImplementedError('To be implemented.')
 
   def close_connection(self):
