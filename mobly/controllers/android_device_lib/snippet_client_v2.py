@@ -62,7 +62,7 @@ _NOHUP_COMMAND = 'nohup'
 
 
 class SnippetClientV2(client_base.ClientBase):
-  """Snippet Client V2 for interacting with snippet server on Android Device.
+  """Snippet client V2 for interacting with snippet server on Android Device.
 
   See base class documentation for a list of public attributes and communication
   protocols.
@@ -172,9 +172,11 @@ class SnippetClientV2(client_base.ClientBase):
 
     Raises:
       errors.ServerStartProtocolError: if the protocol reported by the server
-        starting process is unknown.
+        startup process is unknown.
+      errors.ServerStartError: if failed to start the server or process the
+        server output.
     """
-    persists_shell_cmd = self._get_persist_command()
+    persists_shell_cmd = self._get_persisting_command()
     self.log.debug('Snippet server for package %s is using protocol %d.%d',
                    self.package, _PROTOCOL_MAJOR_VERSION,
                    _PROTOCOL_MINOR_VERSION)
@@ -203,8 +205,8 @@ class SnippetClientV2(client_base.ClientBase):
     adb_cmd += ['shell', cmd]
     return utils.start_standing_subprocess(adb_cmd, shell=False)
 
-  def _get_persist_command(self):
-    """Checks availability and returns path of persist command if available."""
+  def _get_persisting_command(self):
+    """Returns the path of a persisting command if available."""
     for command in [_SETSID_COMMAND, _NOHUP_COMMAND]:
       try:
         if command in self._adb.shell(['which', command]).decode('utf-8'):
@@ -222,7 +224,7 @@ class SnippetClientV2(client_base.ClientBase):
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying device user ID.
 
-    By default, snippet client operates within the current user. We
+    By default, this client operates within the current user. We
     don't add the `--user {ID}` argument when Android's SDK is below 24,
     where multi-user support is not well implemented.
 
@@ -268,17 +270,17 @@ class SnippetClientV2(client_base.ClientBase):
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
   def do_stop_server(self):
-    """Stops the snippet server and cleans allocated resources on host side."""
+    """Stops the snippet server and releases allocated resources."""
     # Although killing the snippet server would abort this process anyway, we
     # want to call stop_standing_subprocess() to perform a health check,
     # print the failure stack trace if there was any, and reap it from the
-    # process table. Note that it's much more important to ensure cleaning all
+    # process table. Note that it's much more important to ensure releasing all
     # the allocated resources on the host side than on the remote device side.
     self._kill_server_subprocess()
     self._kill_server()
 
   def _kill_server_subprocess(self):
-    """Kills the long running server subprocess running on host side."""
+    """Kills the long running server subprocess running on the host side."""
     if self._proc:
       utils.stop_standing_subprocess(self._proc)
       self._proc = None
@@ -296,7 +298,7 @@ class SnippetClientV2(client_base.ClientBase):
     if 'OK (0 tests)' not in out:
       raise android_device_lib_errors.DeviceError(
           self._device,
-          f'Stopping the existing server got an unexpected output: {out}.')
+          f'Failed to stop existing apk. Unexpected output: {out}.')
 
   # TODO(mhaoli): Temporally override these abstract methods so that we can
   # initialize the instances in unit tests. We are implementing these functions
