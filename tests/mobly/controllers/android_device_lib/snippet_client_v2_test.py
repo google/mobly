@@ -17,8 +17,7 @@ import unittest
 from unittest import mock
 
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import (errors as
-                                                  android_device_lib_errors)
+from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.snippet import errors
 from tests.lib import mock_android_device
@@ -66,14 +65,14 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_check_app_installed_normally(self):
     """Tests that app checker runs normally when app installed correctly."""
     self._make_client()
-    self.client._check_snippet_app_installed()
+    self.client._validate_snippet_app_on_device()
 
   def test_check_app_installed_fail_app_not_installed(self):
     """Tests that app checker fails without installing app."""
     self._make_client(mock_android_device.MockAdbProxy())
     expected_msg = f'.* {MOCK_PACKAGE_NAME} is not installed.'
     with self.assertRaisesRegex(errors.ServerStartPreCheckError, expected_msg):
-      self.client._check_snippet_app_installed()
+      self.client._validate_snippet_app_on_device()
 
   def test_check_app_installed_fail_not_instrumented(self):
     """Tests that app checker fails without instrumenting app."""
@@ -83,7 +82,7 @@ class SnippetClientV2Test(unittest.TestCase):
     expected_msg = (
         f'.* {MOCK_PACKAGE_NAME} is installed, but it is not instrumented.')
     with self.assertRaisesRegex(errors.ServerStartPreCheckError, expected_msg):
-      self.client._check_snippet_app_installed()
+      self.client._validate_snippet_app_on_device()
 
   def test_check_app_installed_fail_instrumentation_not_installed(self):
     """Tests that app checker fails without installing instrumentation."""
@@ -94,7 +93,7 @@ class SnippetClientV2Test(unittest.TestCase):
             'not.installed')]))
     expected_msg = ('.* Instrumentation target not.installed is not installed.')
     with self.assertRaisesRegex(errors.ServerStartPreCheckError, expected_msg):
-      self.client._check_snippet_app_installed()
+      self.client._validate_snippet_app_on_device()
 
   @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
   def test_disable_hidden_api_normally(self, mock_shell_func):
@@ -118,18 +117,6 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client._device.is_rootable = True
     self.client._disable_hidden_api_blocklist()
     mock_shell_func.assert_not_called()
-
-  @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
-  def test_disable_hidden_api_sdk_27_and_android_p(self, mock_shell_func):
-    """Tests it disables hidden api with SDK version 27 and Android P."""
-    self._make_client_with_extra_adb_properties({
-        'ro.build.version.codename': 'P',
-        'ro.build.version.sdk': '27',
-    })
-    self.client._device.is_rootable = True
-    self.client._disable_hidden_api_blocklist()
-    mock_shell_func.assert_called_with(
-        'settings put global hidden_api_blacklist_exemptions "*"')
 
   @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
   def test_disable_hidden_api_non_rootable(self, mock_shell_func):

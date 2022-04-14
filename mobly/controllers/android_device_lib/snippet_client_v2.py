@@ -17,19 +17,17 @@ import re
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import (errors as
-                                                  android_device_lib_errors)
+from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.snippet import client_base
 from mobly.snippet import errors
 
 # The package of the instrumentation runner used for mobly snippet
-_INSTRUMENTATION_RUNNER_PACKAGE = (
-    'com.google.android.mobly.snippet.SnippetRunner')
+_INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunner'
 
 # The command template to start the snippet server
 _LAUNCH_CMD = (
-    '{shell_cmd} am instrument {user} -w -e action start {snippet_package}/' +
-    _INSTRUMENTATION_RUNNER_PACKAGE)
+    '{shell_cmd} am instrument {user} -w -e action start {snippet_package}/'
+    f'{_INSTRUMENTATION_RUNNER_PACKAGE}')
 
 # The command template to stop the snippet server
 _STOP_CMD = ('am instrument {user} -w -e action stop {snippet_package}/' +
@@ -106,30 +104,31 @@ class SnippetClientV2(client_base.ClientBase):
     """See base class.
 
     This function performs following preparation steps:
-    * Check that the Mobly Snippet app is installed on the remote device.
+    * Validate that the Mobly Snippet app is available on the device.
     * Disable hidden api blocklist if necessary and possible.
 
     Raises:
       errors.ServerStartPreCheckError: if the server app is not installed
         for the current user.
     """
-    self._check_snippet_app_installed()
+    self._validate_snippet_app_on_device()
     self._disable_hidden_api_blocklist()
 
-  def _check_snippet_app_installed(self):
-    """Checks that the Mobly Snippet app is installed on the remote device.
+  def _validate_snippet_app_on_device(self):
+    """Validates the Mobly Snippet app is available on the device.
 
     Raises:
       errors.ServerStartPreCheckError: if the server app is not installed
         for the current user.
     """
+    # Validate that the Mobly Snippet app is installed for the current user.
     out = self._adb.shell(f'pm list package --user {self.user_id}')
     if not utils.grep(f'^package:{self.package}$', out):
       raise errors.ServerStartPreCheckError(
           self._device,
           f'{self.package} is not installed for user {self.user_id}.')
 
-    # Check that the app is instrumented.
+    # Validate that the app is instrumented.
     out = self._adb.shell('pm list instrumentation')
     matched_out = utils.grep(
         f'^instrumentation:{self.package}/{_INSTRUMENTATION_RUNNER_PACKAGE}',
@@ -138,12 +137,11 @@ class SnippetClientV2(client_base.ClientBase):
       raise errors.ServerStartPreCheckError(
           self._device,
           f'{self.package} is installed, but it is not instrumented.')
-
-    # Check that the instrumentation target is installed if it's not the
-    # same as the snippet package.
     match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
                       matched_out[0])
     target_name = match.group(3)
+    # Validate that the instrumentation target is installed if it's not the
+    # same as the snippet package.
     if target_name != self.package:
       out = self._adb.shell(f'pm list package --user {self.user_id}')
       if not utils.grep(f'^package:{target_name}$', out):
@@ -154,12 +152,8 @@ class SnippetClientV2(client_base.ClientBase):
 
   def _disable_hidden_api_blocklist(self):
     """If necessary and possible, disables hidden api blocklist."""
-    version_codename = self._device.build_info['build_version_codename']
     sdk_version = int(self._device.build_info['build_version_sdk'])
-    # Check version_codename in addition to sdk_version because Android P builds
-    # in development report sdk_version 27, but still enforce the blocklist.
-    if self._device.is_rootable and (sdk_version >= 28 or
-                                     version_codename == 'P'):
+    if self._device.is_rootable and sdk_version >= 28:
       self._device.adb.shell(
           'settings put global hidden_api_blacklist_exemptions "*"')
 
