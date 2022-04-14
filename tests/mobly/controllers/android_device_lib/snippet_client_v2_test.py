@@ -23,8 +23,7 @@ from mobly.snippet import errors
 from tests.lib import mock_android_device
 
 MOCK_PACKAGE_NAME = 'some.package.name'
-MOCK_SERVER_PATH = (f'{MOCK_PACKAGE_NAME}/'
-                    f'{snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE}')
+MOCK_SERVER_PATH = f'{MOCK_PACKAGE_NAME}/{snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE}'
 MOCK_USER_ID = 0
 
 

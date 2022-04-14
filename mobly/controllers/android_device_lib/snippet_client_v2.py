@@ -30,8 +30,8 @@ _LAUNCH_CMD = (
     f'{_INSTRUMENTATION_RUNNER_PACKAGE}')
 
 # The command template to stop the snippet server
-_STOP_CMD = ('am instrument {user} -w -e action stop {snippet_package}/' +
-             _INSTRUMENTATION_RUNNER_PACKAGE)
+_STOP_CMD = ('am instrument {user} -w -e action stop {snippet_package}/'
+             f'{_INSTRUMENTATION_RUNNER_PACKAGE}')
 
 # Major version of the launch and communication protocol being used by this
 # client.
@@ -101,7 +101,7 @@ class SnippetClientV2(client_base.ClientBase):
     return self._user_id
 
   def before_starting_server(self):
-    """See base class.
+    """Performs the preparation steps before starting the remote server.
 
     This function performs following preparation steps:
     * Validate that the Mobly Snippet app is available on the device.
@@ -116,6 +116,9 @@ class SnippetClientV2(client_base.ClientBase):
 
   def _validate_snippet_app_on_device(self):
     """Validates the Mobly Snippet app is available on the device.
+
+    To run as an instrumentation test, the Mobly Snippet app must already be
+    installed and instrumented on the Android device.
 
     Raises:
       errors.ServerStartPreCheckError: if the server app is not installed
@@ -264,7 +267,16 @@ class SnippetClientV2(client_base.ClientBase):
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
   def stop(self):
-    """See base class."""
+    """Releases all the resources acquired in `initialize`.
+
+    This function releases following resources:
+    * Stop the standing server subprocess running on the host side.
+    * Stop the snippet server running on the device side.
+
+    Raises:
+      android_device_lib_errors.DeviceError: if the server exited with errors on
+        the device side.
+    """
     # TODO(mhaoli): This function is only partially implemented because we
     # have not implemented the functionality of making connections in this
     # class.
@@ -285,12 +297,12 @@ class SnippetClientV2(client_base.ClientBase):
     # process table. Note that it's much more important to ensure releasing all
     # the allocated resources on the host side than on the remote device side.
 
-    # Stop the standing server subprocess, which is running on the host side.
+    # Stop the standing server subprocess running on the host side.
     if self._proc:
       utils.stop_standing_subprocess(self._proc)
       self._proc = None
 
-    # Send the stop signal to the server, which is running on the device side.
+    # Send the stop signal to the server running on the device side.
     out = self._adb.shell(
         _STOP_CMD.format(snippet_package=self.package,
                          user=self._get_user_command_string())).decode('utf-8')
