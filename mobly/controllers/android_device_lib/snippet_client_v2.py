@@ -78,8 +78,30 @@ class SnippetClientV2(client_base.ClientBase):
     """
     super().__init__(package=package, device=ad)
     self._adb = ad.adb
-    self._user_id = self._adb.current_user_id
+    self._user_id = None
     self._proc = None
+
+  @property
+  def user_id(self):
+    """The user id to use for this snippet client.
+
+    All the operations of the snippet client should be used for a particular
+    user. For more details, see the Android documentation of testing
+    multiple users.
+
+    Thus this value is cached and, once set, does not change through the
+    lifecycles of this snippet client object. This caching also reduces the
+    number of adb calls needed.
+
+    Although for now self._user_id won't be modified once set, we use
+    `property` to avoid issuing adb commands in the constructor.
+
+    Returns:
+      An integer of the user id.
+    """
+    if self._user_id is None:
+      self._user_id = self._adb.current_user_id
+    return self._user_id
 
   def before_starting_server(self):
     """Performs the preparation steps before starting the remote server.
@@ -106,11 +128,11 @@ class SnippetClientV2(client_base.ClientBase):
         for the current user.
     """
     # Validate that the Mobly Snippet app is installed for the current user.
-    out = self._adb.shell(f'pm list package --user {self._user_id}')
+    out = self._adb.shell(f'pm list package --user {self.user_id}')
     if not utils.grep(f'^package:{self.package}$', out):
       raise errors.ServerStartPreCheckError(
           self._device,
-          f'{self.package} is not installed for user {self._user_id}.')
+          f'{self.package} is not installed for user {self.user_id}.')
 
     # Validate that the app is instrumented.
     out = self._adb.shell('pm list instrumentation')
@@ -127,12 +149,12 @@ class SnippetClientV2(client_base.ClientBase):
     # Validate that the instrumentation target is installed if it's not the
     # same as the snippet package.
     if target_name != self.package:
-      out = self._adb.shell(f'pm list package --user {self._user_id}')
+      out = self._adb.shell(f'pm list package --user {self.user_id}')
       if not utils.grep(f'^package:{target_name}$', out):
         raise errors.ServerStartPreCheckError(
             self._device,
             f'Instrumentation target {target_name} is not installed for user '
-            f'{self._user_id}.')
+            f'{self.user_id}.')
 
   def _disable_hidden_api_blocklist(self):
     """If necessary and possible, disables hidden api blocklist."""
@@ -213,7 +235,7 @@ class SnippetClientV2(client_base.ClientBase):
     sdk_version = int(self._device.build_info['build_version_sdk'])
     if sdk_version < 24:
       return ''
-    return f'--user {self._user_id}'
+    return f'--user {self.user_id}'
 
   def _read_protocol_line(self):
     """Reads the next line of instrumentation output relevant to snippets.
