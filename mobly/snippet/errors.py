@@ -31,8 +31,18 @@ class ServerStartError(Error):
   """Raised when failed to start the snippet server."""
 
 
+class ServerStartProtocolError(ServerStartError):
+  """Raised when protocol reported by the server startup process is unknown."""
+
+
 class ServerStartPreCheckError(Error):
-  """Raised when prechecks for starting the snippet server failed."""
+  """Raised when prechecks for starting the snippet server failed.
+
+  Here are some precheck examples:
+  * Whether the required software is installed on the device.
+  * Whether the configuration file required by the server startup process
+    is available.
+  """
 
 
 class ApiError(Error):
