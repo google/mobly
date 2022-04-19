@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for mobly.controllers.android_device_lib.snippet_client_v2."""
 
+import socket
 import unittest
 from unittest import mock
 
@@ -25,19 +26,85 @@ from tests.lib import mock_android_device
 MOCK_PACKAGE_NAME = 'some.package.name'
 MOCK_SERVER_PATH = f'{MOCK_PACKAGE_NAME}/{snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE}'
 MOCK_USER_ID = 0
+MOCK_DEVICE_PORT = 1234
+
+# TODO: replace MOCK_RESP with a iterable object so we don't need to combine
+# the response of launch command and rpc
+MOCK_RESP = (
+    b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
+    b'"callback": null}')
+
+class MockAdbProxy(mock_android_device.MockAdbProxy):
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.mock_shell_func = mock.Mock()
+    self.mock_forward_func = mock.Mock()
+
+  def shell(self, *args, **kwargs):
+    # Record all the call args
+    self.mock_shell_func(*args, **kwargs)
+
+    if f'am instrument --user 0 -w -e action stop {MOCK_SERVER_PATH}' in args:
+      return b'OK (0 tests)'
+
+    ret = super().shell(*args, **kwargs)
+    return ret
+
+  def forward(self, *args, **kwargs):
+    self.mock_forward_func(*args, **kwargs)
+
+
+class MockSocketFile:
+
+  def __init__(self, resp):
+    if isinstance(resp, bytes):
+      self.mock_readline_func = mock.Mock(return_value=resp)
+    else:
+      self.mock_readline_func = mock.Mock(side_effect=resp)
+    self.writed_messages = []
+
+  def write(self, msg):
+    self.writed_messages.append(msg)
+
+  def readline(self):
+    return self.mock_readline_func()
+
+  def flush(self):
+    pass
+
+# TODO handle resp better
+def setup_mock_socket_file(mock_socket_create_conn, resp=MOCK_RESP):
+  """Sets up a fake socket file from the mock connection.
+
+  Args:
+    mock_socket_create_conn: The mock method for creating a method.
+    resp: str, response to give. MOCK_RESP by default.
+
+  Returns:
+    The mock file that will be injected into the code.
+  """
+
+  fake_file = MockSocketFile(resp)
+  fake_conn = mock.MagicMock()
+  fake_conn.makefile.return_value = fake_file
+  mock_socket_create_conn.return_value = fake_conn
+  return fake_file
 
 
 class SnippetClientV2Test(unittest.TestCase):
   """Unit tests for SnippetClientV2."""
 
   def _make_client(self, adb_proxy=None, mock_properties=None):
-    adb_proxy = adb_proxy or mock_android_device.MockAdbProxy(
+    adb_proxy = adb_proxy or MockAdbProxy(
         instrumented_packages=[
             (MOCK_PACKAGE_NAME,
              snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
              MOCK_PACKAGE_NAME)
         ],
         mock_properties=mock_properties)
+
+    self.adb = adb_proxy
 
     device = mock.Mock()
     device.adb = adb_proxy
@@ -61,6 +128,155 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_proc = mock_start_subprocess.return_value
     mock_proc.stdout.readline.side_effect = resp_lines
 
+  # Rename it as it does not actually connect.
+  def _make_client_and_connect(self, mock_socket_create_conn, socket_resp=MOCK_RESP, device_port=MOCK_DEVICE_PORT, adb_proxy=None, mock_properties=None):
+    self._make_client(adb_proxy, mock_properties)
+    self.mock_socket_file = setup_mock_socket_file(mock_socket_create_conn, socket_resp)
+    self.client.device_port = device_port
+
+  def _assert_client_resources_released(self, mock_start_subprocess, mock_stop_standing_subprocess, mock_socket_create_conn, mock_get_port):
+    self.assertIs(self.client._proc, None)
+    self.adb.mock_shell_func.assert_any_call(
+            f'am instrument --user {MOCK_USER_ID} -w -e action stop '
+            f'{MOCK_SERVER_PATH}')
+    mock_stop_standing_subprocess.assert_called_once_with(mock_start_subprocess.return_value)
+    self.assertFalse(self.client.is_alive)
+    self.assertIs(self.client._conn, None)
+    mock_socket_create_conn.return_value.close.assert_called_once_with()
+    self.assertIs(self.client.host_port, None)
+    self.adb.mock_forward_func.assert_any_call(
+        ['--remove', f'tcp:{mock_get_port.return_value}'])
+
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port', return_value=12345)
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  def test_the_whole_lifecycle_with_a_sync_rpc(self, mock_start_subprocess, mock_stop_standing_subprocess, mock_socket_create_conn, mock_get_port):
+    socket_resp = [
+        b'{"status": true, "uid": 1}',
+        b'{"id": 0, "result": 123, "error": null, "callback": null}',
+    ]
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    self.client.initialize()
+    rpc_result = self.client.some_sync_rpc(1, 2, 'hello')
+    self.client.stop()
+
+    self._assert_client_resources_released(mock_start_subprocess, mock_stop_standing_subprocess, mock_socket_create_conn, mock_get_port)
+
+    expected_socket_writes = [
+        b'{"cmd": "initiate", "uid": -1}\n',
+        b'{"id": 0, "method": "some_sync_rpc", "params": [1, 2, "hello"]}\n',
+    ]
+    self.assertEqual(
+        self.mock_socket_file.writed_messages,
+        expected_socket_writes
+    )
+    self.assertEqual(rpc_result, 123)
+
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port', return_value=12345)
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.callback_handler.'
+              'CallbackHandler')
+  def test_the_whole_lifecycle_with_an_async_rpc(self, mock_callback_class, mock_start_subprocess, mock_stop_standing_subprocess, mock_socket_create_conn, mock_get_port):
+    mock_socket_resp = [
+        b'{"status": true, "uid": 1}',
+        b'{"id": 0, "result": 123, "error": null, "callback": "1-0"}',
+        b'{"status": true, "uid": 1}',
+    ]
+    self._make_client_and_connect(mock_socket_create_conn, mock_socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    self.client.initialize()
+    rpc_result = self.client.some_async_rpc(1, 2, 'async')
+    self.client.stop()
+
+    self._assert_client_resources_released(mock_start_subprocess, mock_stop_standing_subprocess, mock_socket_create_conn, mock_get_port)
+
+    expected_socket_writes = [
+        b'{"cmd": "initiate", "uid": -1}\n',
+        b'{"id": 0, "method": "some_async_rpc", "params": [1, 2, "async"]}\n',
+        b'{"cmd": "continue", "uid": 1}\n',
+    ]
+    self.assertEqual(
+        self.mock_socket_file.writed_messages,
+        expected_socket_writes
+    )
+    mock_callback_class.assert_called_with(callback_id='1-0',
+                                           event_client=self.client._event_client,
+                                           ret_value=123,
+                                           method_name='some_async_rpc',
+                                           ad=self.client._device)
+    self.assertIs(rpc_result, mock_callback_class.return_value)
+
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port', return_value=12345)
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.callback_handler.'
+              'CallbackHandler')
+  def test_the_whole_lifecycle_with_multiple_rpcs(self, mock_callback_class, mock_start_subprocess, mock_stop_standing_subprocess, mock_socket_create_conn, mock_get_port):
+    mock_socket_resp = [
+        b'{"status": true, "uid": 1}',
+        b'{"id": 0, "result": 123, "error": null, "callback": null}',
+        b'{"id": 1, "result": 456, "error": null, "callback": "1-0"}',
+        # Response for starting the event client
+        b'{"status": true, "uid": 1}',
+        b'{"id": 2, "result": 789, "error": null, "callback": null}',
+        b'{"id": 3, "result": 321, "error": null, "callback": "2-0"}',
+    ]
+    self._make_client_and_connect(mock_socket_create_conn, mock_socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    rpc_results_expected = [
+        123,
+        mock.Mock(),
+        789,
+        mock.Mock(),
+    ]
+    # Extract the two mock objects to use as return values of callback handler
+    # class
+    mock_callback_class.side_effect = [rpc_results_expected[1], rpc_results_expected[3]]
+
+    rpc_results = []
+    self.client.initialize()
+    rpc_results.append(self.client.some_sync_rpc(1, 2, 'hello'))
+    rpc_results.append(self.client.some_async_rpc(3, 4, 'async'))
+    rpc_results.append(self.client.some_sync_rpc(5, 'hello'))
+    rpc_results.append(self.client.some_async_rpc(6, 'async'))
+    self.client.stop()
+
+    self._assert_client_resources_released(mock_start_subprocess, mock_stop_standing_subprocess, mock_socket_create_conn, mock_get_port)
+
+    self.assertListEqual(rpc_results, rpc_results_expected)
+    mock_callback_class.assert_has_calls(
+        [
+            mock.call(callback_id='1-0', event_client=self.client._event_client, ret_value=456, method_name='some_async_rpc', ad=self.client._device),
+            mock.call(callback_id='2-0', event_client=self.client._event_client, ret_value=321, method_name='some_async_rpc', ad=self.client._device),
+        ]
+    )
+
   def test_check_app_installed_normally(self):
     """Tests that app checker runs normally when app installed correctly."""
     self._make_client()
@@ -68,7 +284,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   def test_check_app_installed_fail_app_not_installed(self):
     """Tests that app checker fails without installing app."""
-    self._make_client(mock_android_device.MockAdbProxy())
+    self._make_client(MockAdbProxy())
     expected_msg = f'.* {MOCK_PACKAGE_NAME} is not installed.'
     with self.assertRaisesRegex(errors.ServerStartPreCheckError, expected_msg):
       self.client._validate_snippet_app_on_device()
@@ -76,7 +292,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_check_app_installed_fail_not_instrumented(self):
     """Tests that app checker fails without instrumenting app."""
     self._make_client(
-        mock_android_device.MockAdbProxy(
+        MockAdbProxy(
             installed_packages=[MOCK_PACKAGE_NAME]))
     expected_msg = (
         f'.* {MOCK_PACKAGE_NAME} is installed, but it is not instrumented.')
@@ -86,7 +302,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_check_app_installed_fail_instrumentation_not_installed(self):
     """Tests that app checker fails without installing instrumentation."""
     self._make_client(
-        mock_android_device.MockAdbProxy(instrumented_packages=[(
+        MockAdbProxy(instrumented_packages=[(
             MOCK_PACKAGE_NAME,
             snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
             'not.installed')]))
@@ -94,8 +310,7 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(errors.ServerStartPreCheckError, expected_msg):
       self.client._validate_snippet_app_on_device()
 
-  @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
-  def test_disable_hidden_api_normally(self, mock_shell_func):
+  def test_disable_hidden_api_normally(self):
     """Tests the disabling hidden api process works normally."""
     self._make_client_with_extra_adb_properties({
         'ro.build.version.codename': 'S',
@@ -103,11 +318,10 @@ class SnippetClientV2Test(unittest.TestCase):
     })
     self.client._device.is_rootable = True
     self.client._disable_hidden_api_blocklist()
-    mock_shell_func.assert_called_with(
+    self.adb.mock_shell_func.assert_called_with(
         'settings put global hidden_api_blacklist_exemptions "*"')
 
-  @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
-  def test_disable_hidden_api_low_sdk(self, mock_shell_func):
+  def test_disable_hidden_api_low_sdk(self):
     """Tests it doesn't disable hidden api with low SDK."""
     self._make_client_with_extra_adb_properties({
         'ro.build.version.codename': 'O',
@@ -115,10 +329,9 @@ class SnippetClientV2Test(unittest.TestCase):
     })
     self.client._device.is_rootable = True
     self.client._disable_hidden_api_blocklist()
-    mock_shell_func.assert_not_called()
+    self.adb.mock_shell_func.assert_not_called()
 
-  @mock.patch.object(mock_android_device.MockAdbProxy, 'shell')
-  def test_disable_hidden_api_non_rootable(self, mock_shell_func):
+  def test_disable_hidden_api_non_rootable(self):
     """Tests it doesn't disable hidden api with non-rootable device."""
     self._make_client_with_extra_adb_properties({
         'ro.build.version.codename': 'S',
@@ -126,11 +339,11 @@ class SnippetClientV2Test(unittest.TestCase):
     })
     self.client._device.is_rootable = False
     self.client._disable_hidden_api_blocklist()
-    mock_shell_func.assert_not_called()
+    self.adb.mock_shell_func.assert_not_called()
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  @mock.patch.object(mock_android_device.MockAdbProxy,
+  @mock.patch.object(MockAdbProxy,
                      'shell',
                      return_value=b'setsid')
   def test_start_server_with_user_id(self, mock_adb, mock_start_subprocess):
@@ -155,7 +368,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  @mock.patch.object(mock_android_device.MockAdbProxy,
+  @mock.patch.object(MockAdbProxy,
                      'shell',
                      return_value=b'setsid')
   def test_start_server_without_user_id(self, mock_adb, mock_start_subprocess):
@@ -179,7 +392,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  @mock.patch.object(mock_android_device.MockAdbProxy,
+  @mock.patch.object(MockAdbProxy,
                      'shell',
                      side_effect=adb.AdbError('cmd', 'stdout', 'stderr',
                                               'ret_code'))
@@ -337,57 +550,567 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client.start_server()
 
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(mock_android_device.MockAdbProxy,
-                     'shell',
-                     return_value=b'OK (0 tests)')
-  def test_stop_server_normally(self, mock_android_device_shell,
-                                mock_stop_standing_subprocess):
+  def test_stop_normally(self, mock_stop_standing_subprocess):
     """Tests that stopping server process works normally."""
     self._make_client()
     mock_proc = mock.Mock()
     self.client._proc = mock_proc
+    mock_conn = mock.Mock()
+    self.client._conn = mock_conn
+    self.client.host_port = 12345
+
     self.client.stop()
+
     self.assertIs(self.client._proc, None)
-    mock_android_device_shell.assert_called_once_with(
+    self.adb.mock_shell_func.assert_called_once_with(
         f'am instrument --user {MOCK_USER_ID} -w -e action stop '
         f'{MOCK_SERVER_PATH}')
     mock_stop_standing_subprocess.assert_called_once_with(mock_proc)
+    self.assertFalse(self.client.is_alive)
+    self.assertIs(self.client._conn, None)
+    mock_conn.close.assert_called_once_with()
+    self.assertIs(self.client.host_port, None)
+    self.client._device.adb.mock_forward_func.assert_called_once_with(
+        ['--remove', f'tcp:12345'])
 
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(mock_android_device.MockAdbProxy,
-                     'shell',
-                     return_value=b'OK (0 tests)')
-  def test_stop_server_server_already_cleaned(self, mock_android_device_shell,
-                                              mock_stop_standing_subprocess):
+  def test_stop_when_server_was_already_cleaned(self, mock_stop_standing_subprocess):
     """Tests stopping server process when subprocess is already cleaned."""
     self._make_client()
     self.client._proc = None
+    mock_conn = mock.Mock()
+    self.client._conn = mock_conn
+    self.client.host_port = 12345
+
     self.client.stop()
+
     self.assertIs(self.client._proc, None)
     mock_stop_standing_subprocess.assert_not_called()
-    mock_android_device_shell.assert_called_once_with(
+    self.adb.assert_called_once_with(
         f'am instrument --user {MOCK_USER_ID} -w -e action stop '
         f'{MOCK_SERVER_PATH}')
+    self.assertFalse(self.client.is_alive)
+    self.assertIs(self.client._conn, None)
+    mock_conn.close.assert_called_once_with()
+    self.assertIs(self.client.host_port, None)
+    self.client._device.adb.mock_forward_func.assert_called_once_with(
+        ['--remove', f'tcp:12345'])
 
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(mock_android_device.MockAdbProxy,
-                     'shell',
-                     return_value=b'Closed with error.')
-  def test_stop_server_stop_with_error(self, mock_android_device_shell,
-                                       mock_stop_standing_subprocess):
-    """Tests all resources are cleaned even if stopping server has error."""
+  def test_stop_when_conn_was_already_cleaned(self, mock_stop_standing_subprocess):
+    """Tests stopping server process when subprocess is already cleaned."""
     self._make_client()
     mock_proc = mock.Mock()
     self.client._proc = mock_proc
+    self.client._conn = None
+    self.client.host_port = 12345
+
+    self.client.stop()
+
+    self.assertIs(self.client._proc, None)
+    mock_stop_standing_subprocess.assert_called_once_with(mock_proc)
+    self.adb.assert_called_once_with(
+        f'am instrument --user {MOCK_USER_ID} -w -e action stop '
+        f'{MOCK_SERVER_PATH}')
+    self.assertFalse(self.client.is_alive)
+    self.assertIs(self.client._conn, None)
+    self.assertIs(self.client.host_port, None)
+    self.client._device.adb.mock_forward_func.assert_called_once_with(
+        ['--remove', f'tcp:12345'])
+
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(MockAdbProxy,
+                     'shell',
+                     return_value=b'Closed with error.')
+  def test_stop_with_device_side_error(self, mock_adb_shell,
+                                       mock_stop_standing_subprocess):
+    """Tests all resources are cleaned even if device side has an error."""
+    self._make_client()
+    mock_proc = mock.Mock()
+    self.client._proc = mock_proc
+    mock_conn = mock.Mock()
+    self.client._conn = mock_conn
+    self.client.host_port = 12345
     with self.assertRaisesRegex(android_device_lib_errors.DeviceError,
                                 'Closed with error'):
       self.client.stop()
 
     self.assertIs(self.client._proc, None)
     mock_stop_standing_subprocess.assert_called_once_with(mock_proc)
-    mock_android_device_shell.assert_called_once_with(
+    mock_adb_shell.assert_called_once_with(
         f'am instrument --user {MOCK_USER_ID} -w -e action stop '
         f'{MOCK_SERVER_PATH}')
+    self.assertFalse(self.client.is_alive)
+    self.assertIs(self.client._conn, None)
+    mock_conn.close.assert_called_once_with()
+    self.assertIs(self.client.host_port, None)
+    self.client._device.adb.mock_forward_func.assert_called_once_with(
+        ['--remove', f'tcp:12345'])
+
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  def test_stop_with_conn_close_error(self, mock_stop_standing_subprocess):
+    """Tests port resource is cleaned when closing socket with an error."""
+    self._make_client()
+    mock_proc = mock.Mock()
+    self.client._proc = mock_proc
+    mock_conn = mock.Mock()
+    # The deconstructor will call this mock function again after tests, so
+    # only throw this error when it is called the first time.
+    mock_conn.close.side_effect = (OSError('Closed with error'), None)
+    self.client._conn = mock_conn
+    self.client.host_port = 12345
+    with self.assertRaisesRegex(OSError, 'Closed with error'):
+      self.client.stop()
+
+    self.client._device.adb.mock_forward_func.assert_called_once_with(
+        ['--remove', f'tcp:12345'])
+
+  def test_close_connection_normally(self):
+    self._make_client()
+    mock_conn = mock.Mock()
+    self.client._conn = mock_conn
+    self.client.host_port = 123
+
+    self.client.close_connection()
+
+    self.assertIs(self.client._conn, None)
+    self.assertIs(self.client.host_port, None)
+    mock_conn.close.assert_called_once_with()
+    self.client._device.adb.mock_forward_func.assert_called_once_with(['--remove', 'tcp:123'])
+
+  def test_close_connection_when_host_port_have_been_released(self):
+    self._make_client()
+    mock_conn = mock.Mock()
+    self.client._conn = mock_conn
+    self.client.host_port = None
+
+    self.client.close_connection()
+
+    self.assertIs(self.client._conn, None)
+    self.assertIs(self.client.host_port, None)
+    mock_conn.close.assert_called_once_with()
+    self.client._device.adb.mock_forward_func.assert_not_called()
+
+  def test_close_connection_when_conn_have_been_closed(self):
+    self._make_client()
+    self.client._conn = None
+    self.client.host_port = 123
+
+    self.client.close_connection()
+
+    self.assertIs(self.client._conn, None)
+    self.assertIs(self.client.host_port, None)
+    self.client._device.adb.mock_forward_func.assert_called_once_with(['--remove', 'tcp:123'])
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  def test_sync_rpc_normal(self, mock_start_subprocess, mock_socket_create_conn):
+    socket_resp = [
+        b'{"status": true, "uid": 1}',
+        b'{"id": 0, "result": 123, "error": null, "callback": null}',
+    ]
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    self.client._make_connection()
+    rpc_result = self.client.some_rpc(1, 2, "hello")
+
+    self.assertEqual(rpc_result, 123)
+    self.assertEqual(
+        self.mock_socket_file.writed_messages[-1],
+        b'{"id": 0, "method": "some_rpc", "params": [1, 2, "hello"]}\n',
+    )
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.callback_handler.'
+              'CallbackHandler')
+  def test_async_rpc_start_event_client(self, mock_callback_class, mock_start_subprocess, mock_socket_create_conn):
+    socket_resp = [
+        b'{"status": true, "uid": 1}',
+        b'{"id": 0, "result": 123, "error": null, "callback": "1-0"}',
+        b'{"status": true, "uid": 1}',
+        b'{"id":0,"result":"async-rpc-event","callback":null,"error":null}',
+    ]
+    socket_write_expected = [
+        b'{"cmd": "initiate", "uid": -1}\n',
+        b'{"id": 0, "method": "some_async_rpc", "params": [1, 2, "hello"]}\n',
+        b'{"cmd": "continue", "uid": 1}\n',
+        b'{"id": 0, "method": "eventGetAll", "params": ["1-0", "eventName"]}\n',
+    ]
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    self.client.host_port = 12345
+    self.client._make_connection()
+    callback = self.client.some_async_rpc(1, 2, "hello")
+
+    mock_callback_class.assert_called_with(callback_id='1-0',
+                                           event_client=self.client._event_client,
+                                           ret_value=123,
+                                           method_name='some_async_rpc',
+                                           ad=self.client._device)
+
+    # Ensure the event client is alive
+    self.assertTrue(self.client._event_client.is_alive)
+
+    # Ensure the event client share the same ports and uid with main client
+    self.assertEqual(self.client._event_client.host_port, 12345)
+    self.assertEqual(self.client._event_client.device_port, MOCK_DEVICE_PORT)
+    self.assertEqual(self.client._event_client.uid, self.client.uid)
+
+    # Ensure that event client can send RPCs
+    event_string = self.client._event_client.eventGetAll('1-0', 'eventName')
+    self.assertEqual(event_string, 'async-rpc-event')
+    self.assertListEqual(
+        self.mock_socket_file.writed_messages,
+        socket_write_expected,
+    )
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port')
+  def test_initialize(self, mock_get_port, mock_start_subprocess, mock_socket_create_conn):
+    mock_get_port.return_value = 12345
+    socket_resp = [
+        b'{"status": true, "uid": 1}',
+    ]
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    self.client.initialize()
+    self.assertTrue(self.client.is_alive)
+    self.assertEqual(self.client.host_port, 12345)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port')
+  def test_restore_event_client(self, mock_get_port, mock_start_subprocess, mock_socket_create_conn):
+    mock_get_port.return_value = 12345
+    socket_resp = [
+        # response of handshake when initializing the client
+        b'{"status": true, "uid": 1}',
+        # response of an async rpc
+        b'{"id": 0, "result": 123, "error": null, "callback": "1-0"}',
+        # response of starting event client
+        b'{"status": true, "uid": 1}',
+        # response of restoring server connection
+        b'{"status": true, "uid": 2}',
+        # response of restoring event client
+        b'{"status": true, "uid": 3}',
+        # response of restoring server connection
+        b'{"status": true, "uid": 4}',
+        # response of restoring event client
+        b'{"status": true, "uid": 5}',
+    ]
+    socket_write_expected = [
+        # request of handshake when initializing the client
+        b'{"cmd": "initiate", "uid": -1}\n',
+        # request of an async rpc
+        b'{"id": 0, "method": "some_async_rpc", "params": []}\n',
+        # request of starting event client
+        b'{"cmd": "continue", "uid": 1}\n',
+        # request of restoring server connection
+        b'{"cmd": "initiate", "uid": -1}\n',
+        # request of restoring event client
+        b'{"cmd": "initiate", "uid": -1}\n',
+        # request of restoring server connection
+        b'{"cmd": "initiate", "uid": -1}\n',
+        # request of restoring event client
+        b'{"cmd": "initiate", "uid": -1}\n',
+    ]
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    self.client._make_connection()
+    callback = self.client.some_async_rpc()
+
+    # before reconnect, clients use previously selected ports
+    self.assertEqual(self.client.host_port, 12345)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+    self.assertEqual(callback._event_client.host_port, 12345)
+    self.assertEqual(callback._event_client.device_port, MOCK_DEVICE_PORT)
+
+    # after reconnect, if host port specified, clients use specified port
+    self.client.restore_server_connection(port=54321)
+    self.assertEqual(self.client.host_port, 54321)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+    self.assertEqual(callback._event_client.host_port, 54321)
+    self.assertEqual(callback._event_client.device_port, MOCK_DEVICE_PORT)
+
+    # after reconnect, if host port not specified, clients use selected
+    # available port
+    mock_get_port.return_value = 56789
+    self.client.restore_server_connection()
+    self.assertEqual(self.client.host_port, 56789)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+    self.assertEqual(callback._event_client.host_port, 56789)
+    self.assertEqual(callback._event_client.device_port, MOCK_DEVICE_PORT)
+
+    # if unable to reconnect for any reason, a
+    # jsonrpc_client_base.AppRestoreConnectionError is raised.
+    mock_socket_create_conn.side_effect = IOError('socket timed out')
+    with self.assertRaisesRegex(
+        errors.ServerRestoreConnectionError,
+        (f'Failed to restore server connection for {MOCK_PACKAGE_NAME} at '
+         f'host port 56789, device port {MOCK_DEVICE_PORT}')):
+      self.client.restore_server_connection()
+
+    self.assertListEqual(self.client._client.writed_messages, socket_write_expected)
+
+  @mock.patch('builtins.print')
+  def test_help_rpc_when_printing_by_default(self, mock_print):
+    self._make_client()
+    mock_rpc = mock.MagicMock()
+    self.client._rpc = mock_rpc
+
+    result = self.client.help()
+    mock_rpc.assert_called_once_with('help')
+    self.assertEqual(None, result)
+    mock_print.assert_called_once_with(mock_rpc.return_value)
+
+  @mock.patch('builtins.print')
+  def test_help_rpc_when_not_printing(self, mock_print):
+    self._make_client()
+    mock_rpc = mock.MagicMock()
+    self.client._rpc = mock_rpc
+
+    result = self.client.help(print_output=False)
+    mock_rpc.assert_called_once_with('help')
+    self.assertEqual(mock_rpc.return_value, result)
+    mock_print.assert_not_called()
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port', return_value=12345)
+  def test_make_connection_runs_normally(self, mock_get_port, mock_start_subprocess, mock_socket_create_conn):
+    """Tests make_connection runs normally."""
+    socket_resp = [b'{"status": true, "uid": 1}']
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    self.client._make_connection()
+    self.assertEqual(self.client.uid, 1)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+    self.client._device.adb.mock_forward_func.assert_called_once_with(
+        ['tcp:12345', f'tcp:{MOCK_DEVICE_PORT}'])
+    mock_socket_create_conn.assert_called_once_with(('localhost', 12345), snippet_client_v2._SOCKET_CONNECTION_TIMEOUT)
+    # TODO: better to save these value to the test class
+    mock_socket_create_conn.return_value.settimeout.assert_called_once_with(snippet_client_v2._SOCKET_READ_TIMEOUT)
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port', return_value=12345)
+  def test_make_connection_with_preset_host_port(self, mock_get_port, mock_start_subprocess, mock_socket_create_conn):
+    """Tests make_connection with the preset host port."""
+    socket_resp = [b'{"status": true, "uid": 1}']
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    self.client.host_port = 23456
+    self.client._make_connection()
+    self.assertEqual(self.client.uid, 1)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+    # Test that the host port for forwarding is 23456 instead of 12345
+    self.client._device.adb.mock_forward_func.assert_called_once_with(
+        ['tcp:23456', f'tcp:{MOCK_DEVICE_PORT}'])
+    mock_socket_create_conn.assert_called_once_with(('localhost', 23456), snippet_client_v2._SOCKET_CONNECTION_TIMEOUT)
+    # TODO: better to save these value to the test class
+    mock_socket_create_conn.return_value.settimeout.assert_called_once_with(snippet_client_v2._SOCKET_READ_TIMEOUT)
+
+  # TODO: may change a word instead of "ip"
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port', return_value=12345)
+  def test_make_connection_with_ip(self, mock_get_port, mock_start_subprocess, mock_socket_create_conn):
+    """Tests make_connection with 127.0.0.1 instead of localhost."""
+    socket_resp = [b'{"status": true, "uid": 1}']
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    mock_conn = mock_socket_create_conn.return_value
+    def _mock_create_conn_side_effect(address, *args, **kwargs):
+      if address[0] == '127.0.0.1':
+        return mock_conn
+      raise ConnectionRefusedError(f'Refusing connection to {address[0]}.')
+    mock_socket_create_conn.side_effect = _mock_create_conn_side_effect
+
+    self.client._make_connection()
+    self.assertEqual(self.client.uid, 1)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+    self.client._device.adb.mock_forward_func.assert_called_once_with(
+        ['tcp:12345', f'tcp:{MOCK_DEVICE_PORT}'])
+    mock_socket_create_conn.assert_any_call(('127.0.0.1', 12345), snippet_client_v2._SOCKET_CONNECTION_TIMEOUT)
+    # TODO: better to save these value to the test class
+    mock_socket_create_conn.return_value.settimeout.assert_called_once_with(snippet_client_v2._SOCKET_READ_TIMEOUT)
+
+  @mock.patch('socket.create_connection')
+  def test_make_connection_io_error(self, mock_socket_create_conn):
+    """Tests IOError occurred trying to create socket connection."""
+    mock_socket_create_conn.side_effect = IOError()
+    with self.assertRaises(IOError):
+      self._make_client()
+      self.client.device_port = 123
+      self.client._make_connection()
+
+  @mock.patch('socket.create_connection')
+  def test_make_connection_timeout(self, mock_socket_create_conn):
+    """Tests timeout occurred trying to create socket connection."""
+    mock_socket_create_conn.side_effect = socket.timeout
+    with self.assertRaises(socket.timeout):
+      self._make_client()
+      self.client.device_port = 123
+      self.client._make_connection()
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  def test_make_connection_receives_none_handshake_response(self, mock_start_subprocess, mock_socket_create_conn):
+    """Tests _make_connection receives None as the handshake response."""
+    socket_resp = [None]
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    with self.assertRaisesRegex(
+        errors.ProtocolError,
+        errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
+      self.client._make_connection()
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  def test_make_connection_receives_empty_handshake_response(self, mock_start_subprocess, mock_socket_create_conn):
+    """Tests _make_connection receives an empty handshake response."""
+    socket_resp = [b'']
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    with self.assertRaisesRegex(
+        errors.ProtocolError,
+        errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
+      self.client._make_connection()
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  def test_make_connection_receives_invalid_handshake_response(self, mock_start_subprocess, mock_socket_create_conn):
+    """Tests make_connection receives an invalid handshake response."""
+    socket_resp = [b'{"status": false, "uid": 1}']
+    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(
+        mock_start_subprocess,
+        resp_lines=[
+            b'SNIPPET START, PROTOCOL 1 234', b'SNIPPET SERVING, PORT 1234'
+        ])
+
+    self.client._make_connection()
+    self.assertEqual(self.client.uid, -1)
+
+  def test_rpc_send_to_socket(self):
+    """Test rpc sending and receiving.
+
+    Tests that when an rpc is sent and received the corrent data
+    is used.
+    """
+    self._make_client()
+    rpc_request = '{"id": 0, "method": "some_rpc", "params": []}'
+    rpc_response_expected = '{"id": 0, "result": 123, "error": null, "callback": null}'
+
+    socket_write_expected = b'{"id": 0, "method": "some_rpc", "params": []}\n'
+    socket_response = b'{"id": 0, "result": 123, "error": null, "callback": null}'
+
+    mock_socket_file = MockSocketFile(socket_response)
+    self.client._client = mock_socket_file
+
+    rpc_response = self.client.send_rpc_request(rpc_request)
+
+    self.assertEqual(rpc_response, rpc_response_expected)
+    self.assertEqual(mock_socket_file.writed_messages, [socket_write_expected])
+
+  # TODO: all rpc -> RPC
+  def test_rpc_send_socket_write_error(self):
+    """Test the socket writing process throws an error when sending an RPC."""
+    self._make_client()
+    self.client._client = mock.Mock()
+    self.client._client.write.side_effect = socket.error('Socket error')
+
+    rpc_request = '{"id": 0, "method": "some_rpc", "params": []}'
+    with self.assertRaisesRegex(errors.Error, 'Socket error'):
+      self.client.send_rpc_request(rpc_request)
+
+  def test_rpc_send_socket_read_error(self):
+    """Test the socket writing process throws an error when sending an RPC."""
+    self._make_client()
+    self.client._client = mock.Mock()
+    self.client._client.readline.side_effect = socket.error('Socket error')
+
+    rpc_request = '{"id": 0, "method": "some_rpc", "params": []}'
+    with self.assertRaisesRegex(errors.Error, 'Socket error'):
+      self.client.send_rpc_request(rpc_request)
+
+  def test_rpc_send_decode_socket_response_error(self):
+    self._make_client()
+    self.client.log = mock.Mock()
+    self.client._client = mock.Mock()
+    socket_response = bytes('{"id": 0, "result": 123, "error": null, "callback": null}', encoding='cp037')
+    self.client._client.readline.return_value = socket_response
+
+    rpc_request = '{"id": 0, "method": "some_rpc", "params": []}'
+    with self.assertRaises(UnicodeError):
+      self.client.send_rpc_request(rpc_request)
+
+    self.client.log.error.assert_has_calls(
+        [mock.call('Failed to decode the RPC response using encoding utf8: %s', socket_response)]
+    )
 
 
 if __name__ == '__main__':

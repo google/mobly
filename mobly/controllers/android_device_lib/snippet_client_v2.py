@@ -14,12 +14,19 @@
 """Snippet Client V2 for Interacting with Snippet Server on Android Device."""
 
 import re
+import json
+import socket
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
+from mobly.controllers.android_device_lib import callback_handler
 from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.snippet import client_base
 from mobly.snippet import errors
+
+# TODO: check that better to use server to replace some occurrences of app
+
+# TODO: check typo in function/variable/class name
 
 # The package of the instrumentation runner used for mobly snippet
 _INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunner'
@@ -58,6 +65,26 @@ _SETSID_COMMAND = 'setsid'
 
 _NOHUP_COMMAND = 'nohup'
 
+# UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
+UNKNOWN_UID = -1
+
+# Maximum time to wait for the socket to open on the device.
+_SOCKET_CONNECTION_TIMEOUT = 60
+
+# Maximum time to wait for a response message on the socket.
+_SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
+
+
+# Rename it to MakeConnectionCommand
+class JsonRpcCommand:
+  """Commands that can be invoked on all jsonrpc clients.
+
+  INIT: Initializes a new session and makes a connection.
+  CONTINUE: Makes a connection with current session.
+  """
+  INIT = 'initiate'
+  CONTINUE = 'continue'
+
 
 class SnippetClientV2(client_base.ClientBase):
   """Snippet client V2 for interacting with snippet server on Android Device.
@@ -87,6 +114,10 @@ class SnippetClientV2(client_base.ClientBase):
     self._adb = ad.adb
     self._user_id = None
     self._proc = None
+    # TODO: polish following comment
+    self._client = None  # keep it to prevent close errors on connect failure
+    self._conn = None
+    self._event_client = None
 
   @property
   def user_id(self):
@@ -109,6 +140,11 @@ class SnippetClientV2(client_base.ClientBase):
     if self._user_id is None:
       self._user_id = self._adb.current_user_id
     return self._user_id
+
+  @property
+  def is_alive(self):
+    """Does the client have an active connection to the snippet server."""
+    return self._conn is not None
 
   def before_starting_server(self):
     """Performs the preparation steps before starting the remote server.
@@ -183,11 +219,11 @@ class SnippetClientV2(client_base.ClientBase):
       errors.ServerStartError: if failed to start the server or process the
         server output.
     """
-    persists_shell_cmd = self._get_persisting_command()
+    persisting_shell_cmd = self._get_persisting_command()
     self.log.debug('Snippet server for package %s is using protocol %d.%d',
                    self.package, _PROTOCOL_MAJOR_VERSION,
                    _PROTOCOL_MINOR_VERSION)
-    cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
+    cmd = _LAUNCH_CMD.format(shell_cmd=persisting_shell_cmd,
                              user=self._get_user_command_string(),
                              snippet_package=self.package)
     self._proc = self._run_adb_cmd(cmd)
@@ -276,6 +312,7 @@ class SnippetClientV2(client_base.ClientBase):
 
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
+  # TODO: add the information of close_connection to docstring
   def stop(self):
     """Releases all the resources acquired in `initialize`.
 
@@ -287,10 +324,8 @@ class SnippetClientV2(client_base.ClientBase):
       android_device_lib_errors.DeviceError: if the server exited with errors on
         the device side.
     """
-    # TODO(mhaoli): This function is only partially implemented because we
-    # have not implemented the functionality of making connections in this
-    # class.
     self.log.debug('Stopping snippet package %s.', self.package)
+    self.close_connection()
     self._stop_server()
     self.log.debug('Snippet package %s stopped.', self.package)
 
@@ -322,27 +357,185 @@ class SnippetClientV2(client_base.ClientBase):
           self._device,
           f'Failed to stop existing apk. Unexpected output: {out}.')
 
-  # TODO(mhaoli): Temporally override these abstract methods so that we can
-  # initialize the instances in unit tests. We are implementing these functions
-  # in the next PR as soon as possible.
   def make_connection(self):
-    raise NotImplementedError('To be implemented.')
+    self._forward_device_port()
+    self._make_socket_connection()
+    self._send_handshake_request()
+
+  def _forward_device_port(self):
+    """Forwards the device port to a new host port."""
+    if not self.host_port:
+      self.host_port = utils.get_available_host_port()
+    self._adb.forward([f'tcp:{self.host_port}', f'tcp:{self.device_port}'])
+
+  def _make_socket_connection(self):
+    try:
+      self._conn = socket.create_connection(('localhost', self.host_port),
+                                            _SOCKET_CONNECTION_TIMEOUT)
+    except ConnectionRefusedError as err:
+      # Retry using '127.0.0.1' for IPv4 enabled machines that only resolve
+      # 'localhost' to '[::1]'.
+      self.log.debug(
+          'Failed to connect to localhost, trying 127.0.0.1: %s', str(err))
+      self._conn = socket.create_connection(('127.0.0.1', self.host_port),
+                                            _SOCKET_CONNECTION_TIMEOUT)
+
+    self._conn.settimeout(_SOCKET_READ_TIMEOUT)
+    # TODO: Rename it, _stub
+    self._client = self._conn.makefile(mode='brw')
+
+  def _send_handshake_request(self, uid=None, cmd=None):
+    # TODO: could we just use UNKNOWN_UID and INIT as default value
+    if uid is None:
+      uid = UNKNOWN_UID
+    if not cmd:
+      cmd = JsonRpcCommand.INIT
+    try:
+      request = json.dumps({'cmd': cmd, 'uid': uid})
+      self.log.debug('Sending handshake request %s.', request)
+      resp = self.send_rpc_request(request)
+    # TODO: check all the used errors
+    except errors.ProtocolError as e:
+      if errors.ProtocolError.NO_RESPONSE_FROM_SERVER in str(e):
+        raise errors.ProtocolError(
+            self._device,
+            errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+      else:
+        raise
+
+    if not resp:
+      raise errors.ProtocolError(
+          self._device,
+          errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+
+    result = json.loads(resp)
+    if result['status']:
+      self.uid = result['uid']
+    else:
+      self.uid = UNKNOWN_UID
 
   def close_connection(self):
-    raise NotImplementedError('To be implemented.')
+    try:
+      if self._conn:
+        self._conn.close()
+        self._conn = None
+    finally:
+      # Always clear the host port as part of the disconnect step.
+      self._stop_port_forwarding()
 
-  def __del__(self):
-    # Override the destructor to not call close_connection for now.
+  def _stop_port_forwarding(self):
+    """Stops the adb port forwarding of the host port used by this client."""
+    if self.host_port:
+      self._device.adb.forward(['--remove', f'tcp:{self.host_port}'])
+      self.host_port = None
+
+  def check_server_proc_running(self):
     pass
 
   def send_rpc_request(self, request):
-    raise NotImplementedError('To be implemented.')
+    try:
+      self._client.write(f'{request}\n'.encode('utf8'))
+      self._client.flush()
+    except socket.error as e:
+      raise errors.Error(
+          self._device,
+          f'Encountered socket error "{e}" sending RPC message "{request}"')
 
-  def check_server_proc_running(self):
-    raise NotImplementedError('To be implemented.')
+    try:
+      response = self._client.readline()
+    except socket.error as e:
+      raise errors.Error(self._device,
+                         f'Encountered socket error "{e}" reading RPC response')
 
-  def handle_callback(self, callback_id, ret_value, rpc_func_name):
-    raise NotImplementedError('To be implemented.')
+    if not response:
+      raise errors.ProtocolError(
+          self._device,
+          errors.ProtocolError.NO_RESPONSE_FROM_SERVER)
+    try:
+      response = str(response, encoding='utf8')
+    except UnicodeError:
+      self.log.error(
+          'Failed to decode the RPC response using encoding utf8: %s', response)
+      raise
+    return response
+
+  def handle_callback(self, callback_id, ret_value, method_name):
+    if self._event_client is None:
+      self._event_client = self._start_event_client()
+    return callback_handler.CallbackHandler(callback_id=callback_id,
+                                            event_client=self._event_client,
+                                            ret_value=ret_value,
+                                            method_name=method_name,
+                                            ad=self._device)
+
+  def _start_event_client(self):
+    """Overrides superclass."""
+    event_client = SnippetClientV2(package=self.package,
+                                   ad=self._device)
+    event_client.host_port = self.host_port
+    event_client.device_port = self.device_port
+    event_client._counter = event_client._id_counter()
+    event_client._make_socket_connection()
+    event_client._send_handshake_request(self.uid, JsonRpcCommand.CONTINUE)
+    return event_client
 
   def restore_server_connection(self, port=None):
-    raise NotImplementedError('To be implemented.')
+    """Restores the server after device got reconnected.
+
+    Instead of creating new instance of the client:
+      - Uses the given port (or find a new available host_port if none is
+      given).
+      - Tries to connect to remote server with selected port.
+
+    Args:
+      port: If given, this is the host port from which to connect to remote
+        device port. If not provided, find a new available port as host
+        port.
+
+    Raises:
+      errors.ServerRestoreConnectionError: When the server was not able to be started.
+    """
+    try:
+      # If self.host_port is None, self._make_connection finds an available
+      # port.
+      self.host_port = port
+      self._make_connection()
+    except Exception:
+      # Log the original error and raise AppRestoreConnectionError.
+      self.log.exception('Failed to re-connect to server.')
+      raise errors.ServerRestoreConnectionError(
+          self._device,
+          (f'Failed to restore server connection for {self.package} at '
+           f'host port {self.host_port}, device port {self.device_port}.')
+      )
+
+    # Because the previous connection was lost, update self._proc
+    self._proc = None
+    self._restore_event_client()
+
+  def _restore_event_client(self):
+    """Restores previously created event client."""
+    if not self._event_client:
+      self._event_client = self._start_event_client()
+      return
+    self._event_client.host_port = self.host_port
+    self._event_client.device_port = self.device_port
+    self._event_client._make_socket_connection()
+    self._event_client._send_handshake_request()
+
+  def help(self, print_output=True):
+    """Calls the help RPC, which returns the list of RPC calls available.
+    This RPC should normally be used in an interactive console environment
+    where the output should be printed instead of returned. Otherwise,
+    newlines will be escaped, which will make the output difficult to read.
+    Args:
+      print_output: A bool for whether the output should be printed.
+    Returns:
+      A str containing the help output otherwise None if print_output
+        wasn't set.
+    """
+    help_text = self._rpc('help')
+    if print_output:
+      print(help_text)
+    else:
+      return help_text
