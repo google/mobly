@@ -75,11 +75,10 @@ _SOCKET_CONNECTION_TIMEOUT = 60
 _SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
 
 
-# Rename it to MakeConnectionCommand
-class JsonRpcCommand:
-  """Commands that can be invoked on all jsonrpc clients.
+class ConnectionSessionCommand:
+  """Commands to initiate a new session or continue with an existing session.
 
-  INIT: Initializes a new session and makes a connection.
+  INIT: Initializes a new session and makes a connection with this session.
   CONTINUE: Makes a connection with current session.
   """
   INIT = 'initiate'
@@ -114,7 +113,6 @@ class SnippetClientV2(client_base.ClientBase):
     self._adb = ad.adb
     self._user_id = None
     self._proc = None
-    # TODO: polish following comment
     self._client = None  # keep it to prevent close errors on connect failure
     self._conn = None
     self._event_client = None
@@ -381,15 +379,9 @@ class SnippetClientV2(client_base.ClientBase):
                                             _SOCKET_CONNECTION_TIMEOUT)
 
     self._conn.settimeout(_SOCKET_READ_TIMEOUT)
-    # TODO: Rename it, _stub
     self._client = self._conn.makefile(mode='brw')
 
-  def _send_handshake_request(self, uid=None, cmd=None):
-    # TODO: could we just use UNKNOWN_UID and INIT as default value
-    if uid is None:
-      uid = UNKNOWN_UID
-    if not cmd:
-      cmd = JsonRpcCommand.INIT
+  def _send_handshake_request(self, uid=UNKNOWN_UID, cmd=ConnectionSessionCommand.INIT):
     try:
       request = json.dumps({'cmd': cmd, 'uid': uid})
       self.log.debug('Sending handshake request %s.', request)
@@ -476,7 +468,7 @@ class SnippetClientV2(client_base.ClientBase):
     event_client.device_port = self.device_port
     event_client._counter = event_client._id_counter()
     event_client._make_socket_connection()
-    event_client._send_handshake_request(self.uid, JsonRpcCommand.CONTINUE)
+    event_client._send_handshake_request(self.uid, ConnectionSessionCommand.CONTINUE)
     return event_client
 
   def restore_server_connection(self, port=None):

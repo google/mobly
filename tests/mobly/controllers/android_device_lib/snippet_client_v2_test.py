@@ -28,12 +28,6 @@ MOCK_SERVER_PATH = f'{MOCK_PACKAGE_NAME}/{snippet_client_v2._INSTRUMENTATION_RUN
 MOCK_USER_ID = 0
 MOCK_DEVICE_PORT = 1234
 
-# TODO: replace MOCK_RESP with a iterable object so we don't need to combine
-# the response of launch command and rpc
-MOCK_RESP = (
-    b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
-    b'"callback": null}')
-
 class MockAdbProxy(mock_android_device.MockAdbProxy):
 
   def __init__(self, *args, **kwargs):
@@ -73,8 +67,7 @@ class MockSocketFile:
   def flush(self):
     pass
 
-# TODO handle resp better
-def setup_mock_socket_file(mock_socket_create_conn, resp=MOCK_RESP):
+def _setup_mock_socket_file(mock_socket_create_conn, resp):
   """Sets up a fake socket file from the mock connection.
 
   Args:
@@ -129,9 +122,9 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_proc.stdout.readline.side_effect = resp_lines
 
   # Rename it as it does not actually connect.
-  def _make_client_and_connect(self, mock_socket_create_conn, socket_resp=MOCK_RESP, device_port=MOCK_DEVICE_PORT, adb_proxy=None, mock_properties=None):
+  def _make_client_and_mock_socket_conn(self, mock_socket_create_conn, socket_resp, device_port=MOCK_DEVICE_PORT, adb_proxy=None, mock_properties=None):
     self._make_client(adb_proxy, mock_properties)
-    self.mock_socket_file = setup_mock_socket_file(mock_socket_create_conn, socket_resp)
+    self.mock_socket_file = _setup_mock_socket_file(mock_socket_create_conn, socket_resp)
     self.client.device_port = device_port
 
   def _assert_client_resources_released(self, mock_start_subprocess, mock_stop_standing_subprocess, mock_socket_create_conn, mock_get_port):
@@ -154,11 +147,12 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
   def test_the_whole_lifecycle_with_a_sync_rpc(self, mock_start_subprocess, mock_stop_standing_subprocess, mock_socket_create_conn, mock_get_port):
+    # TODO: could we simplify these series of preparations of unit tests?
     socket_resp = [
         b'{"status": true, "uid": 1}',
         b'{"id": 0, "result": 123, "error": null, "callback": null}',
     ]
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -195,7 +189,7 @@ class SnippetClientV2Test(unittest.TestCase):
         b'{"id": 0, "result": 123, "error": null, "callback": "1-0"}',
         b'{"status": true, "uid": 1}',
     ]
-    self._make_client_and_connect(mock_socket_create_conn, mock_socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, mock_socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -242,7 +236,7 @@ class SnippetClientV2Test(unittest.TestCase):
         b'{"id": 2, "result": 789, "error": null, "callback": null}',
         b'{"id": 3, "result": 321, "error": null, "callback": "2-0"}',
     ]
-    self._make_client_and_connect(mock_socket_create_conn, mock_socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, mock_socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -710,7 +704,7 @@ class SnippetClientV2Test(unittest.TestCase):
         b'{"status": true, "uid": 1}',
         b'{"id": 0, "result": 123, "error": null, "callback": null}',
     ]
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -744,7 +738,7 @@ class SnippetClientV2Test(unittest.TestCase):
         b'{"cmd": "continue", "uid": 1}\n',
         b'{"id": 0, "method": "eventGetAll", "params": ["1-0", "eventName"]}\n',
     ]
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -787,7 +781,7 @@ class SnippetClientV2Test(unittest.TestCase):
     socket_resp = [
         b'{"status": true, "uid": 1}',
     ]
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -838,7 +832,7 @@ class SnippetClientV2Test(unittest.TestCase):
         # request of restoring event client
         b'{"cmd": "initiate", "uid": -1}\n',
     ]
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -879,7 +873,7 @@ class SnippetClientV2Test(unittest.TestCase):
          f'host port 56789, device port {MOCK_DEVICE_PORT}')):
       self.client.restore_server_connection()
 
-    self.assertListEqual(self.client._client.writed_messages, socket_write_expected)
+    self.assertListEqual(self.mock_socket_file.writed_messages, socket_write_expected)
 
   @mock.patch('builtins.print')
   def test_help_rpc_when_printing_by_default(self, mock_print):
@@ -911,7 +905,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_make_connection_runs_normally(self, mock_get_port, mock_start_subprocess, mock_socket_create_conn):
     """Tests make_connection runs normally."""
     socket_resp = [b'{"status": true, "uid": 1}']
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -935,7 +929,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_make_connection_with_preset_host_port(self, mock_get_port, mock_start_subprocess, mock_socket_create_conn):
     """Tests make_connection with the preset host port."""
     socket_resp = [b'{"status": true, "uid": 1}']
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -962,7 +956,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_make_connection_with_ip(self, mock_get_port, mock_start_subprocess, mock_socket_create_conn):
     """Tests make_connection with 127.0.0.1 instead of localhost."""
     socket_resp = [b'{"status": true, "uid": 1}']
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -1009,7 +1003,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_make_connection_receives_none_handshake_response(self, mock_start_subprocess, mock_socket_create_conn):
     """Tests _make_connection receives None as the handshake response."""
     socket_resp = [None]
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -1027,7 +1021,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_make_connection_receives_empty_handshake_response(self, mock_start_subprocess, mock_socket_create_conn):
     """Tests _make_connection receives an empty handshake response."""
     socket_resp = [b'']
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
@@ -1045,7 +1039,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_make_connection_receives_invalid_handshake_response(self, mock_start_subprocess, mock_socket_create_conn):
     """Tests make_connection receives an invalid handshake response."""
     socket_resp = [b'{"status": false, "uid": 1}']
-    self._make_client_and_connect(mock_socket_create_conn, socket_resp)
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(
         mock_start_subprocess,
         resp_lines=[
