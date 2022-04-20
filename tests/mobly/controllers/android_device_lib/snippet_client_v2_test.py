@@ -30,57 +30,95 @@ MOCK_DEVICE_PORT = 1234
 
 
 class _MockAdbProxy(mock_android_device.MockAdbProxy):
+  """Mock class of adb proxy which covers all the calls used by snippet clients.
+
+  To enable testing snippet clients, this class extends the functionality of
+  base class from the following aspects:
+  * Records the arguments of all the calls to the shell method and forward
+    method.
+  * Handles the adb calls to stop the snippet server in the shell function
+    properly.
+
+
+  Attributes:
+    mock_shell_func: mock.Mock, used for recording the calls to the shell
+      method.
+    mock_forward_func: mock.Mock, used for recording the calls to the forward
+      method.
+  """
 
   def __init__(self, *args, **kwargs):
+    """Initializes the instance of _MockAdbProxy."""
     super().__init__(*args, **kwargs)
     self.mock_shell_func = mock.Mock()
     self.mock_forward_func = mock.Mock()
 
   def shell(self, *args, **kwargs):
+    """Mock `shell` of mobly.controllers.android_device_lib.adb.AdbProxy."""
     # Record all the call args
     self.mock_shell_func(*args, **kwargs)
 
+    # Handle the server stop command properly
     if f'am instrument --user 0 -w -e action stop {MOCK_SERVER_PATH}' in args:
       return b'OK (0 tests)'
 
-    ret = super().shell(*args, **kwargs)
-    return ret
+    # For other commands, hand over it to the base class.
+    return super().shell(*args, **kwargs)
 
   def forward(self, *args, **kwargs):
+    """Mock `forward` of mobly.controllers.android_device_lib.adb.AdbProxy."""
     self.mock_forward_func(*args, **kwargs)
 
 
-class MockSocketFile:
+class _MockSocketFile:
+  """Mock class of socket file created by `socket.makefile`.
+
+
+  Attributes:
+    writed_messages: list, all the messages wrote to this socket file.
+  """
 
   def __init__(self, resp):
+    """Initiates the instance of _MockSocketFile.
+
+    Args:
+      resp: bytes or iterable, the return value of `readline` if bytes.
+        Otherwise each call to the `readline` will return the next value from
+        this iterable.
+    """
     if isinstance(resp, bytes):
-      self.mock_readline_func = mock.Mock(return_value=resp)
+      self._mock_readline_func = mock.Mock(return_value=resp)
     else:
-      self.mock_readline_func = mock.Mock(side_effect=resp)
+      self._mock_readline_func = mock.Mock(side_effect=resp)
     self.writed_messages = []
 
   def write(self, msg):
+    """Records all the messages wrote to this socket file."""
     self.writed_messages.append(msg)
 
   def readline(self):
-    return self.mock_readline_func()
+    """Returns the preset response."""
+    return self._mock_readline_func()
 
   def flush(self):
+    """Does nothing for this method."""
     pass
 
 
 def _setup_mock_socket_file(mock_socket_create_conn, resp):
-  """Sets up a fake socket file from the mock connection.
+  """Sets up a mock socket file from the mock connection.
 
   Args:
-    mock_socket_create_conn: The mock method for creating a method.
-    resp: str, response to give. MOCK_RESP by default.
+    mock_socket_create_conn: The mock method for creating a socket connection.
+    resp: bytes or iterable, the return value of `readline` if bytes.
+      Otherwise each call to the `readline` will return the next value from
+      this iterable.
 
   Returns:
-    The mock file that will be injected into the code.
+    The mock socket file that will be injected into the code.
   """
 
-  fake_file = MockSocketFile(resp)
+  fake_file = _MockSocketFile(resp)
   fake_conn = mock.MagicMock()
   fake_conn.makefile.return_value = fake_file
   mock_socket_create_conn.return_value = fake_conn
@@ -96,7 +134,7 @@ class SnippetClientV2Test(unittest.TestCase):
           (MOCK_PACKAGE_NAME, snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
            MOCK_PACKAGE_NAME)
       ],
-                               mock_properties=mock_properties)
+                                mock_properties=mock_properties)
     self.adb = adb_proxy
 
     device = mock.Mock()
@@ -133,6 +171,7 @@ class SnippetClientV2Test(unittest.TestCase):
                                         device_port=MOCK_DEVICE_PORT,
                                         adb_proxy=None,
                                         mock_properties=None):
+    """Makes the snippet client and mocks the socket connection."""
     self._make_client(adb_proxy, mock_properties)
     self.mock_socket_file = _setup_mock_socket_file(mock_socket_create_conn,
                                                     socket_resp)
@@ -142,6 +181,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def _assert_client_resources_released(self, mock_start_subprocess,
                                         mock_stop_standing_subprocess,
                                         mock_get_port):
+    """Asserts the resources had been released before the client stopped."""
     self.assertIs(self.client._proc, None)
     self.adb.mock_shell_func.assert_any_call(
         f'am instrument --user {MOCK_USER_ID} -w -e action stop '
@@ -166,6 +206,7 @@ class SnippetClientV2Test(unittest.TestCase):
                                                mock_stop_standing_subprocess,
                                                mock_socket_create_conn,
                                                mock_get_port):
+    """Tests the whole lifecycle of the client with sending a sync RPC."""
     socket_resp = [
         b'{"status": true, "uid": 1}',
         b'{"id": 0, "result": 123, "error": null, "callback": null}',
@@ -203,6 +244,7 @@ class SnippetClientV2Test(unittest.TestCase):
                                                  mock_stop_standing_subprocess,
                                                  mock_socket_create_conn,
                                                  mock_get_port):
+    """Tests the whole lifecycle of the client with sending an async RPC."""
     mock_socket_resp = [
         b'{"status": true, "uid": 1}',
         b'{"id": 0, "result": 123, "error": null, "callback": "1-0"}',
@@ -249,6 +291,7 @@ class SnippetClientV2Test(unittest.TestCase):
                                                   mock_stop_standing_subprocess,
                                                   mock_socket_create_conn,
                                                   mock_get_port):
+    """Tests the whole lifecycle of the client with sending multiple RPCs."""
     # Prepare the test
     mock_socket_resp = [
         b'{"status": true, "uid": 1}',
@@ -1067,7 +1110,7 @@ class SnippetClientV2Test(unittest.TestCase):
     socket_response = (b'{"id": 0, "result": 123, "error": null, '
                        b'"callback": null}')
 
-    mock_socket_file = MockSocketFile(socket_response)
+    mock_socket_file = _MockSocketFile(socket_response)
     self.client._client = mock_socket_file
 
     rpc_response = self.client.send_rpc_request(rpc_request)
