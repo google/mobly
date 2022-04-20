@@ -24,10 +24,6 @@ from mobly.controllers.android_device_lib import errors as android_device_lib_er
 from mobly.snippet import client_base
 from mobly.snippet import errors
 
-# TODO: check that better to use server to replace some occurrences of app
-
-# TODO: check typo in function/variable/class name
-
 # The package of the instrumentation runner used for mobly snippet
 _INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunner'
 
@@ -227,11 +223,11 @@ class SnippetClientV2(client_base.ClientBase):
       errors.ServerStartError: if failed to start the server or process the
         server output.
     """
-    persisting_shell_cmd = self._get_persisting_command()
+    persists_shell_cmd = self._get_persisting_command()
     self.log.debug('Snippet server for package %s is using protocol %d.%d',
                    self.package, _PROTOCOL_MAJOR_VERSION,
                    _PROTOCOL_MINOR_VERSION)
-    cmd = _LAUNCH_CMD.format(shell_cmd=persisting_shell_cmd,
+    cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
                              user=self._get_user_command_string(),
                              snippet_package=self.package)
     self._proc = self._run_adb_cmd(cmd)
@@ -273,7 +269,7 @@ class SnippetClientV2(client_base.ClientBase):
     return ''
 
   def _get_user_command_string(self):
-    """Gets the appropriate command argument for specifying device user id.
+    """Gets the appropriate command argument for specifying device user ID.
 
     By default, this client operates within the current user. We
     don't add the `--user {ID}` argument when Android's SDK is below 24,
@@ -436,7 +432,6 @@ class SnippetClientV2(client_base.ClientBase):
       request = json.dumps({'cmd': cmd, 'uid': uid})
       self.log.debug('Sending handshake request %s.', request)
       resp = self.send_rpc_request(request)
-    # TODO: check all the used errors
     except errors.ProtocolError as e:
       if errors.ProtocolError.NO_RESPONSE_FROM_SERVER in str(e):
         raise errors.ProtocolError(
@@ -500,13 +495,15 @@ class SnippetClientV2(client_base.ClientBase):
     except socket.error as e:
       raise errors.Error(
           self._device,
-          f'Encountered socket error "{e}" sending RPC message "{request}"')
+          f'Encountered socket error "{e}" sending RPC message "{request}"'
+      ) from e
 
     try:
       response = self._client.readline()
     except socket.error as e:
       raise errors.Error(
-          self._device, f'Encountered socket error "{e}" reading RPC response')
+          self._device,
+          f'Encountered socket error "{e}" reading RPC response') from e
 
     if not response:
       raise errors.ProtocolError(self._device,
@@ -599,14 +596,14 @@ class SnippetClientV2(client_base.ClientBase):
       # port.
       self.host_port = port
       self._make_connection()
-    except Exception as err:
+    except Exception as e:
       # Log the original error and raise ServerRestoreConnectionError.
       self.log.error('Failed to re-connect to server.')
       raise errors.ServerRestoreConnectionError(
           self._device,
           (f'Failed to restore server connection for {self.package} at '
            f'host port {self.host_port}, device port {self.device_port}.'
-          )) from err
+          )) from e
 
     # Because the previous connection was lost, update self._proc
     self._proc = None

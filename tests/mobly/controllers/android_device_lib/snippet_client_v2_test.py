@@ -101,8 +101,7 @@ class _MockSocketFile:
     return self._mock_readline_func()
 
   def flush(self):
-    """Does nothing for this method."""
-    pass
+    """Does nothing in this method."""
 
 
 def _setup_mock_socket_file(mock_socket_create_conn, resp):
@@ -618,9 +617,9 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345'])
 
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  def test_stop_when_server_was_already_cleaned(self,
-                                                mock_stop_standing_subprocess):
-    """Tests stopping server process when subprocess is already cleaned."""
+  def test_stop_when_server_is_already_cleaned(self,
+                                               mock_stop_standing_subprocess):
+    """Tests that stop server process when subprocess is already cleaned."""
     self._make_client()
     self.client._proc = None
     mock_conn = mock.Mock()
@@ -642,9 +641,9 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345'])
 
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  def test_stop_when_conn_was_already_cleaned(self,
-                                              mock_stop_standing_subprocess):
-    """Tests stopping server process when subprocess is already cleaned."""
+  def test_stop_when_conn_is_already_cleaned(self,
+                                             mock_stop_standing_subprocess):
+    """Tests that stop server process when the connection is already closed."""
     self._make_client()
     mock_proc = mock.Mock()
     self.client._proc = mock_proc
@@ -668,7 +667,7 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch.object(_MockAdbProxy, 'shell', return_value=b'Closed with error.')
   def test_stop_with_device_side_error(self, mock_adb_shell,
                                        mock_stop_standing_subprocess):
-    """Tests all resources are cleaned even if device side has an error."""
+    """Tests all resources will be cleaned when server stop throws an error."""
     self._make_client()
     mock_proc = mock.Mock()
     self.client._proc = mock_proc
@@ -693,7 +692,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('mobly.utils.stop_standing_subprocess')
   def test_stop_with_conn_close_error(self, mock_stop_standing_subprocess):
-    """Tests port resource is cleaned when closing socket with an error."""
+    """Tests port resource will be cleaned when socket close throws an error."""
     del mock_stop_standing_subprocess
     self._make_client()
     mock_proc = mock.Mock()
@@ -711,6 +710,7 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345'])
 
   def test_close_connection_normally(self):
+    """Tests that close connection works normally."""
     self._make_client()
     mock_conn = mock.Mock()
     self.client._conn = mock_conn
@@ -724,7 +724,8 @@ class SnippetClientV2Test(unittest.TestCase):
     self.device.adb.mock_forward_func.assert_called_once_with(
         ['--remove', 'tcp:123'])
 
-  def test_close_connection_when_host_port_have_been_released(self):
+  def test_close_connection_when_host_port_has_been_released(self):
+    """Tests that close connection when the host port has been released."""
     self._make_client()
     mock_conn = mock.Mock()
     self.client._conn = mock_conn
@@ -738,6 +739,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.device.adb.mock_forward_func.assert_not_called()
 
   def test_close_connection_when_conn_have_been_closed(self):
+    """Tests that close connection when the connection has been closed."""
     self._make_client()
     self.client._conn = None
     self.client.host_port = 123
@@ -752,8 +754,9 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_sync_rpc_normal(self, mock_start_subprocess,
-                           mock_socket_create_conn):
+  def test_send_sync_rpc_normally(self, mock_start_subprocess,
+                                  mock_socket_create_conn):
+    """Tests that sending a sync RPC works normally."""
     socket_resp = [
         b'{"status": true, "uid": 1}',
         b'{"id": 0, "result": 123, "error": null, "callback": null}',
@@ -778,6 +781,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_async_rpc_start_event_client(self, mock_callback_class,
                                         mock_start_subprocess,
                                         mock_socket_create_conn):
+    """Tests that sending an async RPC starts the event client."""
     socket_resp = [
         b'{"status": true, "uid": 1}',
         b'{"id": 0, "result": 123, "error": null, "callback": "1-0"}',
@@ -829,8 +833,10 @@ class SnippetClientV2Test(unittest.TestCase):
               'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.get_available_host_port')
-  def test_initialize(self, mock_get_port, mock_start_subprocess,
-                      mock_socket_create_conn):
+  def test_initialize_client_normally(self, mock_get_port,
+                                      mock_start_subprocess,
+                                      mock_socket_create_conn):
+    """Tests that initializing the client works normally."""
     mock_get_port.return_value = 12345
     socket_resp = [
         b'{"status": true, "uid": 1}',
@@ -842,6 +848,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertTrue(self.client.is_alive)
     self.assertEqual(self.client.host_port, 12345)
     self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+    self.assertEqual(next(self.client._counter), 0)
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
@@ -850,6 +857,7 @@ class SnippetClientV2Test(unittest.TestCase):
               'utils.get_available_host_port')
   def test_restore_event_client(self, mock_get_port, mock_start_subprocess,
                                 mock_socket_create_conn):
+    """Tests restoring event client."""
     mock_get_port.return_value = 12345
     socket_resp = [
         # response of handshake when initializing the client
@@ -928,6 +936,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('builtins.print')
   def test_help_rpc_when_printing_by_default(self, mock_print):
+    """Tests the `help` method when it prints the output by default."""
     self._make_client()
     mock_rpc = mock.MagicMock()
     self.client._rpc = mock_rpc
@@ -939,6 +948,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('builtins.print')
   def test_help_rpc_when_not_printing(self, mock_print):
+    """Tests the `help` method when it was set not to print the output."""
     self._make_client()
     mock_rpc = mock.MagicMock()
     self.client._rpc = mock_rpc
@@ -954,10 +964,9 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.get_available_host_port',
               return_value=12345)
-  def test_make_connection_runs_normally(self, mock_get_port,
-                                         mock_start_subprocess,
-                                         mock_socket_create_conn):
-    """Tests make_connection runs normally."""
+  def test_make_connection_normally(self, mock_get_port, mock_start_subprocess,
+                                    mock_socket_create_conn):
+    """Tests that making a connection works normally."""
     del mock_get_port
     socket_resp = [b'{"status": true, "uid": 1}']
     self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
@@ -982,7 +991,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_make_connection_with_preset_host_port(self, mock_get_port,
                                                  mock_start_subprocess,
                                                  mock_socket_create_conn):
-    """Tests make_connection with the preset host port."""
+    """Tests that make a connection with the preset host port."""
     del mock_get_port
     socket_resp = [b'{"status": true, "uid": 1}']
     self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
@@ -1008,7 +1017,7 @@ class SnippetClientV2Test(unittest.TestCase):
               return_value=12345)
   def test_make_connection_with_ip(self, mock_get_port, mock_start_subprocess,
                                    mock_socket_create_conn):
-    """Tests make_connection with 127.0.0.1 instead of localhost."""
+    """Tests that make a connection with 127.0.0.1 instead of localhost."""
     del mock_get_port
     socket_resp = [b'{"status": true, "uid": 1}']
     self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
@@ -1098,8 +1107,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_rpc_send_to_socket(self):
     """Test RPC sending and receiving.
 
-    Tests that when an RPC is sent and received the corrent data
-    is used.
+    Tests that when sending and receiving an RPC the correct data is used.
     """
     self._make_client()
     rpc_request = '{"id": 0, "method": "some_rpc", "params": []}'
@@ -1119,7 +1127,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertEqual(mock_socket_file.writed_messages, [socket_write_expected])
 
   def test_rpc_send_socket_write_error(self):
-    """Test the socket writing process throws an error when sending an RPC."""
+    """Tests that an error occurred trying to write the socket file."""
     self._make_client()
     self.client._client = mock.Mock()
     self.client._client.write.side_effect = socket.error('Socket error')
@@ -1129,7 +1137,7 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client.send_rpc_request(rpc_request)
 
   def test_rpc_send_socket_read_error(self):
-    """Test the socket writing process throws an error when sending an RPC."""
+    """Tests that an error occurred trying to read the socket file."""
     self._make_client()
     self.client._client = mock.Mock()
     self.client._client.readline.side_effect = socket.error('Socket error')
@@ -1139,6 +1147,7 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client.send_rpc_request(rpc_request)
 
   def test_rpc_send_decode_socket_response_error(self):
+    """Tests that an error occurred trying to decode the socket response."""
     self._make_client()
     self.client.log = mock.Mock()
     self.client._client = mock.Mock()
