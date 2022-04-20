@@ -316,52 +316,6 @@ class SnippetClientV2(client_base.ClientBase):
 
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
-  def stop(self):
-    """Releases all the resources acquired in `initialize`.
-
-    This function releases following resources:
-    * Close the socket connection.
-    * Stop forwarding the device port to host.
-    * Stop the standing server subprocess running on the host side.
-    * Stop the snippet server running on the device side.
-
-    Raises:
-      android_device_lib_errors.DeviceError: if the server exited with errors on
-        the device side.
-    """
-    self.log.debug('Stopping snippet package %s.', self.package)
-    self.close_connection()
-    self._stop_server()
-    self.log.debug('Snippet package %s stopped.', self.package)
-
-  def _stop_server(self):
-    """Releases all the resources acquired in `start_server`.
-
-    Raises:
-      android_device_lib_errors.DeviceError: if the server exited with errors on
-        the device side.
-    """
-    # Although killing the snippet server would abort this subprocess anyway, we
-    # want to call stop_standing_subprocess() to perform a health check,
-    # print the failure stack trace if there was any, and reap it from the
-    # process table. Note that it's much more important to ensure releasing all
-    # the allocated resources on the host side than on the remote device side.
-
-    # Stop the standing server subprocess running on the host side.
-    if self._proc:
-      utils.stop_standing_subprocess(self._proc)
-      self._proc = None
-
-    # Send the stop signal to the server running on the device side.
-    out = self._adb.shell(
-        _STOP_CMD.format(snippet_package=self.package,
-                         user=self._get_user_command_string())).decode('utf-8')
-
-    if 'OK (0 tests)' not in out:
-      raise android_device_lib_errors.DeviceError(
-          self._device,
-          f'Failed to stop existing apk. Unexpected output: {out}.')
-
   def make_connection(self):
     """Makes a connection to the snippet server on the remote device.
 
@@ -448,26 +402,6 @@ class SnippetClientV2(client_base.ClientBase):
       self.uid = result['uid']
     else:
       self.uid = UNKNOWN_UID
-
-  def close_connection(self):
-    """Closes the connection to the snippet server on the device.
-
-    This function closes the socket connection and stops forwarding the device
-    port to host.
-    """
-    try:
-      if self._conn:
-        self._conn.close()
-        self._conn = None
-    finally:
-      # Always clear the host port as part of the close step
-      self._stop_port_forwarding()
-
-  def _stop_port_forwarding(self):
-    """Stops the adb port forwarding used by this client."""
-    if self.host_port:
-      self._device.adb.forward(['--remove', f'tcp:{self.host_port}'])
-      self.host_port = None
 
   def check_server_proc_running(self):
     """See base class.
@@ -572,6 +506,72 @@ class SnippetClientV2(client_base.ClientBase):
     self._event_client._counter = self._event_client._id_counter()  # pylint: disable=protected-access
     self._event_client.create_socket_connection()
     self._event_client.send_handshake_request(uid, cmd)
+
+  def stop(self):
+    """Releases all the resources acquired in `initialize`.
+
+    This function releases following resources:
+    * Close the socket connection.
+    * Stop forwarding the device port to host.
+    * Stop the standing server subprocess running on the host side.
+    * Stop the snippet server running on the device side.
+
+    Raises:
+      android_device_lib_errors.DeviceError: if the server exited with errors on
+        the device side.
+    """
+    self.log.debug('Stopping snippet package %s.', self.package)
+    self.close_connection()
+    self._stop_server()
+    self.log.debug('Snippet package %s stopped.', self.package)
+
+  def close_connection(self):
+    """Closes the connection to the snippet server on the device.
+
+    This function closes the socket connection and stops forwarding the device
+    port to host.
+    """
+    try:
+      if self._conn:
+        self._conn.close()
+        self._conn = None
+    finally:
+      # Always clear the host port as part of the close step
+      self._stop_port_forwarding()
+
+  def _stop_port_forwarding(self):
+    """Stops the adb port forwarding used by this client."""
+    if self.host_port:
+      self._device.adb.forward(['--remove', f'tcp:{self.host_port}'])
+      self.host_port = None
+
+  def _stop_server(self):
+    """Releases all the resources acquired in `start_server`.
+
+    Raises:
+      android_device_lib_errors.DeviceError: if the server exited with errors on
+        the device side.
+    """
+    # Although killing the snippet server would abort this subprocess anyway, we
+    # want to call stop_standing_subprocess() to perform a health check,
+    # print the failure stack trace if there was any, and reap it from the
+    # process table. Note that it's much more important to ensure releasing all
+    # the allocated resources on the host side than on the remote device side.
+
+    # Stop the standing server subprocess running on the host side.
+    if self._proc:
+      utils.stop_standing_subprocess(self._proc)
+      self._proc = None
+
+    # Send the stop signal to the server running on the device side.
+    out = self._adb.shell(
+        _STOP_CMD.format(snippet_package=self.package,
+                         user=self._get_user_command_string())).decode('utf-8')
+
+    if 'OK (0 tests)' not in out:
+      raise android_device_lib_errors.DeviceError(
+          self._device,
+          f'Failed to stop existing apk. Unexpected output: {out}.')
 
   def restore_server_connection(self, port=None):
     """Restores the server after the device got reconnected.
