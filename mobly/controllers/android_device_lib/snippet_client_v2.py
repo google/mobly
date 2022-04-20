@@ -366,7 +366,7 @@ class SnippetClientV2(client_base.ClientBase):
     """Makes a connection to the snippet server on the remote device.
 
     This function makes a persistent connection to the server. This connection
-    will be used for all the RPCs, and must be closed before deconstruction.
+    will be used for all the RPCs, and must be closed when deconstructing.
 
     To connect to the Android device, it first forwards the device port to a
     host port. Then, it creates a socket connection to the server on the device.
@@ -387,12 +387,12 @@ class SnippetClientV2(client_base.ClientBase):
     """Creates a socket connection to the server.
 
     After creating the connection successfully, it sets two attributes:
-    * `self._conn`: the create socket object, which is used to close the created
-      connection.
-    * `self._client`: the socket file, which is used to send and receive
+    * `self._conn`: the created socket object, which will be used when it needs
+      to close the connection.
+    * `self._client`: the socket file, which will be used to send and receive
       messages.
 
-    This function only creates a socket connection and doesn't send any message
+    This function only creates a socket connection without sending any message
     to the server.
     """
     try:
@@ -415,8 +415,8 @@ class SnippetClientV2(client_base.ClientBase):
     """Sends a handshake request to the server to prepare for the communication.
 
     Through the handshake response, this function checks whether the server
-    is ready for the communication. If ready, it sets `self.uid` to the uid
-    of the server session. Otherwise, it sets `self.uid` to `UNKNOWN_UID`.
+    is ready for the communication. If ready, it sets `self.uid` to the
+    server session id. Otherwise, it sets `self.uid` to `UNKNOWN_UID`.
 
     Args:
       uid: int, the uid of the server session to continue. It will be ignored
@@ -464,7 +464,7 @@ class SnippetClientV2(client_base.ClientBase):
       self._stop_port_forwarding()
 
   def _stop_port_forwarding(self):
-    """Stops the adb port forwarding of the host port used by this client."""
+    """Stops the adb port forwarding used by this client."""
     if self.host_port:
       self._device.adb.forward(['--remove', f'tcp:{self.host_port}'])
       self.host_port = None
@@ -485,7 +485,7 @@ class SnippetClientV2(client_base.ClientBase):
       The string of the RPC response.
 
     Raises:
-      errors.Error: if failed to send the request or receive the response.
+      errors.Error: if failed to send the request or receive a response.
       errors.ProtocolError: if received an empty response from the server.
       UnicodeError: if failed to decode the received response.
     """
@@ -543,8 +543,7 @@ class SnippetClientV2(client_base.ClientBase):
 
     As the server is already started by the snippet server on which this
     function is called, the created event client connects to the same session
-    as the snippet server. It also reuses the same host port and device port to
-    connect to the device.
+    as the snippet server. It also reuses the same host port and device port.
     """
     self._event_client = SnippetClientV2(package=self.package, ad=self._device)
     self._make_connection_for_event_client(self.uid,

@@ -128,12 +128,11 @@ class SnippetClientV2Test(unittest.TestCase):
   """Unit tests for SnippetClientV2."""
 
   def _make_client(self, adb_proxy=None, mock_properties=None):
-    if adb_proxy is None:
-      adb_proxy = _MockAdbProxy(instrumented_packages=[
-          (MOCK_PACKAGE_NAME, snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
-           MOCK_PACKAGE_NAME)
-      ],
-                                mock_properties=mock_properties)
+    adb_proxy = adb_proxy or _MockAdbProxy(instrumented_packages=[
+        (MOCK_PACKAGE_NAME, snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
+         MOCK_PACKAGE_NAME)
+    ],
+                                           mock_properties=mock_properties)
     self.adb = adb_proxy
 
     device = mock.Mock()
@@ -157,10 +156,9 @@ class SnippetClientV2Test(unittest.TestCase):
   def _mock_server_process_starting_response(self,
                                              mock_start_subprocess,
                                              resp_lines=None):
-    if resp_lines is None:
-      resp_lines = [
-          b'SNIPPET START, PROTOCOL 1 0', b'SNIPPET SERVING, PORT 1234'
-      ]
+    resp_lines = resp_lines or [
+        b'SNIPPET START, PROTOCOL 1 0', b'SNIPPET SERVING, PORT 1234'
+    ]
     mock_proc = mock_start_subprocess.return_value
     mock_proc.stdout.readline.side_effect = resp_lines
 
@@ -339,12 +337,11 @@ class SnippetClientV2Test(unittest.TestCase):
                   method_name='some_async_rpc',
                   ad=self.device),
     ]
+    self.assertListEqual(rpc_results, rpc_results_expected)
+    mock_callback_class.assert_has_calls(mock_callback_class_calls_expected)
     self._assert_client_resources_released(mock_start_subprocess,
                                            mock_stop_standing_subprocess,
                                            mock_get_port)
-
-    self.assertListEqual(rpc_results, rpc_results_expected)
-    mock_callback_class.assert_has_calls(mock_callback_class_calls_expected)
 
   def test_check_app_installed_normally(self):
     """Tests that app checker runs normally when app installed correctly."""
@@ -1104,7 +1101,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client._make_connection()
     self.assertEqual(self.client.uid, -1)
 
-  def test_rpc_send_to_socket(self):
+  def test_rpc_sending_and_receiving(self):
     """Test RPC sending and receiving.
 
     Tests that when sending and receiving an RPC the correct data is used.
