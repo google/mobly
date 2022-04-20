@@ -78,10 +78,10 @@ class ConnectionHandshakeCommand:
   After creating the socket connection, the client must send a handshake request
   to the server. When receiving the handshake request, the server will prepare
   to communicate with the client. According to the command in the request,
-  the server will create a new session or reuse current session.
+  the server will create a new session or reuse the current session.
 
   INIT: Initiates a new session and makes a connection with this session.
-  CONTINUE: Makes a connection with current session.
+  CONTINUE: Makes a connection with the current session.
   """
   INIT = 'initiate'
   CONTINUE = 'continue'
@@ -431,7 +431,7 @@ class SnippetClientV2(client_base.ClientBase):
     try:
       request = json.dumps({'cmd': cmd, 'uid': uid})
       self.log.debug('Sending handshake request %s.', request)
-      resp = self.send_rpc_request(request)
+      response = self.send_rpc_request(request)
     except errors.ProtocolError as e:
       if errors.ProtocolError.NO_RESPONSE_FROM_SERVER in str(e):
         raise errors.ProtocolError(
@@ -439,11 +439,11 @@ class SnippetClientV2(client_base.ClientBase):
 
       raise
 
-    if not resp:
+    if not response:
       raise errors.ProtocolError(
           self._device, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
 
-    result = json.loads(resp)
+    result = json.loads(response)
     if result['status']:
       self.uid = result['uid']
     else:
@@ -460,7 +460,7 @@ class SnippetClientV2(client_base.ClientBase):
         self._conn.close()
         self._conn = None
     finally:
-      # Always clear the host port as part of the disconnect step.
+      # Always clear the host port as part of the close step
       self._stop_port_forwarding()
 
   def _stop_port_forwarding(self):
@@ -597,7 +597,7 @@ class SnippetClientV2(client_base.ClientBase):
       self._make_connection()
     except Exception as e:
       # Log the original error and raise ServerRestoreConnectionError.
-      self.log.error('Failed to re-connect to server.')
+      self.log.error('Failed to re-connect to the server.')
       raise errors.ServerRestoreConnectionError(
           self._device,
           (f'Failed to restore server connection for {self.package} at '
@@ -609,10 +609,10 @@ class SnippetClientV2(client_base.ClientBase):
     self._restore_event_client()
 
   def _restore_event_client(self):
-    """Restores previously created event client or creates a new one.
+    """Restores the previously created event client or creates a new one.
 
     This function restores the connection of the previously created event
-    client, or create a new client and makes a connection if it didn't
+    client, or creates a new client and makes a connection if it didn't
     exist before.
 
     The event client to restore reuses the same host port and device port

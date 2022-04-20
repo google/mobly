@@ -62,7 +62,7 @@ class _MockAdbProxy(mock_android_device.MockAdbProxy):
     if f'am instrument --user 0 -w -e action stop {MOCK_SERVER_PATH}' in args:
       return b'OK (0 tests)'
 
-    # For other commands, hand over it to the base class.
+    # For other commands, hand it over to the base class.
     return super().shell(*args, **kwargs)
 
   def forward(self, *args, **kwargs):
@@ -75,7 +75,7 @@ class _MockSocketFile:
 
 
   Attributes:
-    writed_messages: list, all the messages wrote to this socket file.
+    writed_messages: list, all the messages written to this socket file.
   """
 
   def __init__(self, resp):
@@ -93,7 +93,7 @@ class _MockSocketFile:
     self.writed_messages = []
 
   def write(self, msg):
-    """Records all the messages wrote to this socket file."""
+    """Records all the messages written to this socket file."""
     self.writed_messages.append(msg)
 
   def readline(self):
@@ -707,7 +707,7 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345'])
 
   def test_close_connection_normally(self):
-    """Tests that close connection works normally."""
+    """Tests that closing connection works normally."""
     self._make_client()
     mock_conn = mock.Mock()
     self.client._conn = mock_conn
@@ -854,7 +854,7 @@ class SnippetClientV2Test(unittest.TestCase):
               'utils.get_available_host_port')
   def test_restore_event_client(self, mock_get_port, mock_start_subprocess,
                                 mock_socket_create_conn):
-    """Tests restoring event client."""
+    """Tests restoring the event client."""
     mock_get_port.return_value = 12345
     socket_resp = [
         # response of handshake when initializing the client
@@ -920,7 +920,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertEqual(next(self.client._event_client._counter), 0)
 
     # if unable to reconnect for any reason, a
-    # jsonrpc_client_base.AppRestoreConnectionError is raised.
+    # errors.ServerRestoreConnectionError is raised.
     mock_socket_create_conn.side_effect = IOError('socket timed out')
     with self.assertRaisesRegex(
         errors.ServerRestoreConnectionError,
@@ -1044,7 +1044,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('socket.create_connection')
   def test_make_connection_io_error(self, mock_socket_create_conn):
-    """Tests IOError occurred trying to create socket connection."""
+    """Tests IOError occurred trying to create a socket connection."""
     mock_socket_create_conn.side_effect = IOError()
     with self.assertRaises(IOError):
       self._make_client()
@@ -1053,7 +1053,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
   @mock.patch('socket.create_connection')
   def test_make_connection_timeout(self, mock_socket_create_conn):
-    """Tests timeout occurred trying to create socket connection."""
+    """Tests timeout occurred trying to create a socket connection."""
     mock_socket_create_conn.side_effect = socket.timeout
     with self.assertRaises(socket.timeout):
       self._make_client()
