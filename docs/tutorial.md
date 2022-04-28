@@ -192,11 +192,6 @@ You can choose which one to execute on with the command line argument
 ```
 $ python hello_world_test.py -c sample_config.yml --test_bed AbcTestBed
 ```
-
-*Expect*:
-
-A "Hello World!" and a "Goodbye!" toast notification appear on your device's
-screen.
  
  
 ## Example 5: Test with Multiple Android devices
