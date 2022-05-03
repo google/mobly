@@ -101,6 +101,9 @@ class ClientBase(abc.ABC):
       2. starting the snippet server on the remote device.
       3. making a connection to the snippet server.
 
+    If error occurs at any stage, this function will abort the initialization
+    process and call `stop` to clean up.
+
     Raises:
       errors.ProtocolError: something went wrong when exchanging data with the
         server.
@@ -116,10 +119,11 @@ class ClientBase(abc.ABC):
     self.log.info('Initializing the snippet package %s.', self.package)
     start_time = time.perf_counter()
 
-    self.log.debug('Preparing to start the snippet server of %s.', self.package)
-    self.before_starting_server()
-
     try:
+      self.log.debug('Preparing to start the snippet server of %s.',
+                     self.package)
+      self.before_starting_server()
+
       self.log.debug('Starting the snippet server of %s.', self.package)
       self.start_server()
 
