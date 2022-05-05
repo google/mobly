@@ -62,11 +62,16 @@ _NOHUP_COMMAND = 'nohup'
 class SnippetClientV2(client_base.ClientBase):
   """Snippet client V2 for interacting with snippet server on Android Device.
 
-  See base class documentation for a list of public attributes and communication
-  protocols.
-
   For a description of the launch protocols, see the documentation in
   mobly-snippet-lib, SnippetRunner.java.
+
+  We only list the public attributes introduced in this class. See base class
+  documentation for other public attributes and communication protocols.
+
+  Attributes:
+    host_port: int, the host port used for communicating with the snippet
+      server.
+    device_port: int, the device port listened by the snippet server.
   """
 
   def __init__(self, package, ad):
@@ -77,6 +82,8 @@ class SnippetClientV2(client_base.ClientBase):
       ad: AndroidDevice, the android device object associated with this client.
     """
     super().__init__(package=package, device=ad)
+    self.host_port = None
+    self.device_port = None
     self._adb = ad.adb
     self._user_id = None
     self._proc = None
