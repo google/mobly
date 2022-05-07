@@ -13,6 +13,7 @@
 # limitations under the License.
 """Snippet Client V2 for Interacting with Snippet Server on Android Device."""
 
+import enum
 import json
 import re
 import socket
@@ -72,7 +73,7 @@ _SOCKET_CONNECTION_TIMEOUT = 60
 _SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
 
 
-class ConnectionHandshakeCommand:
+class ConnectionHandshakeCommand(enum.Enum):
   """Commands to send to the server when sending the handshake request.
 
   After creating the socket connection, the client must send a handshake request
@@ -382,14 +383,15 @@ class SnippetClientV2(client_base.ClientBase):
     Args:
       uid: int, the uid of the server session to continue. It will be ignored
         if the `cmd` requires the server to create a new session.
-      cmd: str, the handshake command for the server, which requires the server
-        to create a new session or use the current session.
+      cmd: ConnectionHandshakeCommand, the handshake command Enum for the
+        server, which requires the server to create a new session or use the
+        current session.
 
     Raises:
       errors.ProtocolError: something went wrong when sending the handshake
         request.
     """
-    request = json.dumps({'cmd': cmd, 'uid': uid})
+    request = json.dumps({'cmd': cmd.value, 'uid': uid})
     self.log.debug('Sending handshake request %s.', request)
     self._client_send(request)
     response = self._client_receive()
@@ -508,8 +510,9 @@ class SnippetClientV2(client_base.ClientBase):
     Args:
       uid: int, the uid of the server session to continue. It will be ignored
         if the `cmd` requires the server to create a new session.
-      cmd: str, the handshake command for the server, which requires the server
-        to create a new session or use the current session.
+      cmd: ConnectionHandshakeCommand, the handshake command Enum for the
+        server, which requires the server to create a new session or use the
+        current session.
     """
     self._event_client.host_port = self.host_port
     self._event_client.device_port = self.device_port
