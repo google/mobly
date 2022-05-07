@@ -354,9 +354,9 @@ class SnippetClientV2(client_base.ClientBase):
     to the server.
     """
     try:
-      self.log.debug('Snippet client is creating socket connection to the '
-                     'snippet server of %s through host port %d.',
-                     self.package, self.host_port)
+      self.log.debug(
+          'Snippet client is creating socket connection to the snippet server '
+          'of %s through host port %d.', self.package, self.host_port)
       self._conn = socket.create_connection(('localhost', self.host_port),
                                             _SOCKET_CONNECTION_TIMEOUT)
     except ConnectionRefusedError as err:
@@ -389,20 +389,16 @@ class SnippetClientV2(client_base.ClientBase):
       errors.ProtocolError: something went wrong when sending the handshake
         request.
     """
-    try:
-      request = json.dumps({'cmd': cmd, 'uid': uid})
-      self.log.debug('Sending handshake request %s.', request)
-      response = self.send_rpc_request(request)
-    except errors.ProtocolError as e:
-      if errors.ProtocolError.NO_RESPONSE_FROM_SERVER in str(e):
-        raise errors.ProtocolError(
-            self._device, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
-
-      raise
+    request = json.dumps({'cmd': cmd, 'uid': uid})
+    self.log.debug('Sending handshake request %s.', request)
+    self._client_send(request)
+    response = self._client_receive()
 
     if not response:
       raise errors.ProtocolError(
           self._device, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+
+    response = self._decode_socket_response_bytes(response)
 
     result = json.loads(response)
     if result['status']:
@@ -430,6 +426,14 @@ class SnippetClientV2(client_base.ClientBase):
       errors.ProtocolError: if received an empty response from the server.
       UnicodeError: if failed to decode the received response.
     """
+    self._client_send(request)
+    response = self._client_receive()
+    if not response:
+      raise errors.ProtocolError(self._device,
+                                 errors.ProtocolError.NO_RESPONSE_FROM_SERVER)
+    return self._decode_socket_response_bytes(response)
+
+  def _client_send(self, request):
     try:
       self._client.write(f'{request}\n'.encode('utf8'))
       self._client.flush()
@@ -439,23 +443,22 @@ class SnippetClientV2(client_base.ClientBase):
           f'Encountered socket error "{e}" sending RPC message "{request}"'
       ) from e
 
+  def _client_receive(self):
     try:
-      response = self._client.readline()
+      return self._client.readline()
     except socket.error as e:
       raise errors.Error(
           self._device,
           f'Encountered socket error "{e}" reading RPC response') from e
 
-    if not response:
-      raise errors.ProtocolError(self._device,
-                                 errors.ProtocolError.NO_RESPONSE_FROM_SERVER)
+  def _decode_socket_response_bytes(self, response):
     try:
-      response = str(response, encoding='utf8')
+      return str(response, encoding='utf8')
     except UnicodeError:
       self.log.error(
-          'Failed to decode the RPC response using encoding utf8: %s', response)
+          'Failed to decode socket response bytes using encoding '
+          'utf8: %s', response)
       raise
-    return response
 
   def handle_callback(self, callback_id, ret_value, rpc_func_name):
     """Creates the callback handler object.
