@@ -435,17 +435,33 @@ class SnippetClientV2(client_base.ClientBase):
                                  errors.ProtocolError.NO_RESPONSE_FROM_SERVER)
     return self._decode_socket_response_bytes(response)
 
-  def _client_send(self, request):
+  def _client_send(self, message):
+    """Sends an RPC message through the connection.
+
+    Args:
+      msg: str, the message to send.
+
+    Raises:
+      errors.Error: if a socket error occurred during the send.
+    """
     try:
-      self._client.write(f'{request}\n'.encode('utf8'))
+      self._client.write(f'{message}\n'.encode('utf8'))
       self._client.flush()
     except socket.error as e:
       raise errors.Error(
           self._device,
-          f'Encountered socket error "{e}" sending RPC message "{request}"'
+          f'Encountered socket error "{e}" sending RPC message "{message}"'
       ) from e
 
   def _client_receive(self):
+    """Receives the server's response of an RPC message.
+
+    Returns:
+      Raw byte string of the response.
+
+    Raises:
+      errors.Error: if a socket error occurred during the read.
+    """
     try:
       return self._client.readline()
     except socket.error as e:
