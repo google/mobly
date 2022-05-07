@@ -326,6 +326,10 @@ class SnippetClientV2(client_base.ClientBase):
     host port. Then, it creates a socket connection to the server on the device.
     Finally, it sends a handshake request to the server, which requests the
     server to prepare for the communication with the client.
+
+    This function uses self.host_port for communicating with the server. If
+    self.host_port is 0 or None, this function finds an available host port to
+    make the connection and set self.host_port to the found port.
     """
     self._forward_device_port()
     self.create_socket_connection()
@@ -350,6 +354,9 @@ class SnippetClientV2(client_base.ClientBase):
     to the server.
     """
     try:
+      self.log.debug('Snippet client is creating socket connection to the '
+                     'snippet server of %s through host port %d.',
+                     self.package, self.host_port)
       self._conn = socket.create_connection(('localhost', self.host_port),
                                             _SOCKET_CONNECTION_TIMEOUT)
     except ConnectionRefusedError as err:
