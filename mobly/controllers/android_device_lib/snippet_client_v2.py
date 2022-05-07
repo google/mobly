@@ -439,7 +439,7 @@ class SnippetClientV2(client_base.ClientBase):
     """Sends an RPC message through the connection.
 
     Args:
-      msg: str, the message to send.
+      message: str, the message to send.
 
     Raises:
       errors.Error: if a socket error occurred during the send.

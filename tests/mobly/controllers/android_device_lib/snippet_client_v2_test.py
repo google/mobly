@@ -743,8 +743,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
     self.assertEqual(rpc_result, 123)
     self.mock_socket_file.write.assert_called_with(
-        b'{"id": 0, "method": "some_rpc", "params": [1, 2, "hello"]}\n'
-    )
+        b'{"id": 0, "method": "some_rpc", "params": [1, 2, "hello"]}\n')
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
