@@ -794,7 +794,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertEqual(self.client._event_client.device_port, MOCK_DEVICE_PORT)
     self.assertEqual(self.client._event_client.uid, self.client.uid)
 
-    # Ensure the event client have reset its own RPC id counter
+    # Ensure the event client has reset its own RPC id counter
     self.assertEqual(next(self.client._counter), 1)
     self.assertEqual(next(self.client._event_client._counter), 0)
 

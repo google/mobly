@@ -457,7 +457,7 @@ class SnippetClientV2(client_base.ClientBase):
     """Receives the server's response of an RPC message.
 
     Returns:
-      Raw byte string of the response.
+      Raw bytes of the response.
 
     Raises:
       errors.Error: if a socket error occurred during the read.
@@ -470,6 +470,17 @@ class SnippetClientV2(client_base.ClientBase):
           f'Encountered socket error "{e}" reading RPC response') from e
 
   def _decode_socket_response_bytes(self, response):
+    """Returns a string decoded from the socket response bytes.
+
+    Args:
+      response: bytes, the response to be decoded.
+
+    Returns:
+      The string decoded from the given bytes.
+
+    Raises:
+      UnicodeError: if failed to decode the given bytes using encoding utf8.
+    """
     try:
       return str(response, encoding='utf8')
     except UnicodeError:
