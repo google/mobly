@@ -13,10 +13,14 @@
 # limitations under the License.
 """Snippet Client V2 for Interacting with Snippet Server on Android Device."""
 
+import enum
+import json
 import re
+import socket
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
+from mobly.controllers.android_device_lib import callback_handler
 from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.snippet import client_base
 from mobly.snippet import errors
@@ -58,6 +62,31 @@ _SETSID_COMMAND = 'setsid'
 
 _NOHUP_COMMAND = 'nohup'
 
+# UID of the 'unknown' JSON RPC session. Will cause creation of a new session
+# in the snippet server.
+UNKNOWN_UID = -1
+
+# Maximum time to wait for the socket to open on the device.
+_SOCKET_CONNECTION_TIMEOUT = 60
+
+# Maximum time to wait for a response message on the socket.
+_SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
+
+
+class ConnectionHandshakeCommand(enum.Enum):
+  """Commands to send to the server when sending the handshake request.
+
+  After creating the socket connection, the client must send a handshake request
+  to the server. When receiving the handshake request, the server will prepare
+  to communicate with the client. According to the command in the request,
+  the server will create a new session or reuse the current session.
+
+  INIT: Initiates a new session and makes a connection with this session.
+  CONTINUE: Makes a connection with the current session.
+  """
+  INIT = 'initiate'
+  CONTINUE = 'continue'
+
 
 class SnippetClientV2(client_base.ClientBase):
   """Snippet client V2 for interacting with snippet server on Android Device.
@@ -72,6 +101,9 @@ class SnippetClientV2(client_base.ClientBase):
     host_port: int, the host port used for communicating with the snippet
       server.
     device_port: int, the device port listened by the snippet server.
+    uid: int, the uid of the server session with which this client communicates.
+      Default is `UNKNOWN_UID` and it will be set to a positive number after
+      the connection to the server is made successfully.
   """
 
   def __init__(self, package, ad):
@@ -84,9 +116,13 @@ class SnippetClientV2(client_base.ClientBase):
     super().__init__(package=package, device=ad)
     self.host_port = None
     self.device_port = None
+    self.uid = UNKNOWN_UID
     self._adb = ad.adb
     self._user_id = None
     self._proc = None
+    self._client = None  # keep it to prevent close errors on connect failure
+    self._conn = None
+    self._event_client = None
 
   @property
   def user_id(self):
@@ -109,6 +145,11 @@ class SnippetClientV2(client_base.ClientBase):
     if self._user_id is None:
       self._user_id = self._adb.current_user_id
     return self._user_id
+
+  @property
+  def is_alive(self):
+    """Does the client have an active connection to the snippet server."""
+    return self._conn is not None
 
   def before_starting_server(self):
     """Performs the preparation steps before starting the remote server.
@@ -276,10 +317,245 @@ class SnippetClientV2(client_base.ClientBase):
 
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
+  def make_connection(self):
+    """Makes a connection to the snippet server on the remote device.
+
+    This function makes a persistent connection to the server. This connection
+    will be used for all the RPCs, and must be closed when deconstructing.
+
+    To connect to the Android device, it first forwards the device port to a
+    host port. Then, it creates a socket connection to the server on the device.
+    Finally, it sends a handshake request to the server, which requests the
+    server to prepare for the communication with the client.
+
+    This function uses self.host_port for communicating with the server. If
+    self.host_port is 0 or None, this function finds an available host port to
+    make the connection and set self.host_port to the found port.
+    """
+    self._forward_device_port()
+    self.create_socket_connection()
+    self.send_handshake_request()
+
+  def _forward_device_port(self):
+    """Forwards the device port to a host port."""
+    if not self.host_port:
+      self.host_port = utils.get_available_host_port()
+    self._adb.forward([f'tcp:{self.host_port}', f'tcp:{self.device_port}'])
+
+  def create_socket_connection(self):
+    """Creates a socket connection to the server.
+
+    After creating the connection successfully, it sets two attributes:
+    * `self._conn`: the created socket object, which will be used when it needs
+      to close the connection.
+    * `self._client`: the socket file, which will be used to send and receive
+      messages.
+
+    This function only creates a socket connection without sending any message
+    to the server.
+    """
+    try:
+      self.log.debug(
+          'Snippet client is creating socket connection to the snippet server '
+          'of %s through host port %d.', self.package, self.host_port)
+      self._conn = socket.create_connection(('localhost', self.host_port),
+                                            _SOCKET_CONNECTION_TIMEOUT)
+    except ConnectionRefusedError as err:
+      # Retry using '127.0.0.1' for IPv4 enabled machines that only resolve
+      # 'localhost' to '[::1]'.
+      self.log.debug('Failed to connect to localhost, trying 127.0.0.1: %s',
+                     str(err))
+      self._conn = socket.create_connection(('127.0.0.1', self.host_port),
+                                            _SOCKET_CONNECTION_TIMEOUT)
+
+    self._conn.settimeout(_SOCKET_READ_TIMEOUT)
+    self._client = self._conn.makefile(mode='brw')
+
+  def send_handshake_request(self,
+                             uid=UNKNOWN_UID,
+                             cmd=ConnectionHandshakeCommand.INIT):
+    """Sends a handshake request to the server to prepare for the communication.
+
+    Through the handshake response, this function checks whether the server
+    is ready for the communication. If ready, it sets `self.uid` to the
+    server session id. Otherwise, it sets `self.uid` to `UNKNOWN_UID`.
+
+    Args:
+      uid: int, the uid of the server session to continue. It will be ignored
+        if the `cmd` requires the server to create a new session.
+      cmd: ConnectionHandshakeCommand, the handshake command Enum for the
+        server, which requires the server to create a new session or use the
+        current session.
+
+    Raises:
+      errors.ProtocolError: something went wrong when sending the handshake
+        request.
+    """
+    request = json.dumps({'cmd': cmd.value, 'uid': uid})
+    self.log.debug('Sending handshake request %s.', request)
+    self._client_send(request)
+    response = self._client_receive()
+
+    if not response:
+      raise errors.ProtocolError(
+          self._device, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+
+    response = self._decode_socket_response_bytes(response)
+
+    result = json.loads(response)
+    if result['status']:
+      self.uid = result['uid']
+    else:
+      self.uid = UNKNOWN_UID
+
+  def check_server_proc_running(self):
+    """See base class.
+
+    This client does nothing at this stage.
+    """
+
+  def send_rpc_request(self, request):
+    """Sends an RPC request to the server and receives a response.
+
+    Args:
+      request: str, the request to send the server.
+
+    Returns:
+      The string of the RPC response.
+
+    Raises:
+      errors.Error: if failed to send the request or receive a response.
+      errors.ProtocolError: if received an empty response from the server.
+      UnicodeError: if failed to decode the received response.
+    """
+    self._client_send(request)
+    response = self._client_receive()
+    if not response:
+      raise errors.ProtocolError(self._device,
+                                 errors.ProtocolError.NO_RESPONSE_FROM_SERVER)
+    return self._decode_socket_response_bytes(response)
+
+  def _client_send(self, message):
+    """Sends an RPC message through the connection.
+
+    Args:
+      message: str, the message to send.
+
+    Raises:
+      errors.Error: if a socket error occurred during the send.
+    """
+    try:
+      self._client.write(f'{message}\n'.encode('utf8'))
+      self._client.flush()
+    except socket.error as e:
+      raise errors.Error(
+          self._device,
+          f'Encountered socket error "{e}" sending RPC message "{message}"'
+      ) from e
+
+  def _client_receive(self):
+    """Receives the server's response of an RPC message.
+
+    Returns:
+      Raw bytes of the response.
+
+    Raises:
+      errors.Error: if a socket error occurred during the read.
+    """
+    try:
+      return self._client.readline()
+    except socket.error as e:
+      raise errors.Error(
+          self._device,
+          f'Encountered socket error "{e}" reading RPC response') from e
+
+  def _decode_socket_response_bytes(self, response):
+    """Returns a string decoded from the socket response bytes.
+
+    Args:
+      response: bytes, the response to be decoded.
+
+    Returns:
+      The string decoded from the given bytes.
+
+    Raises:
+      UnicodeError: if failed to decode the given bytes using encoding utf8.
+    """
+    try:
+      return str(response, encoding='utf8')
+    except UnicodeError:
+      self.log.error(
+          'Failed to decode socket response bytes using encoding '
+          'utf8: %s', response)
+      raise
+
+  def handle_callback(self, callback_id, ret_value, rpc_func_name):
+    """Creates the callback handler object.
+
+    If the client doesn't have an event client, it will start an event client
+    before creating a callback handler.
+
+    Args:
+      callback_id: see base class.
+      ret_value: see base class.
+      rpc_func_name: see base class.
+
+    Returns:
+      The callback handler object.
+    """
+    if self._event_client is None:
+      self._create_event_client()
+    return callback_handler.CallbackHandler(callback_id=callback_id,
+                                            event_client=self._event_client,
+                                            ret_value=ret_value,
+                                            method_name=rpc_func_name,
+                                            ad=self._device)
+
+  def _create_event_client(self):
+    """Creates a separate client to the same session for propagating events.
+
+    As the server is already started by the snippet server on which this
+    function is called, the created event client connects to the same session
+    as the snippet server. It also reuses the same host port and device port.
+    """
+    self._event_client = SnippetClientV2(package=self.package, ad=self._device)
+    self._event_client.make_connection_with_forwarded_port(
+        self.host_port, self.device_port, self.uid,
+        ConnectionHandshakeCommand.CONTINUE)
+
+  def make_connection_with_forwarded_port(self,
+                                          host_port,
+                                          device_port,
+                                          uid=UNKNOWN_UID,
+                                          cmd=ConnectionHandshakeCommand.INIT):
+    """Makes a connection to the server with the given forwarded port.
+
+    This process assumes that a device port has already been forwarded to a
+    host port, and it only makes a connection to the snippet server based on
+    the forwarded port. This is typically used by clients that share the same
+    snippet server, e.g. the snippet client and its event client.
+
+    Args:
+      host_port: int, the host port which has already been forwarded.
+      device_port: int, the device port listened by the snippet server.
+      uid: int, the uid of the server session to continue. It will be ignored
+        if the `cmd` requires the server to create a new session.
+      cmd: ConnectionHandshakeCommand, the handshake command Enum for the
+        server, which requires the server to create a new session or use the
+        current session.
+    """
+    self.host_port = host_port
+    self.device_port = device_port
+    self._counter = self._id_counter()
+    self.create_socket_connection()
+    self.send_handshake_request(uid, cmd)
+
   def stop(self):
     """Releases all the resources acquired in `initialize`.
 
     This function releases following resources:
+    * Close the socket connection.
+    * Stop forwarding the device port to host.
     * Stop the standing server subprocess running on the host side.
     * Stop the snippet server running on the device side.
 
@@ -287,12 +563,30 @@ class SnippetClientV2(client_base.ClientBase):
       android_device_lib_errors.DeviceError: if the server exited with errors on
         the device side.
     """
-    # TODO(mhaoli): This function is only partially implemented because we
-    # have not implemented the functionality of making connections in this
-    # class.
     self.log.debug('Stopping snippet package %s.', self.package)
+    self.close_connection()
     self._stop_server()
     self.log.debug('Snippet package %s stopped.', self.package)
+
+  def close_connection(self):
+    """Closes the connection to the snippet server on the device.
+
+    This function closes the socket connection and stops forwarding the device
+    port to host.
+    """
+    try:
+      if self._conn:
+        self._conn.close()
+        self._conn = None
+    finally:
+      # Always clear the host port as part of the close step
+      self._stop_port_forwarding()
+
+  def _stop_port_forwarding(self):
+    """Stops the adb port forwarding used by this client."""
+    if self.host_port:
+      self._device.adb.forward(['--remove', f'tcp:{self.host_port}'])
+      self.host_port = None
 
   def _stop_server(self):
     """Releases all the resources acquired in `start_server`.
@@ -322,27 +616,71 @@ class SnippetClientV2(client_base.ClientBase):
           self._device,
           f'Failed to stop existing apk. Unexpected output: {out}.')
 
-  # TODO(mhaoli): Temporally override these abstract methods so that we can
-  # initialize the instances in unit tests. We are implementing these functions
-  # in the next PR as soon as possible.
-  def make_connection(self):
-    raise NotImplementedError('To be implemented.')
-
-  def close_connection(self):
-    raise NotImplementedError('To be implemented.')
-
-  def __del__(self):
-    # Override the destructor to not call close_connection for now.
-    pass
-
-  def send_rpc_request(self, request):
-    raise NotImplementedError('To be implemented.')
-
-  def check_server_proc_running(self):
-    raise NotImplementedError('To be implemented.')
-
-  def handle_callback(self, callback_id, ret_value, rpc_func_name):
-    raise NotImplementedError('To be implemented.')
-
   def restore_server_connection(self, port=None):
-    raise NotImplementedError('To be implemented.')
+    """Restores the server after the device got reconnected.
+
+    Instead of creating a new instance of the client:
+      - Uses the given port (or find a new available host port if none is
+      given).
+      - Tries to connect to the remote server with the selected port.
+
+    Args:
+      port: int, if given, this is the host port from which to connect to the
+        remote device port. If not provided, find a new available port as host
+        port.
+
+    Raises:
+      errors.ServerRestoreConnectionError: when failed to restore the connection
+        to the snippet server.
+    """
+    try:
+      # If self.host_port is None, self._make_connection finds a new available
+      # port.
+      self.host_port = port
+      self._make_connection()
+    except Exception as e:
+      # Log the original error and raise ServerRestoreConnectionError.
+      self.log.error('Failed to re-connect to the server.')
+      raise errors.ServerRestoreConnectionError(
+          self._device,
+          (f'Failed to restore server connection for {self.package} at '
+           f'host port {self.host_port}, device port {self.device_port}.'
+          )) from e
+
+    # Because the previous connection was lost, update self._proc
+    self._proc = None
+    self._restore_event_client()
+
+  def _restore_event_client(self):
+    """Restores the previously created event client or creates a new one.
+
+    This function restores the connection of the previously created event
+    client, or creates a new client and makes a connection if it didn't
+    exist before.
+
+    The event client to restore reuses the same host port and device port
+    with the client on which function is called.
+    """
+    if self._event_client:
+      self._event_client.make_connection_with_forwarded_port(
+          self.host_port, self.device_port)
+
+  def help(self, print_output=True):
+    """Calls the help RPC, which returns the list of RPC calls available.
+
+    This RPC should normally be used in an interactive console environment
+    where the output should be printed instead of returned. Otherwise,
+    newlines will be escaped, which will make the output difficult to read.
+
+    Args:
+      print_output: bool, for whether the output should be printed.
+
+    Returns:
+      A string containing the help output otherwise None if `print_output`
+        wasn't set.
+    """
+    help_text = self._rpc('help')
+    if print_output:
+      print(help_text)
+    else:
+      return help_text
