@@ -528,7 +528,7 @@ class SnippetClientV2(client_base.ClientBase):
                                           device_port,
                                           uid=UNKNOWN_UID,
                                           cmd=ConnectionHandshakeCommand.INIT):
-    """Makes a connection to the server with forwarded port.
+    """Makes a connection to the server with the given forwarded port.
 
     This process assumes that a device port has already been forwarded to a
     host port, and it only makes a connection to the snippet server based on

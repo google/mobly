@@ -920,7 +920,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_restore_server_connection_with_event_client(
       self, mock_create_socket_conn_func, mock_send_handshake_func,
       mock_make_connection):
-    """Tests restoring server connection when event client is not None."""
+    """Tests restoring server connection when the event client is not None."""
     self._make_client()
     event_client = snippet_client_v2.SnippetClientV2('mock-package',
                                                      mock.Mock())
@@ -1229,7 +1229,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_make_conn_with_forwarded_port_init(self,
                                               mock_create_socket_conn_func,
                                               mock_send_handshake_func):
-    """Test make_connection_with_forwarded_port initiates a new session."""
+    """Tests make_connection_with_forwarded_port initiates a new session."""
     self._make_client()
     self.client._counter = None
     self.client.make_connection_with_forwarded_port(12345, 54321)
@@ -1248,7 +1248,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def test_make_conn_with_forwarded_port_continue(self,
                                                   mock_create_socket_conn_func,
                                                   mock_send_handshake_func):
-    """Test make_connection_with_forwarded_port continues current session."""
+    """Tests make_connection_with_forwarded_port continues current session."""
     self._make_client()
     self.client._counter = None
     self.client.make_connection_with_forwarded_port(
