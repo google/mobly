@@ -661,9 +661,7 @@ class SnippetClientV2(client_base.ClientBase):
     The event client to restore reuses the same host port and device port
     with the client on which function is called.
     """
-    if not self._event_client:
-      self._create_event_client()
-    else:
+    if self._event_client:
       self._event_client.make_connection_with_forwarded_port(
           self.host_port, self.device_port)
 

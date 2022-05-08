@@ -938,30 +938,6 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_send_handshake_func.assert_called_once_with(
         -1, snippet_client_v2.ConnectionHandshakeCommand.INIT)
 
-  @mock.patch.object(snippet_client_v2.SnippetClientV2, '_make_connection')
-  @mock.patch.object(snippet_client_v2.SnippetClientV2,
-                     'send_handshake_request')
-  @mock.patch.object(snippet_client_v2.SnippetClientV2,
-                     'create_socket_connection')
-  def test_restore_server_connection_without_event_client(
-      self, mock_create_socket_conn_func, mock_send_handshake_func,
-      mock_make_connection):
-    """Tests restoring server connection when event client is None."""
-    self._make_client()
-    self.client._event_client = None
-    self.client.device_port = 54321
-    self.client.uid = 5
-
-    self.client.restore_server_connection(port=12345)
-
-    mock_make_connection.assert_called_once_with()
-    self.assertEqual(self.client._event_client.host_port, 12345)
-    self.assertEqual(self.client._event_client.device_port, 54321)
-    self.assertEqual(next(self.client._event_client._counter), 0)
-    mock_create_socket_conn_func.assert_called_once_with()
-    mock_send_handshake_func.assert_called_once_with(
-        5, snippet_client_v2.ConnectionHandshakeCommand.CONTINUE)
-
   @mock.patch('builtins.print')
   def test_help_rpc_when_printing_by_default(self, mock_print):
     """Tests the `help` method when it prints the output by default."""
