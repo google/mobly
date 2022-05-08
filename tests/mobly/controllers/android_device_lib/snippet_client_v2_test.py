@@ -912,6 +912,56 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertListEqual(self.mock_socket_file.write.call_args_list,
                          socket_write_expected)
 
+  @mock.patch.object(snippet_client_v2.SnippetClientV2, '_make_connection')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'send_handshake_request')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'create_socket_connection')
+  def test_restore_server_connection_with_event_client(
+      self, mock_create_socket_conn_func, mock_send_handshake_func,
+      mock_make_connection):
+    """Tests restoring server connection when event client is not None."""
+    self._make_client()
+    event_client = snippet_client_v2.SnippetClientV2('mock-package',
+                                                     mock.Mock())
+    self.client._event_client = event_client
+    self.client.device_port = 54321
+    self.client.uid = 5
+
+    self.client.restore_server_connection(port=12345)
+
+    mock_make_connection.assert_called_once_with()
+    self.assertEqual(event_client.host_port, 12345)
+    self.assertEqual(event_client.device_port, 54321)
+    self.assertEqual(next(event_client._counter), 0)
+    mock_create_socket_conn_func.assert_called_once_with()
+    mock_send_handshake_func.assert_called_once_with(
+        -1, snippet_client_v2.ConnectionHandshakeCommand.INIT)
+
+  @mock.patch.object(snippet_client_v2.SnippetClientV2, '_make_connection')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'send_handshake_request')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'create_socket_connection')
+  def test_restore_server_connection_without_event_client(
+      self, mock_create_socket_conn_func, mock_send_handshake_func,
+      mock_make_connection):
+    """Tests restoring server connection when event client is None."""
+    self._make_client()
+    self.client._event_client = None
+    self.client.device_port = 54321
+    self.client.uid = 5
+
+    self.client.restore_server_connection(port=12345)
+
+    mock_make_connection.assert_called_once_with()
+    self.assertEqual(self.client._event_client.host_port, 12345)
+    self.assertEqual(self.client._event_client.device_port, 54321)
+    self.assertEqual(next(self.client._event_client._counter), 0)
+    mock_create_socket_conn_func.assert_called_once_with()
+    mock_send_handshake_func.assert_called_once_with(
+        5, snippet_client_v2.ConnectionHandshakeCommand.CONTINUE)
+
   @mock.patch('builtins.print')
   def test_help_rpc_when_printing_by_default(self, mock_print):
     """Tests the `help` method when it prints the output by default."""
@@ -1195,6 +1245,45 @@ class SnippetClientV2Test(unittest.TestCase):
             'Failed to decode socket response bytes using encoding utf8: %s',
             socket_response)
     ])
+
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'send_handshake_request')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'create_socket_connection')
+  def test_make_conn_with_forwarded_port_init(self,
+                                              mock_create_socket_conn_func,
+                                              mock_send_handshake_func):
+    """Test make_connection_with_forwarded_port initiates a new session."""
+    self._make_client()
+    self.client._counter = None
+    self.client.make_connection_with_forwarded_port(12345, 54321)
+
+    self.assertEqual(self.client.host_port, 12345)
+    self.assertEqual(self.client.device_port, 54321)
+    self.assertEqual(next(self.client._counter), 0)
+    mock_create_socket_conn_func.assert_called_once_with()
+    mock_send_handshake_func.assert_called_once_with(
+        -1, snippet_client_v2.ConnectionHandshakeCommand.INIT)
+
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'send_handshake_request')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'create_socket_connection')
+  def test_make_conn_with_forwarded_port_continue(self,
+                                                  mock_create_socket_conn_func,
+                                                  mock_send_handshake_func):
+    """Test make_connection_with_forwarded_port continues current session."""
+    self._make_client()
+    self.client._counter = None
+    self.client.make_connection_with_forwarded_port(
+        12345, 54321, 3, snippet_client_v2.ConnectionHandshakeCommand.CONTINUE)
+
+    self.assertEqual(self.client.host_port, 12345)
+    self.assertEqual(self.client.device_port, 54321)
+    self.assertEqual(next(self.client._counter), 0)
+    mock_create_socket_conn_func.assert_called_once_with()
+    mock_send_handshake_func.assert_called_once_with(
+        3, snippet_client_v2.ConnectionHandshakeCommand.CONTINUE)
 
 
 if __name__ == '__main__':

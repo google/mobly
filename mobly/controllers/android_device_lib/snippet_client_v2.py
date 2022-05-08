@@ -519,33 +519,36 @@ class SnippetClientV2(client_base.ClientBase):
     as the snippet server. It also reuses the same host port and device port.
     """
     self._event_client = SnippetClientV2(package=self.package, ad=self._device)
-    self._make_connection_for_event_client(self.uid,
-                                           ConnectionHandshakeCommand.CONTINUE)
+    self._event_client.make_connection_with_forwarded_port(
+        self.host_port, self.device_port, self.uid,
+        ConnectionHandshakeCommand.CONTINUE)
 
-  def _make_connection_for_event_client(self,
-                                        uid=UNKNOWN_UID,
-                                        cmd=ConnectionHandshakeCommand.INIT):
-    """Makes a connection to the server for the event client.
+  def make_connection_with_forwarded_port(self,
+                                          host_port,
+                                          device_port,
+                                          uid=UNKNOWN_UID,
+                                          cmd=ConnectionHandshakeCommand.INIT):
+    """Makes a connection to the server with forwarded port.
 
-    The process of making a connection for the event client is slightly
-    different from the snippet client. Each event client must belong to one
-    snippet client, so the event client reuses the port forwarding process
-    of the snippet client. Thus instead of calling `_make_connection`, it calls
-    the methods to reset the RPC id counter, create a socket connection and send
-    a handshake request.
+    This process assumes that a device port has already been forwarded to a
+    host port, and it only makes a connection to the snippet server based on
+    the forwarded port. This is typically used by clients that share the same
+    snippet server, e.g. the snippet client and its event client.
 
     Args:
+      host_port: int, the host port which has already been forwarded.
+      device_port: int, the device port listened by the snippet server.
       uid: int, the uid of the server session to continue. It will be ignored
         if the `cmd` requires the server to create a new session.
       cmd: ConnectionHandshakeCommand, the handshake command Enum for the
         server, which requires the server to create a new session or use the
         current session.
     """
-    self._event_client.host_port = self.host_port
-    self._event_client.device_port = self.device_port
-    self._event_client._counter = self._event_client._id_counter()  # pylint: disable=protected-access
-    self._event_client.create_socket_connection()
-    self._event_client.send_handshake_request(uid, cmd)
+    self.host_port = host_port
+    self.device_port = device_port
+    self._counter = self._id_counter()
+    self.create_socket_connection()
+    self.send_handshake_request(uid, cmd)
 
   def stop(self):
     """Releases all the resources acquired in `initialize`.
@@ -617,7 +620,7 @@ class SnippetClientV2(client_base.ClientBase):
     """Restores the server after the device got reconnected.
 
     Instead of creating a new instance of the client:
-      - Uses the given port (or find a new available host_port if none is
+      - Uses the given port (or find a new available host port if none is
       given).
       - Tries to connect to the remote server with the selected port.
 
@@ -661,7 +664,8 @@ class SnippetClientV2(client_base.ClientBase):
     if not self._event_client:
       self._create_event_client()
     else:
-      self._make_connection_for_event_client()
+      self._event_client.make_connection_with_forwarded_port(
+          self.host_port, self.device_port)
 
   def help(self, print_output=True):
     """Calls the help RPC, which returns the list of RPC calls available.
