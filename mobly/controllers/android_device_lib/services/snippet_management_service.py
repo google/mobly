@@ -42,11 +42,11 @@ class SnippetManagementService(base_service.BaseService):
 
   @property
   def is_using_client_v2(self):
+    """Does this service use snippet client V2."""
     if self._is_using_client_v2 is None:
-      device_dimensions = getattr(self._device, 'dimensions', dict())
-      self._is_using_client_v2 = (
-          device_dimensions.get('use_mobly_snippet_client_v2',
-                                'false').lower() == 'true')
+      device_dimensions = getattr(self._device, 'dimensions', {})
+      self._is_using_client_v2 = (device_dimensions.get(
+          'use_mobly_snippet_client_v2', 'false').lower() == 'true')
     return self._is_using_client_v2
 
   @property

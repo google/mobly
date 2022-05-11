@@ -164,19 +164,19 @@ class SnippetManagementServiceTest(unittest.TestCase):
 
   def test_client_v2_flag_default_value(self):
     mock_device = mock.MagicMock()
-    mock_device.dimensions = dict()
+    mock_device.dimensions = {}
     manager = snippet_management_service.SnippetManagementService(mock_device)
     self.assertFalse(manager.is_using_client_v2)
 
   def test_client_v2_flag_false(self):
     mock_device = mock.MagicMock(
-        dimensions = {'use_mobly_snippet_client_v2': 'false'})
+        dimensions={'use_mobly_snippet_client_v2': 'false'})
     manager = snippet_management_service.SnippetManagementService(mock_device)
     self.assertFalse(manager.is_using_client_v2)
 
   def test_client_v2_flag_true(self):
     mock_device = mock.MagicMock(
-        dimensions = {'use_mobly_snippet_client_v2': 'true'})
+        dimensions={'use_mobly_snippet_client_v2': 'true'})
     manager = snippet_management_service.SnippetManagementService(mock_device)
     self.assertTrue(manager.is_using_client_v2)
 
