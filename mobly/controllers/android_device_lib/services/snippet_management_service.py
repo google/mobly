@@ -111,7 +111,6 @@ class SnippetManagementService(base_service.BaseService):
     if name not in self._snippet_clients:
       raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
     client = self._snippet_clients.pop(name)
-    print('snippet_client.SnippetClient', snippet_client.SnippetClient)
     if self.is_using_client_v2:
       client.stop()
     else:
