@@ -29,7 +29,8 @@ For example:
     suite_runner.run_suite(foo_test.FooTest, bar_test.BarTest)
 
 2. Create a subclass of base_suite.BaseSuite and add the individual test
-classes
+classes. Using the BaseSuite class allows users to define their own
+setup and teardown steps on the suite level.
 
 .. code-block:: python
 
