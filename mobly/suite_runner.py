@@ -16,8 +16,9 @@
 These are just utility functions to help users run a collection of Mobly test
 classes. There are two ways to use this runner.
 
-1. Call suite_runner.run_suite() with one or more individual test classes.
-For example:
+1. Call suite_runner.run_suite() with one or more individual test classes. This
+is for users who just need to execute a collection of test classes without any
+additional steps.
 
 .. code-block:: python
 
