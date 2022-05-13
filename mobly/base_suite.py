@@ -21,6 +21,13 @@ class BaseSuite(abc.ABC):
 
   Use `BaseSuite.add_test_class` to specify which classes to run with which
   configs and test selectors.
+
+  After defining the sub class, the suite can be executed using
+  suite_runner.run_suite_class.
+
+  Users can use this class if they need to define their own setup and teardown
+  steps on the suite level. Otherwise, just use suite_runner.run_suite on the
+  list of test classes.
   """
 
   def __init__(self, runner, config):
