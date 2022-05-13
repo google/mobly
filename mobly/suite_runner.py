@@ -13,8 +13,10 @@
 # limitations under the License.
 """Runner for Mobly test suites.
 
-These are just utility functions to help users run a collection of Mobly test
-classes. There are two ways to use this runner.
+These is just example code to help users run a collection of Mobly test
+classes. Users can use it as is or customize it based on their requirements.
+
+There are two ways to use this runner.
 
 1. Call suite_runner.run_suite() with one or more individual test classes. This
 is for users who just need to execute a collection of test classes without any
@@ -31,8 +33,9 @@ additional steps.
     suite_runner.run_suite(foo_test.FooTest, bar_test.BarTest)
 
 2. Create a subclass of base_suite.BaseSuite and add the individual test
-classes. Using the BaseSuite class allows users to define their own
-setup and teardown steps on the suite level.
+classes. Using the BaseSuite class allows users to define their own setup
+and teardown steps on the suite level as well as custom config for each test
+class.
 
 .. code-block:: python
 
