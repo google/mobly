@@ -13,7 +13,8 @@
 # limitations under the License.
 """Runner for Mobly test suites.
 
-There are two ways to run a test suite.
+These are just utility functions to help users run a collection of Mobly test
+classes. There are two ways to use this runner.
 
 1. Call suite_runner.run_suite() with one or more individual test classes.
 For example:
