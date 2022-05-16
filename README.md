@@ -35,7 +35,7 @@ Mobly tests could run on the following platforms:
 
 ## System dependencies
   - adb (1.0.40+ recommended)
-  - python3.6+
+  - python3.7+
   - python-setuptools
 
 *To use Python3, use `pip3` and `python3` (or python3.x) accordingly.*
