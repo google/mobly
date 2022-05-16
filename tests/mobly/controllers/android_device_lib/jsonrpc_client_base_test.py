@@ -337,6 +337,35 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         testing_rpc_response[:jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH],
         resp_len - jsonrpc_client_base._MAX_RPC_RESP_LOGGING_LENGTH)
 
+  def test_stop_event_client(self):
+    client = FakeRpcClient()
+    event_client = FakeRpcClient()
+    client._event_client = event_client
+    conn_obj = mock.Mock()
+    event_client._conn = conn_obj
+
+    client.stop_event_client()
+    conn_obj.close.assert_called_once()
+    self.assertIsNone(event_client._conn)
+    self.assertIsNone(client._event_client)
+
+  def test_stop_event_client_without_conn(self):
+    client = FakeRpcClient()
+    event_client = FakeRpcClient()
+    client._event_client = event_client
+    event_client._conn = None
+
+    client.stop_event_client()
+    self.assertIsNone(event_client._conn)
+    self.assertIsNone(client._event_client)
+
+  def test_stop_event_client_without_event_client(self):
+    client = FakeRpcClient()
+    client._event_client = None
+
+    client.stop_event_client()
+    self.assertIsNone(client._event_client)
+
 
 if __name__ == '__main__':
   unittest.main()
