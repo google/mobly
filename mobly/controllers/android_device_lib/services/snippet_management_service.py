@@ -38,16 +38,23 @@ class SnippetManagementService(base_service.BaseService):
     self._is_alive = False
     self._snippet_clients = {}
     super().__init__(device)
-    self._is_using_client_v2 = None
+    self._use_client_v2_switch = None
 
-  @property
-  def is_using_client_v2(self):
-    """Is this service using snippet client V2."""
-    if self._is_using_client_v2 is None:
+  def _is_using_client_v2(self):
+    """Is this service using snippet client V2.
+
+    Do not call this function in the constructor, as this function depends on
+    the device configuration and the device object will load its configuration
+    right after constructing the services.
+
+    Note: This is a transient function when we are migrating the snippet client
+    from v1 to v2. It will be removed after the migration is completed.
+    """
+    if self._use_client_v2_switch is None:
       device_dimensions = getattr(self._device, 'dimensions', {})
-      self._is_using_client_v2 = (device_dimensions.get(
+      self._use_client_v2_switch = (device_dimensions.get(
           'use_mobly_snippet_client_v2', 'false').lower() == 'true')
-    return self._is_using_client_v2
+    return self._use_client_v2_switch
 
   @property
   def is_alive(self):
@@ -90,7 +97,7 @@ class SnippetManagementService(base_service.BaseService):
             self, 'Snippet package "%s" has already been loaded under name'
             ' "%s".' % (package, snippet_name))
 
-    if self.is_using_client_v2:
+    if self._is_using_client_v2():
       client = snippet_client_v2.SnippetClientV2(package=package,
                                                  ad=self._device)
       client.initialize()
@@ -111,7 +118,7 @@ class SnippetManagementService(base_service.BaseService):
     if name not in self._snippet_clients:
       raise Error(self._device, MISSING_SNIPPET_CLIENT_MSG % name)
     client = self._snippet_clients.pop(name)
-    if self.is_using_client_v2:
+    if self._is_using_client_v2():
       client.stop()
     else:
       client.stop_app()
@@ -121,7 +128,7 @@ class SnippetManagementService(base_service.BaseService):
     for client in self._snippet_clients.values():
       if not client.is_alive:
         self._device.log.debug('Starting SnippetClient<%s>.', client.package)
-        if self.is_using_client_v2:
+        if self._is_using_client_v2():
           client.initialize()
         else:
           client.start_app_and_connect()
@@ -135,7 +142,7 @@ class SnippetManagementService(base_service.BaseService):
     for client in self._snippet_clients.values():
       if client.is_alive:
         self._device.log.debug('Stopping SnippetClient<%s>.', client.package)
-        if self.is_using_client_v2:
+        if self._is_using_client_v2():
           client.stop()
         else:
           client.stop_app()
@@ -152,7 +159,7 @@ class SnippetManagementService(base_service.BaseService):
     """
     for client in self._snippet_clients.values():
       self._device.log.debug('Pausing SnippetClient<%s>.', client.package)
-      if self.is_using_client_v2:
+      if self._is_using_client_v2():
         client.close_connection()
       else:
         client.disconnect()
@@ -162,7 +169,7 @@ class SnippetManagementService(base_service.BaseService):
     for client in self._snippet_clients.values():
       if not client.is_alive:
         self._device.log.debug('Resuming SnippetClient<%s>.', client.package)
-        if self.is_using_client_v2:
+        if self._is_using_client_v2():
           client.restore_server_connection()
         else:
           client.restore_app_connection()
