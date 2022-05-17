@@ -47,7 +47,7 @@ class SnippetManagementService(base_service.BaseService):
     the device configuration and the device object will load its configuration
     right after constructing the services.
 
-    Note: This is a transient function when we are migrating the snippet client
+    NOTE: This is a transient function when we are migrating the snippet client
     from v1 to v2. It will be removed after the migration is completed.
     """
     if self._use_client_v2_switch is None:
