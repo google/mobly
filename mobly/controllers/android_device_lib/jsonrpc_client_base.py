@@ -271,12 +271,6 @@ class JsonRpcClientBase(abc.ABC):
       self._ad.adb.forward(['--remove', 'tcp:%d' % self.host_port])
       self.host_port = None
 
-  def stop_event_client(self):
-    """Stops the event client used by this client."""
-    if self._event_client:
-      self._event_client.close_socket_connection()
-      self._event_client = None
-
   def _client_send(self, msg):
     """Sends an Rpc message through the connection.
 
