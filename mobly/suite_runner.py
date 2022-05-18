@@ -140,7 +140,7 @@ def run_suite_class(argv=None):
   """
   if argv is None:
     argv = sys.argv
-  cli_args = _parse_cli_args(args)
+  cli_args = _parse_cli_args(argv)
   test_configs = config_parser.load_test_config_file(cli_args.config)
   config_count = len(test_configs)
   if config_count != 1:

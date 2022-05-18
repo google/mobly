@@ -118,8 +118,9 @@ class SuiteRunnerTest(unittest.TestCase):
                            argv=['-c', tmp_file_path])
     mock_exit.assert_called_once_with(1)
 
-  @mock.patch.object(sys, 'exit')
-  def test_suite_runner(self, mock_exit):
+  @mock.patch('sys.exit')
+  @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
+  def test_run_suite_class(self, mock_find_suite_class, mock_exit):
     mock_called = mock.MagicMock()
 
     class FakeTestSuite(base_suite.BaseSuite):
@@ -133,6 +134,8 @@ class SuiteRunnerTest(unittest.TestCase):
         mock_called.teardown_suite()
         super().teardown_suite()
 
+    mock_find_suite_class.return_value = FakeTestSuite
+
     tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
     with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
       f.write(u"""
@@ -143,31 +146,15 @@ class SuiteRunnerTest(unittest.TestCase):
               MagicDevice: '*'
       """)
 
-    suite_runner._SuiteRunner(FakeTestSuite, [
-        '--config',
-        tmp_file_path,
-    ]).run()
-
-    mock_called.setup_suite.assert_called_once_with()
-    mock_called.teardown_suite.assert_called_once_with()
-    mock_exit.assert_not_called()
-
-  @mock.patch.object(suite_runner, '_SuiteRunner', autospec=True)
-  @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
-  def test_run_suite_class(self, mock_find_suite_class,
-                           mock_suite_runner_class):
-    test_suite = mock_find_suite_class.return_value
-    mock_cli_args = [
-        'some_executable.py', '--config=/some/path', '--tests=SomeSuite.test']
+    mock_cli_args = [f'--config={tmp_file_path}']
 
     with mock.patch.object(sys, 'argv', new=mock_cli_args):
       suite_runner.run_suite_class()
 
     mock_find_suite_class.assert_called_once()
-    mock_suite_runner_class.assert_called_once_with(
-        test_suite, mock_cli_args[1:])
-    suite_runner_obj = mock_suite_runner_class.return_value
-    suite_runner_obj.run.assert_called_once()
+    mock_called.setup_suite.assert_called_once_with()
+    mock_called.teardown_suite.assert_called_once_with()
+    mock_exit.assert_not_called()
 
 
 if __name__ == "__main__":
