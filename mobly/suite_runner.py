@@ -132,41 +132,6 @@ def _find_suite_class():
   return test_suites[0]
 
 
-class _SuiteRunner(object):
-  """Class used to execute a Mobly suite in google3."""
-
-  def __init__(self, suite, args):
-    cli_args = _parse_cli_args(args)
-    test_configs = config_parser.load_test_config_file(cli_args.config)
-    config_count = len(test_configs)
-    if config_count != 1:
-      logging.error('Expect exactly one test config, found %d', config_count)
-    self._config = test_configs[0]
-    self._runner = test_runner.TestRunner(
-        log_dir=self._config.log_path, testbed_name=self._config.testbed_name)
-    self._suite = suite(self._runner, self._config)
-
-  def run(self):
-    """Runs the test suite.
-
-    This should not be called by users directly.
-    """
-    ok = False
-    with self._runner.mobly_logger():
-      try:
-        self._suite.setup_suite(self._config.copy())
-        try:
-          self._runner.run()
-          ok = self._runner.results.is_all_pass
-          print(ok)
-        except signals.TestAbortAll:
-          pass
-      finally:
-        self._suite.teardown_suite()
-    if not ok:
-      sys.exit(1)
-
-
 def run_suite_class(argv=None):
   """Executes tests in the test suite.
 
@@ -297,3 +262,38 @@ def compute_selected_tests(test_classes, selected_tests):
     class_to_tests[test_class] = tests
 
   return class_to_tests
+
+
+class _SuiteRunner(object):
+  """Class used to execute a Mobly suite."""
+
+  def __init__(self, suite, args):
+    cli_args = _parse_cli_args(args)
+    test_configs = config_parser.load_test_config_file(cli_args.config)
+    config_count = len(test_configs)
+    if config_count != 1:
+      logging.error('Expect exactly one test config, found %d', config_count)
+    self._config = test_configs[0]
+    self._runner = test_runner.TestRunner(
+        log_dir=self._config.log_path, testbed_name=self._config.testbed_name)
+    self._suite = suite(self._runner, self._config)
+
+  def run(self):
+    """Runs the test suite.
+
+    This should not be called by users directly.
+    """
+    ok = False
+    with self._runner.mobly_logger():
+      try:
+        self._suite.setup_suite(self._config.copy())
+        try:
+          self._runner.run()
+          ok = self._runner.results.is_all_pass
+          print(ok)
+        except signals.TestAbortAll:
+          pass
+      finally:
+        self._suite.teardown_suite()
+    if not ok:
+      sys.exit(1)
