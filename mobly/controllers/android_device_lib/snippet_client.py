@@ -251,6 +251,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
       raise errors.DeviceError(
           self._ad, 'Failed to stop existing apk. Unexpected output: %s' % out)
 
+    self._stop_event_client()
+
   def _start_event_client(self):
     """Overrides superclass."""
     event_client = SnippetClient(package=self.package, ad=self._ad)
@@ -258,6 +260,12 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     event_client.device_port = self.device_port
     event_client.connect(self.uid, jsonrpc_client_base.JsonRpcCommand.CONTINUE)
     return event_client
+
+  def _stop_event_client(self):
+    """Releases all the resources acquired in `_start_event_client`."""
+    if self._event_client:
+      self._event_client.close_socket_connection()
+      self._event_client = None
 
   def _restore_event_client(self):
     """Restores previously created event client."""
