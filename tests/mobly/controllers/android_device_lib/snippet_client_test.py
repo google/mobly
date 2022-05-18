@@ -240,7 +240,7 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     client.device_port = 67890
 
     event_client = client._start_event_client()
-    # Mock adb proxy of event client to valite forward call
+    # Mock adb proxy of event client to validate forward call
     event_client._ad = mock.MagicMock()
     event_client._adb = event_client._ad.adb
     client._event_client = event_client
