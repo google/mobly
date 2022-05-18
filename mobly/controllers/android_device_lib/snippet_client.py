@@ -262,6 +262,11 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
     """Releases all the resources acquired in `_start_event_client`."""
     if self._event_client:
       self._event_client.close_socket_connection()
+      # Without cleaning host_port of event_client, event client will try to
+      # stop the port forwarding when deconstructed, which should only be
+      # stopped by snippet client.
+      self._event_client.host_port = None
+      self._event_client.device_port = None
       self._event_client = None
 
   def _restore_event_client(self):

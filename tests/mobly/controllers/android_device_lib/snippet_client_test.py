@@ -228,6 +228,31 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     self.assertIsNone(client._event_client)
 
   @mock.patch('socket.create_connection')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(snippet_client.SnippetClient, 'connect')
+  def test_event_client_does_not_stop_port_forwarding(
+      self, mock_stop_standing_subprocess, mock_create_connection,
+      mock_connect):
+    adb_proxy = mock.MagicMock()
+    adb_proxy.shell.return_value = b'OK (0 tests)'
+    client = self._make_client(adb_proxy)
+    client.host_port = 12345
+    client.device_port = 67890
+
+    event_client = client._start_event_client()
+    # Mock adb proxy of event client to valite forward call
+    event_client._ad = mock.MagicMock()
+    event_client._adb = event_client._ad.adb
+    client._event_client = event_client
+
+    # Verify that neither the stop process nor the deconstructor is trying to
+    # stop the port forwarding
+    client.stop_app()
+    event_client.__del__()
+
+    event_client._adb.forward.assert_not_called()
+
+  @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
               'utils.start_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client.'
