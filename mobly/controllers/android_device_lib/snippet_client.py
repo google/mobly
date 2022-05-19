@@ -20,6 +20,7 @@ from mobly import utils
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import jsonrpc_client_base
+from mobly.snippet import errors as snippet_errors
 
 _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')
@@ -56,13 +57,9 @@ _SETSID_COMMAND = 'setsid'
 
 _NOHUP_COMMAND = 'nohup'
 
-
-class AppStartPreCheckError(jsonrpc_client_base.Error):
-  """Raised when pre checks for the snippet failed."""
-
-
-class ProtocolVersionError(jsonrpc_client_base.AppStartError):
-  """Raised when the protocol reported by the snippet is unknown."""
+# Aliases of error types for backward compatibility.
+AppStartPreCheckError = snippet_errors.ServerStartPreCheckError
+ProtocolVersionError = snippet_errors.ServerStartProtocolError
 
 
 class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
