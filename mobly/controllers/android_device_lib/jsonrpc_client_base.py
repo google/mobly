@@ -57,8 +57,7 @@ import socket
 import threading
 
 from mobly.controllers.android_device_lib import callback_handler
-from mobly.controllers.android_device_lib import errors
-from mobly.snippet import errors as errors
+from mobly.snippet import errors
 
 # UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
 UNKNOWN_UID = -1
@@ -72,7 +71,6 @@ _SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
 # Maximum logging length of Rpc response in DEBUG level when verbose logging is
 # off.
 _MAX_RPC_RESP_LOGGING_LENGTH = 1024
-
 
 # Aliases of error types for backward compatibility.
 Error = errors.Error
