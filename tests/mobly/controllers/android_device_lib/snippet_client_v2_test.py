@@ -725,12 +725,16 @@ class SnippetClientV2Test(unittest.TestCase):
     self.device.adb.mock_forward_func.assert_called_once_with(
         ['--remove', 'tcp:123'])
 
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
   def test_send_sync_rpc_normally(self, mock_start_subprocess,
-                                  mock_socket_create_conn):
+                                  mock_socket_create_conn, mock_get_port):
     """Tests that sending a sync RPC works normally."""
+    del mock_get_port
     socket_resp = [
         b'{"status": true, "uid": 1}',
         b'{"id": 0, "result": 123, "error": null, "callback": null}',
@@ -1049,30 +1053,44 @@ class SnippetClientV2Test(unittest.TestCase):
     self.socket_conn.settimeout.assert_called_once_with(
         snippet_client_v2._SOCKET_READ_TIMEOUT)
 
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
   @mock.patch('socket.create_connection')
-  def test_make_connection_io_error(self, mock_socket_create_conn):
+  def test_make_connection_io_error(self, mock_socket_create_conn,
+                                    mock_get_port):
     """Tests IOError occurred trying to create a socket connection."""
+    del mock_get_port
     mock_socket_create_conn.side_effect = IOError()
     with self.assertRaises(IOError):
       self._make_client()
       self.client.device_port = 123
       self.client.make_connection()
 
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
   @mock.patch('socket.create_connection')
-  def test_make_connection_timeout(self, mock_socket_create_conn):
+  def test_make_connection_timeout(self, mock_socket_create_conn,
+                                   mock_get_port):
     """Tests timeout occurred trying to create a socket connection."""
+    del mock_get_port
     mock_socket_create_conn.side_effect = socket.timeout
     with self.assertRaises(socket.timeout):
       self._make_client()
       self.client.device_port = 123
       self.client.make_connection()
 
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
   def test_make_connection_receives_none_handshake_response(
-      self, mock_start_subprocess, mock_socket_create_conn):
+      self, mock_start_subprocess, mock_socket_create_conn, mock_get_port):
     """Tests make_connection receives None as the handshake response."""
+    del mock_get_port
     socket_resp = [None]
     self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(mock_start_subprocess)
@@ -1081,12 +1099,16 @@ class SnippetClientV2Test(unittest.TestCase):
         errors.ProtocolError, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
       self.client.make_connection()
 
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
   def test_make_connection_receives_empty_handshake_response(
-      self, mock_start_subprocess, mock_socket_create_conn):
+      self, mock_start_subprocess, mock_socket_create_conn, mock_get_port):
     """Tests make_connection receives an empty handshake response."""
+    del mock_get_port
     socket_resp = [b'']
     self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(mock_start_subprocess)
@@ -1095,12 +1117,16 @@ class SnippetClientV2Test(unittest.TestCase):
         errors.ProtocolError, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
       self.client.make_connection()
 
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
   def test_make_connection_receives_invalid_handshake_response(
-      self, mock_start_subprocess, mock_socket_create_conn):
+      self, mock_start_subprocess, mock_socket_create_conn, mock_get_port):
     """Tests make_connection receives an invalid handshake response."""
+    del mock_get_port
     socket_resp = [b'{"status": false, "uid": 1}']
     self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(mock_start_subprocess)
@@ -1108,12 +1134,18 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.make_connection()
     self.assertEqual(self.client.uid, -1)
 
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_make_connection_send_handshake_request_error(
-      self, mock_start_subprocess, mock_socket_create_conn):
+  def test_make_connection_send_handshake_request_error(self,
+                                                        mock_start_subprocess,
+                                                        mock_socket_create_conn,
+                                                        mock_get_port):
     """Tests that an error occurred trying to send a handshake request."""
+    del mock_get_port
     self._make_client_and_mock_socket_conn(mock_socket_create_conn)
     self._mock_server_process_starting_response(mock_start_subprocess)
     self.mock_socket_file.write.side_effect = socket.error('Socket write error')
@@ -1121,12 +1153,16 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(errors.Error, 'Socket write error'):
       self.client.make_connection()
 
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
   def test_make_connection_receive_handshake_response_error(
-      self, mock_start_subprocess, mock_socket_create_conn):
+      self, mock_start_subprocess, mock_socket_create_conn, mock_get_port):
     """Tests that an error occurred trying to receive a handshake response."""
+    del mock_get_port
     self._make_client_and_mock_socket_conn(mock_socket_create_conn)
     self._mock_server_process_starting_response(mock_start_subprocess)
     self.mock_socket_file.readline.side_effect = socket.error(
@@ -1135,12 +1171,16 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(errors.Error, 'Socket read error'):
       self.client.make_connection()
 
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
   def test_make_connection_decode_handshake_response_bytes_error(
-      self, mock_start_subprocess, mock_socket_create_conn):
+      self, mock_start_subprocess, mock_socket_create_conn, mock_get_port):
     """Tests that an error occurred trying to decode a handshake response."""
+    del mock_get_port
     self._make_client_and_mock_socket_conn(mock_socket_create_conn)
     self._mock_server_process_starting_response(mock_start_subprocess)
     self.client.log = mock.Mock()
