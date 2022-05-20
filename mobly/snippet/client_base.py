@@ -68,8 +68,6 @@ class ClientBase(abc.ABC):
   Attributes:
     package: str, the user-visible name of the snippet library being
       communicated with.
-    host_port: int, the host port of this RPC client.
-    device_port: int, the device port of this RPC client.
     log: Logger, the logger of the corresponding device controller.
     verbose_logging: bool, if True, prints more detailed log
       information. Default is True.
@@ -85,8 +83,6 @@ class ClientBase(abc.ABC):
     """
 
     self.package = package
-    self.host_port = None
-    self.device_port = None
     self.log = device.log
     self.verbose_logging = True
     self._device = device
@@ -105,8 +101,8 @@ class ClientBase(abc.ABC):
       2. starting the snippet server on the remote device.
       3. making a connection to the snippet server.
 
-    After this, the self.host_port and self.device_port attributes must be
-    set.
+    If error occurs at any stage, this function will abort the initialization
+    process and call `stop` to clean up.
 
     Raises:
       errors.ProtocolError: something went wrong when exchanging data with the
@@ -123,10 +119,11 @@ class ClientBase(abc.ABC):
     self.log.info('Initializing the snippet package %s.', self.package)
     start_time = time.perf_counter()
 
-    self.log.debug('Preparing to start the snippet server of %s.', self.package)
-    self.before_starting_server()
-
     try:
+      self.log.debug('Preparing to start the snippet server of %s.',
+                     self.package)
+      self.before_starting_server()
+
       self.log.debug('Starting the snippet server of %s.', self.package)
       self.start_server()
 
@@ -148,10 +145,8 @@ class ClientBase(abc.ABC):
 
       raise
 
-    self.log.debug(
-        'Snippet package %s initialized after %.1fs on host port %d.',
-        self.package,
-        time.perf_counter() - start_time, self.host_port)
+    self.log.debug('Snippet package %s initialized after %.1fs.', self.package,
+                   time.perf_counter() - start_time)
 
   @abc.abstractmethod
   def before_starting_server(self):
@@ -193,10 +188,6 @@ class ClientBase(abc.ABC):
     * The client makes a connection in this stage and uses it for all the RPCs.
       In this case, the client should implement `close_connection` to close
       the connection.
-
-    This function uses self.host_port for communicating with the server. If
-    self.host_port is 0 or None, this function finds an available host port to
-    make the connection and set self.host_port to the found port.
 
     Raises:
       errors.ProtocolError: something went wrong when exchanging data with the
@@ -240,7 +231,7 @@ class ClientBase(abc.ABC):
     """Reconnects to the server after the device was disconnected.
 
     Instead of creating a new instance of the client:
-      - Uses the given port (or finds a new available host_port if 0 or None is
+      - Uses the given port (or finds a new available host port if 0 or None is
       given).
       - Tries to connect to the remote server with the selected port.
 
