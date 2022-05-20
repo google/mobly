@@ -19,6 +19,7 @@ from mobly.controllers.android_device_lib.services import snippet_management_ser
 
 MOCK_PACKAGE = 'com.mock.package'
 SNIPPET_CLIENT_CLASS_PATH = 'mobly.controllers.android_device_lib.snippet_client.SnippetClient'
+SNIPPET_CLIENT_V2_CLASS_PATH = 'mobly.controllers.android_device_lib.snippet_client_v2.SnippetClientV2'
 
 
 class SnippetManagementServiceTest(unittest.TestCase):
@@ -160,6 +161,105 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     manager.foo.ha('param')
     mock_client.ha.assert_called_once_with('param')
+
+  def test_client_v2_flag_default_value(self):
+    mock_device = mock.MagicMock()
+    mock_device.dimensions = {}
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    self.assertFalse(manager._is_using_client_v2())
+
+  def test_client_v2_flag_false(self):
+    mock_device = mock.MagicMock(
+        dimensions={'use_mobly_snippet_client_v2': 'false'})
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    self.assertFalse(manager._is_using_client_v2())
+
+  def test_client_v2_flag_true(self):
+    mock_device = mock.MagicMock(
+        dimensions={'use_mobly_snippet_client_v2': 'true'})
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    self.assertTrue(manager._is_using_client_v2())
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_client_v2_add_snippet_client(self, mock_class):
+    mock_client = mock.MagicMock()
+    mock_class.return_value = mock_client
+    mock_device = mock.MagicMock(
+        dimensions={'use_mobly_snippet_client_v2': 'true'})
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE)
+    self.assertIs(manager.get_snippet_client('foo'), mock_client)
+    mock_client.initialize.assert_called_once_with()
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_client_v2_remove_snippet_client(self, mock_class):
+    mock_client = mock.MagicMock()
+    mock_class.return_value = mock_client
+    mock_device = mock.MagicMock(
+        dimensions={'use_mobly_snippet_client_v2': 'true'})
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE)
+    manager.remove_snippet_client('foo')
+    mock_client.stop.assert_called_once_with()
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_client_v2_start(self, mock_class):
+    mock_client = mock.MagicMock()
+    mock_class.return_value = mock_client
+    mock_device = mock.MagicMock(
+        dimensions={'use_mobly_snippet_client_v2': 'true'})
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE)
+
+    mock_client.initialize.reset_mock()
+    mock_client.is_alive = False
+    manager.start()
+
+    mock_client.initialize.assert_called_once_with()
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_client_v2_stop(self, mock_class):
+    mock_client = mock.MagicMock()
+    mock_class.return_value = mock_client
+    mock_device = mock.MagicMock(
+        dimensions={'use_mobly_snippet_client_v2': 'true'})
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE)
+
+    mock_client.stop.reset_mock()
+    mock_client.is_alive = True
+    manager.stop()
+
+    mock_client.stop.assert_called_once_with()
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_client_v2_pause(self, mock_class):
+    mock_client = mock.MagicMock()
+    mock_class.return_value = mock_client
+    mock_device = mock.MagicMock(
+        dimensions={'use_mobly_snippet_client_v2': 'true'})
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE)
+
+    mock_client.close_connection.reset_mock()
+    manager.pause()
+
+    mock_client.close_connection.assert_called_once_with()
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_client_v2_resume(self, mock_class):
+    mock_client = mock.MagicMock()
+    mock_class.return_value = mock_client
+    mock_device = mock.MagicMock(
+        dimensions={'use_mobly_snippet_client_v2': 'true'})
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE)
+
+    mock_client.restore_server_connection.reset_mock()
+    mock_client.is_alive = False
+    manager.resume()
+
+    mock_client.restore_server_connection.assert_called_once_with()
 
 
 if __name__ == '__main__':
