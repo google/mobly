@@ -223,7 +223,7 @@ class UtilsTest(unittest.TestCase):
     self.assertEqual(ret, 0)
 
   def test_run_command_with_timeout_expired(self):
-    with self.assertRaises(subprocess.TimeoutExpired):
+    with self.assertRaisesRegex(subprocess.TimeoutExpired, 'sleep'):
       _ = utils.run_command(self.sleep_cmd(4), timeout=0.01)
 
   @mock.patch('threading.Timer')
