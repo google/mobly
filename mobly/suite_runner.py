@@ -13,8 +13,14 @@
 # limitations under the License.
 """Runner for Mobly test suites.
 
-To create a test suite, call suite_runner.run_suite() with one or more
-individual test classes. For example:
+These is just example code to help users run a collection of Mobly test
+classes. Users can use it as is or customize it based on their requirements.
+
+There are two ways to use this runner.
+
+1. Call suite_runner.run_suite() with one or more individual test classes. This
+is for users who just need to execute a collection of test classes without any
+additional steps.
 
 .. code-block:: python
 
@@ -25,14 +31,47 @@ individual test classes. For example:
   ...
   if __name__ == '__main__':
     suite_runner.run_suite(foo_test.FooTest, bar_test.BarTest)
-"""
 
+2. Create a subclass of base_suite.BaseSuite and add the individual test
+classes. Using the BaseSuite class allows users to define their own setup
+and teardown steps on the suite level as well as custom config for each test
+class.
+
+.. code-block:: python
+
+  from mobly import base_suite
+  from mobly import suite_runner
+
+  from my.path import MyFooTest
+  from my.path import MyBarTest
+
+
+  class MySuite(base_suite.BaseSuite):
+
+    def setup_suite(self, config):
+      # Add a class with default config.
+      self.add_test_class(MyFooTest)
+      # Add a class with test selection.
+      self.add_test_class(MyBarTest,
+                          tests=['test_a', 'test_b'])
+      # Add the same class again with a custom config and suffix.
+      my_config = some_config_logic(config)
+      self.add_test_class(MyBarTest,
+                          config=my_config,
+                          name_suffix='WithCustomConfig')
+
+
+  if __name__ == '__main__':
+    suite_runner.run_suite_class()
+"""
 import argparse
 import collections
+import inspect
 import logging
 import sys
 
 from mobly import base_test
+from mobly import base_suite
 from mobly import config_parser
 from mobly import signals
 from mobly import test_runner
@@ -42,18 +81,16 @@ class Error(Exception):
   pass
 
 
-def run_suite(test_classes, argv=None):
-  """Executes multiple test classes as a suite.
-
-  This is the default entry point for running a test suite script file
-  directly.
+def _parse_cli_args(argv):
+  """Parses cli args that are consumed by Mobly.
 
   Args:
-    test_classes: List of python classes containing Mobly tests.
     argv: A list that is then parsed as cli args. If None, defaults to cli
       input.
+
+  Returns:
+    Namespace containing the parsed args.
   """
-  # Parse cli args.
   parser = argparse.ArgumentParser(description='Mobly Suite Executable.')
   parser.add_argument('-c',
                       '--config',
@@ -70,7 +107,77 @@ def run_suite(test_classes, argv=None):
       help='A list of test classes and optional tests to execute.')
   if not argv:
     argv = sys.argv[1:]
-  args = parser.parse_args(argv)
+  return parser.parse_args(argv)
+
+
+def _find_suite_class():
+  """Finds the test suite class in the current module.
+
+  Walk through module members and find the subclass of BaseSuite. Only
+  one subclass is allowed in a module.
+
+  Returns:
+      The test suite class in the test module.
+  """
+  test_suites = []
+  main_module_members = sys.modules['__main__']
+  for _, module_member in main_module_members.__dict__.items():
+    if inspect.isclass(module_member):
+      if issubclass(module_member, base_suite.BaseSuite):
+        test_suites.append(module_member)
+  if len(test_suites) != 1:
+    logging.error('Expected 1 test class per file, found %s.',
+                  [t.__name__ for t in test_suites])
+    sys.exit(1)
+  return test_suites[0]
+
+
+def run_suite_class(argv=None):
+  """Executes tests in the test suite.
+
+  Args:
+    argv: A list that is then parsed as CLI args. If None, defaults to sys.argv.
+  """
+  if argv is None:
+    argv = sys.argv
+  cli_args = _parse_cli_args(argv)
+  test_configs = config_parser.load_test_config_file(cli_args.config)
+  config_count = len(test_configs)
+  if config_count != 1:
+    logging.error('Expect exactly one test config, found %d', config_count)
+  config = test_configs[0]
+  runner = test_runner.TestRunner(
+      log_dir=config.log_path, testbed_name=config.testbed_name)
+  suite_class = _find_suite_class()
+  suite = suite_class(runner, config)
+  ok = False
+  with runner.mobly_logger():
+    try:
+      suite.setup_suite(config.copy())
+      try:
+        runner.run()
+        ok = runner.results.is_all_pass
+        print(ok)
+      except signals.TestAbortAll:
+        pass
+    finally:
+      suite.teardown_suite()
+  if not ok:
+    sys.exit(1)
+
+
+def run_suite(test_classes, argv=None):
+  """Executes multiple test classes as a suite.
+
+  This is the default entry point for running a test suite script file
+  directly.
+
+  Args:
+    test_classes: List of python classes containing Mobly tests.
+    argv: A list that is then parsed as cli args. If None, defaults to cli
+      input.
+  """
+  args = _parse_cli_args(argv)
   # Load test config file.
   test_configs = config_parser.load_test_config_file(args.config)
 
