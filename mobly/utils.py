@@ -477,7 +477,7 @@ def run_command(cmd,
   if timer is not None:
     timer.cancel()
   if timer_triggered.is_set():
-    raise subprocess.TimeoutExpired(cmd=cwd,
+    raise subprocess.TimeoutExpired(cmd=cmd,
                                     timeout=timeout,
                                     output=out,
                                     stderr=err)
