@@ -621,6 +621,9 @@ class SnippetClientV2(client_base.ClientBase):
   def _destroy_event_client(self):
     """Releases all the resources acquired in `_create_event_client`."""
     if self._event_client:
+      # Without cleaning host_port of event_client first, the close_connection
+      # will try to stop the port forwarding, which should only be stopped by
+      # the corresponding snippet client.
       self._event_client.host_port = None
       self._event_client.device_port = None
       self._event_client.close_connection()
