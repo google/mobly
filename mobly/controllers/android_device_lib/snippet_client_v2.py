@@ -558,6 +558,7 @@ class SnippetClientV2(client_base.ClientBase):
     * Stop forwarding the device port to host.
     * Stop the standing server subprocess running on the host side.
     * Stop the snippet server running on the device side.
+    * Stop the event client and set `self._event_client` to None.
 
     Raises:
       android_device_lib_errors.DeviceError: if the server exited with errors on
@@ -566,6 +567,7 @@ class SnippetClientV2(client_base.ClientBase):
     self.log.debug('Stopping snippet package %s.', self.package)
     self.close_connection()
     self._stop_server()
+    self._destroy_event_client()
     self.log.debug('Snippet package %s stopped.', self.package)
 
   def close_connection(self):
@@ -615,6 +617,17 @@ class SnippetClientV2(client_base.ClientBase):
       raise android_device_lib_errors.DeviceError(
           self._device,
           f'Failed to stop existing apk. Unexpected output: {out}.')
+
+  def _destroy_event_client(self):
+    """Releases all the resources acquired in `_create_event_client`."""
+    if self._event_client:
+      # Without cleaning host_port of event_client first, the close_connection
+      # will try to stop the port forwarding, which should only be stopped by
+      # the corresponding snippet client.
+      self._event_client.host_port = None
+      self._event_client.device_port = None
+      self._event_client.close_connection()
+      self._event_client = None
 
   def restore_server_connection(self, port=None):
     """Restores the server after the device got reconnected.

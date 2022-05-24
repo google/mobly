@@ -158,10 +158,11 @@ class SnippetClientV2Test(unittest.TestCase):
         mock_start_subprocess.return_value)
     self.assertFalse(self.client.is_alive)
     self.assertIs(self.client._conn, None)
-    self.socket_conn.close.assert_called_once_with()
+    self.socket_conn.close.assert_called()
     self.assertIs(self.client.host_port, None)
     self.adb.mock_forward_func.assert_any_call(
         ['--remove', f'tcp:{mock_get_port.return_value}'])
+    self.assertIsNone(self.client._event_client)
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.get_available_host_port',
@@ -234,6 +235,7 @@ class SnippetClientV2Test(unittest.TestCase):
 
     self.client.initialize()
     rpc_result = self.client.some_async_rpc(1, 2, 'async')
+    event_client = self.client._event_client
     self.client.stop()
 
     self._assert_client_resources_released(mock_start_subprocess,
@@ -242,13 +244,14 @@ class SnippetClientV2Test(unittest.TestCase):
 
     self.assertListEqual(self.mock_socket_file.write.call_args_list,
                          expected_socket_writes)
-    mock_callback_class.assert_called_with(
-        callback_id='1-0',
-        event_client=self.client._event_client,
-        ret_value=123,
-        method_name='some_async_rpc',
-        ad=self.device)
+    mock_callback_class.assert_called_with(callback_id='1-0',
+                                           event_client=event_client,
+                                           ret_value=123,
+                                           method_name='some_async_rpc',
+                                           ad=self.device)
     self.assertIs(rpc_result, mock_callback_class.return_value)
+    self.assertIsNone(event_client.host_port, None)
+    self.assertIsNone(event_client.device_port, None)
 
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.get_available_host_port',
@@ -299,17 +302,18 @@ class SnippetClientV2Test(unittest.TestCase):
     rpc_results.append(self.client.some_async_rpc(3, 4, 'async'))
     rpc_results.append(self.client.some_sync_rpc(5, 'hello'))
     rpc_results.append(self.client.some_async_rpc(6, 'async'))
+    event_client = self.client._event_client
     self.client.stop()
 
     # Assertions
     mock_callback_class_calls_expected = [
         mock.call(callback_id='1-0',
-                  event_client=self.client._event_client,
+                  event_client=event_client,
                   ret_value=456,
                   method_name='some_async_rpc',
                   ad=self.device),
         mock.call(callback_id='2-0',
-                  event_client=self.client._event_client,
+                  event_client=event_client,
                   ret_value=321,
                   method_name='some_async_rpc',
                   ad=self.device),
@@ -319,6 +323,8 @@ class SnippetClientV2Test(unittest.TestCase):
     self._assert_client_resources_released(mock_start_subprocess,
                                            mock_stop_standing_subprocess,
                                            mock_get_port)
+    self.assertIsNone(event_client.host_port, None)
+    self.assertIsNone(event_client.device_port, None)
 
   def test_check_app_installed_normally(self):
     """Tests that app checker runs normally when app installed correctly."""
@@ -589,6 +595,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertIs(self.client.host_port, None)
     self.device.adb.mock_forward_func.assert_called_once_with(
         ['--remove', 'tcp:12345'])
+    self.assertIsNone(self.client._event_client)
 
   @mock.patch('mobly.utils.stop_standing_subprocess')
   def test_stop_when_server_is_already_cleaned(self,
@@ -680,6 +687,68 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(OSError, 'Closed with error'):
       self.client.stop()
 
+    self.device.adb.mock_forward_func.assert_called_once_with(
+        ['--remove', 'tcp:12345'])
+
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'create_socket_connection')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'send_handshake_request')
+  def test_stop_with_event_client(self, mock_send_handshake_func,
+                                  mock_create_socket_conn_func,
+                                  mock_stop_standing_subprocess):
+    """Tests that stopping with an event client works normally."""
+    del mock_send_handshake_func
+    del mock_create_socket_conn_func
+    del mock_stop_standing_subprocess
+    self._make_client()
+    self.client.host_port = 12345
+    self.client.device_port = 45678
+    snippet_client_conn = mock.Mock()
+    self.client._conn = snippet_client_conn
+    self.client._create_event_client()
+    event_client = self.client._event_client
+    event_client_conn = mock.Mock()
+    event_client._conn = event_client_conn
+
+    self.client.stop()
+
+    # The snippet client called close method once
+    snippet_client_conn.close.assert_called_once_with()
+    # The event client called close method once
+    event_client_conn.close.assert_called_once_with()
+    self.assertIsNone(event_client._conn)
+    self.assertIsNone(event_client.host_port)
+    self.assertIsNone(event_client.device_port)
+    self.assertIsNone(self.client._event_client)
+    self.assertIs(self.client.host_port, None)
+    self.device.adb.mock_forward_func.assert_called_once_with(
+        ['--remove', 'tcp:12345'])
+
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'create_socket_connection')
+  @mock.patch.object(snippet_client_v2.SnippetClientV2,
+                     'send_handshake_request')
+  def test_stop_with_event_client_stops_port_forwarding_once(
+      self, mock_send_handshake_func, mock_create_socket_conn_func,
+      mock_stop_standing_subprocess):
+    """Tests that client with an event client stops port forwarding once."""
+    del mock_send_handshake_func
+    del mock_create_socket_conn_func
+    del mock_stop_standing_subprocess
+    self._make_client()
+    self.client.host_port = 12345
+    self.client.device_port = 45678
+    self.client._create_event_client()
+    event_client = self.client._event_client
+
+    self.client.stop()
+    event_client.__del__()
+    self.client.__del__()
+
+    self.assertIsNone(self.client._event_client)
     self.device.adb.mock_forward_func.assert_called_once_with(
         ['--remove', 'tcp:12345'])
 
