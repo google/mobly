@@ -60,3 +60,12 @@ class ProtocolError(Error):
 
 class ServerDiedError(Error):
   """Raised if the snippet server died before all tests finish."""
+
+
+# Error types for callback handlers
+class CallbackHandlerBaseError(errors.DeviceError):
+  """Root error type for snippet clients."""
+
+
+class CallbackHandlerTimeoutError(Error):
+  """Raised if the expected event does not occur within time limit."""
