@@ -198,7 +198,11 @@ class CallbackHandlerBase(abc.ABC):
       timeout = self.default_timeout_sec
 
     deadline = time.perf_counter() + timeout
-    while (single_rpc_timeout := deadline - time.perf_counter()) > 0:
+    while time.perf_counter() <= deadline:
+      single_rpc_timeout = deadline - time.perf_counter()
+      if single_rpc_timeout < 0:
+        break
+
       single_rpc_timeout = min(single_rpc_timeout, self.rpc_max_timeout_sec)
       try:
         event = self.waitAndGet(event_name, single_rpc_timeout)
