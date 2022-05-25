@@ -91,10 +91,14 @@ class CallbackHandlerBase(abc.ABC):
 
   @abc.abstractmethod
   def callEventWaitAndGetRpc(self, callback_id, event_name, timeout_sec):
-    """Calls snippet lib's eventWaitAndGet RPC.
+    """Calls snippet lib's RPC to wait for a snippet event.
 
     Override this method to use this class with various snippet lib
     implementations.
+
+    This function waits and gets a SnippetEvent with the specified identifier
+    from the server. It will raise timeout error if the expected event does
+    not occur within time limit.
 
     Args:
       callback_id: str, the callback identifier.
@@ -113,10 +117,13 @@ class CallbackHandlerBase(abc.ABC):
 
   @abc.abstractmethod
   def callEventGetAllRpc(self, callback_id, event_name):
-    """Calls snippet lib's eventGetAll RPC.
+    """Calls snippet lib's RCP to get all existing snippet events.
 
     Override this method to use this class with various snippet lib
     implementations.
+
+    This function gets all existing events in the server with the specified
+    identifier without waiting.
 
     Args:
       callback_id: str, the callback identifier.
@@ -127,10 +134,10 @@ class CallbackHandlerBase(abc.ABC):
     """
 
   def waitAndGet(self, event_name, timeout=None):
-    """Blocks until an event of the specified name has been received.
+    """Waits and gets a SnippetEvent with the specified identifier.
 
-    If the event of the specified name has been received within time limit,
-    it will return the event. Otherwise time out.
+    It will raise timeout error if the expected event does not occur within
+    time limit.
 
     Args:
       event_name: str, the name of the event to get.
@@ -208,7 +215,7 @@ class CallbackHandlerBase(abc.ABC):
         f'satisfies the predicate "{predicate.__name__}".')
 
   def getAll(self, event_name):
-    """Gets all the events of a certain name that have been received so far.
+    """Gets all existing events in the server with the specified identifier.
 
     This is a non-blocking call.
 
