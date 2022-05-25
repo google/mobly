@@ -11,7 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A general handler class for Mobly Snippet Lib's callback events."""
+"""A general handler class for Mobly Snippet Lib's callback events.
+
+The protocol for pulling events expected by this module is:
+
+RPC 1: eventWaitAndGet: Waits and returns an event for the specified identifier
+                        with timeout.
+JSON RPC Request:
+{
+  'id': <RPC-id>,
+  'method': 'eventWaitAndGet',
+  'params': (<callback_id: string>, <event_name: string>, <timeout_ms: int>),
+}
+
+RPC 2: eventGetAll: Gets all existing events for the specified identifier
+                    without waiting.
+JSON RPC Request:
+{
+  'id': <RPC-id>,
+  'method': 'eventGetAll',
+  'params': (<callback_id: string>, <event_name: string>),
+}
+"""
 import enum
 import re
 
