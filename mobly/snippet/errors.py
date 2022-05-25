@@ -64,7 +64,7 @@ class ServerDiedError(Error):
 
 # Error types for callback handlers
 class CallbackHandlerBaseError(errors.DeviceError):
-  """Root error type for snippet clients."""
+  """Base error type for snippet clients."""
 
 
 class CallbackHandlerTimeoutError(Error):

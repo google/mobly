@@ -46,6 +46,5 @@ class SnippetEvent:
     self.data = data
 
   def __repr__(self):
-    return (
-        f'SnippetEvent(callback_id: {self.callback_id}, name: {self.name}, '
-        f'creation_time: {self.creation_time}, data: {self.data})')
+    return (f'SnippetEvent(callback_id: {self.callback_id}, name: {self.name}, '
+            f'creation_time: {self.creation_time}, data: {self.data})')

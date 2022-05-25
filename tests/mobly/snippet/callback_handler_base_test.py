@@ -33,18 +33,22 @@ MOCK_RAW_EVENT = {
 }
 
 class FakeCallbackHandler(callback_handler_base.CallbackHandlerBase):
+  """Fake client class for unit tests."""
 
   def __init__(self,
-      callback_id=None, event_client=None, ret_value=None, method_name=None,
-      device=None, rpc_max_timeout_sec=120, default_timeout_sec=120):
-    super().__init__(callback_id, event_client, ret_value, method_name, device,
-                     rpc_max_timeout_sec, default_timeout_sec)
+      callback_id=None, ret_value=None, device=None, rpc_max_timeout_sec=120,
+      default_timeout_sec=120):
+    """Initializes a fake callback handler object used for unit tests."""
+    super().__init__(callback_id, ret_value, device, rpc_max_timeout_sec,
+                     default_timeout_sec)
     self.mock_rpc_func = mock.Mock()
 
   def callEventWaitAndGetRpc(self, *args, **kwargs):
+    """See base class."""
     return self.mock_rpc_func.callEventWaitAndGetRpc(*args, **kwargs)
 
   def callEventGetAllRpc(self, *args, **kwargs):
+    """See base class."""
     return self.mock_rpc_func.callEventGetAllRpc(*args, **kwargs)
 
 
@@ -54,11 +58,6 @@ class CallbackHandlerTest(unittest.TestCase):
   def assert_event_correct(self, actual_event, expected_raw_event_dict):
     expected_event = snippet_event.from_dict(expected_raw_event_dict)
     self.assertEqual(str(actual_event), str(expected_event))
-
-  # TODO: we should modify this test...
-  def _test_timeout_value(self):
-    self.assertGreaterEqual(jsonrpc_client_base._SOCKET_READ_TIMEOUT,
-                            callback_handler.MAX_TIMEOUT)
 
   def test_default_timeout_too_large(self):
     err_msg = ('The max timeout of single RPC must be no smaller than '
