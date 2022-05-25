@@ -1,4 +1,4 @@
-# Copyright 2017 Google Inc.
+# Copyright 2022 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,16 +15,8 @@
 import abc
 import time
 
-from mobly.controllers.android_device_lib import errors
-from mobly.controllers.android_device_lib import snippet_event
-
-
-# TODO: we should consolidate this max_timeout with the timeout in snippet clients
-# The max timeout cannot be larger than the max time the socket waits for a
-# response message. Otherwise, the socket would timeout before the Rpc call
-# does, leaving both server and client in unknown states.
-MAX_TIMEOUT = 60 * 10
-DEFAULT_TIMEOUT = 120  # two minutes
+from mobly.snippet import errors
+from mobly.snippet import snippet_event
 
 
 # TODO: modify all the docstring
@@ -51,25 +43,40 @@ class CallbackHandlerBase(abc.ABC):
   side.
 
   Attributes:
-    ret_value: The direct return value of the async Rpc call.
+    ret_value: The direct return value of the async RPC call.
+    method_name: The name of the async RPC function.
   """
 
-  def __init__(self, callback_id, event_client, ret_value, method_name, ad):
+  def __init__(self, callback_id, event_client, ret_value, method_name, device,
+               rpc_max_timeout_sec, default_timeout_sec=120):
     self._id = callback_id
     self._event_client = event_client
     self.ret_value = ret_value
-    self._method_name = method_name
-    self._ad = ad
+    self.method_name = method_name
+    self._device = device
+
+    if rpc_max_timeout_sec < default_timeout_sec:
+      raise ValueError('The max timeout of single RPC must be no smaller than '
+                       'the default timeout of the callback handler. '
+                       f'Got rpc_max_timeout_sec={rpc_max_timeout_sec}, '
+                       f'default_timeout_sec={default_timeout_sec}.')
+    self._rpc_max_timeout_sec = rpc_max_timeout_sec
+    self._default_timeout_sec = default_timeout_sec
+
+  @property
+  def rpc_max_timeout_sec(self):
+    return self._rpc_max_timeout_sec
+
+  @property
+  def default_timeout_sec(self):
+    return self._default_timeout_sec
 
   @property
   def callback_id(self):
     return self._id
 
-  # TODO: check that the iOS handler uses timeout_sec rather than timeout_ms
-  # TODO: rename timeout to timeout_sec
-  # TODO: rename this function with suffix RPC, and make it public
   @abc.abstractmethod
-  def _callEventWaitAndGet(self, callback_id, event_name, timeout):
+  def callEventWaitAndGetRpc(self, callback_id, event_name, timeout_sec):
     """Calls snippet lib's eventWaitAndGet.
 
     Override this method to use this class with various snippet lib
@@ -78,15 +85,14 @@ class CallbackHandlerBase(abc.ABC):
     Args:
       callback_id: The callback identifier.
       event_name: The callback name.
-      timeout: The number of seconds to wait for the event.
+      timeout_sec: The number of seconds to wait for the event.
 
     Returns:
       The event dictionary.
     """
 
-  # TODO: rename this function with suffix RPC, and make it public
   @abc.abstractmethod
-  def _callEventGetAll(self, callback_id, event_name):
+  def callEventGetAllRpc(self, callback_id, event_name):
     """Calls snippet lib's eventGetAll.
 
     Override this method to use this class with various snippet lib
@@ -100,7 +106,7 @@ class CallbackHandlerBase(abc.ABC):
       A list of event dictionaries.
     """
 
-  def waitAndGet(self, event_name, timeout=DEFAULT_TIMEOUT):
+  def waitAndGet(self, event_name, timeout=None):
     """Blocks until an event of the specified name has been received and
     return the event, or timeout.
 
@@ -116,22 +122,20 @@ class CallbackHandlerBase(abc.ABC):
         supported.
      errors.CallbackHandlerTimeoutError: The expected event does not occur within time limit.
     """
+    if timeout is None:
+      timeout = self.default_timeout_sec
+
     if timeout:
-      if timeout > MAX_TIMEOUT:
+      if timeout > self.rpc_max_timeout_sec:
         raise errors.CallbackHandlerBaseError(
-            self._ad, 'Specified timeout %s is longer than max timeout %s.' %
-            (timeout, MAX_TIMEOUT))
-    try:
-      raw_event = self._callEventWaitAndGet(self._id, event_name, timeout)
-    except Exception as e:
-      if 'EventSnippetException: timeout.' in str(e):
-        raise errors.CallbackHandlerTimeoutError(
-            self._ad, 'Timed out after waiting %ss for event "%s" triggered by'
-            ' %s (%s).' % (timeout, event_name, self._method_name, self._id))
-      raise
+            self._device,
+            f'Specified timeout {timeout} is longer than max timeout '
+            f'{self.rpc_max_timeout_sec}.')
+
+    raw_event = self.callEventWaitAndGetRpc(self._id, event_name, timeout)
     return snippet_event.from_dict(raw_event)
 
-  def waitForEvent(self, event_name, predicate, timeout=DEFAULT_TIMEOUT):
+  def waitForEvent(self, event_name, predicate, timeout=None):
     """Wait for an event of a specific name that satisfies the predicate.
 
     This call will block until the expected event has been received or time
@@ -149,7 +153,7 @@ class CallbackHandlerBase(abc.ABC):
       event_name: string, the name of the event to wait for.
       predicate: function, a function that takes an event (dictionary) and
         returns a bool.
-      timeout: float, default is 120s.
+      timeout: float, will be set to self.default_timeout_sec if None .
 
     Returns:
       dictionary, the event that satisfies the predicate if received.
@@ -158,26 +162,26 @@ class CallbackHandlerBase(abc.ABC):
      errors.CallbackHandlerTimeoutError: raised if no event that satisfies the predicate is
         received after timeout seconds.
     """
+    if timeout is None:
+      timeout = self.default_timeout_sec
+
     deadline = time.perf_counter() + timeout
-    while time.perf_counter() <= deadline:
-      # Calculate the max timeout for the next event rpc call.
-      rpc_timeout = deadline - time.perf_counter()
-      if rpc_timeout < 0:
-        break
-      # A single RPC call cannot exceed MAX_TIMEOUT.
-      rpc_timeout = min(rpc_timeout, MAX_TIMEOUT)
+    while (single_rpc_timeout := deadline - time.perf_counter()) > 0:
+      # A single RPC call cannot exceed the max timeout of a single rpc.
+      single_rpc_timeout = min(single_rpc_timeout, self.rpc_max_timeout_sec)
       try:
-        event = self.waitAndGet(event_name, rpc_timeout)
+        event = self.waitAndGet(event_name, single_rpc_timeout)
       except errors.CallbackHandlerTimeoutError:
         # Ignoring errors.CallbackHandlerTimeoutError since we need to throw one with a more
         # specific message.
         break
       if predicate(event):
         return event
+
     raise errors.CallbackHandlerTimeoutError(
-        self._ad,
-        'Timed out after %ss waiting for an "%s" event that satisfies the '
-        'predicate "%s".' % (timeout, event_name, predicate.__name__))
+        self._device,
+        f'Timed out after {timeout}s waiting for an "{event_name}" event that '
+        f'satisfies the predicate "{predicate.__name__}".')
 
   def getAll(self, event_name):
     """Gets all the events of a certain name that have been received so
@@ -191,5 +195,5 @@ class CallbackHandlerBase(abc.ABC):
       A list of SnippetEvent, each representing an event from the Java
       side.
     """
-    raw_events = self._callEventGetAll(self._id, event_name)
+    raw_events = self.callEventGetAllRpc(self._id, event_name)
     return [snippet_event.from_dict(msg) for msg in raw_events]
