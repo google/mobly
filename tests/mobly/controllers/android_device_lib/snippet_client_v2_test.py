@@ -253,7 +253,7 @@ class SnippetClientV2Test(unittest.TestCase):
         rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
         default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC,
         timeout_msg_pattern=(
-            general_callback_handler.ANDROID_SNIPPET_TIMEOUT_MESSAGE_PATTERN))
+            general_callback_handler.SnippetTimeoutErrorMessagePattern.ANDROID))
     self.assertIs(rpc_result, mock_callback_class.return_value)
     self.assertIsNone(event_client.host_port, None)
     self.assertIsNone(event_client.device_port, None)
@@ -320,7 +320,7 @@ class SnippetClientV2Test(unittest.TestCase):
             rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
             default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC,
             timeout_msg_pattern=(general_callback_handler.
-                                 ANDROID_SNIPPET_TIMEOUT_MESSAGE_PATTERN)),
+                                 SnippetTimeoutErrorMessagePattern.ANDROID)),
         mock.call(
             callback_id='2-0',
             event_client=event_client,
@@ -330,7 +330,7 @@ class SnippetClientV2Test(unittest.TestCase):
             rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
             default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC,
             timeout_msg_pattern=(general_callback_handler.
-                                 ANDROID_SNIPPET_TIMEOUT_MESSAGE_PATTERN)),
+                                 SnippetTimeoutErrorMessagePattern.ANDROID)),
     ]
     self.assertListEqual(rpc_results, rpc_results_expected)
     mock_callback_class.assert_has_calls(mock_callback_class_calls_expected)
@@ -872,7 +872,7 @@ class SnippetClientV2Test(unittest.TestCase):
         rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
         default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC,
         timeout_msg_pattern=(
-            general_callback_handler.ANDROID_SNIPPET_TIMEOUT_MESSAGE_PATTERN))
+            general_callback_handler.SnippetTimeoutErrorMessagePattern.ANDROID))
     self.assertIs(rpc_result, mock_callback_class.return_value)
 
     # Ensure the event client is alive

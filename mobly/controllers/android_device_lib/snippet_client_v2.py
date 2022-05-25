@@ -517,7 +517,7 @@ class SnippetClientV2(client_base.ClientBase):
         rpc_max_timeout_sec=_SOCKET_READ_TIMEOUT,
         default_timeout_sec=_CALLBACK_DEFAULT_TIMEOUT_SEC,
         timeout_msg_pattern=(
-            general_callback_handler.ANDROID_SNIPPET_TIMEOUT_MESSAGE_PATTERN))
+            general_callback_handler.SnippetTimeoutErrorMessagePattern.ANDROID))
 
   def _create_event_client(self):
     """Creates a separate client to the same session for propagating events.

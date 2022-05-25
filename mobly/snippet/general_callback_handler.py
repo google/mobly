@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A general handler class for Mobly Snippet Lib's callback events."""
+import enum
 import re
 
 from mobly.snippet import callback_handler_base
 from mobly.snippet import errors
 
-# TODO: make it a enum
-# class SnippetTimeoutErrorMessagePattern(enum.Enum):
-  # ANDROID = '.*EventSnippetException: timeout\\..*'
-  # WINDOWS = '.*Timeout has been reached but no SnippetEvent occurred\\..*'
 
-ANDROID_SNIPPET_TIMEOUT_MESSAGE_PATTERN = '.*EventSnippetException: timeout\\..*'
+class SnippetTimeoutErrorMessagePattern(enum.Enum):
+  """Timeout error message pattern for Mobly Snippet Lib."""
+  ANDROID = '.*EventSnippetException: timeout\\..*'
+  WINDOWS = '.*Timeout has been reached but no SnippetEvent occurred\\..*'
 
 
 class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
@@ -49,10 +49,11 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
       rpc_max_timeout_sec: float, maximum time for sending a single RPC call.
       default_timeout_sec: float, the default timeout for this handler. It
         must be no longer than rpc_max_timeout_sec.
-      timeout_msg_pattern: SnippetTimeoutErrorMessagePattern, the regex search pattern for timeout error
-        message. When error occurs in the RPC for pulling events, this class uses
-        this regex pattern to decide whether it is a timeout error. For
-        a timeout error, we will raise a new error of specific error class.
+      timeout_msg_pattern: SnippetTimeoutErrorMessagePattern, the regex search
+        pattern for timeout error message. When error occurs in the RPC for
+        pulling events, this class uses this regex pattern to decide whether
+        it is a timeout error. For a timeout error, we will raise a new error
+        of specific error class.
     """
     super().__init__(callback_id, ret_value, device, rpc_max_timeout_sec,
                      default_timeout_sec)
