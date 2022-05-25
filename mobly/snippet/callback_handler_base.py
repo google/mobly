@@ -67,8 +67,8 @@ class CallbackHandlerBase(abc.ABC):
     self._device = device
 
     if rpc_max_timeout_sec < default_timeout_sec:
-      raise ValueError('The max timeout of single RPC must be no smaller than '
-                       'the default timeout of the callback handler. '
+      raise ValueError('The max timeout of a single RPC must be no smaller '
+                       'than the default timeout of the callback handler. '
                        f'Got rpc_max_timeout_sec={rpc_max_timeout_sec}, '
                        f'default_timeout_sec={default_timeout_sec}.')
     self._rpc_max_timeout_sec = rpc_max_timeout_sec
@@ -97,8 +97,8 @@ class CallbackHandlerBase(abc.ABC):
     implementations.
 
     This function waits and gets a SnippetEvent with the specified identifier
-    from the server. It will raise timeout error if the expected event does
-    not occur within time limit.
+    from the server. It will raise a timeout error if the expected event does
+    not occur within the time limit.
 
     Args:
       callback_id: str, the callback identifier.
@@ -112,7 +112,7 @@ class CallbackHandlerBase(abc.ABC):
 
     Raises:
       errors.CallbackHandlerTimeoutError: Raised if the expected event does not
-        occur within time limit.
+        occur within the time limit.
     """
 
   @abc.abstractmethod
@@ -136,8 +136,8 @@ class CallbackHandlerBase(abc.ABC):
   def waitAndGet(self, event_name, timeout=None):
     """Waits and gets a SnippetEvent with the specified identifier.
 
-    It will raise timeout error if the expected event does not occur within
-    time limit.
+    It will raise a timeout error if the expected event does not occur within
+    the time limit.
 
     Args:
       event_name: str, the name of the event to get.
@@ -151,7 +151,7 @@ class CallbackHandlerBase(abc.ABC):
       errors.CallbackHandlerBaseError: If the specified timeout is longer than
         the max timeout supported.
       errors.CallbackHandlerTimeoutError: The expected event does not occur
-        within time limit.
+        within the time limit.
     """
     if timeout is None:
       timeout = self.default_timeout_sec

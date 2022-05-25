@@ -68,4 +68,4 @@ class CallbackHandlerBaseError(errors.DeviceError):
 
 
 class CallbackHandlerTimeoutError(Error):
-  """Raised if the expected event does not occur within time limit."""
+  """Raised if the expected event does not occur within the time limit."""

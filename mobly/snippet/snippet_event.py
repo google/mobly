@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The class that represents callback events for mobly snippet library."""
+"""The class that represents callback events for Mobly Snippet Lib."""
 
 
 def from_dict(event_dict):
@@ -30,7 +30,7 @@ def from_dict(event_dict):
 
 
 class SnippetEvent:
-  """The class that represents callback events for mobly snippet library.
+  """The class that represents callback events for Mobly Snippet Library.
 
   Attributes:
     callback_id: str, the callback ID associated with the event.

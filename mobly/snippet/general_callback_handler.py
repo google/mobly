@@ -71,10 +71,10 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
       default_timeout_sec: float, the default timeout for this handler. It
         must be no longer than rpc_max_timeout_sec.
       timeout_msg_pattern: SnippetTimeoutErrorMessagePattern, the regex search
-        pattern for timeout error message. When error occurs in the RPC for
+        pattern for timeout error message. When an error occurs in the RPC for
         pulling events, this class uses this regex pattern to decide whether
         it is a timeout error. For a timeout error, we will raise a new error
-        of specific error class.
+        with a timeout error class and more specific messages.
     """
     super().__init__(callback_id, ret_value, device, rpc_max_timeout_sec,
                      default_timeout_sec)
@@ -97,7 +97,7 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
 
     Raises:
       errors.CallbackHandlerTimeoutError: The expected event does not occur
-        within time limit.
+        within the time limit.
     """
     timeout_ms = int(timeout_sec * 1000)
     try:

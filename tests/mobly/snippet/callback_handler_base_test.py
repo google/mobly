@@ -64,7 +64,7 @@ class CallbackHandlerBaseTest(unittest.TestCase):
     self.assertEqual(str(actual_event), str(expected_event))
 
   def test_default_timeout_too_large(self):
-    err_msg = ('The max timeout of single RPC must be no smaller than '
+    err_msg = ('The max timeout of a single RPC must be no smaller than '
                'the default timeout of the callback handler. '
                'Got rpc_max_timeout_sec=10, default_timeout_sec=20.')
     with self.assertRaisesRegex(ValueError, err_msg):
