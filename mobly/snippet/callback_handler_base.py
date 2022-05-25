@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Base class for handling Mobly Snippet Lib's callback events."""
 import abc
 import time
 
@@ -20,7 +20,7 @@ from mobly.snippet import snippet_event
 
 
 class CallbackHandlerBase(abc.ABC):
-  """The class used to handle a specific group of callback events.
+  """Base class for handling Mobly Snippet Lib's callback events.
 
   All the events handled by a CallbackHandler are originally triggered by one
   async RPC call. All the events are tagged with a callback_id specific to a
@@ -45,12 +45,17 @@ class CallbackHandlerBase(abc.ABC):
     ret_value: any, the direct return value of the async RPC call.
   """
 
-  def __init__(self, callback_id, ret_value, device,
-               rpc_max_timeout_sec, default_timeout_sec=120):
+  def __init__(self,
+               callback_id,
+               ret_value,
+               device,
+               rpc_max_timeout_sec,
+               default_timeout_sec=120):
     """Initializes a callback handler object.
 
     Args:
-      callback_id: str, the callback identifier.
+      callback_id: str, the callback ID which associates with a group of
+        callback events.
       ret_value: any, the direct return value of the async RPC call.
       device: DeviceController, the device object associated with this handler.
       rpc_max_timeout_sec: float, maximum time for sending a single RPC call.
@@ -81,6 +86,7 @@ class CallbackHandlerBase(abc.ABC):
 
   @property
   def callback_id(self):
+    """The callback ID which associates a group of callback events."""
     return self._id
 
   @abc.abstractmethod
@@ -207,7 +213,6 @@ class CallbackHandlerBase(abc.ABC):
     This is a non-blocking call.
 
     Args:
-      callback_id: str, the id of the callback.
       event_name: str, the name of the event to get.
 
     Returns:

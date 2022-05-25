@@ -11,17 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Unit tests for general_callback_handler.GeneralCallbackHandler."""
 
 import unittest
 from unittest import mock
 
-from mobly.snippet import callback_handler_base
 from mobly.snippet import errors
 from mobly.snippet import general_callback_handler
 from mobly.snippet import snippet_event
-from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-MOCK_CALLBACK_ID = "2-1"
+MOCK_CALLBACK_ID = '2-1'
 MOCK_RAW_EVENT = {
     'callbackId': '2-1',
     'name': 'AsyncTaskResult',
@@ -34,8 +33,8 @@ MOCK_RAW_EVENT = {
 }
 
 
-class CallbackHandlerTest(unittest.TestCase):
-  """Unit tests for mobly.snippet.callback_handler_base.CallbackHandlerBase."""
+class GeneralCallbackHandlerTest(unittest.TestCase):
+  """Unit tests for general_callback_handler.GeneralCallbackHandler."""
 
   def _make_callback_handler(self,
                              callback_id=None,
@@ -77,7 +76,7 @@ class CallbackHandlerTest(unittest.TestCase):
 
     wait_and_get_timeout_sec = 10
     expected_rpc_timeout_ms = 10000
-    event = handler.waitAndGet('ha', timeout=wait_and_get_timeout_sec)
+    _ = handler.waitAndGet('ha', timeout=wait_and_get_timeout_sec)
     mock_event_client.eventWaitAndGet.assert_called_once_with(
         mock.ANY, mock.ANY, expected_rpc_timeout_ms)
 
@@ -95,25 +94,23 @@ class CallbackHandlerTest(unittest.TestCase):
         }
     }
     mock_event_client.eventWaitAndGet.side_effect = [
-        event_should_ignore, MOCK_RAW_EVENT]
+        event_should_ignore, MOCK_RAW_EVENT
+    ]
 
     def some_condition(event):
       return event.data['successful']
 
     event = handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
     self.assert_event_correct(event, MOCK_RAW_EVENT)
-    mock_event_client.eventWaitAndGet.assert_has_calls(
-        [
-          mock.call(MOCK_CALLBACK_ID, 'AsyncTaskResult', mock.ANY),
-          mock.call(MOCK_CALLBACK_ID, 'AsyncTaskResult', mock.ANY),
-        ]
-    )
+    mock_event_client.eventWaitAndGet.assert_has_calls([
+        mock.call(MOCK_CALLBACK_ID, 'AsyncTaskResult', mock.ANY),
+        mock.call(MOCK_CALLBACK_ID, 'AsyncTaskResult', mock.ANY),
+    ])
 
   def test_get_all(self):
     mock_event_client = mock.Mock()
-    handler = self._make_callback_handler(
-        callback_id=MOCK_CALLBACK_ID,
-        event_client=mock_event_client)
+    handler = self._make_callback_handler(callback_id=MOCK_CALLBACK_ID,
+                                          event_client=mock_event_client)
 
     mock_event_client.eventGetAll = mock.Mock(
         return_value=[MOCK_RAW_EVENT, MOCK_RAW_EVENT])
@@ -124,17 +121,15 @@ class CallbackHandlerTest(unittest.TestCase):
       self.assert_event_correct(event, MOCK_RAW_EVENT)
 
     mock_event_client.eventGetAll.assert_called_once_with(
-        MOCK_CALLBACK_ID, 'ha'
-    )
+        MOCK_CALLBACK_ID, 'ha')
 
   def test_wait_and_get_reraise_if_no_timeout_pattern(self):
     mock_event_client = mock.Mock()
     snippet_timeout_msg = 'EventSnippetException: timeout.'
     mock_event_client.eventWaitAndGet = mock.Mock(
         side_effect=errors.ApiError(mock.Mock(), snippet_timeout_msg))
-    handler = self._make_callback_handler(
-        event_client=mock_event_client,
-        timeout_msg_pattern=None)
+    handler = self._make_callback_handler(event_client=mock_event_client,
+                                          timeout_msg_pattern=None)
 
     with self.assertRaisesRegex(errors.ApiError, snippet_timeout_msg):
       handler.waitAndGet('ha')
@@ -153,7 +148,8 @@ class CallbackHandlerTest(unittest.TestCase):
     )
 
     expected_msg = 'Timed out after waiting .*s for event "ha" .*'
-    with self.assertRaisesRegex(errors.CallbackHandlerTimeoutError, expected_msg):
+    with self.assertRaisesRegex(errors.CallbackHandlerTimeoutError,
+                                expected_msg):
       handler.waitAndGet('ha')
 
   def test_wait_and_get_reraise_if_pattern_not_match(self):
@@ -168,5 +164,6 @@ class CallbackHandlerTest(unittest.TestCase):
     with self.assertRaisesRegex(errors.ApiError, snippet_timeout_msg):
       handler.waitAndGet('ha')
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
   unittest.main()

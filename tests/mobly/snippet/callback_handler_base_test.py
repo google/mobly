@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Unit tests for mobly.snippet.callback_handler_base.CallbackHandlerBase."""
 
 import unittest
 from unittest import mock
@@ -18,9 +19,8 @@ from unittest import mock
 from mobly.snippet import callback_handler_base
 from mobly.snippet import errors
 from mobly.snippet import snippet_event
-from mobly.controllers.android_device_lib import jsonrpc_client_base
 
-MOCK_CALLBACK_ID = "2-1"
+MOCK_CALLBACK_ID = '2-1'
 MOCK_RAW_EVENT = {
     'callbackId': '2-1',
     'name': 'AsyncTaskResult',
@@ -32,12 +32,16 @@ MOCK_RAW_EVENT = {
     }
 }
 
+
 class FakeCallbackHandler(callback_handler_base.CallbackHandlerBase):
   """Fake client class for unit tests."""
 
   def __init__(self,
-      callback_id=None, ret_value=None, device=None, rpc_max_timeout_sec=120,
-      default_timeout_sec=120):
+               callback_id=None,
+               ret_value=None,
+               device=None,
+               rpc_max_timeout_sec=120,
+               default_timeout_sec=120):
     """Initializes a fake callback handler object used for unit tests."""
     super().__init__(callback_id, ret_value, device, rpc_max_timeout_sec,
                      default_timeout_sec)
@@ -52,7 +56,7 @@ class FakeCallbackHandler(callback_handler_base.CallbackHandlerBase):
     return self.mock_rpc_func.callEventGetAllRpc(*args, **kwargs)
 
 
-class CallbackHandlerTest(unittest.TestCase):
+class CallbackHandlerBaseTest(unittest.TestCase):
   """Unit tests for mobly.snippet.callback_handler_base.CallbackHandlerBase."""
 
   def assert_event_correct(self, actual_event, expected_raw_event_dict):
@@ -62,13 +66,13 @@ class CallbackHandlerTest(unittest.TestCase):
   def test_default_timeout_too_large(self):
     err_msg = ('The max timeout of single RPC must be no smaller than '
                'the default timeout of the callback handler. '
-               f'Got rpc_max_timeout_sec=10, '
-               f'default_timeout_sec=20.')
+               'Got rpc_max_timeout_sec=10, default_timeout_sec=20.')
     with self.assertRaisesRegex(ValueError, err_msg):
-      handler = FakeCallbackHandler(rpc_max_timeout_sec=10, default_timeout_sec=20)
+      _ = FakeCallbackHandler(rpc_max_timeout_sec=10, default_timeout_sec=20)
 
   def test_timeout_property(self):
-    handler = FakeCallbackHandler(rpc_max_timeout_sec=20, default_timeout_sec=10)
+    handler = FakeCallbackHandler(rpc_max_timeout_sec=20,
+                                  default_timeout_sec=10)
     self.assertEqual(handler.rpc_max_timeout_sec, 20)
     self.assertEqual(handler.default_timeout_sec, 10)
     with self.assertRaisesRegex(AttributeError, "can't set attribute"):
@@ -85,7 +89,8 @@ class CallbackHandlerTest(unittest.TestCase):
 
   def test_event_dict_to_snippet_event(self):
     handler = FakeCallbackHandler(callback_id=MOCK_CALLBACK_ID)
-    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(return_value=MOCK_RAW_EVENT)
+    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
+        return_value=MOCK_RAW_EVENT)
 
     event = handler.waitAndGet('ha', timeout=10)
     self.assert_event_correct(event, MOCK_RAW_EVENT)
@@ -94,7 +99,8 @@ class CallbackHandlerTest(unittest.TestCase):
 
   def test_wait_and_get_timeout_default(self):
     handler = FakeCallbackHandler(rpc_max_timeout_sec=20, default_timeout_sec=5)
-    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(return_value=MOCK_RAW_EVENT)
+    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
+        return_value=MOCK_RAW_EVENT)
     _ = handler.waitAndGet('ha')
     handler.mock_rpc_func.callEventWaitAndGetRpc.assert_called_once_with(
         mock.ANY, mock.ANY, 5)
@@ -104,16 +110,19 @@ class CallbackHandlerTest(unittest.TestCase):
     big_timeout_sec = 10
     handler = FakeCallbackHandler(rpc_max_timeout_sec=rpc_max_timeout_sec,
                                   default_timeout_sec=rpc_max_timeout_sec)
-    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(return_value=MOCK_RAW_EVENT)
+    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
+        return_value=MOCK_RAW_EVENT)
 
-    expected_msg = (f'Specified timeout {big_timeout_sec} is longer than max timeout '
-                    f'{rpc_max_timeout_sec}.')
+    expected_msg = (
+        f'Specified timeout {big_timeout_sec} is longer than max timeout '
+        f'{rpc_max_timeout_sec}.')
     with self.assertRaisesRegex(errors.CallbackHandlerBaseError, expected_msg):
       handler.waitAndGet('ha', big_timeout_sec)
 
   def test_wait_for_event(self):
     handler = FakeCallbackHandler()
-    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(return_value=MOCK_RAW_EVENT)
+    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
+        return_value=MOCK_RAW_EVENT)
 
     def some_condition(event):
       return event.data['successful']
@@ -123,16 +132,18 @@ class CallbackHandlerTest(unittest.TestCase):
 
   def test_wait_for_event_negative(self):
     handler = FakeCallbackHandler()
-    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(return_value=MOCK_RAW_EVENT)
+    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
+        return_value=MOCK_RAW_EVENT)
 
     expected_msg = (
         'Timed out after 0.01s waiting for an "AsyncTaskResult" event that'
         ' satisfies the predicate "some_condition".')
 
-    def some_condition(event):
+    def some_condition(_):
       return False
 
-    with self.assertRaisesRegex(errors.CallbackHandlerTimeoutError, expected_msg):
+    with self.assertRaisesRegex(errors.CallbackHandlerTimeoutError,
+                                expected_msg):
       handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
 
   def test_wait_for_event_max_timeout(self):
@@ -141,7 +152,8 @@ class CallbackHandlerTest(unittest.TestCase):
     big_timeout_sec = 10
     handler = FakeCallbackHandler(rpc_max_timeout_sec=rpc_max_timeout_sec,
                                   default_timeout_sec=rpc_max_timeout_sec)
-    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(return_value=MOCK_RAW_EVENT)
+    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
+        return_value=MOCK_RAW_EVENT)
 
     def some_condition(event):
       return event.data['successful']
@@ -162,8 +174,8 @@ class CallbackHandlerTest(unittest.TestCase):
       self.assert_event_correct(event, MOCK_RAW_EVENT)
 
     handler.mock_rpc_func.callEventGetAllRpc.assert_called_once_with(
-        MOCK_CALLBACK_ID, 'ha'
-    )
+        MOCK_CALLBACK_ID, 'ha')
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
   unittest.main()

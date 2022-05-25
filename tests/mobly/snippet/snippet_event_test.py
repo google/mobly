@@ -1,4 +1,4 @@
-# Copyright 2018 Google Inc.
+# Copyright 2022 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Unit tests for mobly.snippet.snippet_event.SnippetEvent."""
 
 import unittest
 
@@ -23,10 +24,10 @@ MOCK_DATA = {'foo': 'bar'}
 
 
 class SnippetEventTest(unittest.TestCase):
+  """Unit tests for mobly.snippet.snippet_event.SnippetEvent."""
 
   def test_basic(self):
-    """Verifies that an event object can be created and logged properly.
-    """
+    """Verifies that an event object can be created and logged properly."""
     event = snippet_event.SnippetEvent(MOCK_CALLBACK_ID, MOCK_EVENT_NAME,
                                        MOCK_CREATION_TIME, MOCK_DATA)
     self.assertEqual(
