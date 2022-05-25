@@ -13,6 +13,7 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
                timeout_msg_pattern=None):
     super().__init__(callback_id, event_client, ret_value, method_name, device,
                      rpc_max_timeout_sec, default_timeout_sec)
+    self._event_client = event_client
     self._timeout_msg_pattern = timeout_msg_pattern
 
   # TODO: Raises in docstring
@@ -36,14 +37,18 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
                                                 event_name,
                                                 timeout_ms)
     except Exception as e:
-      if (self._timeout_msg_pattern and
-          re.match(self._timeout_msg_pattern, str(e))):
-        raise errors.CallbackHandlerTimeoutError(
-            self._device,
-            f'Timed out after waiting {timeout_sec}s for event "{event_name}" '
-            f'triggered by {self.method_name} ({self.callback_id}).',
-        ) from e
-      raise
+      if not self._timeout_msg_pattern:
+        raise
+
+      search_result = re.search(self._timeout_msg_pattern, str(e))
+      if not search_result:
+        raise
+
+      raise errors.CallbackHandlerTimeoutError(
+          self._device,
+          f'Timed out after waiting {timeout_sec}s for event "{event_name}" '
+          f'triggered by {self.method_name} ({self.callback_id}).',
+      ) from e
 
   def callEventGetAllRpc(self, callback_id, event_name):
     """Calls snippet lib's eventGetAll.
