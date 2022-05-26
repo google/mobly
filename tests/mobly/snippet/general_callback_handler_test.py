@@ -18,7 +18,7 @@ from unittest import mock
 
 from mobly.snippet import errors
 from mobly.snippet import general_callback_handler
-from mobly.snippet import snippet_event
+from mobly.snippet import callback_event
 
 MOCK_CALLBACK_ID = '2-1'
 MOCK_RAW_EVENT = {
@@ -54,7 +54,7 @@ class GeneralCallbackHandlerTest(unittest.TestCase):
         default_timeout_sec=default_timeout_sec)
 
   def assert_event_correct(self, actual_event, expected_raw_event_dict):
-    expected_event = snippet_event.from_dict(expected_raw_event_dict)
+    expected_event = callback_event.from_dict(expected_raw_event_dict)
     self.assertEqual(str(actual_event), str(expected_event))
 
   def test_wait_and_get(self):

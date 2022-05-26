@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Base class for handling Mobly Snippet Lib's callback events."""
+"""Module for the base class to handle Mobly Snippet Lib's callback events."""
 import abc
 import time
 
 from mobly.snippet import errors
-from mobly.snippet import snippet_event
+from mobly.snippet import callback_event
 
 
 class CallbackHandlerBase(abc.ABC):
@@ -38,7 +38,7 @@ class CallbackHandlerBase(abc.ABC):
       'data': <dict, extra data from the callback on the server side>
     }
 
-  Each message is then used to create a SnippetEvent object on the client
+  Each message is then used to create a CallbackEvent object on the client
   side.
 
   Attributes:
@@ -91,12 +91,12 @@ class CallbackHandlerBase(abc.ABC):
 
   @abc.abstractmethod
   def callEventWaitAndGetRpc(self, callback_id, event_name, timeout_sec):
-    """Calls snippet lib's RPC to wait for a snippet event.
+    """Calls snippet lib's RPC to wait for a callback event.
 
     Override this method to use this class with various snippet lib
     implementations.
 
-    This function waits and gets a SnippetEvent with the specified identifier
+    This function waits and gets a CallbackEvent with the specified identifier
     from the server. It will raise a timeout error if the expected event does
     not occur within the time limit.
 
@@ -134,7 +134,7 @@ class CallbackHandlerBase(abc.ABC):
     """
 
   def waitAndGet(self, event_name, timeout=None):
-    """Waits and gets a SnippetEvent with the specified identifier.
+    """Waits and gets a CallbackEvent with the specified identifier.
 
     It will raise a timeout error if the expected event does not occur within
     the time limit.
@@ -145,7 +145,7 @@ class CallbackHandlerBase(abc.ABC):
         it will be set to self.default_timeout_sec.
 
     Returns:
-      SnippetEvent, the oldest entry of the specified event.
+      CallbackEvent, the oldest entry of the specified event.
 
     Raises:
       errors.CallbackHandlerBaseError: If the specified timeout is longer than
@@ -164,7 +164,7 @@ class CallbackHandlerBase(abc.ABC):
             f'{self.rpc_max_timeout_sec}.')
 
     raw_event = self.callEventWaitAndGetRpc(self._id, event_name, timeout)
-    return snippet_event.from_dict(raw_event)
+    return callback_event.from_dict(raw_event)
 
   def waitForEvent(self, event_name, predicate, timeout=None):
     """Waits for an event of the specific name that satisfies the predicate.
@@ -227,7 +227,7 @@ class CallbackHandlerBase(abc.ABC):
       event_name: str, the name of the event to get.
 
     Returns:
-      A list of SnippetEvent, each representing an event from the Server side.
+      A list of CallbackEvent, each representing an event from the Server side.
     """
     raw_events = self.callEventGetAllRpc(self._id, event_name)
-    return [snippet_event.from_dict(msg) for msg in raw_events]
+    return [callback_event.from_dict(msg) for msg in raw_events]

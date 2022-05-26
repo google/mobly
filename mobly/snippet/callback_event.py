@@ -15,21 +15,21 @@
 
 
 def from_dict(event_dict):
-  """Creates a SnippetEvent object from a dictionary.
+  """Creates a CallbackEvent object from a dictionary.
 
   Args:
     event_dict: dict, a dictionary representing an event.
 
   Returns:
-    A SnippetEvent object.
+    A CallbackEvent object.
   """
-  return SnippetEvent(callback_id=event_dict['callbackId'],
-                      name=event_dict['name'],
-                      creation_time=event_dict['time'],
-                      data=event_dict['data'])
+  return CallbackEvent(callback_id=event_dict['callbackId'],
+                       name=event_dict['name'],
+                       creation_time=event_dict['time'],
+                       data=event_dict['data'])
 
 
-class SnippetEvent:
+class CallbackEvent:
   """The class that represents callback events for Mobly Snippet Library.
 
   Attributes:
@@ -47,5 +47,5 @@ class SnippetEvent:
     self.data = data
 
   def __repr__(self):
-    return (f'SnippetEvent(callback_id: {self.callback_id}, name: {self.name}, '
+    return (f'CallbackEvent(callback_id: {self.callback_id}, name: {self.name}, '
             f'creation_time: {self.creation_time}, data: {self.data})')

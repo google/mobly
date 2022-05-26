@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for mobly.snippet.snippet_event.SnippetEvent."""
+"""Unit tests for mobly.snippet.callback_event.CallbackEvent."""
 
 import unittest
 
-from mobly.snippet import snippet_event
+from mobly.snippet import callback_event
 
 MOCK_CALLBACK_ID = 'myCallbackId'
 MOCK_EVENT_NAME = 'onXyzEvent'
@@ -23,16 +23,16 @@ MOCK_CREATION_TIME = '12345678'
 MOCK_DATA = {'foo': 'bar'}
 
 
-class SnippetEventTest(unittest.TestCase):
-  """Unit tests for mobly.snippet.snippet_event.SnippetEvent."""
+class CallbackEventTest(unittest.TestCase):
+  """Unit tests for mobly.snippet.callback_event.CallbackEvent."""
 
   def test_basic(self):
     """Verifies that an event object can be created and logged properly."""
-    event = snippet_event.SnippetEvent(MOCK_CALLBACK_ID, MOCK_EVENT_NAME,
-                                       MOCK_CREATION_TIME, MOCK_DATA)
+    event = callback_event.CallbackEvent(MOCK_CALLBACK_ID, MOCK_EVENT_NAME,
+                                         MOCK_CREATION_TIME, MOCK_DATA)
     self.assertEqual(
         repr(event),
-        "SnippetEvent(callback_id: myCallbackId, name: onXyzEvent, "
+        "CallbackEvent(callback_id: myCallbackId, name: onXyzEvent, "
         "creation_time: 12345678, data: {'foo': 'bar'})")
 
 

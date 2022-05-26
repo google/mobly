@@ -72,7 +72,7 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
     self._event_client = event_client
 
   def callEventWaitAndGetRpc(self, callback_id, event_name, timeout_sec):
-    """Waits and returns an existing SnippetEvent for the specified identifier.
+    """Waits and returns an existing CallbackEvent for the specified identifier.
 
     This function calls snippet lib's eventWaitAndGet RPC.
 
