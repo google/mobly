@@ -32,18 +32,14 @@ JSON RPC Request:
   'method': 'eventGetAll',
   'params': (<callback_id: string>, <event_name: string>),
 }
-"""
-import enum
-import re
 
+Timeout error message:
+In the response of eventWaitAndGet, this class checks for the existence of
+the substring "EventSnippetException: timeout." in the error message. If it
+exists, this class throws a timeout error from the original error.
+"""
 from mobly.snippet import callback_handler_base
 from mobly.snippet import errors
-
-
-class SnippetTimeoutErrorMessagePattern(enum.Enum):
-  """Timeout error message pattern for Mobly Snippet Lib."""
-  ANDROID = '.*EventSnippetException: timeout\\..*'
-  WINDOWS = '.*Timeout has been reached but no SnippetEvent occurred\\..*'
 
 
 class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
@@ -56,8 +52,7 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
                method_name,
                device,
                rpc_max_timeout_sec,
-               default_timeout_sec=120,
-               timeout_msg_pattern=None):
+               default_timeout_sec=120):
     """Initializes a general callback handler object.
 
     Args:
@@ -70,17 +65,11 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
       rpc_max_timeout_sec: float, maximum time for sending a single RPC call.
       default_timeout_sec: float, the default timeout for this handler. It
         must be no longer than rpc_max_timeout_sec.
-      timeout_msg_pattern: SnippetTimeoutErrorMessagePattern, the regex search
-        pattern for timeout error message. When an error occurs in the RPC for
-        pulling events, this class uses this regex pattern to decide whether
-        it is a timeout error. For a timeout error, we will raise a new error
-        with a timeout error class and more specific messages.
     """
     super().__init__(callback_id, ret_value, device, rpc_max_timeout_sec,
                      default_timeout_sec)
     self._method_name = method_name
     self._event_client = event_client
-    self._timeout_msg_pattern = timeout_msg_pattern
 
   def callEventWaitAndGetRpc(self, callback_id, event_name, timeout_sec):
     """Waits and returns an existing SnippetEvent for the specified identifier.
@@ -104,18 +93,12 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
       return self._event_client.eventWaitAndGet(callback_id, event_name,
                                                 timeout_ms)
     except Exception as e:
-      if not self._timeout_msg_pattern:
-        raise
-
-      search_result = re.search(self._timeout_msg_pattern.value, str(e))
-      if not search_result:
-        raise
-
-      raise errors.CallbackHandlerTimeoutError(
-          self._device,
-          f'Timed out after waiting {timeout_sec}s for event "{event_name}" '
-          f'triggered by {self._method_name} ({self.callback_id}).',
-      ) from e
+      if 'EventSnippetException: timeout.' in str(e):
+        raise errors.CallbackHandlerTimeoutError(
+            self._device, (f'Timed out after waiting {timeout_sec}s for event '
+                           f'"{event_name}" triggered by {self._method_name} '
+                           f'({self.callback_id}).')) from e
+      raise
 
   def callEventGetAllRpc(self, callback_id, event_name):
     """Gets all existing events for the specified identifier without waiting.

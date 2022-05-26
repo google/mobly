@@ -43,8 +43,7 @@ class GeneralCallbackHandlerTest(unittest.TestCase):
                              method_name=None,
                              device=None,
                              rpc_max_timeout_sec=600,
-                             default_timeout_sec=120,
-                             timeout_msg_pattern=None):
+                             default_timeout_sec=120):
     return general_callback_handler.GeneralCallbackHandler(
         callback_id=callback_id,
         event_client=event_client,
@@ -52,8 +51,7 @@ class GeneralCallbackHandlerTest(unittest.TestCase):
         method_name=method_name,
         device=device,
         rpc_max_timeout_sec=rpc_max_timeout_sec,
-        default_timeout_sec=default_timeout_sec,
-        timeout_msg_pattern=timeout_msg_pattern)
+        default_timeout_sec=default_timeout_sec)
 
   def assert_event_correct(self, actual_event, expected_raw_event_dict):
     expected_event = snippet_event.from_dict(expected_raw_event_dict)
@@ -123,45 +121,14 @@ class GeneralCallbackHandlerTest(unittest.TestCase):
     mock_event_client.eventGetAll.assert_called_once_with(
         MOCK_CALLBACK_ID, 'ha')
 
-  def test_wait_and_get_reraise_if_no_timeout_pattern(self):
-    mock_event_client = mock.Mock()
-    snippet_timeout_msg = 'EventSnippetException: timeout.'
-    mock_event_client.eventWaitAndGet = mock.Mock(
-        side_effect=errors.ApiError(mock.Mock(), snippet_timeout_msg))
-    handler = self._make_callback_handler(event_client=mock_event_client,
-                                          timeout_msg_pattern=None)
-
-    with self.assertRaisesRegex(errors.ApiError, snippet_timeout_msg):
-      handler.waitAndGet('ha')
-
-  def test_wait_and_get_android_timeout_message_pattern(self):
+  def test_wait_and_get_timeout_message_pattern_matches(self):
     mock_event_client = mock.Mock()
     android_snippet_timeout_msg = (
         'com.google.android.mobly.snippet.event.EventSnippet$'
         'EventSnippetException: timeout.')
     mock_event_client.eventWaitAndGet = mock.Mock(
         side_effect=errors.ApiError(mock.Mock(), android_snippet_timeout_msg))
-    handler = self._make_callback_handler(
-        event_client=mock_event_client,
-        timeout_msg_pattern=(
-            general_callback_handler.SnippetTimeoutErrorMessagePattern.ANDROID))
-
-    expected_msg = 'Timed out after waiting .*s for event "ha" .*'
-    with self.assertRaisesRegex(errors.CallbackHandlerTimeoutError,
-                                expected_msg):
-      handler.waitAndGet('ha')
-
-  def test_wait_and_get_windows_timeout_message_pattern(self):
-    mock_event_client = mock.Mock()
-    android_snippet_timeout_msg = (
-        'DEADLINE_EXCEEDED: Timeout has been reached but no SnippetEvent '
-        'occurred.')
-    mock_event_client.eventWaitAndGet = mock.Mock(
-        side_effect=errors.ApiError(mock.Mock(), android_snippet_timeout_msg))
-    handler = self._make_callback_handler(
-        event_client=mock_event_client,
-        timeout_msg_pattern=(
-            general_callback_handler.SnippetTimeoutErrorMessagePattern.WINDOWS))
+    handler = self._make_callback_handler(event_client=mock_event_client)
 
     expected_msg = 'Timed out after waiting .*s for event "ha" .*'
     with self.assertRaisesRegex(errors.CallbackHandlerTimeoutError,
@@ -173,9 +140,7 @@ class GeneralCallbackHandlerTest(unittest.TestCase):
     snippet_timeout_msg = 'Snippet executed with error.'
     mock_event_client.eventWaitAndGet = mock.Mock(
         side_effect=errors.ApiError(mock.Mock(), snippet_timeout_msg))
-    timeout_msg_pattern = mock.Mock(value='EventSnippetException: timeout.')
-    handler = self._make_callback_handler(
-        event_client=mock_event_client, timeout_msg_pattern=timeout_msg_pattern)
+    handler = self._make_callback_handler(event_client=mock_event_client)
 
     with self.assertRaisesRegex(errors.ApiError, snippet_timeout_msg):
       handler.waitAndGet('ha')

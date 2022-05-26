@@ -21,7 +21,6 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.snippet import errors
-from mobly.snippet import general_callback_handler
 from tests.lib import mock_android_device
 
 MOCK_PACKAGE_NAME = 'some.package.name'
@@ -251,9 +250,7 @@ class SnippetClientV2Test(unittest.TestCase):
         method_name='some_async_rpc',
         device=self.device,
         rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
-        default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC,
-        timeout_msg_pattern=(
-            general_callback_handler.SnippetTimeoutErrorMessagePattern.ANDROID))
+        default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC)
     self.assertIs(rpc_result, mock_callback_class.return_value)
     self.assertIsNone(event_client.host_port, None)
     self.assertIsNone(event_client.device_port, None)
@@ -318,9 +315,8 @@ class SnippetClientV2Test(unittest.TestCase):
             method_name='some_async_rpc',
             device=self.device,
             rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
-            default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC,
-            timeout_msg_pattern=(general_callback_handler.
-                                 SnippetTimeoutErrorMessagePattern.ANDROID)),
+            default_timeout_sec=(
+                snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC)),
         mock.call(
             callback_id='2-0',
             event_client=event_client,
@@ -328,9 +324,7 @@ class SnippetClientV2Test(unittest.TestCase):
             method_name='some_async_rpc',
             device=self.device,
             rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
-            default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC,
-            timeout_msg_pattern=(general_callback_handler.
-                                 SnippetTimeoutErrorMessagePattern.ANDROID)),
+            default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC)
     ]
     self.assertListEqual(rpc_results, rpc_results_expected)
     mock_callback_class.assert_has_calls(mock_callback_class_calls_expected)
@@ -870,9 +864,7 @@ class SnippetClientV2Test(unittest.TestCase):
         method_name='some_async_rpc',
         device=self.device,
         rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
-        default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC,
-        timeout_msg_pattern=(
-            general_callback_handler.SnippetTimeoutErrorMessagePattern.ANDROID))
+        default_timeout_sec=snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC)
     self.assertIs(rpc_result, mock_callback_class.return_value)
 
     # Ensure the event client is alive
