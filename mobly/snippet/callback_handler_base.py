@@ -117,7 +117,7 @@ class CallbackHandlerBase(abc.ABC):
 
   @abc.abstractmethod
   def callEventGetAllRpc(self, callback_id, event_name):
-    """Calls snippet lib's RCP to get all existing snippet events.
+    """Calls snippet lib's RPC to get all existing snippet events.
 
     Override this method to use this class with various snippet lib
     implementations.
