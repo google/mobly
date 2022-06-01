@@ -20,8 +20,8 @@ import socket
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.controllers.android_device_lib import callback_handler_v2
+from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.snippet import client_base
 from mobly.snippet import errors
 

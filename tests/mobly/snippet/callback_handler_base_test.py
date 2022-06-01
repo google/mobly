@@ -16,9 +16,9 @@
 import unittest
 from unittest import mock
 
+from mobly.snippet import callback_event
 from mobly.snippet import callback_handler_base
 from mobly.snippet import errors
-from mobly.snippet import callback_event
 
 MOCK_CALLBACK_ID = '2-1'
 MOCK_RAW_EVENT = {

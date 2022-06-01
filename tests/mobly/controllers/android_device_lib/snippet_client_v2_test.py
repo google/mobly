@@ -310,15 +310,14 @@ class SnippetClientV2Test(unittest.TestCase):
 
     # Assertions
     mock_callback_class_calls_expected = [
-        mock.call(
-            callback_id='1-0',
-            event_client=event_client,
-            ret_value=456,
-            method_name='some_async_rpc',
-            device=self.device,
-            rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
-            default_timeout_sec=(
-                snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC)),
+        mock.call(callback_id='1-0',
+                  event_client=event_client,
+                  ret_value=456,
+                  method_name='some_async_rpc',
+                  device=self.device,
+                  rpc_max_timeout_sec=snippet_client_v2._SOCKET_READ_TIMEOUT,
+                  default_timeout_sec=(
+                      snippet_client_v2._CALLBACK_DEFAULT_TIMEOUT_SEC)),
         mock.call(
             callback_id='2-0',
             event_client=event_client,

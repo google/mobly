@@ -15,8 +15,8 @@
 import abc
 import time
 
-from mobly.snippet import errors
 from mobly.snippet import callback_event
+from mobly.snippet import errors
 
 
 class CallbackHandlerBase(abc.ABC):
