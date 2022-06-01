@@ -22,7 +22,7 @@ from mobly.snippet import callback_event
 class CallbackHandlerBase(abc.ABC):
   """Base class for handling Mobly Snippet Lib's callback events.
 
-  All the events handled by a CallbackHandler are originally triggered by one
+  All the events handled by a callback handler are originally triggered by one
   async RPC call. All the events are tagged with a callback_id specific to a
   call to an async RPC method defined on the server side.
 
@@ -51,7 +51,7 @@ class CallbackHandlerBase(abc.ABC):
                device,
                rpc_max_timeout_sec,
                default_timeout_sec=120):
-    """Initializes a callback handler object.
+    """Initializes a callback handler base object.
 
     Args:
       callback_id: str, the callback ID which associates with a group of

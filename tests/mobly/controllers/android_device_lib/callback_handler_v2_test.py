@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for general_callback_handler.GeneralCallbackHandler."""
+"""Unit tests for callback_handler_v2.CallbackHandlerV2."""
 
 import unittest
 from unittest import mock
 
+from mobly.controllers.android_device_lib import callback_handler_v2
 from mobly.snippet import errors
-from mobly.snippet import general_callback_handler
 from mobly.snippet import callback_event
 
 MOCK_CALLBACK_ID = '2-1'
@@ -33,8 +33,8 @@ MOCK_RAW_EVENT = {
 }
 
 
-class GeneralCallbackHandlerTest(unittest.TestCase):
-  """Unit tests for general_callback_handler.GeneralCallbackHandler."""
+class CallbackHandlerV2Test(unittest.TestCase):
+  """Unit tests for callback_handler_v2.CallbackHandlerV2."""
 
   def _make_callback_handler(self,
                              callback_id=None,
@@ -44,7 +44,7 @@ class GeneralCallbackHandlerTest(unittest.TestCase):
                              device=None,
                              rpc_max_timeout_sec=600,
                              default_timeout_sec=120):
-    return general_callback_handler.GeneralCallbackHandler(
+    return callback_handler_v2.CallbackHandlerV2(
         callback_id=callback_id,
         event_client=event_client,
         ret_value=ret_value,

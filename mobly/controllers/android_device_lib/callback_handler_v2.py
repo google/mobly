@@ -11,39 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""A general handler class for Mobly Snippet Lib's callback events.
+"""The callback handler V2 module for Android Mobly Snippet Lib."""
 
-The protocol for pulling events expected by this module is:
-
-RPC 1: eventWaitAndGet: Waits and returns an event for the specified identifier
-                        with timeout.
-JSON RPC Request:
-{
-  'id': <RPC-id>,
-  'method': 'eventWaitAndGet',
-  'params': (<callback_id: string>, <event_name: string>, <timeout_ms: int>),
-}
-
-RPC 2: eventGetAll: Gets all existing events for the specified identifier
-                    without waiting.
-JSON RPC Request:
-{
-  'id': <RPC-id>,
-  'method': 'eventGetAll',
-  'params': (<callback_id: string>, <event_name: string>),
-}
-
-Timeout error message:
-In the response of eventWaitAndGet, this class checks for the existence of
-the substring "EventSnippetException: timeout." in the error message. If it
-exists, this class throws a timeout error from the original error.
-"""
 from mobly.snippet import callback_handler_base
 from mobly.snippet import errors
 
 
-class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
-  """A general handler class for Mobly Snippet Lib's callback events."""
+class CallbackHandlerV2(callback_handler_base.CallbackHandlerBase):
+  """The callback handler V2 class for Android Mobly Snippet Lib."""
 
   def __init__(self,
                callback_id,
@@ -53,11 +28,11 @@ class GeneralCallbackHandler(callback_handler_base.CallbackHandlerBase):
                device,
                rpc_max_timeout_sec,
                default_timeout_sec=120):
-    """Initializes a general callback handler object.
+    """Initializes a callback handler V2 object.
 
     Args:
       callback_id: str, the callback identifier.
-      event_client: SnippetClientV2, The client object used to send RPC to the
+      event_client: SnippetClientV2, the client object used to send RPC to the
         server and receive response.
       ret_value: any, the direct return value of the async RPC call.
       method_name: str, the name of the executed Async snippet function.

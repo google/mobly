@@ -21,9 +21,9 @@ import socket
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors as android_device_lib_errors
+from mobly.controllers.android_device_lib import callback_handler_v2
 from mobly.snippet import client_base
 from mobly.snippet import errors
-from mobly.snippet import general_callback_handler
 
 # The package of the instrumentation runner used for mobly snippet
 _INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunner'
@@ -508,7 +508,7 @@ class SnippetClientV2(client_base.ClientBase):
     """
     if self._event_client is None:
       self._create_event_client()
-    return general_callback_handler.GeneralCallbackHandler(
+    return callback_handler_v2.CallbackHandlerV2(
         callback_id=callback_id,
         event_client=self._event_client,
         ret_value=ret_value,

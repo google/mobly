@@ -209,7 +209,8 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  @mock.patch('mobly.snippet.general_callback_handler.GeneralCallbackHandler')
+  @mock.patch('mobly.controllers.android_device_lib.callback_handler_v2.'
+              'CallbackHandlerV2')
   def test_the_whole_lifecycle_with_an_async_rpc(self, mock_callback_class,
                                                  mock_start_subprocess,
                                                  mock_stop_standing_subprocess,
@@ -262,7 +263,8 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  @mock.patch('mobly.snippet.general_callback_handler.GeneralCallbackHandler')
+  @mock.patch('mobly.controllers.android_device_lib.callback_handler_v2.'
+              'CallbackHandlerV2')
   def test_the_whole_lifecycle_with_multiple_rpcs(self, mock_callback_class,
                                                   mock_start_subprocess,
                                                   mock_stop_standing_subprocess,
@@ -829,7 +831,8 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  @mock.patch('mobly.snippet.general_callback_handler.GeneralCallbackHandler')
+  @mock.patch('mobly.controllers.android_device_lib.callback_handler_v2.'
+              'CallbackHandlerV2')
   def test_async_rpc_start_event_client(self, mock_callback_class,
                                         mock_start_subprocess,
                                         mock_socket_create_conn):
