@@ -128,9 +128,11 @@ class CallbackHandlerV2Test(unittest.TestCase):
         'EventSnippetException: timeout.')
     mock_event_client.eventWaitAndGet = mock.Mock(
         side_effect=errors.ApiError(mock.Mock(), android_snippet_timeout_msg))
-    handler = self._make_callback_handler(event_client=mock_event_client)
+    handler = self._make_callback_handler(event_client=mock_event_client,
+                                          method_name='test_method')
 
-    expected_msg = 'Timed out after waiting .*s for event "ha" .*'
+    expected_msg = ('Timed out after waiting .*s for event "ha" triggered by '
+                    'test_method .*')
     with self.assertRaisesRegex(errors.CallbackHandlerTimeoutError,
                                 expected_msg):
       handler.waitAndGet('ha')

@@ -47,7 +47,9 @@ class CallbackHandlerBase(abc.ABC):
 
   def __init__(self,
                callback_id,
+               event_client,
                ret_value,
+               method_name,
                device,
                rpc_max_timeout_sec,
                default_timeout_sec=120):
@@ -56,7 +58,10 @@ class CallbackHandlerBase(abc.ABC):
     Args:
       callback_id: str, the callback ID which associates with a group of
         callback events.
+      event_client: SnippetClientV2, the client object used to send RPC to the
+        server and receive response.
       ret_value: any, the direct return value of the async RPC call.
+      method_name: str, the name of the executed Async snippet function.
       device: DeviceController, the device object associated with this handler.
       rpc_max_timeout_sec: float, maximum time for sending a single RPC call.
       default_timeout_sec: float, the default timeout for this handler. It
@@ -65,6 +70,8 @@ class CallbackHandlerBase(abc.ABC):
     self._id = callback_id
     self.ret_value = ret_value
     self._device = device
+    self._event_client = event_client
+    self._method_name = method_name
 
     if rpc_max_timeout_sec < default_timeout_sec:
       raise ValueError('The max timeout of a single RPC must be no smaller '
