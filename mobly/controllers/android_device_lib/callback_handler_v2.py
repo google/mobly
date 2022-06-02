@@ -16,6 +16,9 @@
 from mobly.snippet import callback_handler_base
 from mobly.snippet import errors
 
+# The timeout error meesage when pulling events from the server
+TIMEOUT_ERROR_MESSAGE = 'EventSnippetException: timeout.'
+
 
 class CallbackHandlerV2(callback_handler_base.CallbackHandlerBase):
   """The callback handler V2 class for Android Mobly Snippet Lib."""
@@ -42,7 +45,7 @@ class CallbackHandlerV2(callback_handler_base.CallbackHandlerBase):
       return self._event_client.eventWaitAndGet(callback_id, event_name,
                                                 timeout_ms)
     except Exception as e:
-      if 'EventSnippetException: timeout.' in str(e):
+      if TIMEOUT_ERROR_MESSAGE in str(e):
         raise errors.CallbackHandlerTimeoutError(
             self._device, (f'Timed out after waiting {timeout_sec}s for event '
                            f'"{event_name}" triggered by {self._method_name} '
