@@ -20,32 +20,6 @@ from mobly.snippet import errors
 class CallbackHandlerV2(callback_handler_base.CallbackHandlerBase):
   """The callback handler V2 class for Android Mobly Snippet Lib."""
 
-  def __init__(self,
-               callback_id,
-               event_client,
-               ret_value,
-               method_name,
-               device,
-               rpc_max_timeout_sec,
-               default_timeout_sec=120):
-    """Initializes a callback handler V2 object.
-
-    Args:
-      callback_id: str, the callback identifier.
-      event_client: SnippetClientV2, the client object used to send RPC to the
-        server and receive response.
-      ret_value: any, the direct return value of the async RPC call.
-      method_name: str, the name of the executed Async snippet function.
-      device: DeviceController, the device object associated with this handler.
-      rpc_max_timeout_sec: float, maximum time for sending a single RPC call.
-      default_timeout_sec: float, the default timeout for this handler. It
-        must be no longer than rpc_max_timeout_sec.
-    """
-    super().__init__(callback_id, ret_value, device, rpc_max_timeout_sec,
-                     default_timeout_sec)
-    self._method_name = method_name
-    self._event_client = event_client
-
   def callEventWaitAndGetRpc(self, callback_id, event_name, timeout_sec):
     """Waits and returns an existing CallbackEvent for the specified identifier.
 

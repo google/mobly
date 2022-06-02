@@ -38,13 +38,15 @@ class FakeCallbackHandler(callback_handler_base.CallbackHandlerBase):
 
   def __init__(self,
                callback_id=None,
+               event_client=None,
                ret_value=None,
+               method_name=None,
                device=None,
                rpc_max_timeout_sec=120,
                default_timeout_sec=120):
     """Initializes a fake callback handler object used for unit tests."""
-    super().__init__(callback_id, ret_value, device, rpc_max_timeout_sec,
-                     default_timeout_sec)
+    super().__init__(callback_id, event_client, ret_value, method_name, device,
+                     rpc_max_timeout_sec, default_timeout_sec)
     self.mock_rpc_func = mock.Mock()
 
   def callEventWaitAndGetRpc(self, *args, **kwargs):
