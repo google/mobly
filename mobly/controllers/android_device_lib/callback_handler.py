@@ -14,8 +14,8 @@
 
 import time
 
-from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import snippet_event
+from mobly.snippet import errors
 
 # The max timeout cannot be larger than the max time the socket waits for a
 # response message. Otherwise, the socket would timeout before the Rpc call
@@ -23,13 +23,9 @@ from mobly.controllers.android_device_lib import snippet_event
 MAX_TIMEOUT = 60 * 10
 DEFAULT_TIMEOUT = 120  # two minutes
 
-
-class Error(errors.DeviceError):
-  pass
-
-
-class TimeoutError(Error):
-  pass
+# Aliases of error types for backward compatibility.
+Error = errors.CallbackHandlerBaseError
+TimeoutError = errors.CallbackHandlerTimeoutError
 
 
 class CallbackHandler:
