@@ -20,7 +20,7 @@ import socket
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
-from mobly.controllers.android_device_lib import callback_handler
+from mobly.controllers.android_device_lib import callback_handler_v2
 from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.snippet import client_base
 from mobly.snippet import errors
@@ -70,7 +70,10 @@ UNKNOWN_UID = -1
 _SOCKET_CONNECTION_TIMEOUT = 60
 
 # Maximum time to wait for a response message on the socket.
-_SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
+_SOCKET_READ_TIMEOUT = 60 * 10
+
+# The default timeout for callback handlers returned by this client
+_CALLBACK_DEFAULT_TIMEOUT_SEC = 60 * 2
 
 
 class ConnectionHandshakeCommand(enum.Enum):
@@ -505,11 +508,14 @@ class SnippetClientV2(client_base.ClientBase):
     """
     if self._event_client is None:
       self._create_event_client()
-    return callback_handler.CallbackHandler(callback_id=callback_id,
-                                            event_client=self._event_client,
-                                            ret_value=ret_value,
-                                            method_name=rpc_func_name,
-                                            ad=self._device)
+    return callback_handler_v2.CallbackHandlerV2(
+        callback_id=callback_id,
+        event_client=self._event_client,
+        ret_value=ret_value,
+        method_name=rpc_func_name,
+        device=self._device,
+        rpc_max_timeout_sec=_SOCKET_READ_TIMEOUT,
+        default_timeout_sec=_CALLBACK_DEFAULT_TIMEOUT_SEC)
 
   def _create_event_client(self):
     """Creates a separate client to the same session for propagating events.
