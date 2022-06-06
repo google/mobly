@@ -180,11 +180,16 @@ class CallbackHandlerBaseTest(unittest.TestCase):
         MOCK_CALLBACK_ID, 'ha')
 
   def test_wait_for_event_timeout_when_no_valid_event(self):
-    actual_rpc_deadline_timeouts = []
+    actual_rpc_max_deadline_timeouts = 0
 
     def fake_event_want_and_get_rpc(callback_id, event_name, timeout_sec):
       del callback_id, event_name
-      actual_rpc_deadline_timeouts.append(timeout_sec + time.perf_counter())
+      t = timeout_sec + time.perf_counter()
+      print('rpc timeout', t)
+      actual_rpc_deadline_timeouts = max(
+          actual_rpc_max_deadline_timeouts,
+          t)
+          # timeout_sec + time.perf_counter())
       return MOCK_RAW_EVENT
 
     handler = FakeCallbackHandler()
@@ -205,9 +210,9 @@ class CallbackHandlerBaseTest(unittest.TestCase):
     actual_function_end_time = time.perf_counter()
     print('expected_deadline_time', expected_deadline_time)
     print('actual_function_end_time', actual_function_end_time)
-    print('actual_rpc_deadline_timeouts', actual_rpc_deadline_timeouts)
+    print('actual_rpc_max_deadline_timeouts', actual_rpc_max_deadline_timeouts)
     self.assertLessEqual(actual_function_end_time, expected_deadline_time)
-    self.assertLessEqual(max(actual_rpc_deadline_timeouts),
+    self.assertLessEqual(actual_rpc_max_deadline_timeouts,
                          expected_deadline_time)
 
 

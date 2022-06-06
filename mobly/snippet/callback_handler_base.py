@@ -212,9 +212,7 @@ class CallbackHandlerBase(abc.ABC):
 
       single_rpc_timeout = min(single_rpc_timeout, self.rpc_max_timeout_sec)
       try:
-        print('single_rpc_timeout', single_rpc_timeout, 'perf_counter', time.perf_counter())
         event = self.waitAndGet(event_name, single_rpc_timeout)
-        print('after rpc perf_counter', time.perf_counter())
       except errors.CallbackHandlerTimeoutError:
         # Ignoring errors.CallbackHandlerTimeoutError since we need to throw
         # one with a more specific message.
