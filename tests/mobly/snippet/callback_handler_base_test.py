@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for mobly.snippet.callback_handler_base.CallbackHandlerBase."""
 
+import time
 import unittest
 from unittest import mock
 
@@ -177,6 +178,56 @@ class CallbackHandlerBaseTest(unittest.TestCase):
 
     handler.mock_rpc_func.callEventGetAllRpc.assert_called_once_with(
         MOCK_CALLBACK_ID, 'ha')
+
+  def test_wait_for_event_timeout(self):
+    handler = FakeCallbackHandler()
+    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
+        return_value=MOCK_RAW_EVENT)
+
+    def some_condition(_):
+      return False
+
+    # We set whole_function_time_limit_sec > wait_for_event_timeout_sec
+    # because the function needs time to raise an Error after timeout expires
+    wait_for_event_timeout_sec = 0.01
+    whole_function_time_limit_sec = 0.02
+
+    expected_deadline_time = time.perf_counter() + whole_function_time_limit_sec
+    with self.assertRaises(errors.CallbackHandlerTimeoutError):
+      _ = handler.waitForEvent('AsyncTaskResult',
+                               some_condition,
+                               timeout=wait_for_event_timeout_sec)
+    actual_deadline_time = time.perf_counter()
+    self.assertLessEqual(actual_deadline_time, expected_deadline_time)
+
+  def test_wait_for_event_timeout_slow_rpc_call(self):
+    """Test it doesn't exceed the time limit even if the RPC call is slow."""
+
+    def fake_event_want_and_get_rpc(callback_id, event_name, timeout_sec):
+      """Does not return an event until the time limit is reached."""
+      del callback_id, event_name
+      if timeout_sec > 0:
+        time.sleep(timeout_sec)
+      return MOCK_RAW_EVENT
+
+    handler = FakeCallbackHandler()
+    handler.mock_rpc_func.callEventWaitAndGetRpc = fake_event_want_and_get_rpc
+
+    def some_condition(_):
+      return False
+
+    # We set whole_function_time_limit_sec > wait_for_event_timeout_sec
+    # because the function needs time to raise an Error after timeout expires
+    wait_for_event_timeout_sec = 0.01
+    whole_function_time_limit_sec = 0.02
+
+    expected_deadline_time = time.perf_counter() + whole_function_time_limit_sec
+    with self.assertRaises(errors.CallbackHandlerTimeoutError):
+      _ = handler.waitForEvent('AsyncTaskResult',
+                               some_condition,
+                               timeout=wait_for_event_timeout_sec)
+    actual_deadline_time = time.perf_counter()
+    self.assertLessEqual(actual_deadline_time, expected_deadline_time)
 
 
 if __name__ == '__main__':
