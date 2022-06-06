@@ -179,7 +179,7 @@ class CallbackHandlerBaseTest(unittest.TestCase):
     handler.mock_rpc_func.callEventGetAllRpc.assert_called_once_with(
         MOCK_CALLBACK_ID, 'ha')
 
-  def test_wait_for_event_timeout(self):
+  def test_wait_for_event_timeout_when_no_valid_event(self):
     handler = FakeCallbackHandler()
     handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
         return_value=MOCK_RAW_EVENT)
@@ -187,20 +187,21 @@ class CallbackHandlerBaseTest(unittest.TestCase):
     def some_condition(_):
       return False
 
-    # We set whole_function_time_limit_sec > wait_for_event_timeout_sec
-    # because the function needs time to raise an Error after timeout expires
-    wait_for_event_timeout_sec = 0.01
-    whole_function_time_limit_sec = 0.02
+    # We set whole_function_timeout_sec > rpc_timeout_sec
+    # because sending RPCs is only part of the function
+    rpc_timeout_sec = 0.01
+    whole_function_timeout_sec = 0.05
 
-    expected_deadline_time = time.perf_counter() + whole_function_time_limit_sec
+    expected_deadline_time = time.perf_counter() + whole_function_timeout_sec
     with self.assertRaises(errors.CallbackHandlerTimeoutError):
-      _ = handler.waitForEvent('AsyncTaskResult',
-                               some_condition,
-                               timeout=wait_for_event_timeout_sec)
+      _ = handler.waitForEvent('AsyncTaskResult', some_condition,
+                               timeout=rpc_timeout_sec)
     actual_deadline_time = time.perf_counter()
+    print('expected_deadline_time', expected_deadline_time)
+    print('actual_deadline_time', actual_deadline_time)
     self.assertLessEqual(actual_deadline_time, expected_deadline_time)
 
-  def test_wait_for_event_timeout_slow_rpc_call(self):
+  def test_wait_for_event_timeout_with_slow_rpc_call(self):
     """Test it doesn't exceed the time limit even if the RPC call is slow."""
 
     def fake_event_want_and_get_rpc(callback_id, event_name, timeout_sec):
@@ -213,20 +214,20 @@ class CallbackHandlerBaseTest(unittest.TestCase):
     handler = FakeCallbackHandler()
     handler.mock_rpc_func.callEventWaitAndGetRpc = fake_event_want_and_get_rpc
 
-    def some_condition(_):
-      return False
+    def some_condition(event):
+      return event.data['successful']
 
-    # We set whole_function_time_limit_sec > wait_for_event_timeout_sec
-    # because the function needs time to raise an Error after timeout expires
-    wait_for_event_timeout_sec = 0.01
-    whole_function_time_limit_sec = 0.02
+    # We set whole_function_timeout_sec > rpc_timeout_sec
+    # because sending RPCs is only part of the function
+    rpc_timeout_sec = 0.01
+    whole_function_timeout_sec = 0.05
 
-    expected_deadline_time = time.perf_counter() + whole_function_time_limit_sec
-    with self.assertRaises(errors.CallbackHandlerTimeoutError):
-      _ = handler.waitForEvent('AsyncTaskResult',
-                               some_condition,
-                               timeout=wait_for_event_timeout_sec)
+    expected_deadline_time = time.perf_counter() + whole_function_timeout_sec
+    _ = handler.waitForEvent('AsyncTaskResult', some_condition,
+                             timeout=rpc_timeout_sec)
     actual_deadline_time = time.perf_counter()
+    print('expected_deadline_time', expected_deadline_time)
+    print('actual_deadline_time', actual_deadline_time)
     self.assertLessEqual(actual_deadline_time, expected_deadline_time)
 
 
