@@ -179,7 +179,7 @@ class CallbackHandlerBaseTest(unittest.TestCase):
     handler.mock_rpc_func.callEventGetAllRpc.assert_called_once_with(
         MOCK_CALLBACK_ID, 'ha')
 
-  def test_rpc_timeout_argument_is_not_too_long_(self):
+  def test_rpc_timeout_argument_is_not_too_long(self):
     actual_rpc_max_deadline_time = 0
 
     def fake_event_wait_and_get_rpc(callback_id, event_name, timeout_sec):
