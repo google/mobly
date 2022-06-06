@@ -179,40 +179,34 @@ class CallbackHandlerBaseTest(unittest.TestCase):
     handler.mock_rpc_func.callEventGetAllRpc.assert_called_once_with(
         MOCK_CALLBACK_ID, 'ha')
 
-  def test_wait_for_event_timeout_when_no_valid_event(self):
-    actual_rpc_max_deadline_timeouts = 0
+  def test_rpc_timeout_argument_is_not_too_long_(self):
+    actual_rpc_max_deadline_time = 0
 
-    def fake_event_want_and_get_rpc(callback_id, event_name, timeout_sec):
+    def fake_event_wait_and_get_rpc(callback_id, event_name, timeout_sec):
       del callback_id, event_name
-      t = timeout_sec + time.perf_counter()
-      print('rpc timeout', t)
-      actual_rpc_deadline_timeouts = max(
-          actual_rpc_max_deadline_timeouts,
-          t)
-          # timeout_sec + time.perf_counter())
+      nonlocal actual_rpc_max_deadline_time
+      actual_rpc_max_deadline_time = max(actual_rpc_max_deadline_time,
+                                            timeout_sec + time.perf_counter())
       return MOCK_RAW_EVENT
 
     handler = FakeCallbackHandler()
-    handler.mock_rpc_func.callEventWaitAndGetRpc = fake_event_want_and_get_rpc
+    handler.mock_rpc_func.callEventWaitAndGetRpc = fake_event_wait_and_get_rpc
 
     def some_condition(_):
       return False
 
-    # We set whole_function_timeout_sec > rpc_timeout_sec
-    # because sending RPCs is only part of the function
+    # We set whole_function_timeout_sec to be 0.5s longer than rpc_timeout_sec,
+    # because CI tests run slowly on some machines.
     rpc_timeout_sec = 0.01
-    whole_function_timeout_sec = 0.02
+    whole_function_timeout_sec = 0.5
 
     expected_deadline_time = time.perf_counter() + whole_function_timeout_sec
     with self.assertRaises(errors.CallbackHandlerTimeoutError):
       _ = handler.waitForEvent('AsyncTaskResult', some_condition,
                                timeout=rpc_timeout_sec)
-    actual_function_end_time = time.perf_counter()
-    print('expected_deadline_time', expected_deadline_time)
-    print('actual_function_end_time', actual_function_end_time)
-    print('actual_rpc_max_deadline_timeouts', actual_rpc_max_deadline_timeouts)
-    self.assertLessEqual(actual_function_end_time, expected_deadline_time)
-    self.assertLessEqual(actual_rpc_max_deadline_timeouts,
+
+    print('actual_time', actual_rpc_max_deadline_time, 'expected_time', expected_deadline_time)
+    self.assertLessEqual(actual_rpc_max_deadline_time,
                          expected_deadline_time)
 
 
