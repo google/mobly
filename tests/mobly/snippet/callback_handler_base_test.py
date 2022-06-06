@@ -208,7 +208,9 @@ class CallbackHandlerBaseTest(unittest.TestCase):
       """Does not return an event until the time limit is reached."""
       del callback_id, event_name
       if timeout_sec > 0:
+        print('before sleep perf_counter', time.perf_counter())
         time.sleep(timeout_sec)
+        print('after sleep perf_counter', time.perf_counter())
       return MOCK_RAW_EVENT
 
     handler = FakeCallbackHandler()
