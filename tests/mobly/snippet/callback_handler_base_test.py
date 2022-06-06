@@ -186,7 +186,7 @@ class CallbackHandlerBaseTest(unittest.TestCase):
       del callback_id, event_name
       nonlocal actual_rpc_max_deadline_time
       actual_rpc_max_deadline_time = max(actual_rpc_max_deadline_time,
-                                            timeout_sec + time.perf_counter())
+                                         timeout_sec + time.perf_counter())
       return MOCK_RAW_EVENT
 
     handler = FakeCallbackHandler()
@@ -202,12 +202,11 @@ class CallbackHandlerBaseTest(unittest.TestCase):
 
     expected_deadline_time = time.perf_counter() + whole_function_timeout_sec
     with self.assertRaises(errors.CallbackHandlerTimeoutError):
-      _ = handler.waitForEvent('AsyncTaskResult', some_condition,
+      _ = handler.waitForEvent('AsyncTaskResult',
+                               some_condition,
                                timeout=rpc_timeout_sec)
 
-    print('actual_time', actual_rpc_max_deadline_time, 'expected_time', expected_deadline_time)
-    self.assertLessEqual(actual_rpc_max_deadline_time,
-                         expected_deadline_time)
+    self.assertLessEqual(actual_rpc_max_deadline_time, expected_deadline_time)
 
 
 if __name__ == '__main__':
