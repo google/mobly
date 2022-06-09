@@ -154,6 +154,10 @@ class ClientBase(abc.ABC):
     For example, subclass can check or modify the device settings at this
     stage.
 
+    NOTE: Do not acquire resources in this function, as this should only contain
+    preparation steps and any error at this stage will abort the initialization
+    without cleanup.
+
     Raises:
       errors.ServerStartPreCheckError: when prechecks for starting the server
         failed.
