@@ -97,13 +97,13 @@ class ClientBase(abc.ABC):
     """Initializes the snippet client to interact with the remote device.
 
     This function contains following stages:
-      1. before_starting_server: preparing to start the snippet server.
-      2. start_server: starting the snippet server on the remote device.
-      3. make_connection: making a connection to the snippet server.
+      1. before starting server: preparing to start the snippet server.
+      2. start server: starting the snippet server on the remote device.
+      3. make connection: making a connection to the snippet server.
 
     An error occurring at any stage will abort the initialization. Only errors
-    at the start_server and make_connection stages will trigger `stop` to clean
-    up.
+    at the `start_server` and `make_connection` stages will trigger `stop` to
+    clean up.
 
     Raises:
       errors.ProtocolError: something went wrong when exchanging data with the
