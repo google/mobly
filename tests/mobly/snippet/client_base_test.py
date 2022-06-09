@@ -128,7 +128,7 @@ class ClientBaseTest(unittest.TestCase):
 
     with self.assertRaisesRegex(Exception, 'ha'):
       self.client.initialize()
-    mock_stop_func.assert_called()
+    mock_stop_func.assert_not_called()
 
   @mock.patch.object(FakeClient, 'stop')
   @mock.patch.object(FakeClient, 'start_server')

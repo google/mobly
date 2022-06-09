@@ -97,12 +97,13 @@ class ClientBase(abc.ABC):
     """Initializes the snippet client to interact with the remote device.
 
     This function contains following stages:
-      1. preparing to start the snippet server.
-      2. starting the snippet server on the remote device.
-      3. making a connection to the snippet server.
+      1. before starting server: preparing to start the snippet server.
+      2. start server: starting the snippet server on the remote device.
+      3. make connection: making a connection to the snippet server.
 
-    If error occurs at any stage, this function will abort the initialization
-    process and call `stop` to clean up.
+    An error occurring at any stage will abort the initialization. Only errors
+    at the `start_server` and `make_connection` stages will trigger `stop` to
+    clean up.
 
     Raises:
       errors.ProtocolError: something went wrong when exchanging data with the
@@ -119,11 +120,10 @@ class ClientBase(abc.ABC):
     self.log.info('Initializing the snippet package %s.', self.package)
     start_time = time.perf_counter()
 
-    try:
-      self.log.debug('Preparing to start the snippet server of %s.',
-                     self.package)
-      self.before_starting_server()
+    self.log.debug('Preparing to start the snippet server of %s.', self.package)
+    self.before_starting_server()
 
+    try:
       self.log.debug('Starting the snippet server of %s.', self.package)
       self.start_server()
 
@@ -154,6 +154,10 @@ class ClientBase(abc.ABC):
 
     For example, subclass can check or modify the device settings at this
     stage.
+
+    NOTE: Any error at this stage will abort the initialization without cleanup.
+    So do not acquire resources in this function, or this function should
+    release the acquired resources if an error occurs.
 
     Raises:
       errors.ServerStartPreCheckError: when prechecks for starting the server
