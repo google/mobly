@@ -101,7 +101,7 @@ class ClientBase(abc.ABC):
       2. starting the snippet server on the remote device.
       3. making a connection to the snippet server.
 
-    An error occurs at any stage will abort the initialization. Only errors in
+    An error occurs at any stage will abort the initialization. Only errors at
     the second and third stages will trigger `stop` to clean up.
 
     Raises:
