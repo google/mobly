@@ -19,6 +19,10 @@ from mobly.controllers.android_device_lib.services import base_service
 
 MISSING_SNIPPET_CLIENT_MSG = 'No snippet client is registered with name "%s".'
 
+# This branch is transient and will remove it after we complete the migration
+# from v1 to v2.
+_CLIENT_V2_CONFIG_KEY = 'use_mobly_snippet_client_v2'
+
 
 class Error(errors.ServiceError):
   """Root error type for snippet management service."""
@@ -55,11 +59,10 @@ class SnippetManagementService(base_service.BaseService):
     """
     if self._use_client_v2_switch is None:
       device_dimensions = getattr(self._device, 'dimensions', {})
-      switch_from_dimension = (device_dimensions.get(
-          'use_mobly_snippet_client_v2', 'false').lower() == 'true')
+      switch_from_dimension = (device_dimensions.get(_CLIENT_V2_CONFIG_KEY,
+                                                     'false').lower() == 'true')
 
-      switch_from_property = (getattr(self._device,
-                                      'use_mobly_snippet_client_v2',
+      switch_from_property = (getattr(self._device, _CLIENT_V2_CONFIG_KEY,
                                       'false').lower() == 'true')
 
       self._use_client_v2_switch = switch_from_dimension or switch_from_property
