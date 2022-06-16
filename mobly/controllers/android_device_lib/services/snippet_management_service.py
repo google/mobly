@@ -49,11 +49,20 @@ class SnippetManagementService(base_service.BaseService):
 
     NOTE: This is a transient function when we are migrating the snippet client
     from v1 to v2. It will be removed after the migration is completed.
+
+    Returns:
+      A bool for whether this service is using snippet client V2.
     """
     if self._use_client_v2_switch is None:
       device_dimensions = getattr(self._device, 'dimensions', {})
-      self._use_client_v2_switch = (device_dimensions.get(
+      switch_from_dimension = (device_dimensions.get(
           'use_mobly_snippet_client_v2', 'false').lower() == 'true')
+
+      switch_from_property = (getattr(self._device,
+                                      'use_mobly_snippet_client_v2',
+                                      'false').lower() == 'true')
+
+      self._use_client_v2_switch = switch_from_dimension or switch_from_property
     return self._use_client_v2_switch
 
   @property

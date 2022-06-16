@@ -162,23 +162,39 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager.foo.ha('param')
     mock_client.ha.assert_called_once_with('param')
 
-  def test_client_v2_flag_default_value(self):
-    mock_device = mock.MagicMock()
-    mock_device.dimensions = {}
-    manager = snippet_management_service.SnippetManagementService(mock_device)
-    self.assertFalse(manager._is_using_client_v2())
+  def test_client_v2_switch_default_value(self):
+    self._set_device_attribute_and_check_client_v2_switch(
+        expect_switch_value=False)
 
-  def test_client_v2_flag_false(self):
-    mock_device = mock.MagicMock(
+  def test_client_v2_switch_when_set_device_dimension_to_false(self):
+    self._set_device_attribute_and_check_client_v2_switch(
+        expect_switch_value=False,
         dimensions={'use_mobly_snippet_client_v2': 'false'})
-    manager = snippet_management_service.SnippetManagementService(mock_device)
-    self.assertFalse(manager._is_using_client_v2())
 
-  def test_client_v2_flag_true(self):
-    mock_device = mock.MagicMock(
+  def test_client_v2_switch_when_set_device_dimension_to_true(self):
+    self._set_device_attribute_and_check_client_v2_switch(
+        expect_switch_value=True,
         dimensions={'use_mobly_snippet_client_v2': 'true'})
-    manager = snippet_management_service.SnippetManagementService(mock_device)
-    self.assertTrue(manager._is_using_client_v2())
+
+  def test_client_v2_switch_when_set_device_property_to_false(self):
+    self._set_device_attribute_and_check_client_v2_switch(
+        expect_switch_value=False, use_mobly_snippet_client_v2='false')
+
+  def test_client_v2_switch_when_set_device_property_to_true(self):
+    self._set_device_attribute_and_check_client_v2_switch(
+        expect_switch_value=True, use_mobly_snippet_client_v2='true')
+
+  def test_client_v2_switch_when_both_property_and_dimension_are_false(self):
+    self._set_device_attribute_and_check_client_v2_switch(
+        expect_switch_value=False,
+        use_mobly_snippet_client_v2='false',
+        dimensions={'use_mobly_snippet_client_v2': 'false'})
+
+  def test_client_v2_switch_when_both_property_and_dimension_are_true(self):
+    self._set_device_attribute_and_check_client_v2_switch(
+        expect_switch_value=True,
+        use_mobly_snippet_client_v2='true',
+        dimensions={'use_mobly_snippet_client_v2': 'true'})
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_client_v2_add_snippet_client(self, mock_class):
@@ -260,6 +276,13 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager.resume()
 
     mock_client.restore_server_connection.assert_called_once_with()
+
+  def _set_device_attribute_and_check_client_v2_switch(self,
+                                                       expect_switch_value,
+                                                       **device_attributes):
+    mock_device = mock.MagicMock(**device_attributes)
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    self.assertEqual(expect_switch_value, manager._is_using_client_v2())
 
 
 if __name__ == '__main__':
