@@ -217,7 +217,7 @@ class ExceptionRecord:
 
   Attributes:
     exception: Exception object, the original Exception.
-    type: string, type name of the exception class.
+    type: string, type name of the exception object.
     stacktrace: string, stacktrace of the Exception.
     extras: optional serializable, this corresponds to the
       `TestSignal.extras` field.
