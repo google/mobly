@@ -44,6 +44,8 @@ class SnippetManagementService(base_service.BaseService):
     super().__init__(device)
     self._use_client_v2_switch = None
 
+  # TODO(mhaoli): The client v2 switch is transient, we will remove it after we
+  # complete the migration from v1 to v2.
   def _is_using_client_v2(self):
     """Is this service using snippet client V2.
 

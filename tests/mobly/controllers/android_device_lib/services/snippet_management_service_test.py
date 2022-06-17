@@ -162,6 +162,8 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager.foo.ha('param')
     mock_client.ha.assert_called_once_with('param')
 
+  # TODO(mhaoli): The client v2 switch is transient, we will remove related
+  # tests after we complete the migration from v1 to v2.
   def test_client_v2_switch_default_value(self):
     self._set_device_attribute_and_check_client_v2_switch(
         expect_switch_value=False)
