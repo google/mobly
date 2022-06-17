@@ -178,21 +178,21 @@ class SnippetManagementServiceTest(unittest.TestCase):
         expect_switch_value=True,
         dimensions={'use_mobly_snippet_client_v2': 'true'})
 
-  def test_client_v2_switch_when_set_device_property_to_false(self):
+  def test_client_v2_switch_when_set_device_attribute_to_false(self):
     self._set_device_attribute_and_check_client_v2_switch(
         expect_switch_value=False, use_mobly_snippet_client_v2='false')
 
-  def test_client_v2_switch_when_set_device_property_to_true(self):
+  def test_client_v2_switch_when_set_device_attribute_to_true(self):
     self._set_device_attribute_and_check_client_v2_switch(
         expect_switch_value=True, use_mobly_snippet_client_v2='true')
 
-  def test_client_v2_switch_when_both_property_and_dimension_are_false(self):
+  def test_client_v2_switch_when_both_attribute_and_dimension_are_false(self):
     self._set_device_attribute_and_check_client_v2_switch(
         expect_switch_value=False,
         use_mobly_snippet_client_v2='false',
         dimensions={'use_mobly_snippet_client_v2': 'false'})
 
-  def test_client_v2_switch_when_both_property_and_dimension_are_true(self):
+  def test_client_v2_switch_when_both_attribute_and_dimension_are_true(self):
     self._set_device_attribute_and_check_client_v2_switch(
         expect_switch_value=True,
         use_mobly_snippet_client_v2='true',
