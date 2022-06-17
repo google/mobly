@@ -217,6 +217,7 @@ class ExceptionRecord:
 
   Attributes:
     exception: Exception object, the original Exception.
+    type: string, type name of the exception object.
     stacktrace: string, stacktrace of the Exception.
     extras: optional serializable, this corresponds to the
       `TestSignal.extras` field.
@@ -226,6 +227,7 @@ class ExceptionRecord:
 
   def __init__(self, e, position=None):
     self.exception = e
+    self.type = type(e).__name__
     self.stacktrace = None
     self.extras = None
     self.position = position
