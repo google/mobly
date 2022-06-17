@@ -406,6 +406,7 @@ class RecordsTest(unittest.TestCase):
     new_er = copy.deepcopy(er)
     self.assertIsNot(er, new_er)
     self.assertDictEqual(er.to_dict(), new_er.to_dict())
+    self.assertEqual(er.type, 'RecordTestError')
 
   def test_add_controller_info_record(self):
     tr = records.TestResult()
