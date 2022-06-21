@@ -346,7 +346,7 @@ class TestResultRecord:
       return self.termination_signal.details
 
   @property
-  def termination_singal_type(self):
+  def termination_signal_type(self):
     """Type name of the signal that caused the test's termination.
 
     Note a passed test can have this as well due to the explicit pass
@@ -504,7 +504,7 @@ class TestResultRecord:
     d[TestResultEnums.RECORD_EXTRAS] = self.extras
     d[TestResultEnums.RECORD_DETAILS] = self.details
     d[TestResultEnums.
-      RECORD_TERMINATION_SIGNAL_TYPE] = self.termination_singal_type
+      RECORD_TERMINATION_SIGNAL_TYPE] = self.termination_signal_type
     d[TestResultEnums.RECORD_EXTRA_ERRORS] = {
         key: value.to_dict() for (key, value) in self.extra_errors.items()
     }
