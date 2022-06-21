@@ -176,6 +176,7 @@ class TestResultEnums:
   RECORD_EXTRAS = 'Extras'
   RECORD_EXTRA_ERRORS = 'Extra Errors'
   RECORD_DETAILS = 'Details'
+  RECORD_TERMINATION_SIGNAL_TYPE = 'Termination Signal Type'
   RECORD_STACKTRACE = 'Stacktrace'
   RECORD_SIGNATURE = 'Signature'
   RECORD_RETRY_PARENT = 'Retry Parent'
@@ -345,6 +346,16 @@ class TestResultRecord:
       return self.termination_signal.details
 
   @property
+  def termination_signal_type(self):
+    """Type name of the signal that caused the test's termination.
+
+    Note a passed test can have this as well due to the explicit pass
+    signal. If the test passed implicitly, this field would be None.
+    """
+    if self.termination_signal:
+      return self.termination_signal.type
+
+  @property
   def stacktrace(self):
     """The stacktrace string for the exception that terminated the test.
     """
@@ -492,6 +503,8 @@ class TestResultRecord:
       RECORD_RETRY_PARENT] = self.retry_parent.signature if self.retry_parent else None
     d[TestResultEnums.RECORD_EXTRAS] = self.extras
     d[TestResultEnums.RECORD_DETAILS] = self.details
+    d[TestResultEnums.
+      RECORD_TERMINATION_SIGNAL_TYPE] = self.termination_signal_type
     d[TestResultEnums.RECORD_EXTRA_ERRORS] = {
         key: value.to_dict() for (key, value) in self.extra_errors.items()
     }

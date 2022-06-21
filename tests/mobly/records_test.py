@@ -50,12 +50,19 @@ class RecordsTest(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.tmp_path)
 
-  def verify_record(self, record, result, details, extras, stacktrace=None):
+  def verify_record(self,
+                    record,
+                    result,
+                    details,
+                    extras,
+                    termination_signal_type=None,
+                    stacktrace=None):
     record.update_record()
     # Verify each field.
     self.assertEqual(record.test_name, self.tn)
     self.assertEqual(record.result, result)
     self.assertEqual(record.details, details)
+    self.assertEqual(record.termination_signal_type, termination_signal_type)
     self.assertEqual(record.extras, extras)
     self.assertTrue(record.begin_time, 'begin time should not be empty.')
     self.assertTrue(record.end_time, 'end time should not be empty.')
@@ -66,6 +73,8 @@ class RecordsTest(unittest.TestCase):
     d[records.TestResultEnums.RECORD_NAME] = self.tn
     d[records.TestResultEnums.RECORD_RESULT] = result
     d[records.TestResultEnums.RECORD_DETAILS] = details
+    d[records.TestResultEnums.
+      RECORD_TERMINATION_SIGNAL_TYPE] = termination_signal_type
     d[records.TestResultEnums.RECORD_EXTRAS] = extras
     d[records.TestResultEnums.RECORD_BEGIN_TIME] = record.begin_time
     d[records.TestResultEnums.RECORD_END_TIME] = record.end_time
@@ -88,7 +97,7 @@ class RecordsTest(unittest.TestCase):
     self.assertTrue(str(record), 'str of the record should not be empty.')
     self.assertTrue(repr(record), "the record's repr shouldn't be empty.")
 
-  def test_result_record_pass_none(self):
+  def test_result_record_implicit_pass(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     record.test_pass()
@@ -97,7 +106,7 @@ class RecordsTest(unittest.TestCase):
                        details=None,
                        extras=None)
 
-  def test_result_record_pass_with_float_extra(self):
+  def test_result_record_explicit_pass_with_float_extra(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     s = signals.TestPass(self.details, self.float_extra)
@@ -105,9 +114,10 @@ class RecordsTest(unittest.TestCase):
     self.verify_record(record=record,
                        result=records.TestResultEnums.TEST_RESULT_PASS,
                        details=self.details,
+                       termination_signal_type='TestPass',
                        extras=self.float_extra)
 
-  def test_result_record_pass_with_json_extra(self):
+  def test_result_record_explicit_pass_with_json_extra(self):
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     s = signals.TestPass(self.details, self.json_extra)
@@ -115,9 +125,11 @@ class RecordsTest(unittest.TestCase):
     self.verify_record(record=record,
                        result=records.TestResultEnums.TEST_RESULT_PASS,
                        details=self.details,
+                       termination_signal_type='TestPass',
                        extras=self.json_extra)
 
   def test_result_record_fail_none(self):
+    """Verifies that `test_fail` can be called without an error object."""
     record = records.TestResultRecord(self.tn)
     record.test_begin()
     record.test_fail()
@@ -139,6 +151,7 @@ class RecordsTest(unittest.TestCase):
     self.verify_record(record=record,
                        result=records.TestResultEnums.TEST_RESULT_FAIL,
                        details='Something failed.',
+                       termination_signal_type='Exception',
                        extras=None,
                        stacktrace='in test_result_record_fail_stacktrace\n    '
                        'raise Exception(\'Something failed.\')\nException: '
@@ -152,6 +165,7 @@ class RecordsTest(unittest.TestCase):
     self.verify_record(record=record,
                        result=records.TestResultEnums.TEST_RESULT_FAIL,
                        details=self.details,
+                       termination_signal_type='TestFailure',
                        extras=self.float_extra)
 
   def test_result_record_fail_with_unicode_test_signal(self):
@@ -163,6 +177,7 @@ class RecordsTest(unittest.TestCase):
     self.verify_record(record=record,
                        result=records.TestResultEnums.TEST_RESULT_FAIL,
                        details=details,
+                       termination_signal_type='TestFailure',
                        extras=self.float_extra)
 
   def test_result_record_fail_with_unicode_exception(self):
@@ -174,6 +189,7 @@ class RecordsTest(unittest.TestCase):
     self.verify_record(record=record,
                        result=records.TestResultEnums.TEST_RESULT_FAIL,
                        details=details,
+                       termination_signal_type='Exception',
                        extras=None)
 
   def test_result_record_fail_with_json_extra(self):
@@ -184,6 +200,7 @@ class RecordsTest(unittest.TestCase):
     self.verify_record(record=record,
                        result=records.TestResultEnums.TEST_RESULT_FAIL,
                        details=self.details,
+                       termination_signal_type='TestFailure',
                        extras=self.json_extra)
 
   def test_result_record_skip_none(self):
@@ -203,6 +220,7 @@ class RecordsTest(unittest.TestCase):
     self.verify_record(record=record,
                        result=records.TestResultEnums.TEST_RESULT_SKIP,
                        details=self.details,
+                       termination_signal_type='TestSkip',
                        extras=self.float_extra)
 
   def test_result_record_skip_with_json_extra(self):
@@ -213,6 +231,7 @@ class RecordsTest(unittest.TestCase):
     self.verify_record(record=record,
                        result=records.TestResultEnums.TEST_RESULT_SKIP,
                        details=self.details,
+                       termination_signal_type='TestSkip',
                        extras=self.json_extra)
 
   def test_result_add_operator_success(self):
