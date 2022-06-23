@@ -138,8 +138,6 @@ def run_suite_class(argv=None):
   Args:
     argv: A list that is then parsed as CLI args. If None, defaults to sys.argv.
   """
-  if argv is None:
-    argv = sys.argv
   cli_args = _parse_cli_args(argv)
   test_configs = config_parser.load_test_config_file(cli_args.config)
   config_count = len(test_configs)
