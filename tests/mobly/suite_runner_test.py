@@ -146,7 +146,7 @@ class SuiteRunnerTest(unittest.TestCase):
               MagicDevice: '*'
       """)
 
-    mock_cli_args = [f'--config={tmp_file_path}']
+    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
 
     with mock.patch.object(sys, 'argv', new=mock_cli_args):
       suite_runner.run_suite_class()
