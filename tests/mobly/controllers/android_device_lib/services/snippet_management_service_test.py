@@ -282,7 +282,7 @@ class SnippetManagementServiceTest(unittest.TestCase):
   def _set_device_attribute_and_check_client_v2_switch(self,
                                                        expect_switch_value,
                                                        **device_attributes):
-    mock_device = mock.MagicMock(**device_attributes, spec=[])
+    mock_device = mock.MagicMock(**device_attributes, spec=['log'])
     manager = snippet_management_service.SnippetManagementService(mock_device)
     self.assertEqual(expect_switch_value, manager._is_using_client_v2())
 

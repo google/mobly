@@ -1098,7 +1098,7 @@ class AndroidDeviceTest(unittest.TestCase):
     """
     expected_e = Exception('start failed.')
     MockSnippetClient.initialize = mock.Mock(side_effect=expected_e)
-    MockSnippetClient.stop_app = mock.Mock(
+    MockSnippetClient.stop = mock.Mock(
         side_effect=Exception('stop failed.'))
     ad = android_device.AndroidDevice(serial='1')
     try:
