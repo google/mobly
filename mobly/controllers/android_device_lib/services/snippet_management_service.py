@@ -67,10 +67,6 @@ class SnippetManagementService(base_service.BaseService):
       switch_from_attribute = (getattr(self._device, _CLIENT_V2_CONFIG_KEY,
                                        'true').lower() == 'true')
 
-      print('device_dimensions', device_dimensions)
-      print('switch_from_dimension', switch_from_dimension)
-      print('switch_from_attribute', switch_from_attribute)
-
       self._use_client_v2_switch = (switch_from_dimension and
                                     switch_from_attribute)
     return self._use_client_v2_switch

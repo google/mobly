@@ -18,7 +18,6 @@ from unittest import mock
 from mobly.controllers.android_device_lib.services import snippet_management_service
 
 MOCK_PACKAGE = 'com.mock.package'
-SNIPPET_CLIENT_CLASS_PATH = 'mobly.controllers.android_device_lib.snippet_client.SnippetClient'
 SNIPPET_CLIENT_V2_CLASS_PATH = 'mobly.controllers.android_device_lib.snippet_client_v2.SnippetClientV2'
 
 
@@ -85,79 +84,79 @@ class SnippetManagementServiceTest(unittest.TestCase):
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.add_snippet_client('bar', MOCK_PACKAGE)
 
-  @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_remove_snippet_client(self, mock_class):
     mock_client = mock.MagicMock()
     mock_class.return_value = mock_client
     manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock())
+        mock.MagicMock(spec=['log']))
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     manager.remove_snippet_client('foo')
     msg = 'No snippet client is registered with name "foo".'
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.foo.do_something()
 
-  @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_remove_snippet_client(self, mock_class):
     mock_client = mock.MagicMock()
     mock_class.return_value = mock_client
     manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock())
+        mock.MagicMock(spec=['log']))
     with self.assertRaisesRegex(
         snippet_management_service.Error,
         'No snippet client is registered with name "foo".'):
       manager.remove_snippet_client('foo')
 
-  @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_start_with_live_service(self, mock_class):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock())
+        mock.MagicMock(spec=['log']))
     manager.add_snippet_client('foo', MOCK_PACKAGE)
-    mock_client.start_app_and_connect.reset_mock()
+    mock_client.initialize.reset_mock()
     mock_client.is_alive = True
     manager.start()
-    mock_client.start_app_and_connect.assert_not_called()
+    mock_client.initialize.assert_not_called()
     self.assertTrue(manager.is_alive)
     mock_client.is_alive = False
     manager.start()
-    mock_client.start_app_and_connect.assert_called_once_with()
+    mock_client.initialize.assert_called_once_with()
 
-  @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_pause(self, mock_class):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock())
+        mock.MagicMock(spec=['log']))
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     manager.pause()
-    mock_client.disconnect.assert_called_once_with()
+    mock_client.close_connection.assert_called_once_with()
 
-  @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_resume_positive_case(self, mock_class):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock())
+        mock.MagicMock(spec=['log']))
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     mock_client.is_alive = False
     manager.resume()
-    mock_client.restore_app_connection.assert_called_once_with()
+    mock_client.restore_server_connection.assert_called_once_with()
 
-  @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_resume_negative_case(self, mock_class):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock())
+        mock.MagicMock(spec=['log']))
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     mock_client.is_alive = True
     manager.resume()
-    mock_client.restore_app_connection.assert_not_called()
+    mock_client.restore_server_connection.assert_not_called()
 
-  @mock.patch(SNIPPET_CLIENT_CLASS_PATH)
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_attribute_access(self, mock_class):
     mock_client = mock.MagicMock()
     mock_class.return_value = mock_client
     manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock())
+        mock.MagicMock(spec=['log']))
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     manager.foo.ha('param')
     mock_client.ha.assert_called_once_with('param')
