@@ -16,6 +16,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import logging
 from unittest import mock
 
 from mobly import logger
@@ -56,7 +57,8 @@ class LoggerTest(unittest.TestCase):
                                                mock_create_latest_log_alias,
                                                mock__setup_test_logger):
     logger.setup_test_logger(self.log_dir)
-    mock__setup_test_logger.assert_called_once_with(self.log_dir, None)
+    mock__setup_test_logger.assert_called_once_with(self.log_dir, logging.INFO,
+                                                    None)
     mock_create_latest_log_alias.assert_called_once_with(self.log_dir,
                                                          alias='latest')
 
