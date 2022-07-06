@@ -168,7 +168,7 @@ def get_log_file_timestamp(delta=None):
   return _get_timestamp('%m-%d-%Y_%H-%M-%S-%f', delta)
 
 
-def _setup_test_logger(log_path, prefix=None):
+def _setup_test_logger(log_path, console_level, prefix=None):
   """Customizes the root logger for a test run.
 
   The logger object has a stream handler and a file handler. The stream
@@ -192,7 +192,7 @@ def _setup_test_logger(log_path, prefix=None):
   c_formatter = logging.Formatter(terminal_format, log_line_time_format)
   ch = logging.StreamHandler(sys.stdout)
   ch.setFormatter(c_formatter)
-  ch.setLevel(logging.INFO)
+  ch.setLevel(console_level)
   # Log everything to file
   f_formatter = logging.Formatter(log_line_format, log_line_time_format)
   # Write logger output to files
@@ -237,7 +237,10 @@ def create_latest_log_alias(actual_path, alias):
   utils.create_alias(actual_path, alias_path)
 
 
-def setup_test_logger(log_path, prefix=None, alias='latest'):
+def setup_test_logger(log_path,
+                      prefix=None,
+                      alias='latest',
+                      console_level=logging.INFO):
   """Customizes the root logger for a test run.
 
   In addition to configuring the Mobly logging handlers, this also sets two
@@ -258,7 +261,7 @@ def setup_test_logger(log_path, prefix=None, alias='latest'):
       shortcut/symlinks.
   """
   utils.create_dir(log_path)
-  _setup_test_logger(log_path, prefix)
+  _setup_test_logger(log_path, console_level, prefix)
   logging.debug('Test output folder: "%s"', log_path)
   if alias:
     create_latest_log_alias(log_path, alias=alias)
