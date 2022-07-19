@@ -13,6 +13,7 @@
 # limitations under the License.
 """JSON RPC interface to Mobly Snippet Lib."""
 
+import logging
 import re
 import time
 
@@ -21,6 +22,11 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from mobly.snippet import errors as snippet_errors
+
+logging.warning('The module mobly.controllers.android_device_lib.snippet_client'
+                ' is deprecated and will be removed in a future version. Use'
+                ' module mobly.controllers.android_device_lib.snippet_client_v2'
+                ' instead.')
 
 _INSTRUMENTATION_RUNNER_PACKAGE = (
     'com.google.android.mobly.snippet.SnippetRunner')

@@ -11,6 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import logging
+
+logging.warning('The module mobly.controllers.android_device_lib.snippet_event '
+                'is deprecated and will be removed in a future version. Use '
+                'module mobly.snippet.callback_event instead.')
 
 
 def from_dict(event_dict):

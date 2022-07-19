@@ -13,7 +13,6 @@
 # limitations under the License.
 """Module for the snippet management service."""
 from mobly.controllers.android_device_lib import errors
-from mobly.controllers.android_device_lib import snippet_client
 from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.controllers.android_device_lib.services import base_service
 
@@ -117,6 +116,8 @@ class SnippetManagementService(base_service.BaseService):
                                                  ad=self._device)
       client.initialize()
     else:
+      # Only import snippet_client when needed, since it is deprecated.
+      from mobly.controllers.android_device_lib import snippet_client
       client = snippet_client.SnippetClient(package=package, ad=self._device)
       client.start_app_and_connect()
     self._snippet_clients[name] = client
