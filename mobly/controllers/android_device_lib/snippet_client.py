@@ -72,7 +72,8 @@ class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
   """A client for interacting with snippet APKs using Mobly Snippet Lib.
 
   DEPRECATED: Use
-  mobly.controllers.android_device_lib.snippet_client.SnippetClientV2 instead.
+  mobly.controllers.android_device_lib.snippet_client_v2.SnippetClientV2
+  instead.
 
   See superclass documentation for a list of public attributes.
 
