@@ -12,10 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import time
 
 from mobly.controllers.android_device_lib import snippet_event
 from mobly.snippet import errors
+
+logging.warning(
+    'The module mobly.controllers.android_device_lib.callback_handler is '
+    'deprecated and will be removed in a future version. Use module '
+    'mobly.controllers.android_device_lib.callback_handler_v2 instead.')
 
 # The max timeout cannot be larger than the max time the socket waits for a
 # response message. Otherwise, the socket would timeout before the Rpc call
@@ -30,6 +36,10 @@ TimeoutError = errors.CallbackHandlerTimeoutError
 
 class CallbackHandler:
   """The class used to handle a specific group of callback events.
+
+  DEPRECATED: Use
+  mobly.controllers.android_device_lib.callback_handler_v2.CallbackHandlerV2
+  instead.
 
   All the events handled by a CallbackHandler are originally triggered by one
   async Rpc call. All the events are tagged with a callback_id specific to a
