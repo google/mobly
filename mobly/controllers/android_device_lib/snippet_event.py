@@ -21,6 +21,8 @@ logging.warning('The module mobly.controllers.android_device_lib.snippet_event '
 def from_dict(event_dict):
   """Create a SnippetEvent object from a dictionary.
 
+  DEPRECATED: Use mobly.snippet.callback_event.from_dict instead.
+
   Args:
     event_dict: a dictionary representing an event.
 
@@ -35,6 +37,8 @@ def from_dict(event_dict):
 
 class SnippetEvent:
   """The class that represents callback events for mobly snippet library.
+
+  DEPRECATED: Use mobly.snippet.callback_event.CallbackEvent instead.
 
   Attributes:
     callback_id: string, the callback ID associated with the event.

@@ -71,6 +71,9 @@ ProtocolVersionError = snippet_errors.ServerStartProtocolError
 class SnippetClient(jsonrpc_client_base.JsonRpcClientBase):
   """A client for interacting with snippet APKs using Mobly Snippet Lib.
 
+  DEPRECATED: Use
+  mobly.controllers.android_device_lib.snippet_client.SnippetClientV2 instead.
+
   See superclass documentation for a list of public attributes.
 
   For a description of the launch protocols, see the documentation in
