@@ -38,7 +38,7 @@ class CallbackHandler:
   """The class used to handle a specific group of callback events.
 
   DEPRECATED: Use
-  mobly.controllers.android_device_lib.callback_handler.CallbackHandlerV2
+  mobly.controllers.android_device_lib.callback_handler_v2.CallbackHandlerV2
   instead.
 
   All the events handled by a CallbackHandler are originally triggered by one
