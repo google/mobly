@@ -18,10 +18,6 @@ from mobly.controllers.android_device_lib.services import base_service
 
 MISSING_SNIPPET_CLIENT_MSG = 'No snippet client is registered with name "%s".'
 
-# This config is transient and we will remove it after completing the migration
-# from v1 to v2.
-_CLIENT_V2_CONFIG_KEY = 'use_mobly_snippet_client_v2'
-
 
 class Error(errors.ServiceError):
   """Root error type for snippet management service."""
