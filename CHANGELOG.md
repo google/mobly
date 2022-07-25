@@ -1,5 +1,24 @@
 # Mobly Release History
 
+## Mobly Release 1.12: Snippet Modules Standardization
+
+### New
+* Added termination signal type to the test result records.
+* Native support for test suite.
+
+### Deprecated
+We have standardized Android snippet modules for cross-platform consolidation.
+The following modules in `android_device_lib` are deprecated:
+* `snippet_client` -> `snippet_client_v2`
+* `snippet_event` -> `mobly.snippet.callback_event`
+* `callback_handler` -> `callback_handler_v2`
+
+### Fixes
+* A bug that causes async RPCs to fail if rebooted a device with a running
+  event client.
+
+[Full list of changes](https://github.com/google/mobly/milestone/27?closed=1)
+
 
 ## Mobly Release 1.11.1: Support Test Case `repeat` and `retry`.
 
