@@ -27,7 +27,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
   def test_empty_manager_start_stop(self):
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.start()
     # When no client is registered, manager is never alive.
     self.assertFalse(manager.is_alive)
@@ -39,7 +38,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     self.assertEqual(manager.get_snippet_client('foo'), mock_client)
 
@@ -47,7 +45,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
   def test_get_snippet_client_fail(self, _):
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     self.assertIsNone(manager.get_snippet_client('foo'))
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
@@ -55,7 +52,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     mock_client.initialize.assert_called_once_with()
     manager.stop()
@@ -70,7 +66,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
   def test_add_snippet_client_dup_name(self, _):
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = ('.* Name "foo" is already registered with package ".*", it '
            'cannot be used again.')
@@ -83,7 +78,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_client.package = MOCK_PACKAGE
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = ('Snippet package "com.mock.package" has already been loaded '
            'under name "foo".')
@@ -96,7 +90,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_class.return_value = mock_client
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     manager.remove_snippet_client('foo')
     msg = 'No snippet client is registered with name "foo".'
@@ -109,7 +102,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_class.return_value = mock_client
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     with self.assertRaisesRegex(
         snippet_management_service.Error,
         'No snippet client is registered with name "foo".'):
@@ -120,7 +112,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     mock_client.initialize.reset_mock()
     mock_client.is_alive = True
@@ -136,7 +127,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     manager.pause()
     mock_client.close_connection.assert_called_once_with()
@@ -146,7 +136,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     mock_client.is_alive = False
     manager.resume()
@@ -157,7 +146,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     mock_client.is_alive = True
     manager.resume()
@@ -169,53 +157,9 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_class.return_value = mock_client
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    manager._use_client_v2_switch = True
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     manager.foo.ha('param')
     mock_client.ha.assert_called_once_with('param')
-
-  # TODO(mhaoli): The client v2 switch is transient, we will remove related
-  # tests after we complete the migration from v1 to v2.
-  def test_client_v2_switch_default_value(self):
-    self._set_device_attribute_and_check_client_v2_switch(
-        expect_switch_value=True)
-
-  def test_client_v2_switch_when_set_device_dimension_to_false(self):
-    self._set_device_attribute_and_check_client_v2_switch(
-        expect_switch_value=False,
-        dimensions={'use_mobly_snippet_client_v2': 'false'})
-
-  def test_client_v2_switch_when_set_device_dimension_to_true(self):
-    self._set_device_attribute_and_check_client_v2_switch(
-        expect_switch_value=True,
-        dimensions={'use_mobly_snippet_client_v2': 'true'})
-
-  def test_client_v2_switch_when_set_device_attribute_to_false(self):
-    self._set_device_attribute_and_check_client_v2_switch(
-        expect_switch_value=False, use_mobly_snippet_client_v2='false')
-
-  def test_client_v2_switch_when_set_device_attribute_to_true(self):
-    self._set_device_attribute_and_check_client_v2_switch(
-        expect_switch_value=True, use_mobly_snippet_client_v2='true')
-
-  def test_client_v2_switch_when_both_attribute_and_dimension_are_false(self):
-    self._set_device_attribute_and_check_client_v2_switch(
-        expect_switch_value=False,
-        use_mobly_snippet_client_v2='false',
-        dimensions={'use_mobly_snippet_client_v2': 'false'})
-
-  def test_client_v2_switch_when_both_attribute_and_dimension_are_true(self):
-    self._set_device_attribute_and_check_client_v2_switch(
-        expect_switch_value=True,
-        use_mobly_snippet_client_v2='true',
-        dimensions={'use_mobly_snippet_client_v2': 'true'})
-
-  def _set_device_attribute_and_check_client_v2_switch(self,
-                                                       expect_switch_value,
-                                                       **device_attributes):
-    mock_device = mock.MagicMock(**device_attributes, spec=['log'])
-    manager = snippet_management_service.SnippetManagementService(mock_device)
-    self.assertEqual(expect_switch_value, manager._is_using_client_v2())
 
 
 if __name__ == '__main__':
