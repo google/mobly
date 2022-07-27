@@ -1960,6 +1960,37 @@ class BaseTestTest(unittest.TestCase):
     bc.unpack_userparams(arg1="haha")
     self.assertEqual(bc.arg1, "haha")
 
+  def test_pre_run_failure(self):
+    """Test code path for `pre_run` failure.
+
+    When `pre_run` fails, pre-execution calculation is incomplete and the
+    number of tests requested is unknown. This is a
+    fatal issue that blocks any test execution in a class.
+
+    A class level error record is generated.
+    Unlike `setup_class` failure, no test is considered "skipped" in this
+    case as execution stage never started.
+    """
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def pre_run(self):
+        raise Exception(MSG_EXPECTED_EXCEPTION)
+
+      def logic(self, a, b):
+        pass
+
+      def test_foo(self):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(len(bt_cls.results.requested), 0)
+    class_record = bt_cls.results.error[0]
+    self.assertEqual(class_record.test_name, 'pre_run')
+    self.assertEqual(bt_cls.results.skipped, [])
+
+  # TODO(angli): remove after the full deprecation of `setup_generated_tests`.
   def test_setup_generated_tests_failure(self):
     """Test code path for setup_generated_tests failure.
 
@@ -1987,14 +2018,14 @@ class BaseTestTest(unittest.TestCase):
     bt_cls.run()
     self.assertEqual(len(bt_cls.results.requested), 0)
     class_record = bt_cls.results.error[0]
-    self.assertEqual(class_record.test_name, 'setup_generated_tests')
+    self.assertEqual(class_record.test_name, 'pre_run')
     self.assertEqual(bt_cls.results.skipped, [])
 
   def test_generate_tests_run(self):
 
     class MockBaseTest(base_test.BaseTestClass):
 
-      def setup_generated_tests(self):
+      def pre_run(self):
         self.generate_tests(test_logic=self.logic,
                             name_func=self.name_gen,
                             arg_sets=[(1, 2), (3, 4)])
@@ -2018,7 +2049,7 @@ class BaseTestTest(unittest.TestCase):
 
     class MockBaseTest(base_test.BaseTestClass):
 
-      def setup_generated_tests(self):
+      def pre_run(self):
         self.generate_tests(test_logic=self.logic,
                             name_func=self.name_gen,
                             uid_func=self.uid_logic,
@@ -2042,7 +2073,7 @@ class BaseTestTest(unittest.TestCase):
 
     class MockBaseTest(base_test.BaseTestClass):
 
-      def setup_generated_tests(self):
+      def pre_run(self):
         self.generate_tests(test_logic=self.logic,
                             name_func=self.name_gen,
                             uid_func=self.uid_logic,
@@ -2068,7 +2099,7 @@ class BaseTestTest(unittest.TestCase):
 
     class MockBaseTest(base_test.BaseTestClass):
 
-      def setup_generated_tests(self):
+      def pre_run(self):
         self.generate_tests(test_logic=self.logic,
                             name_func=self.name_gen,
                             arg_sets=[(1, 2), (3, 4)])
@@ -2085,7 +2116,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(len(bt_cls.results.passed), 1)
     self.assertEqual(bt_cls.results.passed[0].test_name, 'test_3_4')
 
-  def test_generate_tests_call_outside_of_setup_generated_tests(self):
+  def test_generate_tests_call_outside_of_pre_run(self):
 
     class MockBaseTest(base_test.BaseTestClass):
 
@@ -2105,9 +2136,8 @@ class BaseTestTest(unittest.TestCase):
     actual_record = bt_cls.results.error[0]
     utils.validate_test_result(bt_cls.results)
     self.assertEqual(actual_record.test_name, "test_ha")
-    self.assertEqual(
-        actual_record.details,
-        '"generate_tests" cannot be called outside of setup_generated_tests')
+    self.assertEqual(actual_record.details,
+                     '"generate_tests" cannot be called outside of pre_run')
     expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                         "Requested 1, Skipped 0")
     self.assertEqual(bt_cls.results.summary_str(), expected_summary)
@@ -2116,7 +2146,7 @@ class BaseTestTest(unittest.TestCase):
 
     class MockBaseTest(base_test.BaseTestClass):
 
-      def setup_generated_tests(self):
+      def pre_run(self):
         self.generate_tests(test_logic=self.logic,
                             name_func=self.name_gen,
                             arg_sets=[(1, 2), (3, 4)])
@@ -2130,7 +2160,7 @@ class BaseTestTest(unittest.TestCase):
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
     actual_record = bt_cls.results.error[0]
-    self.assertEqual(actual_record.test_name, "setup_generated_tests")
+    self.assertEqual(actual_record.test_name, "pre_run")
     self.assertEqual(
         actual_record.details,
         'During test generation of "logic": Test name "ha" already exists'
@@ -2300,11 +2330,10 @@ class BaseTestTest(unittest.TestCase):
       def _run_test_logic(self, arg):
         pass
 
-      def setup_generated_tests(self):
-        self.generate_tests(
-          self._run_test_logic,
-          name_func=lambda arg: f'test_generated_{arg}',
-          arg_sets=[(1,)])
+      def pre_run(self):
+        self.generate_tests(self._run_test_logic,
+                            name_func=lambda arg: f'test_generated_{arg}',
+                            arg_sets=[(1,)])
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
@@ -2480,7 +2509,8 @@ class BaseTestTest(unittest.TestCase):
   def test_retry_generated_test_last_pass(self):
     max_count = 3
     mock_action = mock.MagicMock(
-      side_effect = [Exception('Fail 1'), Exception('Fail 2'), None])
+        side_effect=[Exception('Fail 1'),
+                     Exception('Fail 2'), None])
 
     class MockBaseTest(base_test.BaseTestClass):
 
@@ -2488,11 +2518,10 @@ class BaseTestTest(unittest.TestCase):
       def _run_test_logic(self, arg):
         mock_action()
 
-      def setup_generated_tests(self):
-        self.generate_tests(
-          self._run_test_logic,
-          name_func=lambda arg: f'test_generated_{arg}',
-          arg_sets=[(1,)])
+      def pre_run(self):
+        self.generate_tests(self._run_test_logic,
+                            name_func=lambda arg: f'test_generated_{arg}',
+                            arg_sets=[(1,)])
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()

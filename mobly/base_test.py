@@ -36,6 +36,8 @@ TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{parent_token}]#{child_token} >>> BEGIN >>>'
 TEST_STAGE_END_LOG_TEMPLATE = '[{parent_token}]#{child_token} <<< END <<<'
 
 # Names of execution stages, in the order they happen during test runs.
+STAGE_NAME_PRE_RUN = 'pre_run'
+# Deprecated, use `STAGE_NAME_PRE_RUN` instead.
 STAGE_NAME_SETUP_GENERATED_TESTS = 'setup_generated_tests'
 STAGE_NAME_SETUP_CLASS = 'setup_class'
 STAGE_NAME_SETUP_TEST = 'setup_test'
@@ -339,22 +341,26 @@ class BaseTestClass:
       self.summary_writer.dump(record.to_dict(),
                                records.TestSummaryEntryType.CONTROLLER_INFO)
 
-  def _setup_generated_tests(self):
-    """Proxy function to guarantee the base implementation of
-    setup_generated_tests is called.
+  def _pre_run(self):
+    """Proxy function to guarantee the base implementation of `pre_run` is
+    called.
 
     Returns:
       True if setup is successful, False otherwise.
     """
-    stage_name = STAGE_NAME_SETUP_GENERATED_TESTS
+    stage_name = STAGE_NAME_PRE_RUN
     record = records.TestResultRecord(stage_name, self.TAG)
     record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
         stage_name, self.log_path, record)
     try:
       with self._log_test_stage(stage_name):
+        self.pre_run()
+      # TODO(angli): Remove this context block after the full deprecation of
+      # `setup_generated_tests`.
+      with self._log_test_stage(stage_name):
         self.setup_generated_tests()
-        return True
+      return True
     except Exception as e:
       logging.exception('%s failed for %s.', stage_name, self.TAG)
       record.test_error(e)
@@ -363,8 +369,21 @@ class BaseTestClass:
                                records.TestSummaryEntryType.RECORD)
       return False
 
-  def setup_generated_tests(self):
+  def pre_run(self):
     """Preprocesses that need to be done before setup_class.
+
+    This phase is used to do pre-test processes like generating tests.
+    This is the only place `self.generate_tests` should be called.
+
+    If this function throws an error, the test class will be marked failure
+    and the "Requested" field will be 0 because the number of tests
+    requested is unknown at this point.
+    """
+
+  def setup_generated_tests(self):
+    """[DEPRECATED] Use `pre_run` instead.
+
+    Preprocesses that need to be done before setup_class.
 
     This phase is used to do pre-test processes like generating tests.
     This is the only place `self.generate_tests` should be called.
@@ -854,7 +873,7 @@ class BaseTestClass:
         arguments as the test logic function and returns a string that
         is the corresponding UID.
     """
-    self._assert_function_name_in_stack(STAGE_NAME_SETUP_GENERATED_TESTS)
+    self._assert_function_name_in_stack(STAGE_NAME_PRE_RUN)
     root_msg = 'During test generation of "%s":' % test_logic.__name__
     for args in arg_sets:
       test_name = name_func(*args)
@@ -866,8 +885,8 @@ class BaseTestClass:
       # decorators, copy the attributes added by the decorators to the
       # generated test methods as well, so the generated test methods
       # also have the retry/repeat behavior.
-      for attr_name in (
-        ATTR_MAX_RETRY_CNT, ATTR_MAX_CONSEC_ERROR, ATTR_REPEAT_CNT):
+      for attr_name in (ATTR_MAX_RETRY_CNT, ATTR_MAX_CONSEC_ERROR,
+                        ATTR_REPEAT_CNT):
         attr = getattr(test_logic, attr_name, None)
         if attr is not None:
           setattr(test_func, attr_name, attr)
@@ -987,7 +1006,7 @@ class BaseTestClass:
     """
     logging.log_path = self.log_path
     # Executes pre-setup procedures, like generating test methods.
-    if not self._setup_generated_tests():
+    if not self._pre_run():
       return self.results
     logging.info('==========> %s <==========', self.TAG)
     # Devise the actual test methods to run in the test class.
