@@ -65,12 +65,13 @@ def main(argv=None):
   tests = None
   if args.tests:
     tests = args.tests
+  console_level = logging.DEBUG if args.verbose else logging.INFO
   # Execute the test class with configs.
   ok = True
   for config in test_configs:
     runner = TestRunner(log_dir=config.log_path,
                         testbed_name=config.testbed_name)
-    with runner.mobly_logger():
+    with runner.mobly_logger(console_level=console_level):
       runner.add_test_class(config, test_class, tests)
       try:
         runner.run()
@@ -125,6 +126,11 @@ def parse_mobly_cli_args(argv):
                       type=str,
                       metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
                       help='Specify which test beds to run tests on.')
+
+  parser.add_argument('-v',
+                      '--verbose',
+                      action='store_true',
+                      help='Set console logger level to DEBUG')
   if not argv:
     argv = sys.argv[1:]
   return parser.parse_known_args(argv)[0]
@@ -289,20 +295,26 @@ class TestRunner:
     self._test_run_metadata = TestRunner._TestRunMetaData(log_dir, testbed_name)
 
   @contextlib.contextmanager
-  def mobly_logger(self, alias='latest'):
+  def mobly_logger(self, alias='latest', console_level=logging.INFO):
     """Starts and stops a logging context for a Mobly test run.
 
     Args:
       alias: optional string, the name of the latest log alias directory to
         create. If a falsy value is specified, then the directory will not
         be created.
+      console_level: optional logging level, log level threshold used for log
+        messages printed to the console. Logs with a level less severe than
+        console_level will not be printed to the console.
 
     Yields:
       The host file path where the logs for the test run are stored.
     """
     # Refresh the log path at the beginning of the logger context.
     root_output_path = self._test_run_metadata.generate_test_run_log_path()
-    logger.setup_test_logger(root_output_path, self._testbed_name, alias=alias)
+    logger.setup_test_logger(root_output_path,
+                             self._testbed_name,
+                             alias=alias,
+                             console_level=console_level)
     try:
       yield self._test_run_metadata.root_output_path
     finally:
