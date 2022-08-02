@@ -494,6 +494,7 @@ class AndroidDevice:
     self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
     self._log_path = os.path.join(self._log_path_base,
                                   'AndroidDevice%s' % self._normalized_serial)
+    utils.create_dir(self._log_path)
     self._debug_tag = self._serial
     self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
                                           {'tag': self.debug_tag})
