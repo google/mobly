@@ -846,7 +846,7 @@ class BaseTestClass:
     for caller_frame in caller_frames[2:]:
       if caller_frame[3] in expected_func_names:
         return
-    raise Error(f"{caller_frames[1][3]}' cannot be called outside of the "
+    raise Error(f"'{caller_frames[1][3]}' cannot be called outside of the "
                 f"following functions: {expected_func_names}.")
 
   def generate_tests(self, test_logic, name_func, arg_sets, uid_func=None):

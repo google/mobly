@@ -2163,7 +2163,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(actual_record.test_name, "test_ha")
     self.assertEqual(
         actual_record.details,
-        "generate_tests' cannot be called outside of the followin"
+        "'generate_tests' cannot be called outside of the followin"
         "g functions: ['pre_run', 'setup_generated_tests'].")
     expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                         "Requested 1, Skipped 0")
