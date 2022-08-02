@@ -20,13 +20,13 @@ the `generate_setup_tests` stage will stop working completely in the next
 release.
 
 ### New
-* The Mobly snippet base client
-* Android snippet client v2 based on the new base client
-* Change Mobly's logger level to `DEBUG` via cli arg
+* Added the new Mobly snippet base client.
+* Added the new Android snippet client v2 based on the new base client.
+* Support changing Mobly's logger level to `DEBUG` via cli arg.
 * Termination signal type is now included in result records.
 
 ### Breaking Changes
-* The old Android snippet client is deprecated
+* The old Android snippet client is deprecated.
 * The `generate_setup_tests` stage is now `pre_run`.
 
 ### Fixes
