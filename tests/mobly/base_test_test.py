@@ -1991,6 +1991,31 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(bt_cls.results.skipped, [])
 
   # TODO(angli): remove after the full deprecation of `setup_generated_tests`.
+  def test_setup_generated_tests(self):
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def setup_generated_tests(self):
+        self.generate_tests(test_logic=self.logic,
+                            name_func=self.name_gen,
+                            arg_sets=[(1, 2), (3, 4)])
+
+      def name_gen(self, a, b):
+        return 'test_%s_%s' % (a, b)
+
+      def logic(self, a, b):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(len(bt_cls.results.requested), 2)
+    self.assertEqual(len(bt_cls.results.passed), 2)
+    self.assertIsNone(bt_cls.results.passed[0].uid)
+    self.assertIsNone(bt_cls.results.passed[1].uid)
+    self.assertEqual(bt_cls.results.passed[0].test_name, 'test_1_2')
+    self.assertEqual(bt_cls.results.passed[1].test_name, 'test_3_4')
+
+  # TODO(angli): remove after the full deprecation of `setup_generated_tests`.
   def test_setup_generated_tests_failure(self):
     """Test code path for setup_generated_tests failure.
 
@@ -2136,8 +2161,10 @@ class BaseTestTest(unittest.TestCase):
     actual_record = bt_cls.results.error[0]
     utils.validate_test_result(bt_cls.results)
     self.assertEqual(actual_record.test_name, "test_ha")
-    self.assertEqual(actual_record.details,
-                     '"generate_tests" cannot be called outside of pre_run')
+    self.assertEqual(
+        actual_record.details,
+        "generate_tests' cannot be called outside of the followin"
+        "g functions: ['pre_run', 'setup_generated_tests'].")
     expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
                         "Requested 1, Skipped 0")
     self.assertEqual(bt_cls.results.summary_str(), expected_summary)

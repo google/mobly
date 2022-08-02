@@ -838,21 +838,22 @@ class BaseTestClass:
         self.current_test_info = None
     return tr_record
 
-  def _assert_function_name_in_stack(self, expected_func_name):
-    """Asserts that the current stack contains the given function name."""
+  def _assert_function_names_in_stack(self, expected_func_names):
+    """Asserts that the current stack contains any of the given function names.
+    """
     current_frame = inspect.currentframe()
     caller_frames = inspect.getouterframes(current_frame, 2)
     for caller_frame in caller_frames[2:]:
-      if caller_frame[3] == expected_func_name:
+      if caller_frame[3] in expected_func_names:
         return
-    raise Error('"%s" cannot be called outside of %s' %
-                (caller_frames[1][3], expected_func_name))
+    raise Error(f"{caller_frames[1][3]}' cannot be called outside of the "
+                f"following functions: {expected_func_names}.")
 
   def generate_tests(self, test_logic, name_func, arg_sets, uid_func=None):
     """Generates tests in the test class.
 
-    This function has to be called inside a test class's
-    `self.setup_generated_tests` function.
+    This function has to be called inside a test class's `self.pre_run` or
+    `self.setup_generated_tests`.
 
     Generated tests are not written down as methods, but as a list of
     parameter sets. This way we reduce code repetition and improve test
@@ -873,7 +874,8 @@ class BaseTestClass:
         arguments as the test logic function and returns a string that
         is the corresponding UID.
     """
-    self._assert_function_name_in_stack(STAGE_NAME_PRE_RUN)
+    self._assert_function_names_in_stack(
+        [STAGE_NAME_PRE_RUN, STAGE_NAME_SETUP_GENERATED_TESTS])
     root_msg = 'During test generation of "%s":' % test_logic.__name__
     for args in arg_sets:
       test_name = name_func(*args)
@@ -926,7 +928,7 @@ class BaseTestClass:
     'test_*'.
 
     Note this only gets the names of tests that already exist. If
-    `setup_generated_test` has not happened when this was called, the
+    `generate_tests` has not happened when this was called, the
     generated tests won't be listed.
 
     Returns:
