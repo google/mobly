@@ -1,6 +1,40 @@
 # Mobly Release History
 
 
+## Mobly Release 1.12: New Snippet Base Client and a New `pre_run` Stage
+
+This release introduces the new generic Mobly snippet base client and the new
+Android snippet client built on top. The new snippet base enables us to better
+scale Mobly snippets across various platforms.
+
+The old Android snippet client is now considered deprecated, and will be
+removed in the following release. Please update your code accordingly:
+* `snippet_client` -> `snippet_client_v2`
+* `snippet_event` -> `mobly.snippet.callback_event`
+* `callback_handler` -> `callback_handler_v2`
+
+The `generate_setup_tests` stage is renamed to `pre_run` to better reflect its
+true role: steps that happen before all the test case methods are finalized.
+This is a pure rename with no functional changes. Please migrate your code as
+the `generate_setup_tests` stage will stop working completely in the next
+release.
+
+### New
+* Added the new Mobly snippet base client.
+* Added the new Android snippet client v2 based on the new base client.
+* Support changing Mobly's logger level to `DEBUG` via cli arg.
+* Termination signal type is now included in result records.
+
+### Breaking Changes
+* The old Android snippet client is deprecated.
+* The `generate_setup_tests` stage is now `pre_run`.
+
+### Fixes
+* Various issues in the Android snippet client.
+
+[Full list of changes](https://github.com/google/mobly/milestone/27?closed=1)
+
+
 ## Mobly Release 1.11.1: Support Test Case `repeat` and `retry`.
 
 ### New
