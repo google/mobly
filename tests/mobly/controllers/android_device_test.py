@@ -601,6 +601,7 @@ class AndroidDeviceTest(unittest.TestCase):
       self, sanitize_filename_mock, get_log_file_timestamp_mock, MockFastboot,
       MockAdbProxy):
     mock_serial = 1
+    sanitize_filename_mock.return_value = '1'
     ad = android_device.AndroidDevice(serial=mock_serial)
     get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
     filename = ad.generate_filename('MagicLog')
@@ -1098,8 +1099,7 @@ class AndroidDeviceTest(unittest.TestCase):
     """
     expected_e = Exception('start failed.')
     MockSnippetClient.initialize = mock.Mock(side_effect=expected_e)
-    MockSnippetClient.stop = mock.Mock(
-        side_effect=Exception('stop failed.'))
+    MockSnippetClient.stop = mock.Mock(side_effect=Exception('stop failed.'))
     ad = android_device.AndroidDevice(serial='1')
     try:
       ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
