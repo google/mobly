@@ -491,8 +491,8 @@ class AndroidDevice:
   def __init__(self, serial=''):
     self._serial = str(serial)
     # logging.log_path only exists when this is used in an Mobly test run.
-    self._log_path_base = getattr(logging, 'log_path', '/tmp/logs')
-    self._log_path = os.path.join(self._log_path_base,
+    _log_path_base = utils.abs_path(getattr(logging, 'log_path', '/tmp/logs'))
+    self._log_path = os.path.join(_log_path_base,
                                   'AndroidDevice%s' % self._normalized_serial)
     self._debug_tag = self._serial
     self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
@@ -621,6 +621,8 @@ class AndroidDevice:
   def log_path(self):
     """A string that is the path for all logs collected from this device.
     """
+    if not os.path.exists(self._log_path):
+      utils.create_dir(self._log_path)
     return self._log_path
 
   @log_path.setter
