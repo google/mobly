@@ -17,7 +17,7 @@ import logging
 import os
 import re
 import sys
-from typing import MutableMapping, Tuple, Any
+from typing import Any, MutableMapping, Tuple
 
 from mobly import records
 from mobly import utils
@@ -389,12 +389,13 @@ class PrefixLoggerAdapter(logging.LoggerAdapter):
   '<custom prefix> message'.
   """
 
+  # The key of log_preifx item in the dict self.extra
+  EXTRA_KEY_LOG_PREFIX: str = 'log_prefix'
+
   _KWARGS_TYPE = MutableMapping[str, Any]
   _PROCESS_RETURN_TYPE = Tuple[str, _KWARGS_TYPE]
 
-  def process(
-      self, msg: str,
-      kwargs: _KWARGS_TYPE) -> _PROCESS_RETURN_TYPE:
+  def process(self, msg: str, kwargs: _KWARGS_TYPE) -> _PROCESS_RETURN_TYPE:
     """Processes the logging call to insert contextual information.
 
     Args:
@@ -404,5 +405,5 @@ class PrefixLoggerAdapter(logging.LoggerAdapter):
     Returns:
       the message and kwargs modified.
     """
-    new_msg = f"{self.extra['log_prefix']} {msg}"
+    new_msg = f"{self.extra[PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX]} {msg}"
     return (new_msg, kwargs)

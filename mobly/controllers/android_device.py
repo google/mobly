@@ -494,10 +494,13 @@ class AndroidDevice:
     _log_path_base = utils.abs_path(getattr(logging, 'log_path', '/tmp/logs'))
     self._log_path = os.path.join(_log_path_base,
                                   'AndroidDevice%s' % self._normalized_serial)
+
     self._debug_tag = self._serial
-    log_prefix = _DEBUG_PREFIX_TEMPLATE % (self.debug_tag, )
-    self.log = mobly_logger.PrefixLoggerAdapter(logging.getLogger(),
-                                                {'log_prefix': log_prefix})
+    log_prefix = _DEBUG_PREFIX_TEMPLATE % (self.debug_tag,)
+    self.log = mobly_logger.PrefixLoggerAdapter(
+        logging.getLogger(),
+        {mobly_logger.PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX: log_prefix})
+
     self._build_info = None
     self._is_rebooting = False
     self.adb = adb.AdbProxy(serial)
@@ -608,8 +611,9 @@ class AndroidDevice:
     """
     self.log.info('Logging debug tag set to "%s"', tag)
     self._debug_tag = tag
-    log_prefix = _DEBUG_PREFIX_TEMPLATE % (self.debug_tag, )
-    self.log.extra['log_prefix'] = log_prefix
+    log_prefix = _DEBUG_PREFIX_TEMPLATE % (self.debug_tag,)
+    self.log.extra[
+        mobly_logger.PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX] = log_prefix
 
   @property
   def has_active_service(self):

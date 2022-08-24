@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 import shutil
 import tempfile
 import unittest
-import logging
 from unittest import mock
 
 from mobly import logger
@@ -209,6 +209,19 @@ class LoggerTest(unittest.TestCase):
     fake_filename = 'logcat.txt.'
     expected_filename = 'logcat.txt_'
     self.assertEqual(logger.sanitize_filename(fake_filename), expected_filename)
+
+  def test_prefix_logger_adapter_prefix_log_lines(self):
+    extra = {
+        logger.PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX: '[MOCK_PREFIX]',
+    }
+    adapted_logger = logger.PrefixLoggerAdapter(mock.Mock(), extra)
+
+    kwargs = mock.Mock()
+    processed_log, processed_kwargs = adapted_logger.process('mock log line',
+                                                             kwargs=kwargs)
+
+    self.assertEqual(processed_log, '[MOCK_PREFIX] mock log line')
+    self.assertIs(processed_kwargs, kwargs)
 
 
 if __name__ == "__main__":
