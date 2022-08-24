@@ -37,7 +37,7 @@ MBS_PACKAGE = 'com.google.android.mobly.snippet.bundled'
 MOBLY_CONTROLLER_CONFIG_NAME = 'AndroidDevice'
 
 ANDROID_DEVICE_PICK_ALL_TOKEN = '*'
-_DEBUG_PREFIX_TEMPLATE = '[AndroidDevice|%s] %s'
+_DEBUG_PREFIX_TEMPLATE = '[AndroidDevice|%s]'
 
 # Key name for adb logcat extra params in config file.
 ANDROID_DEVICE_ADB_LOGCAT_PARAM_KEY = 'adb_logcat_param'
@@ -495,8 +495,9 @@ class AndroidDevice:
     self._log_path = os.path.join(_log_path_base,
                                   'AndroidDevice%s' % self._normalized_serial)
     self._debug_tag = self._serial
-    self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                          {'tag': self.debug_tag})
+    log_prefix = _DEBUG_PREFIX_TEMPLATE % (self.debug_tag, )
+    self.log = mobly_logger.PrefixLoggerAdapter(logging.getLogger(),
+                                                {'log_prefix': log_prefix})
     self._build_info = None
     self._is_rebooting = False
     self.adb = adb.AdbProxy(serial)
@@ -607,7 +608,8 @@ class AndroidDevice:
     """
     self.log.info('Logging debug tag set to "%s"', tag)
     self._debug_tag = tag
-    self.log.extra['tag'] = tag
+    log_prefix = _DEBUG_PREFIX_TEMPLATE % (self.debug_tag, )
+    self.log.extra['log_prefix'] = log_prefix
 
   @property
   def has_active_service(self):
@@ -1151,23 +1153,3 @@ class AndroidDevice:
 # Properties in AndroidDevice that have setters.
 # This line has to live below the AndroidDevice code.
 _ANDROID_DEVICE_SETTABLE_PROPS = utils.get_settable_properties(AndroidDevice)
-
-
-class AndroidDeviceLoggerAdapter(logging.LoggerAdapter):
-  """A wrapper class that adds a prefix to each log line.
-
-  Usage:
-
-  .. code-block:: python
-
-    my_log = AndroidDeviceLoggerAdapter(logging.getLogger(), {
-      'tag': <custom tag>
-    })
-
-  Then each log line added by my_log will have a prefix
-  '[AndroidDevice|<tag>]'
-  """
-
-  def process(self, msg, kwargs):
-    msg = _DEBUG_PREFIX_TEMPLATE % (self.extra['tag'], msg)
-    return (msg, kwargs)

@@ -17,6 +17,7 @@ import logging
 import os
 import re
 import sys
+from typing import MutableMapping, Tuple, Any
 
 from mobly import records
 from mobly import utils
@@ -373,3 +374,35 @@ def normalize_log_line_timestamp(log_line_timestamp):
     special characters.
   """
   return sanitize_filename(log_line_timestamp)
+
+
+class PrefixLoggerAdapter(logging.LoggerAdapter):
+  """A wrapper that adds a prefix to each log line.
+
+    Typical usage example:
+
+    logger = CrosDeviceLoggerAdapter(logging.getLogger(), {
+      'log_prefix': <custom prefix>
+    })
+
+  Then each log line added by the logger will have a prefix:
+  '<custom prefix> message'.
+  """
+
+  _KWARGS_TYPE = MutableMapping[str, Any]
+  _PROCESS_RETURN_TYPE = Tuple[str, _KWARGS_TYPE]
+
+  def process(
+      self, msg: str,
+      kwargs: _KWARGS_TYPE) -> _PROCESS_RETURN_TYPE:
+    """Processes the logging call to insert contextual information.
+
+    Args:
+      msg: the logging message
+      kwargs: keyword arguments passed in to a logging call
+
+    Returns:
+      the message and kwargs modified.
+    """
+    new_msg = f"{self.extra['log_prefix']} {msg}"
+    return (new_msg, kwargs)
