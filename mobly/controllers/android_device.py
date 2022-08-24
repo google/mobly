@@ -497,9 +497,9 @@ class AndroidDevice:
 
     self._debug_tag = self._serial
     log_prefix = _DEBUG_PREFIX_TEMPLATE % (self.debug_tag,)
-    self.log = mobly_logger.PrefixLoggerAdapter(
-        logging.getLogger(),
-        {mobly_logger.PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX: log_prefix})
+    self.log = mobly_logger.PrefixLoggerAdapter(logging.getLogger(), {
+        mobly_logger.PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX: log_prefix,
+    })
 
     self._build_info = None
     self._is_rebooting = False
