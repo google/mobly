@@ -381,7 +381,7 @@ class PrefixLoggerAdapter(logging.LoggerAdapter):
 
     Typical usage example:
 
-    logger = CrosDeviceLoggerAdapter(logging.getLogger(), {
+    logger = PrefixLoggerAdapter(logging.getLogger(), {
       'log_prefix': <custom prefix>
     })
 
