@@ -379,6 +379,16 @@ def normalize_log_line_timestamp(log_line_timestamp):
 class PrefixLoggerAdapter(logging.LoggerAdapter):
   """A wrapper that adds a prefix to each log line.
 
+  This logger adapter class is like a decorator to Logger. It takes one
+  Logger-like object and returns a new Logger-like object. The new Logger-like
+  object will print logs with a custom prefix added. And creating new
+  Logger-like objects doesn't modify the behavior of the old Logger-like
+  object.
+
+  Chaining multiple logger adapters is also supported. The multiple adapters
+  will take effect in the order in which they are chained, i.e. the log will be
+  '<prefix1> <prefix2> <prefix3> <message>' if we chain 3 PrefixLoggerAdapters.
+
   Example Usage:
 
   .. code-block:: python
