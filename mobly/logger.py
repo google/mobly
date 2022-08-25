@@ -381,9 +381,8 @@ class PrefixLoggerAdapter(logging.LoggerAdapter):
 
   This logger adapter class is like a decorator to Logger. It takes one
   Logger-like object and returns a new Logger-like object. The new Logger-like
-  object will print logs with a custom prefix added. And creating new
-  Logger-like objects doesn't modify the behavior of the old Logger-like
-  object.
+  object will print logs with a custom prefix added. Creating new Logger-like
+  objects doesn't modify the behavior of the old Logger-like object.
 
   Chaining multiple logger adapters is also supported. The multiple adapters
   will take effect in the order in which they are chained, i.e. the log will be
@@ -397,7 +396,7 @@ class PrefixLoggerAdapter(logging.LoggerAdapter):
       'log_prefix': <custom prefix>
     })
 
-  Then each log line added by the logger will have a prefix before the message:
+  Then each log line added by the logger will have a prefix:
   '<custom prefix> <message>'.
   """
 
