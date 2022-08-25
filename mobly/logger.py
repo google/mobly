@@ -379,14 +379,16 @@ def normalize_log_line_timestamp(log_line_timestamp):
 class PrefixLoggerAdapter(logging.LoggerAdapter):
   """A wrapper that adds a prefix to each log line.
 
-    Typical usage example:
+  Example Usage:
+
+  .. code-block:: python
 
     logger = PrefixLoggerAdapter(logging.getLogger(), {
       'log_prefix': <custom prefix>
     })
 
-  Then each log line added by the logger will have a prefix:
-  '<custom prefix> message'.
+  Then each log line added by the logger will have a prefix before the message:
+  '<custom prefix> <message>'.
   """
 
   _KWARGS_TYPE = MutableMapping[str, Any]
