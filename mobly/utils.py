@@ -33,8 +33,13 @@ import traceback
 from typing import Tuple, overload
 
 import portpicker
-# TODO(ericth): Use Literal from typing if we only run on Python 3.8 or later.
-from typing_extensions import Literal
+
+# TODO(#851): Remove this try/except statement and typing_extensions from
+# install_requires when Python 3.8 is the minimum version we support.
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
