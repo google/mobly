@@ -18,7 +18,9 @@ from setuptools.command import test
 import sys
 
 install_requires = [
-    'portpicker', 'pyserial', 'pyyaml', 'timeout_decorator', 'typing_extensions>=4.1.1'
+    'portpicker',
+    'pyyaml',
+    'typing_extensions>=4.1.1; python_version<"3.8"',
 ]
 
 if platform.system() == 'Windows':
