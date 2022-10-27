@@ -412,11 +412,19 @@ class PrefixLoggerAdapter(logging.LoggerAdapter):
     """Processes the logging call to insert contextual information.
 
     Args:
-      msg: the logging message
-      kwargs: keyword arguments passed in to a logging call
+      msg: The logging message.
+      kwargs: Keyword arguments passed in to a logging call.
 
     Returns:
-      the message and kwargs modified.
+      The message and kwargs modified.
     """
     new_msg = f'{self.extra[PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX]} {msg}'
     return (new_msg, kwargs)
+
+  def set_log_prefix(self, prefix: str) -> None:
+    """Sets the log prefix to the given string.
+
+    Args:
+      prefix: The new log prefix.
+    """
+    self.extra[PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX] = prefix
