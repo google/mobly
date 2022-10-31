@@ -427,4 +427,5 @@ class PrefixLoggerAdapter(logging.LoggerAdapter):
     Args:
       prefix: The new log prefix.
     """
+    self.debug('Setting the log prefix to "%s".', prefix)
     self.extra[PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX] = prefix
