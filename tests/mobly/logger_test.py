@@ -223,6 +223,20 @@ class LoggerTest(unittest.TestCase):
     self.assertEqual(processed_log, '[MOCK_PREFIX] mock log line')
     self.assertIs(processed_kwargs, kwargs)
 
+  def test_prefix_logger_adapter_modify_prefix(self):
+    extra = {
+        logger.PrefixLoggerAdapter.EXTRA_KEY_LOG_PREFIX: 'MOCK_PREFIX',
+    }
+    adapted_logger = logger.PrefixLoggerAdapter(mock.Mock(), extra)
+    adapted_logger.set_log_prefix('[NEW]')
+
+    kwargs = mock.Mock()
+    processed_log, processed_kwargs = adapted_logger.process('mock log line',
+                                                             kwargs=kwargs)
+
+    self.assertEqual(processed_log, '[NEW] mock log line')
+    self.assertIs(processed_kwargs, kwargs)
+
 
 if __name__ == "__main__":
   unittest.main()
