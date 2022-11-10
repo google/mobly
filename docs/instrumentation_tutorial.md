@@ -124,7 +124,7 @@ instrumentation test being run.
 
 If you have a custom runner that you use for instrumentation tests, then you can
 specify it in the *run_instrumentation_test* method call. Replace
-`com.example.package.test.CustomRunner` with the fully quailied package name of
+`com.example.package.test.CustomRunner` with the fully qualified package name of
 your real instrumentation runner.
 
 ```python
