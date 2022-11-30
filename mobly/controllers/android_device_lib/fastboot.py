@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from subprocess import Popen, PIPE
+
+from mobly import utils
 
 
 def exe_cmd(*cmds):
@@ -33,6 +36,9 @@ def exe_cmd(*cmds):
   cmd = ' '.join(cmds)
   proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
   (out, err) = proc.communicate()
+  ret = proc.returncode
+  logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
+                utils.cli_cmd_to_string(cmds), out, err, ret)
   if not err:
     return out
   return err
