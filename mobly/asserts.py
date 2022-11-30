@@ -181,9 +181,9 @@ def assert_is_not(expr1, expr2, msg=None, extras=None):
 
 
 def assert_count_equal(first, second, msg=None, extras=None):
-  """Asserts that two iterables have the same element count.
+  """Asserts that two iterables have the same elements, the same number of
+  times, without regard to order.
 
-  Element order does not matter.
   Similar to assert_equal(Counter(list(first)), Counter(list(second))).
 
   Args:
