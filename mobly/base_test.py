@@ -660,6 +660,7 @@ class BaseTestClass:
       content: dict, the data to add to summary file.
     """
     if 'timestamp' not in content:
+      content = content.copy()
       content['timestamp'] = utils.get_current_epoch_time()
     self.summary_writer.dump(content, records.TestSummaryEntryType.USER_DATA)
 

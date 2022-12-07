@@ -2198,6 +2198,7 @@ class BaseTestTest(unittest.TestCase):
 
   def test_write_user_data(self):
     content = {'a': 1}
+    original_content = content.copy()
 
     class MockBaseTest(base_test.BaseTestClass):
 
@@ -2215,7 +2216,9 @@ class BaseTestTest(unittest.TestCase):
           continue
         hit = True
         self.assertEqual(c['a'], content['a'])
+        self.assertIn('timestamp', c)
         self.assertIsNotNone(c['timestamp'])
+        self.assertEqual(content, original_content, 'Content arg was mutated.')
     self.assertTrue(hit)
 
   def test_record_controller_info(self):
