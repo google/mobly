@@ -268,6 +268,23 @@ class TestRunnerTest(unittest.TestCase):
     self.assertEqual(results['Passed'], 0)
     self.assertEqual(results['Failed'], 0)
 
+  def test_run_when_terminated(self):
+    mock_test_config = self.base_mock_test_config.copy()
+    tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
+    tr.add_test_class(mock_test_config, terminated_test.TerminatedTest)
+
+    with self.assertRaises(signals.TestAbortAll):
+      with self.assertLogs(level=logging.WARNING) as log_output:
+        # Set handler log level due to bug in assertLogs.
+        # https://github.com/python/cpython/issues/86109
+        logging.getLogger().handlers[0].setLevel(logging.WARNING)
+        tr.run()
+
+    with self.subTest('aborts_with_terminated_log'):
+      self.assertIn('Abort all subsequent test classes', log_output.output[0])
+      self.assertIn('Test was terminated. This could be due to a timeout',
+                    log_output.output[0])
+
   def test_add_test_class_mismatched_log_path(self):
     tr = test_runner.TestRunner('/different/log/dir', self.testbed_name)
     with self.assertRaisesRegex(
@@ -336,36 +353,6 @@ class TestRunnerTest(unittest.TestCase):
       """)
     test_runner.main(['-c', tmp_file_path])
     mock_exit.assert_called_once_with(1)
-
-  @mock.patch.object(logging.Logger, 'removeHandler', autospec=True)
-  @mock.patch.object(utils, 'find_subclass_in_module', autospec=True)
-  @mock.patch.object(sys, 'exit', autospec=True)
-  def test_main_when_terminated(self, mock_exit, mock_find_subclass,
-                                unused_remove_handler):
-    mock_find_subclass.return_value = terminated_test.TerminatedTest
-    tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
-    with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write(u"""
-        TestBeds:
-          # A test bed where adb will find Android devices.
-          - Name: SampleTestBed
-            Controllers:
-              MagicDevice: '*'
-      """)
-
-    with self.assertLogs(level=logging.WARNING) as log_output:
-      # Set handler log level due to bug in assertLogs.
-      # https://github.com/python/cpython/issues/86109
-      logging.getLogger().handlers[0].setLevel(logging.WARNING)
-      test_runner.main(['-c', tmp_file_path])
-
-    with self.subTest('aborts_all_tests'):
-      self.assertIn('Abort all subsequent test classes', log_output.output[0])
-      self.assertIn('Test was terminated. This could be due to a timeout',
-                    log_output.output[0])
-
-    with self.subTest('exits_with_error_code_1'):
-      mock_exit.assert_called_once_with(1)
 
   def test__find_test_class_when_one_test_class(self):
     with mock.patch.dict('sys.modules', __main__=integration_test):
