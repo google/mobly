@@ -412,8 +412,7 @@ class TestRunner:
     # SIGTERM is essentially "converted" to an Exception, which allows the
     # finally blocks to be executed.
     def sigterm_handler(*args):
-      raise signals.TestAbortAll(
-          'Test was terminated. This could be due to a timeout.')
+      raise signals.TestAbortAll('Test received a SIGTERM.')
 
     signal.signal(signal.SIGTERM, sigterm_handler)
 
