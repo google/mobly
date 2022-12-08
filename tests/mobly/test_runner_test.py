@@ -280,9 +280,8 @@ class TestRunnerTest(unittest.TestCase):
         logging.getLogger().handlers[0].setLevel(logging.WARNING)
         tr.run()
 
-    with self.subTest('aborts_with_terminated_log'):
-      self.assertIn('Abort all subsequent test classes', log_output.output[0])
-      self.assertIn('Test received a SIGTERM.', log_output.output[0])
+    self.assertIn('Abort all subsequent test classes', log_output.output[0])
+    self.assertIn('Test received a SIGTERM.', log_output.output[0])
 
   def test_add_test_class_mismatched_log_path(self):
     tr = test_runner.TestRunner('/different/log/dir', self.testbed_name)

@@ -27,8 +27,7 @@ class TerminatedTest(base_test.BaseTestClass):
     # SIGTERM handler does not work on Windows. So just simulate the behaviour
     # for the purpose of this test.
     if platform.system() == 'Windows':
-      raise signals.TestAbortAll(
-          'Test was terminated. This could be due to a timeout.')
+      raise signals.TestAbortAll('Test received a SIGTERM.')
     else:
       os.kill(os.getpid(), signal.SIGTERM)
 

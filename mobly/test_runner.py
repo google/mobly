@@ -67,7 +67,6 @@ def main(argv=None):
   if args.tests:
     tests = args.tests
   console_level = logging.DEBUG if args.verbose else logging.INFO
-
   # Execute the test class with configs.
   ok = True
   for config in test_configs:
