@@ -16,6 +16,7 @@ import argparse
 import contextlib
 import logging
 import os
+import signal
 import sys
 import time
 
@@ -66,6 +67,18 @@ def main(argv=None):
   if args.tests:
     tests = args.tests
   console_level = logging.DEBUG if args.verbose else logging.INFO
+
+  # When a SIGTERM is received during the execution of a test, the Mobly test
+  # immediately terminates without executing any of the finally blocks. This
+  # signal handler handles this case by raising an Exception instead, so the
+  # SIGTERM is essentially "converted" to an Exception, which allows the
+  # finally blocks to be executed.
+  def sigterm_handler(*args):
+    raise signals.TestAbortAll(
+        'Test was terminated. This could be due to a timeout.')
+
+  signal.signal(signal.SIGTERM, sigterm_handler)
+
   # Execute the test class with configs.
   ok = True
   for config in test_configs:
@@ -75,12 +88,13 @@ def main(argv=None):
       runner.add_test_class(config, test_class, tests)
       try:
         runner.run()
-        ok = runner.results.is_all_pass and ok
       except signals.TestAbortAll:
         pass
       except Exception:
         logging.exception('Exception when executing %s.', config.testbed_name)
         ok = False
+      finally:
+        ok = runner.results.is_all_pass and ok
   if not ok:
     sys.exit(1)
 

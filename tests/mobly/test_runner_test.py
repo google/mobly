@@ -17,6 +17,7 @@ import logging
 import os
 import re
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -25,12 +26,14 @@ from mobly import config_parser
 from mobly import records
 from mobly import signals
 from mobly import test_runner
+from mobly import utils
 from tests.lib import mock_android_device
 from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import integration2_test
 from tests.lib import integration3_test
 from tests.lib import multiple_subclasses_module
+from tests.lib import terminated_test
 import yaml
 
 
@@ -333,6 +336,36 @@ class TestRunnerTest(unittest.TestCase):
       """)
     test_runner.main(['-c', tmp_file_path])
     mock_exit.assert_called_once_with(1)
+
+  @mock.patch.object(logging.Logger, 'removeHandler', autospec=True)
+  @mock.patch.object(utils, 'find_subclass_in_module', autospec=True)
+  @mock.patch.object(sys, 'exit', autospec=True)
+  def test_main_when_terminated(self, mock_exit, mock_find_subclass,
+                                unused_remove_handler):
+    mock_find_subclass.return_value = terminated_test.TerminatedTest
+    tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
+    with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+      f.write(u"""
+        TestBeds:
+          # A test bed where adb will find Android devices.
+          - Name: SampleTestBed
+            Controllers:
+              MagicDevice: '*'
+      """)
+
+    with self.assertLogs(level=logging.WARNING) as log_output:
+      # Set handler log level due to bug in assertLogs.
+      # https://github.com/python/cpython/issues/86109
+      logging.getLogger().handlers[0].setLevel(logging.WARNING)
+      test_runner.main(['-c', tmp_file_path])
+
+    with self.subTest('aborts_all_tests'):
+      self.assertIn('Abort all subsequent test classes', log_output.output[0])
+      self.assertIn('Test was terminated. This could be due to a timeout',
+                    log_output.output[0])
+
+    with self.subTest('exits_with_error_code_1'):
+      mock_exit.assert_called_once_with(1)
 
   def test__find_test_class_when_one_test_class(self):
     with mock.patch.dict('sys.modules', __main__=integration_test):
