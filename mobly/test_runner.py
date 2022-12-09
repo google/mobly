@@ -76,13 +76,12 @@ def main(argv=None):
       runner.add_test_class(config, test_class, tests)
       try:
         runner.run()
+        ok = runner.results.is_all_pass and ok
       except signals.TestAbortAll:
         pass
       except Exception:
         logging.exception('Exception when executing %s.', config.testbed_name)
         ok = False
-      finally:
-        ok = runner.results.is_all_pass and ok
   if not ok:
     sys.exit(1)
 
