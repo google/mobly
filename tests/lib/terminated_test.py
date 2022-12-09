@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 import platform
 import signal
@@ -27,6 +28,7 @@ class TerminatedTest(base_test.BaseTestClass):
     # SIGTERM handler does not work on Windows. So just simulate the behaviour
     # for the purpose of this test.
     if platform.system() == 'Windows':
+      logging.warning('Test received a SIGTERM. Aborting all tests.')
       raise signals.TestAbortAll('Test received a SIGTERM.')
     else:
       os.kill(os.getpid(), signal.SIGTERM)
