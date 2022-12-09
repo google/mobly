@@ -411,6 +411,7 @@ class TestRunner:
     # SIGTERM is essentially "converted" to an Exception, which allows the
     # finally blocks to be executed.
     def sigterm_handler(*args):
+      logging.warning('Test received a SIGTERM. Aborting all tests.')
       raise signals.TestAbortAll('Test received a SIGTERM.')
 
     signal.signal(signal.SIGTERM, sigterm_handler)
