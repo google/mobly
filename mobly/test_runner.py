@@ -406,9 +406,10 @@ class TestRunner:
 
     # When a SIGTERM is received during the execution of a test, the Mobly test
     # immediately terminates without executing any of the finally blocks. This
-    # signal handler handles this case by raising an Exception instead, so the
-    # SIGTERM is essentially "converted" to an Exception, which allows the
-    # finally blocks to be executed.
+    # handler converts the SIGTERM into a TestAbortAll signal so that the
+    # finally blocks will execute. We use TestAbortAll because other exceptions
+    # will be caught in the base test class and it will continue executing
+    # remaining tests.
     def sigterm_handler(*args):
       logging.warning('Test received a SIGTERM. Aborting all tests.')
       raise signals.TestAbortAll('Test received a SIGTERM.')
