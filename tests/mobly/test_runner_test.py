@@ -17,6 +17,7 @@ import logging
 import os
 import re
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -25,12 +26,14 @@ from mobly import config_parser
 from mobly import records
 from mobly import signals
 from mobly import test_runner
+from mobly import utils
 from tests.lib import mock_android_device
 from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import integration2_test
 from tests.lib import integration3_test
 from tests.lib import multiple_subclasses_module
+from tests.lib import terminated_test
 import yaml
 
 
@@ -264,6 +267,23 @@ class TestRunnerTest(unittest.TestCase):
     self.assertEqual(results['Executed'], 0)
     self.assertEqual(results['Passed'], 0)
     self.assertEqual(results['Failed'], 0)
+
+  def test_run_when_terminated(self):
+    mock_test_config = self.base_mock_test_config.copy()
+    tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
+    tr.add_test_class(mock_test_config, terminated_test.TerminatedTest)
+
+    with self.assertRaises(signals.TestAbortAll):
+      with self.assertLogs(level=logging.WARNING) as log_output:
+        # Set handler log level due to bug in assertLogs.
+        # https://github.com/python/cpython/issues/86109
+        logging.getLogger().handlers[0].setLevel(logging.WARNING)
+        tr.run()
+
+    self.assertIn('Test received a SIGTERM. Aborting all tests.',
+                  log_output.output[0])
+    self.assertIn('Abort all subsequent test classes', log_output.output[1])
+    self.assertIn('Test received a SIGTERM.', log_output.output[1])
 
   def test_add_test_class_mismatched_log_path(self):
     tr = test_runner.TestRunner('/different/log/dir', self.testbed_name)

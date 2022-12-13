@@ -16,6 +16,7 @@ import argparse
 import contextlib
 import logging
 import os
+import signal
 import sys
 import time
 
@@ -402,6 +403,19 @@ class TestRunner:
     summary_writer = records.TestSummaryWriter(
         os.path.join(self._test_run_metadata.root_output_path,
                      records.OUTPUT_FILE_SUMMARY))
+
+    # When a SIGTERM is received during the execution of a test, the Mobly test
+    # immediately terminates without executing any of the finally blocks. This
+    # handler converts the SIGTERM into a TestAbortAll signal so that the
+    # finally blocks will execute. We use TestAbortAll because other exceptions
+    # will be caught in the base test class and it will continue executing
+    # remaining tests.
+    def sigterm_handler(*args):
+      logging.warning('Test received a SIGTERM. Aborting all tests.')
+      raise signals.TestAbortAll('Test received a SIGTERM.')
+
+    signal.signal(signal.SIGTERM, sigterm_handler)
+
     try:
       for test_run_info in self._test_run_infos:
         # Set up the test-specific config
