@@ -863,10 +863,11 @@ class AndroidDevice:
       # as emulators in addition to other things, so only return True on
       # an exact match.
       return True
-    elif self.build_info['hardware'] in ['ranchu', 'goldfish']:
+    elif self.build_info['hardware'] in ['ranchu', 'goldfish', 'cutf_cvm']:
       # Ranchu and Goldfish are the hardware properties that the AOSP
       # emulators report, so if the device says it's an AOSP emulator, it
-      # probably is one.
+      # probably is one. Cuttlefish emulators report 'cutf_cvm` as the
+      # hardware property.
       return True
     else:
       return False
