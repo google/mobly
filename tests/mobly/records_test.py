@@ -85,6 +85,8 @@ class RecordsTest(unittest.TestCase):
     d[records.TestResultEnums.RECORD_CLASS] = None
     d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
     d[records.TestResultEnums.RECORD_STACKTRACE] = stacktrace
+    d[records.TestResultEnums.RECORD_RETRY_NUMBER] = None
+    d[records.TestResultEnums.RECORD_REPEAT_NUMBER] = None
     actual_d = record.to_dict()
     # Verify stacktrace partially match as stacktraces often have file path
     # in them.

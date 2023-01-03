@@ -181,6 +181,8 @@ class TestResultEnums:
   RECORD_SIGNATURE = 'Signature'
   RECORD_RETRY_PARENT = 'Retry Parent'
   RECORD_POSITION = 'Position'
+  RECORD_RETRY_NUMBER = 'Retry Number'
+  RECORD_REPEAT_NUMBER = 'Repeat Number'
   TEST_RESULT_PASS = 'PASS'
   TEST_RESULT_FAIL = 'FAIL'
   TEST_RESULT_SKIP = 'SKIP'
@@ -320,7 +322,9 @@ class TestResultRecord:
     termination_signal: ExceptionRecord, the main exception of the test.
     extra_errors: OrderedDict, all exceptions occurred during the entire
       test lifecycle. The order of occurrence is preserved.
-    result: TestResultEnum.TEAT_RESULT_*, PASS/FAIL/SKIP.
+    result: TestResultEnum.TEST_RESULT_*, PASS/FAIL/SKIP.
+    retry_number: int, the retry number if this was a retry.
+    repeat_number: int, the repeat number if this test was a repeat.
   """
 
   def __init__(self, t_name, t_class=None):
@@ -334,6 +338,8 @@ class TestResultRecord:
     self.termination_signal = None
     self.extra_errors = collections.OrderedDict()
     self.result = None
+    self.retry_number = None
+    self.repeat_number = None
 
   @property
   def details(self):
@@ -509,6 +515,8 @@ class TestResultRecord:
         key: value.to_dict() for (key, value) in self.extra_errors.items()
     }
     d[TestResultEnums.RECORD_STACKTRACE] = self.stacktrace
+    d[TestResultEnums.RECORD_RETRY_NUMBER] = self.retry_number
+    d[TestResultEnums.RECORD_REPEAT_NUMBER] = self.repeat_number
     return d
 
 

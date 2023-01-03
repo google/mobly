@@ -687,10 +687,15 @@ class BaseTestClass:
     if not should_retry(previous_record):
       return
 
+    previous_record.retry_number = 0
+
     for i in range(max_count - 1):
-      retry_name = f'{test_name}_retry_{i+1}'
+      retry_number = i + 1
+      retry_name = f'{test_name}_retry_{retry_number}'
       new_record = records.TestResultRecord(retry_name, self.TAG)
       new_record.retry_parent = previous_record
+      new_record.retry_number = retry_number
+
       previous_record = self.exec_one_test(retry_name, test_method, new_record)
       if not should_retry(previous_record):
         break
@@ -722,6 +727,7 @@ class BaseTestClass:
     for i in range(repeat_count):
       new_test_name = f'{test_name}_{i}'
       record = self.exec_one_test(new_test_name, test_method)
+      record.repeat_number = i
       if record.result in [
           records.TestResultEnums.TEST_RESULT_FAIL,
           records.TestResultEnums.TEST_RESULT_ERROR,

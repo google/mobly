@@ -2532,7 +2532,10 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(2, len(bt_cls.results.error))
     error_record_1, error_record_2 = bt_cls.results.error
     self.assertEqual(error_record_1.test_name, 'test_something')
+    self.assertEqual(error_record_1.retry_number, 0)
     self.assertEqual(error_record_2.test_name, 'test_something_retry_1')
+    self.assertEqual(error_record_2.retry_number, 1)
+    self.assertEqual(pass_record.retry_number, 2)
     self.assertIs(error_record_1, error_record_2.retry_parent)
     self.assertIs(error_record_2, pass_record.retry_parent)
 
@@ -2561,10 +2564,13 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(1, len(bt_cls.results.passed))
     pass_record = bt_cls.results.passed[0]
     self.assertEqual(pass_record.test_name, f'test_generated_1_retry_2')
+    self.assertEqual(pass_record.retry_number, 2)
     self.assertEqual(2, len(bt_cls.results.error))
     error_record_1, error_record_2 = bt_cls.results.error
     self.assertEqual(error_record_1.test_name, 'test_generated_1')
+    self.assertEqual(error_record_1.retry_number, 0)
     self.assertEqual(error_record_2.test_name, 'test_generated_1_retry_1')
+    self.assertEqual(error_record_2.retry_number, 1)
     self.assertIs(error_record_1, error_record_2.retry_parent)
     self.assertIs(error_record_2, pass_record.retry_parent)
 
@@ -2591,8 +2597,11 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(3, len(bt_cls.results.error))
     error_record_1, error_record_2, error_record_3 = bt_cls.results.error
     self.assertEqual(error_record_1.test_name, 'test_something')
+    self.assertEqual(error_record_1.retry_number, 0)
     self.assertEqual(error_record_2.test_name, 'test_something_retry_1')
+    self.assertEqual(error_record_2.retry_number, 1)
     self.assertEqual(error_record_3.test_name, 'test_something_retry_2')
+    self.assertEqual(error_record_3.retry_number, 2)
     self.assertIs(error_record_1, error_record_2.retry_parent)
     self.assertIs(error_record_2, error_record_3.retry_parent)
 
@@ -2645,6 +2654,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(repeat_count, len(bt_cls.results.passed))
     for i, record in enumerate(bt_cls.results.passed):
       self.assertEqual(record.test_name, f'test_something_{i}')
+      self.assertEqual(record.repeat_number, i)
       self.assertEqual(record.uid, 'some-uid')
 
   def test_uid_with_repeat(self):
@@ -2662,6 +2672,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(repeat_count, len(bt_cls.results.passed))
     for i, record in enumerate(bt_cls.results.passed):
       self.assertEqual(record.test_name, f'test_something_{i}')
+      self.assertEqual(record.repeat_number, i)
       self.assertEqual(record.uid, 'some-uid')
 
   def test_log_stage_always_logs_end_statement(self):
