@@ -774,7 +774,7 @@ class BaseTestClass:
           _, _, traceback = sys.exc_info()
           raise signals.TestError(e.details, e.extras).with_traceback(traceback)
         test_method()
-      except (signals.TestPass, signals.TestAbortSignal):
+      except (signals.TestPass, signals.TestAbortSignal, signals.TestSkip):
         raise
       except Exception:
         logging.exception('Exception occurred in %s.',
