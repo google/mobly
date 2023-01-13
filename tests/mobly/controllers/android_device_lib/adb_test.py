@@ -509,12 +509,12 @@ class AdbTest(unittest.TestCase):
     timeout_s = adb.DEFAULT_GETPROP_TIMEOUT_SEC * 2
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
       mock_exec_cmd.return_value = b'blah'
-      self.assertEqual(adb.AdbProxy().getprop('haha', timeout=timeout_s), 'blah')
-      mock_exec_cmd.assert_called_once_with(
-          ['adb', 'shell', 'getprop', 'haha'],
-          shell=False,
-          stderr=None,
-          timeout=timeout_s)
+      self.assertEqual(adb.AdbProxy().getprop('haha', timeout=timeout_s),
+                       'blah')
+      mock_exec_cmd.assert_called_once_with(['adb', 'shell', 'getprop', 'haha'],
+                                            shell=False,
+                                            stderr=None,
+                                            timeout=timeout_s)
 
   def test__parse_getprop_output_special_values(self):
     mock_adb_output = (
