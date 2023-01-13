@@ -35,8 +35,9 @@ ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC = 10
 # Qualified class name of the default instrumentation test runner.
 DEFAULT_INSTRUMENTATION_RUNNER = 'com.android.common.support.test.runner.AndroidJUnitRunner'
 
-# Adb getprop call should never take too long.
-DEFAULT_GETPROP_TIMEOUT_SEC = 5
+# `adb shell getprop` can take surprisingly long, when the device is a
+# networked virtual device.
+DEFAULT_GETPROP_TIMEOUT_SEC = 10
 DEFAULT_GETPROPS_ATTEMPTS = 3
 DEFAULT_GETPROPS_RETRY_SLEEP_SEC = 1
 
@@ -367,13 +368,15 @@ class AdbProxy:
                      ret_code=0)
     return stdout
 
-  def getprop(self, prop_name):
+  def getprop(self, prop_name, timeout=DEFAULT_GETPROP_TIMEOUT_SEC):
     """Get a property of the device.
 
     This is a convenience wrapper for `adb shell getprop xxx`.
 
     Args:
       prop_name: A string that is the name of the property to get.
+      timeout: float, the number of seconds to wait before timing out.
+          If not specified, the DEFAULT_GETPROP_TIMEOUT_SEC is used.
 
     Returns:
       A string that is the value of the property, or None if the property
@@ -381,7 +384,7 @@ class AdbProxy:
     """
     return self.shell(
         ['getprop', prop_name],
-        timeout=DEFAULT_GETPROP_TIMEOUT_SEC).decode('utf-8').strip()
+        timeout=timeout).decode('utf-8').strip()
 
   def getprops(self, prop_names):
     """Get multiple properties of the device.
