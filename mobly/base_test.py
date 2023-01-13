@@ -471,6 +471,7 @@ class BaseTestClass:
                                records.TestSummaryEntryType.RECORD)
     else:
       if expects.recorder.has_error:
+        record.test_error()
         record.update_record()
         self.results.add_class_error(record)
         self.summary_writer.dump(record.to_dict(),
