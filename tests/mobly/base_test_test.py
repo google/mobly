@@ -1728,6 +1728,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(actual_record.test_name, 'teardown_class')
     self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
     self.assertEqual(actual_record.extras, MOCK_EXTRA)
+    self.assertIsNotNone(actual_record.end_time)
 
   def test_expect_in_setup_test(self):
     must_call = mock.Mock()
