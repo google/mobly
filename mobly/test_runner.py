@@ -252,6 +252,10 @@ class TestRunner:
                                            self._logger_start_time)
       return self.root_output_path
 
+    @property
+    def summary_file_path(self):
+      return os.path.join(self.root_output_path, records.OUTPUT_FILE_SUMMARY)
+
     def set_start_point(self):
       """Sets the start point of a test run.
 
@@ -401,8 +405,7 @@ class TestRunner:
     utils.create_dir(self._test_run_metadata.root_output_path)
 
     summary_writer = records.TestSummaryWriter(
-        os.path.join(self._test_run_metadata.root_output_path,
-                     records.OUTPUT_FILE_SUMMARY))
+        self._test_run_metadata.summary_file_path)
 
     # When a SIGTERM is received during the execution of a test, the Mobly test
     # immediately terminates without executing any of the finally blocks. This
@@ -439,6 +442,7 @@ class TestRunner:
           f'Summary for test run {self._test_run_metadata.run_id}:',
           f'Total time elapsed {self._test_run_metadata.time_elapsed_sec}s',
           f'Artifacts are saved in "{self._test_run_metadata.root_output_path}"',
+          f'Test summary saved in "{self._test_run_metadata.summary_file_path}"',
           f'Test results: {self.results.summary_str()}'
       ]
       logging.info('\n'.join(summary_lines))
