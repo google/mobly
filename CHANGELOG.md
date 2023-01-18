@@ -1,6 +1,19 @@
 # Mobly Release History
 
 
+## Mobly Release 1.12.1: Minor Improvements and Fixes
+
+### New
+* A logger adapter that makes it easier for modules to add their own log line prefixes
+
+### Fixes
+* `is_emulator` property now works for Cuttlefish image
+* Handle SIGTERM properly
+* Fixed missing result fields and output directories
+
+[Full list of changes](https://github.com/google/mobly/milestone/28?closed=1)
+
+
 ## Mobly Release 1.12: New Snippet Base Client and a New `pre_run` Stage
 
 This release introduces the new generic Mobly snippet base client and the new
