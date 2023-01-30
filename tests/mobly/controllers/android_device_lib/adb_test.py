@@ -769,7 +769,7 @@ class AdbTest(unittest.TestCase):
                                        shell=False,
                                        timeout=None,
                                        stderr=None)
-    self.assertEqual(mock_sleep.call_count, 2)
+    self.assertEqual(mock_sleep.call_count, adb.ADB_ROOT_RETRY_ATTEMPTS - 1)
     mock_sleep.assert_called_with(10)
 
   def test_has_shell_command_called_correctly(self):
