@@ -29,7 +29,7 @@ ADB_PORT_LOCK = threading.Lock()
 
 # Number of attempts to execute "adb root", and seconds for interval time of
 # this commands.
-ADB_ROOT_RETRY_ATTMEPTS = 3
+ADB_ROOT_RETRY_ATTEMPTS = 5
 ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC = 10
 
 # Qualified class name of the default instrumentation test runner.
@@ -517,7 +517,7 @@ class AdbProxy:
     Raises:
       AdbError: If the command exit code is not 0.
     """
-    for attempt in range(ADB_ROOT_RETRY_ATTMEPTS):
+    for attempt in range(ADB_ROOT_RETRY_ATTEMPTS):
       try:
         return self._exec_adb_cmd('root',
                                   args=None,
@@ -525,7 +525,7 @@ class AdbProxy:
                                   timeout=None,
                                   stderr=None)
       except AdbError as e:
-        if attempt + 1 < ADB_ROOT_RETRY_ATTMEPTS:
+        if attempt + 1 < ADB_ROOT_RETRY_ATTEMPTS:
           logging.debug('Retry the command "%s" since Error "%s" occurred.' %
                         (utils.cli_cmd_to_string(
                             e.cmd), e.stderr.decode('utf-8').strip()))
