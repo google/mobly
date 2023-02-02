@@ -77,16 +77,16 @@ class CallbackHandlerBaseTest(unittest.TestCase):
                                   default_timeout_sec=10)
     self.assertEqual(handler.rpc_max_timeout_sec, 20)
     self.assertEqual(handler.default_timeout_sec, 10)
-    with self.assertRaisesRegex(AttributeError, "can't set attribute"):
+    with self.assertRaisesRegex(AttributeError, "rpc_max_timeout_sec"):
       handler.rpc_max_timeout_sec = 5
 
-    with self.assertRaisesRegex(AttributeError, "can't set attribute"):
+    with self.assertRaisesRegex(AttributeError, "default_timeout_sec"):
       handler.default_timeout_sec = 5
 
   def test_callback_id_property(self):
     handler = FakeCallbackHandler(callback_id=MOCK_CALLBACK_ID)
     self.assertEqual(handler.callback_id, MOCK_CALLBACK_ID)
-    with self.assertRaisesRegex(AttributeError, "can't set attribute"):
+    with self.assertRaisesRegex(AttributeError, "callback_id"):
       handler.callback_id = 'ha'
 
   def test_event_dict_to_snippet_event(self):

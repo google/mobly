@@ -47,7 +47,7 @@ class CallbackHandlerTest(unittest.TestCase):
                                                method_name=None,
                                                ad=mock.Mock())
     self.assertEqual(handler.callback_id, MOCK_CALLBACK_ID)
-    with self.assertRaisesRegex(AttributeError, "can't set attribute"):
+    with self.assertRaisesRegex(AttributeError, "callback_id"):
       handler.callback_id = 'ha'
 
   def test_event_dict_to_snippet_event(self):
