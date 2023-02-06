@@ -36,6 +36,19 @@ class RecordTestError(Exception):
     self._something = something
 
 
+class RecordTestRecursiveError(Exception):
+  """Error class with self recursion.
+
+  Used for ExceptionRecord tests.
+  """
+
+  def __init__(self):
+    super().__init__(self)  # create a self recursion here.
+
+  def __str__(self):
+    return 'Oh ha!'
+
+
 class RecordsTest(unittest.TestCase):
   """This test class tests the implementation of classes in mobly.records.
   """
@@ -426,6 +439,19 @@ class RecordsTest(unittest.TestCase):
     self.assertIsNot(er, new_er)
     self.assertDictEqual(er.to_dict(), new_er.to_dict())
     self.assertEqual(er.type, 'RecordTestError')
+
+  def test_recursive_exception_record_deepcopy(self):
+    """Makes sure ExceptionRecord wrapper handles deep copy properly in case of
+    recursive exception.
+    """
+    try:
+      raise RecordTestRecursiveError()
+    except RecordTestRecursiveError as e:
+      er = records.ExceptionRecord(e)
+    new_er = copy.deepcopy(er)
+    self.assertIsNot(er, new_er)
+    self.assertDictEqual(er.to_dict(), new_er.to_dict())
+    self.assertEqual(er.type, 'RecordTestRecursiveError')
 
   def test_add_controller_info_record(self):
     tr = records.TestResult()
