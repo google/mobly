@@ -277,7 +277,7 @@ class ExceptionRecord:
     """
     try:
       exception = copy.deepcopy(self.exception)
-    except TypeError:
+    except (TypeError, RecursionError):
       # If the exception object cannot be copied, use the original
       # exception object.
       exception = self.exception
