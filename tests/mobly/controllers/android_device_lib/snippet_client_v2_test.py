@@ -22,7 +22,6 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.snippet import errors
-
 from tests.lib import mock_android_device
 
 
