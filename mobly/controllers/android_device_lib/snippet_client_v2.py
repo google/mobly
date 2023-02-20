@@ -25,6 +25,7 @@ from mobly.controllers.android_device_lib import errors as android_device_lib_er
 from mobly.snippet import client_base
 from mobly.snippet import errors
 
+
 # The package of the instrumentation runner used for mobly snippet
 _INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunner'
 
@@ -341,9 +342,15 @@ class SnippetClientV2(client_base.ClientBase):
 
   def _forward_device_port(self):
     """Forwards the device port to a host port."""
-    if not self.host_port:
-      self.host_port = utils.get_available_host_port()
-    self._adb.forward([f'tcp:{self.host_port}', f'tcp:{self.device_port}'])
+    host_port = self.host_port if self.host_port else 0
+    output = self._adb.forward([f'tcp:{host_port}', f'tcp:{self.device_port}'])
+    try:
+      self.host_port = int(str(output, encoding='utf8'))
+    except UnicodeError:
+      self.log.error(
+          'Failed to parse the output of port forwarding: "%s".', output
+      )
+      raise
 
   def create_socket_connection(self):
     """Creates a socket connection to the server.
