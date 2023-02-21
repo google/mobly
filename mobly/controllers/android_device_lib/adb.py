@@ -135,7 +135,16 @@ def list_occupied_adb_ports():
   return used_ports
 
 
-def can_adb_pick_available_port():
+def can_adb_pick_available_forwarding_port():
+  """True if the ADB binary can pick available forwarding port; False otherwise.
+
+  By default, the ADB binary support this feature, i.e. it supports passing 0
+  as host port when doing port forwarding.
+
+  But sometimes users override the `ADB` variable to use a customized variant to
+  replace the ADB binary, e.g. waterfall binary. In these scenarios, this will
+  return False.
+  """
   if os.path.basename(ADB) == 'adb':
     return True
   return False

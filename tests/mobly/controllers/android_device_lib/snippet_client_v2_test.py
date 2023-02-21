@@ -112,7 +112,7 @@ class SnippetClientV2Test(unittest.TestCase):
   def setUp(self):
     super().setUp()
     self.can_adb_pick_available_port = mock.patch.object(
-        adb, 'can_adb_pick_available_port', return_value=True).start()
+        adb, 'can_adb_pick_available_forwarding_port', return_value=True).start()
     self.addCleanup(mock.patch.stopall)
 
   def _make_client(self, adb_proxy=None, mock_properties=None):
@@ -1094,6 +1094,20 @@ class SnippetClientV2Test(unittest.TestCase):
         snippet_client_v2._SOCKET_CONNECTION_TIMEOUT)
     self.socket_conn.settimeout.assert_called_once_with(
         snippet_client_v2._SOCKET_READ_TIMEOUT)
+
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  def test_make_connection_uses_utils_to_find_available_port(
+      self, mock_start_subprocess, mock_socket_create_conn, *_):
+    """Tests that making a connection works normally."""
+    socket_resp = [b'{"status": true, "uid": 1}']
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(mock_start_subprocess)
+    self.device.adb.mock_forward_func.side_effect = UnicodeError()
+
+    with self.assertRaises(UnicodeError):
+      self.client.make_connection()
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'

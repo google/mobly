@@ -342,12 +342,14 @@ class SnippetClientV2(client_base.ClientBase):
 
   def _forward_device_port(self):
     """Forwards the device port to a host port."""
-    if adb.can_adb_pick_available_port():
+    if adb.can_adb_pick_available_forwarding_port():
       host_port = self.host_port if self.host_port else 0
-      output = self._adb.forward([f'tcp:{host_port}', f'tcp:{self.device_port}'])
+      output = self._adb.forward(
+          [f'tcp:{host_port}', f'tcp:{self.device_port}']
+      )
       try:
         self.host_port = int(str(output, encoding='utf8').strip())
-      except (UnicodeError, ValueError):
+      except UnicodeError:
         self.log.error(
             'Failed to parse the output of port forwarding: "%s".', output
         )
