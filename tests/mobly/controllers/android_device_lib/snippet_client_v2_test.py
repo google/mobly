@@ -22,6 +22,7 @@ from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors as android_device_lib_errors
 from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.snippet import errors
+
 from tests.lib import mock_android_device
 
 
@@ -112,7 +113,8 @@ class SnippetClientV2Test(unittest.TestCase):
   def setUp(self):
     super().setUp()
     self.can_adb_pick_available_port = mock.patch.object(
-        adb, 'can_adb_pick_available_forwarding_port', return_value=True).start()
+        adb, 'can_adb_pick_available_forwarding_port', return_value=True
+    ).start()
     self.addCleanup(mock.patch.stopall)
 
   def _make_client(self, adb_proxy=None, mock_properties=None):
@@ -1076,9 +1078,9 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_make_connection_uses_utils_to_find_available_port(
+  def test_make_connection_finds_an_available_port_manually(
       self, mock_start_subprocess, mock_socket_create_conn, *_):
-    """Tests that making a connection works normally."""
+    """Tests make_connection finds an available forwarding port manually."""
     self.can_adb_pick_available_port.return_value = False
     socket_resp = [b'{"status": true, "uid": 1}']
     self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
@@ -1098,9 +1100,9 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  def test_make_connection_uses_utils_to_find_available_port(
+  def test_make_connection_cannot_decode_adb_forward_output(
       self, mock_start_subprocess, mock_socket_create_conn, *_):
-    """Tests that making a connection works normally."""
+    """Tests that make_connection cannot decode adb forward output."""
     socket_resp = [b'{"status": true, "uid": 1}']
     self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
     self._mock_server_process_starting_response(mock_start_subprocess)

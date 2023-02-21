@@ -21,6 +21,7 @@ import time
 
 from mobly import utils
 
+
 # Command to use for running ADB commands.
 ADB = 'adb'
 
@@ -136,9 +137,9 @@ def list_occupied_adb_ports():
 
 
 def can_adb_pick_available_forwarding_port():
-  """True if the ADB binary can pick available forwarding port; False otherwise.
+  """True if the ADB can pick an available forwarding port; False otherwise.
 
-  By default, the ADB binary support this feature, i.e. it supports passing 0
+  By default, the ADB binary supports this feature, i.e. it supports passing 0
   as host port when doing port forwarding.
 
   But sometimes users override the `ADB` variable to use a customized variant to

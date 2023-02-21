@@ -20,6 +20,7 @@ from unittest import mock
 
 from mobly.controllers.android_device_lib import adb
 
+
 # Mock parameters for instrumentation.
 MOCK_INSTRUMENTATION_PACKAGE = 'com.my.instrumentation.tests'
 MOCK_INSTRUMENTATION_RUNNER = 'com.my.instrumentation.runner'
@@ -88,10 +89,9 @@ class AdbTest(unittest.TestCase):
   def test_can_adb_pick_available_forwarding_port_positive(self):
     self.assertTrue(adb.can_adb_pick_available_forwarding_port())
 
-  @mock.patch.object(adb, 'ADB', new='/usr/local/bin/waterfull_bin')
+  @mock.patch.object(adb, 'ADB', new='/usr/local/bin/waterfall_bin')
   def test_can_adb_pick_available_forwarding_port_negative(self):
     self.assertFalse(adb.can_adb_pick_available_forwarding_port())
-
 
   @mock.patch('mobly.utils.run_command')
   def test_exec_cmd_no_timeout_success(self, mock_run_command):
