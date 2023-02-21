@@ -109,6 +109,12 @@ def _setup_mock_socket_file(mock_socket_create_conn, resp):
 class SnippetClientV2Test(unittest.TestCase):
   """Unit tests for SnippetClientV2."""
 
+  def setUp(self):
+    super().setUp()
+    self.can_adb_pick_available_port = mock.patch.object(
+        adb, 'can_adb_pick_available_port', return_value=True).start()
+    self.addCleanup(mock.patch.stopall)
+
   def _make_client(self, adb_proxy=None, mock_properties=None):
     adb_proxy = adb_proxy or _MockAdbProxy(instrumented_packages=[
         (MOCK_PACKAGE_NAME, snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
@@ -1060,6 +1066,31 @@ class SnippetClientV2Test(unittest.TestCase):
         ['tcp:0', f'tcp:{MOCK_DEVICE_PORT}'])
     mock_socket_create_conn.assert_called_once_with(
         ('localhost', DEFAULT_FREE_HOST_PORT),
+        snippet_client_v2._SOCKET_CONNECTION_TIMEOUT)
+    self.socket_conn.settimeout.assert_called_once_with(
+        snippet_client_v2._SOCKET_READ_TIMEOUT)
+
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.get_available_host_port',
+              return_value=12345)
+  @mock.patch('socket.create_connection')
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  def test_make_connection_uses_utils_to_find_available_port(
+      self, mock_start_subprocess, mock_socket_create_conn, *_):
+    """Tests that making a connection works normally."""
+    self.can_adb_pick_available_port.return_value = False
+    socket_resp = [b'{"status": true, "uid": 1}']
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(mock_start_subprocess)
+
+    self.client.make_connection()
+    self.assertEqual(self.client.uid, 1)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+    self.adb.mock_forward_func.assert_called_once_with(
+        ['tcp:12345', f'tcp:{MOCK_DEVICE_PORT}'])
+    mock_socket_create_conn.assert_called_once_with(
+        ('localhost', 12345),
         snippet_client_v2._SOCKET_CONNECTION_TIMEOUT)
     self.socket_conn.settimeout.assert_called_once_with(
         snippet_client_v2._SOCKET_READ_TIMEOUT)

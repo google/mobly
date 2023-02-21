@@ -81,6 +81,18 @@ class AdbTest(unittest.TestCase):
     mock_run_command.return_value = (0, ''.encode('utf-8'), ''.encode('utf-8'))
     self.assertFalse(adb.is_adb_available())
 
+  def test_can_adb_pick_available_port_default(self):
+    self.assertTrue(adb.can_adb_pick_available_port())
+
+  @mock.patch.object(adb, 'ADB', new='/usr/local/bin/adb')
+  def test_can_adb_pick_available_port_positive(self):
+    self.assertTrue(adb.can_adb_pick_available_port())
+
+  @mock.patch.object(adb, 'ADB', new='/usr/local/bin/waterfull_bin')
+  def test_can_adb_pick_available_port_negative(self):
+    self.assertFalse(adb.can_adb_pick_available_port())
+
+
   @mock.patch('mobly.utils.run_command')
   def test_exec_cmd_no_timeout_success(self, mock_run_command):
     mock_run_command.return_value = (0, MOCK_DEFAULT_STDOUT.encode('utf-8'),

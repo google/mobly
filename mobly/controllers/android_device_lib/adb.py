@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import os
 import re
 import subprocess
 import threading
@@ -132,6 +133,12 @@ def list_occupied_adb_ports():
       continue
     used_ports.append(int(tokens[1]))
   return used_ports
+
+
+def can_adb_pick_available_port():
+  if os.path.basename(ADB) == 'adb':
+    return True
+  return False
 
 
 class AdbProxy:
