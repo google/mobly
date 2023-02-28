@@ -156,6 +156,7 @@ class TestSummaryWriter:
         yaml.safe_dump(new_content,
                        f,
                        explicit_start=True,
+                       explicit_end=True,
                        allow_unicode=True,
                        indent=4)
 
