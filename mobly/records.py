@@ -150,14 +150,17 @@ class TestSummaryWriter:
       # because Python3 file descriptors set an encoding by default, which
       # PyYAML uses instead of the encoding on yaml.safe_dump. So, the
       # encoding has to be set on the open call instead.
-      with io.open(self._path, 'a', encoding='utf-8') as f:
+      # Use non-bufferized IO to ensure atomic write to the file,
+      # otherwise reader(s) may read incomplete yaml.
+      with io.open(self._path, 'ab', buffering=0) as f:
         # Use safe_dump here to avoid language-specific tags in final
         # output.
-        yaml.safe_dump(new_content,
-                       f,
-                       explicit_start=True,
-                       allow_unicode=True,
-                       indent=4)
+        s = yaml.safe_dump(new_content,
+                           explicit_start=True,
+                           allow_unicode=True,
+                           indent=4)
+        # Write the yaml in one non-bufferized batch.
+        f.write(s.encode('utf-8'))
 
 
 class TestResultEnums:
