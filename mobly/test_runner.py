@@ -357,21 +357,20 @@ class TestRunner:
                                 tests=tests,
                                 test_class_name_suffix=name_suffix))
 
-  def _run_test_class(self, config, test_class, tests=None):
-    """Instantiates and executes a test class.
+  def _run_test_class(self, test_instance, config, tests=None):
+    """Executes a test class.
 
     If tests is None, the tests listed in self.tests will be executed
     instead. If self.tests is empty as well, every test in this test class
     will be executed.
 
     Args:
+      test_instance: A test instance to execute.
       config: A config_parser.TestRunConfig object.
-      test_class: class, test class to execute.
       tests: Optional list of test names within the class to execute.
     """
-    test_instance = test_class(config)
     logging.debug('Executing test class "%s" with config: %s',
-                  test_class.__name__, config)
+                  test_instance.__class__.__name__, config)
     try:
       cls_result = test_instance.run(tests)
       self.results += cls_result
@@ -420,19 +419,35 @@ class TestRunner:
     signal.signal(signal.SIGTERM, sigterm_handler)
 
     try:
+      test_instances = []
+      test_classes_record = []
+
+      # Compute all the test instances and the associated test names.
       for test_run_info in self._test_run_infos:
         # Set up the test-specific config
         test_config = test_run_info.config.copy()
         test_config.log_path = self._test_run_metadata.root_output_path
         test_config.summary_writer = summary_writer
         test_config.test_class_name_suffix = test_run_info.test_class_name_suffix
-        try:
-          self._run_test_class(config=test_config,
-                               test_class=test_run_info.test_class,
-                               tests=test_run_info.tests)
-        except signals.TestAbortAll as e:
-          logging.warning('Abort all subsequent test classes. Reason: %s', e)
-          raise
+
+        # Instantaite the test class with its configuration.
+        test_class = test_run_info.test_class
+        test_instance = test_class(test_config)
+
+        # Retrieve the full test class test name list, then
+        # append the test class to the test classes record.
+        test_names = test_instance.get_test_names(test_instance.tests)
+        test_classes_record.append({'Name': test_class.__name__, 'Tests': test_names})
+
+        # Save test instance, config and test names.
+        test_instances.append((test_instance, test_config, test_names))
+
+      # Dump the test classes record before running them.
+      summary_writer.dump({'Classes': test_classes_record},
+                          records.TestSummaryEntryType.TEST_CLASS_LIST)
+
+      for (test_instance, test_config, test_names) in test_instances:
+        self._run_test_class(test_instance, test_config, test_names)
     finally:
       summary_writer.dump(self.results.summary_dict(),
                           records.TestSummaryEntryType.SUMMARY)
