@@ -429,6 +429,21 @@ class RecordsTest(unittest.TestCase):
     self.assertEqual(contents[0]['a'], user_data1['a'])
     self.assertEqual(contents[1]['b'], user_data2['b'])
 
+  def test_summary_test_class_list(self):
+    test_classes = {'Classes': [{'Name': 'Foo', 'Tests': ['test_a', 'test_b']},
+                                {'Name': 'Bar', 'Tests': ['test_c', 'test_d']}]}
+    dump_path = os.path.join(self.tmp_path, 'ha.yaml')
+    writer = records.TestSummaryWriter(dump_path)
+    writer.dump(test_classes, records.TestSummaryEntryType.TEST_CLASS_LIST)
+    with io.open(dump_path, 'r', encoding='utf-8') as f:
+      contents = []
+      for c in yaml.safe_load_all(f):
+        contents.append(c)
+    for content in contents:
+      self.assertEqual(content['Type'],
+                       records.TestSummaryEntryType.TEST_CLASS_LIST.value)
+    self.assertEqual(contents[0]['Classes'], test_classes['Classes'])
+
   def test_exception_record_deepcopy(self):
     """Makes sure ExceptionRecord wrapper handles deep copy properly."""
     try:

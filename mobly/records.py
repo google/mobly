@@ -77,6 +77,11 @@ class TestSummaryEntryType(enum.Enum):
   The idea is similar to how `TestResult.json_str` categorizes different
   sections of a `TestResult` object in the serialized format.
   """
+  # A list of all the test classes requested for a test run.
+  # This is dumped at the beginning of a summary file so we know what was
+  # requested in case the run is interrupted and the final summary is not
+  # created.
+  TEST_CLASS_LIST = 'TestClassList'
   # A list of all the tests requested for a test run.
   # This is dumped at the beginning of a summary file so we know what was
   # requested in case the test is interrupted and the final summary is not
