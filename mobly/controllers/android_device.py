@@ -113,6 +113,17 @@ def create(configs):
     ads = get_instances(configs)
   else:
     raise Error('No valid config found in: %s' % configs)
+  fastboot_devices = []
+  for serial in list_fastboot_devices():
+    try:
+      device = get_devices(ads, serial=serial)[0]
+      fastboot_devices.append(device)
+    except Error:
+      #Controller doesn't exist for serial
+      continue
+  for fastboot_device in fastboot_devices:
+    setattr(fastboot_device, KEY_SKIP_LOGCAT, True)
+    fastboot_device.ad.services.unregister(SERVICE_NAME_LOGCAT)
   _start_services_on_ads(ads)
   return ads
 
