@@ -92,22 +92,38 @@ def _parse_cli_args(argv):
     Namespace containing the parsed args.
   """
   parser = argparse.ArgumentParser(description='Mobly Suite Executable.')
-  parser.add_argument('-c',
-                      '--config',
+  group = parser.add_mutually_exclusive_group(required=True)
+  group.add_argument('-c',
+                     '--config',
+                     type=str,
+                     metavar='<PATH>',
+                     help='Path to the test configuration file.')
+  group.add_argument(
+      '-l',
+      '--list_tests',
+      action='store_true',
+      help='Print the names of the tests defined in a script without '
+      'executing them.')
+  parser.add_argument('--tests',
+                      '--test_case',
+                      nargs='+',
                       type=str,
-                      required=True,
-                      metavar='<PATH>',
-                      help='Path to the test configuration file.')
-  parser.add_argument(
-      '--tests',
-      '--test_case',
-      nargs='+',
-      type=str,
-      metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
-      help='A list of test classes and optional tests to execute.')
+                      metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
+                      help='A list of test classes and optional tests to execute.')
+  parser.add_argument('-tb',
+                      '--test_bed',
+                      nargs='+',
+                      type=str,
+                      metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
+                      help='Specify which test beds to run tests on.')
+
+  parser.add_argument('-v',
+                      '--verbose',
+                      action='store_true',
+                      help='Set console logger level to DEBUG')
   if not argv:
     argv = sys.argv[1:]
-  return parser.parse_args(argv)
+  return parser.parse_known_args(argv)[0]
 
 
 def _find_suite_class():
@@ -132,6 +148,28 @@ def _find_suite_class():
   return test_suites[0]
 
 
+def _print_test_names(test_classes):
+  """Prints the names of all the tests in all test classes.
+  If the class has generated tests defined based on controller info, this
+  may not be able to print the generated tests.
+  Args:
+    test_classes: classes, the test classes to print names from.
+  """
+  for test_class in test_classes:
+    cls = test_class(config_parser.TestRunConfig())
+    test_names = []
+    try:
+      cls.setup_generated_tests()
+      test_names = cls.get_existing_test_names()
+    except Exception:
+      logging.exception('Failed to retrieve generated tests.')
+    finally:
+      cls._controller_manager.unregister_controllers()
+    print('==========> %s <==========' % cls.TAG)
+    for name in test_names:
+      print(f"{cls.TAG}.{name}")
+
+
 def run_suite_class(argv=None):
   """Executes tests in the test suite.
 
@@ -139,17 +177,22 @@ def run_suite_class(argv=None):
     argv: A list that is then parsed as CLI args. If None, defaults to sys.argv.
   """
   cli_args = _parse_cli_args(argv)
-  test_configs = config_parser.load_test_config_file(cli_args.config)
+  suite_class = _find_suite_class()
+  if cli_args.list_tests:
+    _print_test_names([suite_class])
+    sys.exit(0)
+  test_configs = config_parser.load_test_config_file(cli_args.config,
+                                                     cli_args.test_bed)
   config_count = len(test_configs)
   if config_count != 1:
     logging.error('Expect exactly one test config, found %d', config_count)
   config = test_configs[0]
   runner = test_runner.TestRunner(
       log_dir=config.log_path, testbed_name=config.testbed_name)
-  suite_class = _find_suite_class()
   suite = suite_class(runner, config)
+  console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
-  with runner.mobly_logger():
+  with runner.mobly_logger(console_level=console_level):
     try:
       suite.setup_suite(config.copy())
       try:
@@ -176,8 +219,6 @@ def run_suite(test_classes, argv=None):
       input.
   """
   args = _parse_cli_args(argv)
-  # Load test config file.
-  test_configs = config_parser.load_test_config_file(args.config)
 
   # Check the classes that were passed in
   for test_class in test_classes:
@@ -187,14 +228,22 @@ def run_suite(test_classes, argv=None):
           'mobly.base_test.BaseTestClass', test_class)
       sys.exit(1)
 
+  if args.list_tests:
+    _print_test_names(test_classes)
+    sys.exit(0)
+
+  # Load test config file.
+  test_configs = config_parser.load_test_config_file(args.config,
+                                                     args.test_bed)
   # Find the full list of tests to execute
   selected_tests = compute_selected_tests(test_classes, args.tests)
 
+  console_level = logging.DEBUG if args.verbose else logging.INFO
   # Execute the suite
   ok = True
   for config in test_configs:
     runner = test_runner.TestRunner(config.log_path, config.testbed_name)
-    with runner.mobly_logger():
+    with runner.mobly_logger(console_level=console_level):
       for (test_class, tests) in selected_tests.items():
         runner.add_test_class(config, test_class, tests)
       try:
@@ -260,7 +309,7 @@ def compute_selected_tests(test_classes, selected_tests):
   test_class_name_to_tests = collections.OrderedDict()
   for test_name in selected_tests:
     if '.' in test_name:  # Has a test method
-      (test_class_name, test_name) = test_name.split('.')
+      (test_class_name, test_name) = test_name.split('.', maxsplit=1)
       if test_class_name not in test_class_name_to_tests:
         # Never seen this class before
         test_class_name_to_tests[test_class_name] = [test_name]
