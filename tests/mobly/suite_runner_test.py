@@ -156,6 +156,23 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_called.teardown_suite.assert_called_once_with()
     mock_exit.assert_not_called()
 
+  def test_print_test_names(self):
+    mock_test_class = mock.MagicMock()
+    mock_cls_instance = mock.MagicMock()
+    mock_test_class.return_value = mock_cls_instance
+    suite_runner._print_test_names([mock_test_class])
+    mock_cls_instance.get_test_names.assert_called_once()
+    mock_cls_instance._clean_up.assert_called_once()
+
+  def test_print_test_names_with_exception(self):
+    mock_test_class = mock.MagicMock()
+    mock_cls_instance = mock.MagicMock()
+    mock_test_class.return_value = mock_cls_instance
+    suite_runner._print_test_names([mock_test_class])
+    mock_cls_instance.get_test_names.side_effect = Exception(
+        'Something went wrong.')
+    mock_cls_instance._clean_up.assert_called_once()
+
 
 if __name__ == "__main__":
   unittest.main()
