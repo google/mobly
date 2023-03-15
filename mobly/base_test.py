@@ -200,6 +200,7 @@ class BaseTestClass:
     self.user_params = configs.user_params
     self.results = records.TestResult()
     self.summary_writer = configs.summary_writer
+    self._pre_run_result = None
     self._generated_test_table = collections.OrderedDict()
     self._controller_manager = controller_manager.ControllerManager(
         class_name=self.TAG, controller_configs=configs.controller_configs)
@@ -348,6 +349,10 @@ class BaseTestClass:
     Returns:
       True if setup is successful, False otherwise.
     """
+    # Make sure `_pre_run` is executed only once, since it might
+    # be called by `get_test_names` before `run`.
+    if self._pre_run_result is not None:
+      return self._pre_run_result
     stage_name = STAGE_NAME_PRE_RUN
     record = records.TestResultRecord(stage_name, self.TAG)
     record.test_begin()
@@ -360,14 +365,15 @@ class BaseTestClass:
       # `setup_generated_tests`.
       with self._log_test_stage(stage_name):
         self.setup_generated_tests()
-      return True
+      self._pre_run_result = True
     except Exception as e:
       logging.exception('%s failed for %s.', stage_name, self.TAG)
       record.test_error(e)
       self.results.add_class_error(record)
       self.summary_writer.dump(record.to_dict(),
                                records.TestSummaryEntryType.RECORD)
-      return False
+      self._pre_run_result = False
+    return self._pre_run_result
 
   def pre_run(self):
     """Preprocesses that need to be done before setup_class.
@@ -942,6 +948,39 @@ class BaseTestClass:
         test_names.append(name)
     return test_names + list(self._generated_test_table.keys())
 
+  def get_test_names(self, test_names=None):
+    """Gets the test names in the class.
+
+    One of these test method lists will be returned, shown here in priority
+    order:
+
+    1. The test_names list, which is passed from cmd line. Invalid names
+        are guarded by cmd line arg parsing.
+    2. The self.tests list defined in test class. Invalid names are
+        ignored.
+    3. All function that matches test method naming convention in the test
+        class.
+
+    Args:
+      test_names: A list of string that are test method names requested in
+        cmd line.
+
+    Returns:
+      The complete list of test names.
+    """
+    # Executes pre-setup procedures, this is required since it might
+    # generate test methods that we want to return as well.
+    self._pre_run()
+    # Devise the actual test methods to run in the test class.
+    if not test_names:
+      if self.tests:
+        # Specified by run list in class.
+        test_names = list(self.tests)
+      else:
+        # No test method specified by user, execute all in test class.
+        test_names = self.get_existing_test_names()
+    return test_names
+
   def _get_test_methods(self, test_names):
     """Resolves test method names to bound test methods.
 
@@ -1013,14 +1052,7 @@ class BaseTestClass:
     if not self._pre_run():
       return self.results
     logging.info('==========> %s <==========', self.TAG)
-    # Devise the actual test methods to run in the test class.
-    if not test_names:
-      if self.tests:
-        # Specified by run list in class.
-        test_names = list(self.tests)
-      else:
-        # No test method specified by user, execute all in test class.
-        test_names = self.get_existing_test_names()
+    test_names = self.get_test_names(test_names)
     self.results.requested = test_names
     self.summary_writer.dump(self.results.requested_test_names_dict(),
                              records.TestSummaryEntryType.TEST_NAME_LIST)
