@@ -170,12 +170,9 @@ def _print_test_names(test_class):
   cls = test_class(config_parser.TestRunConfig())
   test_names = []
   try:
-    cls.setup_generated_tests()
-    test_names = cls.get_existing_test_names()
+    test_names = cls.get_test_names()
   except Exception:
     logging.exception('Failed to retrieve generated tests.')
-  finally:
-    cls._controller_manager.unregister_controllers()
   print('==========> %s <==========' % cls.TAG)
   for name in test_names:
     print(name)
