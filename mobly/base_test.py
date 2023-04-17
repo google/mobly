@@ -50,6 +50,11 @@ ATTR_REPEAT_CNT = '_repeat_count'
 ATTR_MAX_RETRY_CNT = '_max_retry_count'
 ATTR_MAX_CONSEC_ERROR = '_max_consecutive_error'
 
+_PLACEHOLDER_TEST_INFO = runtime_test_info.RuntimeTestInfo(
+    'PLACEHOLDER',
+    '/dev/null',
+    records.TestResultRecord('PLACEHOLDER'))
+
 
 class Error(Exception):
   """Raised for exceptions that occurred in BaseTestClass."""
@@ -170,6 +175,8 @@ class BaseTestClass:
       the test logic.
   """
 
+  current_test_info: runtime_test_info.RuntimeTestInfo
+
   TAG = None
 
   def __init__(self, configs):
@@ -204,6 +211,9 @@ class BaseTestClass:
     self._controller_manager = controller_manager.ControllerManager(
         class_name=self.TAG, controller_configs=configs.controller_configs)
     self.controller_configs = self._controller_manager.controller_configs
+    # Replace this with a placeholder so that type checkers do not
+    # infer that `current_test_info` can sometimes be `None`.
+    self.current_test_info = _PLACEHOLDER_TEST_INFO
 
   def unpack_userparams(self,
                         req_param_names=None,
@@ -837,7 +847,9 @@ class BaseTestClass:
         self.results.add_record(tr_record)
         self.summary_writer.dump(tr_record.to_dict(),
                                  records.TestSummaryEntryType.RECORD)
-        self.current_test_info = None
+        # Replace this with a placeholder so that type checkers do not
+        # infer that `current_test_info` can sometimes be `None`.
+        self.current_test_info = _PLACEHOLDER_TEST_INFO
     return tr_record
 
   def _assert_function_names_in_stack(self, expected_func_names):
