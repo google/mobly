@@ -843,6 +843,7 @@ class BaseTestClass:
         self.results.add_record(tr_record)
         self.summary_writer.dump(tr_record.to_dict(),
                                  records.TestSummaryEntryType.RECORD)
+        self.current_test_info = None
     return tr_record
 
   def _assert_function_names_in_stack(self, expected_func_names):
