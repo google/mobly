@@ -50,13 +50,6 @@ ATTR_REPEAT_CNT = '_repeat_count'
 ATTR_MAX_RETRY_CNT = '_max_retry_count'
 ATTR_MAX_CONSEC_ERROR = '_max_consecutive_error'
 
-_PLACEHOLDER_RECORD = records.TestResultRecord('PLACEHOLDER')
-_PLACEHOLDER_RECORD.signature = "PLACEHOLDER"
-_PLACEHOLDER_TEST_INFO = runtime_test_info.RuntimeTestInfo(
-    'PLACEHOLDER',
-    '/dev/null',
-    _PLACEHOLDER_RECORD)
-
 
 class Error(Exception):
   """Raised for exceptions that occurred in BaseTestClass."""
@@ -177,6 +170,10 @@ class BaseTestClass:
       the test logic.
   """
 
+  # Explicitly set the type since we set this to `None` in between
+  # test cases executions when there's no active test. However, since
+  # it is safe for clients to call at any point during normal execution
+  # of a Mobly test, we avoid using the `Optional` type hint for convenience.
   current_test_info: runtime_test_info.RuntimeTestInfo
 
   TAG = None
@@ -213,9 +210,6 @@ class BaseTestClass:
     self._controller_manager = controller_manager.ControllerManager(
         class_name=self.TAG, controller_configs=configs.controller_configs)
     self.controller_configs = self._controller_manager.controller_configs
-    # Replace this with a placeholder so that type checkers do not
-    # infer that `current_test_info` can sometimes be `None`.
-    self.current_test_info = _PLACEHOLDER_TEST_INFO
 
   def unpack_userparams(self,
                         req_param_names=None,
@@ -849,9 +843,6 @@ class BaseTestClass:
         self.results.add_record(tr_record)
         self.summary_writer.dump(tr_record.to_dict(),
                                  records.TestSummaryEntryType.RECORD)
-        # Replace this with a placeholder so that type checkers do not
-        # infer that `current_test_info` can sometimes be `None`.
-        self.current_test_info = _PLACEHOLDER_TEST_INFO
     return tr_record
 
   def _assert_function_names_in_stack(self, expected_func_names):
