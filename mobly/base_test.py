@@ -50,10 +50,12 @@ ATTR_REPEAT_CNT = '_repeat_count'
 ATTR_MAX_RETRY_CNT = '_max_retry_count'
 ATTR_MAX_CONSEC_ERROR = '_max_consecutive_error'
 
+_PLACEHOLDER_RECORD = records.TestResultRecord('PLACEHOLDER')
+_PLACEHOLDER_RECORD.signature = "PLACEHOLDER"
 _PLACEHOLDER_TEST_INFO = runtime_test_info.RuntimeTestInfo(
     'PLACEHOLDER',
     '/dev/null',
-    records.TestResultRecord('PLACEHOLDER'))
+    _PLACEHOLDER_RECORD)
 
 
 class Error(Exception):
