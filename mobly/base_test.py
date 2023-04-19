@@ -170,6 +170,12 @@ class BaseTestClass:
       the test logic.
   """
 
+  # Explicitly set the type since we set this to `None` in between
+  # test cases executions when there's no active test. However, since
+  # it is safe for clients to call at any point during normal execution
+  # of a Mobly test, we avoid using the `Optional` type hint for convenience.
+  current_test_info: runtime_test_info.RuntimeTestInfo
+
   TAG = None
 
   def __init__(self, configs):
