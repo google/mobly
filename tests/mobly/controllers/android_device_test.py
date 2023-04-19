@@ -581,6 +581,16 @@ class AndroidDeviceTest(unittest.TestCase):
               return_value=mock_android_device.MockAdbProxy('1'))
   @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
               return_value=mock_android_device.MockFastbootProxy('1'))
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices',
+              return_value='1')
+  def test_AndroidDevice_is_fastboot(self, _, MockFastboot, MockAdbProxy):
+    ad = android_device.AndroidDevice(serial='1')
+    self.assertTrue(ad.is_fastboot)
+
+  @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+              return_value=mock_android_device.MockAdbProxy('1'))
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+              return_value=mock_android_device.MockFastbootProxy('1'))
   @mock.patch('mobly.logger.get_log_file_timestamp')
   def test_AndroidDevice_generate_filename_default(self,
                                                    get_log_file_timestamp_mock,

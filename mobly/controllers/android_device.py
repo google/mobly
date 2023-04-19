@@ -874,6 +874,10 @@ class AndroidDevice:
     else:
       return False
 
+  @property
+  def is_fastboot(self):
+    return self.serial in list_fastboot_devices()
+
   def load_config(self, config):
     """Add attributes to the AndroidDevice object based on config.
 
