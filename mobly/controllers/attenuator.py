@@ -129,6 +129,7 @@ class AttenuatorPath:
     self.model = attenuation_device.model
     self.attenuation_device = attenuation_device
     self.idx = idx
+    self.name = name
     if (self.idx >= attenuation_device.path_count):
       raise IndexError("Attenuator index out of range!")
 
