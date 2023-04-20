@@ -803,6 +803,7 @@ class BaseTestClass:
         else:
           # Check if anything failed by `expects`.
           if before_count < expects.recorder.error_count:
+            tr_record.test_error()
             teardown_test_failed = True
     except (signals.TestFailure, AssertionError) as e:
       tr_record.test_fail(e)
