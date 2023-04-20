@@ -585,7 +585,7 @@ class AndroidDeviceTest(unittest.TestCase):
               return_value='1')
   def test_AndroidDevice_is_fastboot(self, _, MockFastboot, MockAdbProxy):
     ad = android_device.AndroidDevice(serial='1')
-    self.assertTrue(ad.is_fastboot)
+    self.assertTrue(ad.is_bootloader)
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
               return_value=mock_android_device.MockAdbProxy('1'))

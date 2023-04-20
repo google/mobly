@@ -201,7 +201,7 @@ class Logcat(base_service.BaseService):
 
     The collection runs in a separate subprocess and saves logs in a file.
     """
-    if self._ad.is_fastboot:
+    if self._ad.is_bootloader:
       self._ad.log.warning(
           'Skip starting logcat because the device is in fastboot mode.')
       return
