@@ -510,6 +510,28 @@ class BaseTestTest(unittest.TestCase):
                         "Requested 1, Skipped 0")
     self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
+  def test_teardown_test_expects_error(self):
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def teardown_test(self):
+        expects.expect_true(False, MSG_EXPECTED_EXCEPTION)
+
+      def test_something(self):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    actual_record = bt_cls.results.error[0]
+    self.assertEqual(actual_record.test_name, self.mock_test_name)
+    self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+    self.assertIsNone(actual_record.extras)
+    self.assertFalse(actual_record.extra_errors)
+    self.assertTrue(actual_record.end_time)
+    expected_summary = ("Error 1, Executed 1, Failed 0, Passed 0, "
+                        "Requested 1, Skipped 0")
+    self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
   def test_teardown_test_executed_if_test_pass(self):
     my_mock = mock.MagicMock()
 
