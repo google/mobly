@@ -1,6 +1,20 @@
 # Mobly Release History
 
 
+## Mobly Release 1.12.2: Improve Support for Custom Suites
+
+Bug fixes and improvements to better support users who construct their own
+suite based on `test_runner` APIs and `suite_runner`.
+
+### Fixes
+* Make print test case name feature usable.
+* Ensure default log path exists.
+* Missing info in test records are now populated.
+* Enable Android devices in bootloader mode to be picked up in registration.
+
+[Full list of changes](https://github.com/google/mobly/milestone/29?closed=1)
+
+
 ## Mobly Release 1.12.1: Minor Improvements and Fixes
 
 ### New
