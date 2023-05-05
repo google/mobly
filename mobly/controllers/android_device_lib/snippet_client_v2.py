@@ -30,8 +30,8 @@ _INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunne
 
 # The command template to start the snippet server
 _LAUNCH_CMD = (
-    '{shell_cmd} am instrument {user} -w -e action start {snippet_package}/'
-    f'{_INSTRUMENTATION_RUNNER_PACKAGE}')
+    '{shell_cmd} am instrument {user} -w -e action start {instrument_options} '
+    f'{{snippet_package}}/{_INSTRUMENTATION_RUNNER_PACKAGE}')
 
 # The command template to stop the snippet server
 _STOP_CMD = ('am instrument {user} -w -e action stop {snippet_package}/'
@@ -109,7 +109,7 @@ class SnippetClientV2(client_base.ClientBase):
       the connection to the server is made successfully.
   """
 
-  def __init__(self, package, ad):
+  def __init__(self, package, ad, instrument_options=None):
     """Initializes the instance of Snippet Client V2.
 
     Args:
@@ -126,6 +126,8 @@ class SnippetClientV2(client_base.ClientBase):
     self._client = None  # keep it to prevent close errors on connect failure
     self._conn = None
     self._event_client = None
+    self._instrument_options = instrument_options or {}
+    self.log.info('Intrument options: %s', self._instrument_options)
 
   @property
   def user_id(self):
@@ -231,9 +233,11 @@ class SnippetClientV2(client_base.ClientBase):
     self.log.debug('Snippet server for package %s is using protocol %d.%d',
                    self.package, _PROTOCOL_MAJOR_VERSION,
                    _PROTOCOL_MINOR_VERSION)
+    option_str = self._gen_instrument_options_str()
     cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
                              user=self._get_user_command_string(),
-                             snippet_package=self.package)
+                             snippet_package=self.package,
+                             instrument_options=option_str)
     self._proc = self._run_adb_cmd(cmd)
 
     # Check protocol version and get the device port
@@ -271,6 +275,12 @@ class SnippetClientV2(client_base.ClientBase):
         'at the same time perform USB disconnections may fail.',
         _SETSID_COMMAND, _NOHUP_COMMAND)
     return ''
+
+  def _gen_instrument_options_str(self):
+    if not self._instrument_options:
+      return ''
+
+    return ' '.join(f'-e {k} {v}' for k, v in self._instrument_options.items())
 
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying device user ID.

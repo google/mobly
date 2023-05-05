@@ -901,7 +901,7 @@ class AndroidDevice:
     # So we need to wait for the device to come back before proceeding.
     self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
 
-  def load_snippet(self, name, package):
+  def load_snippet(self, name, package, instrument_options=None):
     """Starts the snippet apk with the given package name and connects.
 
     Examples:
@@ -926,7 +926,9 @@ class AndroidDevice:
       raise SnippetError(
           self,
           'Attribute "%s" already exists, please use a different name.' % name)
-    self.services.snippets.add_snippet_client(name, package)
+    self.services.snippets.add_snippet_client(
+        name, package, instrument_options
+    )
 
   def unload_snippet(self, name):
     """Stops a snippet apk.

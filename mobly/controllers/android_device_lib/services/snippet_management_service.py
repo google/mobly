@@ -55,7 +55,7 @@ class SnippetManagementService(base_service.BaseService):
     if name in self._snippet_clients:
       return self._snippet_clients[name]
 
-  def add_snippet_client(self, name, package):
+  def add_snippet_client(self, name, package, instrument_options=None):
     """Adds a snippet client to the management.
 
     Args:
@@ -79,7 +79,9 @@ class SnippetManagementService(base_service.BaseService):
             self, 'Snippet package "%s" has already been loaded under name'
             ' "%s".' % (package, snippet_name))
 
-    client = snippet_client_v2.SnippetClientV2(package=package, ad=self._device)
+    client = snippet_client_v2.SnippetClientV2(
+        package=package, ad=self._device, instrument_options=instrument_options,
+    )
     client.initialize()
     self._snippet_clients[name] = client
 

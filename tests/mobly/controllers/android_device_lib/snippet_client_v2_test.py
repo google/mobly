@@ -408,7 +408,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start '
+        (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start  '
          f'{MOCK_SERVER_PATH}')
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
@@ -427,7 +427,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        f'setsid am instrument  -w -e action start {MOCK_SERVER_PATH}'
+        f'setsid am instrument  -w -e action start  {MOCK_SERVER_PATH}'
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
                          [mock.call(start_cmd_list, shell=False)])
@@ -449,7 +449,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        (f' am instrument --user {MOCK_USER_ID} -w -e action start '
+        (f' am instrument --user {MOCK_USER_ID} -w -e action start  '
          f'{MOCK_SERVER_PATH}')
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
@@ -476,7 +476,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        (f'nohup am instrument --user {MOCK_USER_ID} -w -e action start '
+        (f'nohup am instrument --user {MOCK_USER_ID} -w -e action start  '
          f'{MOCK_SERVER_PATH}')
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
@@ -499,7 +499,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start '
+        (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start  '
          f'{MOCK_SERVER_PATH}')
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
