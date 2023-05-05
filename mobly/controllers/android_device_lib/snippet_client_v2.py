@@ -127,7 +127,6 @@ class SnippetClientV2(client_base.ClientBase):
     self._conn = None
     self._event_client = None
     self._instrument_options = instrument_options or {}
-    self.log.info('Intrument options: %s', self._instrument_options)
 
   @property
   def user_id(self):
@@ -233,7 +232,7 @@ class SnippetClientV2(client_base.ClientBase):
     self.log.debug('Snippet server for package %s is using protocol %d.%d',
                    self.package, _PROTOCOL_MAJOR_VERSION,
                    _PROTOCOL_MINOR_VERSION)
-    option_str = self._gen_instrument_options_str()
+    option_str = self._get_instrument_options_str()
     cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
                              user=self._get_user_command_string(),
                              snippet_package=self.package,
@@ -276,7 +275,12 @@ class SnippetClientV2(client_base.ClientBase):
         _SETSID_COMMAND, _NOHUP_COMMAND)
     return ''
 
-  def _gen_instrument_options_str(self):
+  def _get_instrument_options_str(self):
+    self.log.debug(
+        'Got instrument options in snippet client for package %s: %s',
+        self.package,
+        self._instrument_options,
+    )
     if not self._instrument_options:
       return ''
 

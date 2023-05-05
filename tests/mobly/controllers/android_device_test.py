@@ -1123,6 +1123,23 @@ class AndroidDeviceTest(unittest.TestCase):
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.SnippetClientV2')
   @mock.patch('mobly.utils.get_available_host_port')
+  def test_AndroidDevice_load_snippet_with_instrument_options(
+      self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
+    ad = android_device.AndroidDevice(serial='1')
+    instrument_options = {'key_1': 'val_1'}
+    ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME, instrument_options)
+    self.assertTrue(hasattr(ad, 'snippet'))
+    MockSnippetClient.assert_called_once_with(
+        package=mock.ANY, ad=mock.ANY, instrument_options=instrument_options
+    )
+
+  @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+              return_value=mock_android_device.MockAdbProxy('1'))
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+              return_value=mock_android_device.MockFastbootProxy('1'))
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.SnippetClientV2')
+  @mock.patch('mobly.utils.get_available_host_port')
   def test_AndroidDevice_unload_snippet(self, MockGetPort, MockSnippetClient,
                                         MockFastboot, MockAdbProxy):
     ad = android_device.AndroidDevice(serial='1')
