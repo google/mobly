@@ -917,7 +917,7 @@ class AndroidDevice:
         client. E.g. `name='maps'` attaches the snippet client to
         `ad.maps`.
       package: string, the package name of the snippet apk to connect to.
-      instrument_options: dict[str, str], the Android instrument options used
+      instrument_options: dict[str, str], the Android am instrument options used
         for controlling the `onCreate` process of the app under test. Note that
         this should only be used for controlling the app launch process, options
         for other purposes may not take effect and you should use snippet RPCs.

@@ -115,7 +115,7 @@ class SnippetClientV2(client_base.ClientBase):
     Args:
       package: str, see base class.
       ad: AndroidDevice, the android device object associated with this client.
-      instrument_options: dict[str, str], the Android instrument options used
+      instrument_options: dict[str, str], the Android am instrument options used
         for controlling the `onCreate` process of the app under test. Note that
         this should only be used for controlling the app launch process, options
         for other purposes may not take effect and you should use snippet RPCs.
@@ -283,7 +283,7 @@ class SnippetClientV2(client_base.ClientBase):
 
   def _get_instrument_options_str(self):
     self.log.debug(
-        'Got instrument options in snippet client for package %s: %s',
+        'Got am instrument options in snippet client for package %s: %s',
         self.package,
         self._instrument_options,
     )
