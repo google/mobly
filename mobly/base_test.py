@@ -726,9 +726,13 @@ class BaseTestClass:
     if max_consecutive_error == 0:
       max_consecutive_error = repeat_count
 
+    previous_record = None
+
     for i in range(repeat_count):
       new_test_name = f'{test_name}_{i}'
       record = self.exec_one_test(new_test_name, test_method)
+      if previous_record is not None:
+        record.repeat_parent = previous_record
       if record.result in [
           records.TestResultEnums.TEST_RESULT_FAIL,
           records.TestResultEnums.TEST_RESULT_ERROR,
@@ -742,6 +746,7 @@ class BaseTestClass:
             'aborting the remaining %d iterations.', test_name,
             consecutive_error_count, repeat_count - 1 - i)
         return
+      previous_record = record
 
   def exec_one_test(self, test_name, test_method, record=None):
     """Executes one test and update test results.

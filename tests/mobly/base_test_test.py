@@ -2391,8 +2391,11 @@ class BaseTestTest(unittest.TestCase):
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
     self.assertEqual(repeat_count, len(bt_cls.results.passed))
+    previous_record = None
     for i, record in enumerate(bt_cls.results.passed):
       self.assertEqual(record.test_name, f'test_generated_1_{i}')
+      self.assertEqual(record.repeat_parent, previous_record)
+      previous_record = record
 
   def test_repeat_with_failures(self):
     repeat_count = 3
@@ -2415,6 +2418,9 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(iter_2.test_name, 'test_something_1')
     self.assertEqual(iter_1.test_name, 'test_something_0')
     self.assertEqual(iter_3.test_name, 'test_something_2')
+    self.assertEqual(iter_1.repeat_parent, None)
+    self.assertEqual(iter_2.repeat_parent, iter_1)
+    self.assertEqual(iter_3.repeat_parent, iter_2)
 
   @mock.patch('logging.error')
   def test_repeat_with_consec_error_at_the_beginning_aborts_repeat(
@@ -2666,26 +2672,12 @@ class BaseTestTest(unittest.TestCase):
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
     self.assertEqual(repeat_count, len(bt_cls.results.passed))
+    previous_record = None
     for i, record in enumerate(bt_cls.results.passed):
       self.assertEqual(record.test_name, f'test_something_{i}')
       self.assertEqual(record.uid, 'some-uid')
-
-  def test_uid_with_repeat(self):
-    repeat_count = 3
-
-    class MockBaseTest(base_test.BaseTestClass):
-
-      @records.uid('some-uid')
-      @base_test.repeat(count=repeat_count)
-      def test_something(self):
-        pass
-
-    bt_cls = MockBaseTest(self.mock_test_cls_configs)
-    bt_cls.run()
-    self.assertEqual(repeat_count, len(bt_cls.results.passed))
-    for i, record in enumerate(bt_cls.results.passed):
-      self.assertEqual(record.test_name, f'test_something_{i}')
-      self.assertEqual(record.uid, 'some-uid')
+      self.assertEqual(record.repeat_parent, previous_record)
+      previous_record = record
 
   def test_log_stage_always_logs_end_statement(self):
     instance = base_test.BaseTestClass(self.mock_test_cls_configs)

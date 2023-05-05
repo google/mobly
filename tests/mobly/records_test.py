@@ -95,6 +95,7 @@ class RecordsTest(unittest.TestCase):
       RECORD_SIGNATURE] = f'{self.tn}-{record.begin_time}'
     d[records.TestResultEnums.RECORD_UID] = None
     d[records.TestResultEnums.RECORD_RETRY_PARENT] = None
+    d[records.TestResultEnums.RECORD_REPEAT_PARENT] = None
     d[records.TestResultEnums.RECORD_CLASS] = None
     d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
     d[records.TestResultEnums.RECORD_STACKTRACE] = stacktrace
