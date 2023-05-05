@@ -63,6 +63,8 @@ class SnippetManagementService(base_service.BaseService):
         client. E.g. `name='maps'` attaches the snippet client to
         `ad.maps`.
       package: string, the package name of the snippet apk to connect to.
+      instrument_options: dict[str, str], see the docstring of
+        `SnippetClientV2#__init__`.
 
     Raises:
       Error, if a duplicated name or package is passed in.
