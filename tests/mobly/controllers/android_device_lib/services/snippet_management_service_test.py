@@ -15,6 +15,7 @@
 import unittest
 from unittest import mock
 
+from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.controllers.android_device_lib.services import snippet_management_service
 
 MOCK_PACKAGE = 'com.mock.package'
@@ -63,23 +64,23 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_client.stop.assert_not_called()
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
-  def test_add_snippet_client_without_instrument_options(self, mock_class):
+  def test_add_snippet_client_without_config(self, mock_class):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     mock_class.assert_called_once_with(
-        package=mock.ANY, ad=mock.ANY, instrument_options=None)
+        package=mock.ANY, ad=mock.ANY, configs=None)
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
-  def test_add_snippet_client_with_instrument_options(self, mock_class):
+  def test_add_snippet_client_with_config(self, mock_class):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    instrument_options = {'key_1': 'val_1'}
-    manager.add_snippet_client('foo', MOCK_PACKAGE, instrument_options)
+    snippet_client_configs = snippet_client_v2.Config()
+    manager.add_snippet_client('foo', MOCK_PACKAGE, snippet_client_configs)
     mock_class.assert_called_once_with(
-        package=mock.ANY, ad=mock.ANY, instrument_options=instrument_options)
+        package=mock.ANY, ad=mock.ANY, configs=snippet_client_configs)
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_add_snippet_client_dup_name(self, _):

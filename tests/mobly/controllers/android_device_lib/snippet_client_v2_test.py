@@ -93,7 +93,7 @@ class SnippetClientV2Test(unittest.TestCase):
   """Unit tests for SnippetClientV2."""
 
   def _make_client(
-      self, adb_proxy=None, mock_properties=None, instrument_options=None
+      self, adb_proxy=None, mock_properties=None, configs=None
   ):
     adb_proxy = adb_proxy or _MockAdbProxy(instrumented_packages=[
         (MOCK_PACKAGE_NAME, snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
@@ -114,7 +114,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.device = device
 
     self.client = snippet_client_v2.SnippetClientV2(
-        MOCK_PACKAGE_NAME, device, instrument_options
+        MOCK_PACKAGE_NAME, device, configs
     )
 
   def _make_client_with_extra_adb_properties(self, extra_properties):
@@ -514,12 +514,11 @@ class SnippetClientV2Test(unittest.TestCase):
               'utils.start_standing_subprocess')
   def test_start_server_with_instrument_options(self, mock_start_subprocess):
     """Checks the starting server command with instrument options."""
-    instrument_options = {
-        'key_1': 'val_1',
-        'key_2': 'val_2',
-    }
+    configs = snippet_client_v2.Config(
+        am_instrument_options={'key_1': 'val_1', 'key_2': 'val_2'},
+    )
     instrument_options_str = '-e key_1 val_1 -e key_2 val_2'
-    self._make_client(instrument_options=instrument_options)
+    self._make_client(configs=configs)
     self._mock_server_process_starting_response(mock_start_subprocess)
 
     self.client.start_server()

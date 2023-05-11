@@ -13,6 +13,7 @@
 # limitations under the License.
 """Snippet Client V2 for Interacting with Snippet Server on Android Device."""
 
+import dataclasses
 import enum
 import json
 import re
@@ -76,6 +77,22 @@ _SOCKET_READ_TIMEOUT = 60 * 10
 _CALLBACK_DEFAULT_TIMEOUT_SEC = 60 * 2
 
 
+@dataclasses.dataclass
+class Config:
+  """A configuration class for configuring the snippet client.
+
+  Attributes:
+    am_instrument_options: dict[str, str], the Android am instrument options
+      used for controlling the `onCreate` process of the app under test. Note
+      that this should only be used for controlling the app launch process,
+      options for other purposes may not take effect and you should use snippet
+      RPCs. This is because Mobly snippet runner changes the subsequent
+      instrumentation process.
+  """
+
+  am_instrument_options: dict[str, str] = dataclasses.field(default_factory=dict)
+
+
 class ConnectionHandshakeCommand(enum.Enum):
   """Commands to send to the server when sending the handshake request.
 
@@ -109,18 +126,14 @@ class SnippetClientV2(client_base.ClientBase):
       the connection to the server is made successfully.
   """
 
-  def __init__(self, package, ad, instrument_options=None):
+  def __init__(self, package, ad, configs=None):
     """Initializes the instance of Snippet Client V2.
 
     Args:
       package: str, see base class.
       ad: AndroidDevice, the android device object associated with this client.
-      instrument_options: dict[str, str], the Android am instrument options used
-        for controlling the `onCreate` process of the app under test. Note that
-        this should only be used for controlling the app launch process, options
-        for other purposes may not take effect and you should use snippet RPCs.
-        This is because Mobly snippet runner changes the subsequent
-        instrumentation process.
+      configs: Config, the configuration object. See the docstring of the
+        `Config` class for supported configurations.
     """
     super().__init__(package=package, device=ad)
     self.host_port = None
@@ -132,7 +145,7 @@ class SnippetClientV2(client_base.ClientBase):
     self._client = None  # keep it to prevent close errors on connect failure
     self._conn = None
     self._event_client = None
-    self._instrument_options = instrument_options or {}
+    self._configs = configs or Config()
 
   @property
   def user_id(self):
@@ -285,12 +298,12 @@ class SnippetClientV2(client_base.ClientBase):
     self.log.debug(
         'Got am instrument options in snippet client for package %s: %s',
         self.package,
-        self._instrument_options,
+        self._configs.am_instrument_options,
     )
-    if not self._instrument_options:
+    if not self._configs.am_instrument_options:
       return ''
 
-    return ' '.join(f'-e {k} {v}' for k, v in self._instrument_options.items())
+    return ' '.join(f'-e {k} {v}' for k, v in self._configs.am_instrument_options.items())
 
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying device user ID.
