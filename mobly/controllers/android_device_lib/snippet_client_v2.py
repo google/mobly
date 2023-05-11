@@ -83,15 +83,16 @@ class Config:
   """A configuration class for configuring the snippet client.
 
   Attributes:
-    am_instrument_options: dict[str, str], the Android am instrument options
-      used for controlling the `onCreate` process of the app under test. Note
-      that this should only be used for controlling the app launch process,
-      options for other purposes may not take effect and you should use snippet
-      RPCs. This is because Mobly snippet runner changes the subsequent
-      instrumentation process.
+    am_instrument_options: The Android am instrument options used for
+      controlling the `onCreate` process of the app under test. Note that this
+      should only be used for controlling the app launch process, options for
+      other purposes may not take effect and you should use snippet RPCs. This
+      is because Mobly snippet runner changes the subsequent instrumentation
+      process.
   """
 
-  am_instrument_options: Dict[str, str] = dataclasses.field(default_factory=dict)
+  am_instrument_options: Dict[str, str] = dataclasses.field(
+      default_factory=dict)
 
 
 class ConnectionHandshakeCommand(enum.Enum):
@@ -304,7 +305,9 @@ class SnippetClientV2(client_base.ClientBase):
     if not self._configs.am_instrument_options:
       return ''
 
-    return ' '.join(f'-e {k} {v}' for k, v in self._configs.am_instrument_options.items())
+    return ' '.join(
+        f'-e {k} {v}' for k, v in self._configs.am_instrument_options.items()
+    )
 
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying device user ID.

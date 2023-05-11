@@ -63,9 +63,9 @@ class SnippetManagementService(base_service.BaseService):
         client. E.g. `name='maps'` attaches the snippet client to
         `ad.maps`.
       package: string, the package name of the snippet apk to connect to.
-      config: snippet_client_v2.Config, the configuration object for controlling
-        the behavior of the snippet client. See the docstring of the `Config`
-        class for supported configurations.
+      snippet_client_configs: snippet_client_v2.Config, the configuration
+        object for controlling the snippet client behaviors. See the docstring
+        of the `Config` class for supported configurations.
 
     Raises:
       Error, if a duplicated name or package is passed in.
