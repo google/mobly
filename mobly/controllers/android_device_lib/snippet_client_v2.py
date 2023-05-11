@@ -18,6 +18,7 @@ import enum
 import json
 import re
 import socket
+from typing import Dict
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
@@ -90,7 +91,7 @@ class Config:
       instrumentation process.
   """
 
-  am_instrument_options: dict[str, str] = dataclasses.field(default_factory=dict)
+  am_instrument_options: Dict[str, str] = dataclasses.field(default_factory=dict)
 
 
 class ConnectionHandshakeCommand(enum.Enum):
