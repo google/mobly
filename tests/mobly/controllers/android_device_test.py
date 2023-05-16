@@ -1124,7 +1124,7 @@ class AndroidDeviceTest(unittest.TestCase):
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.SnippetClientV2')
   @mock.patch('mobly.utils.get_available_host_port')
-  def test_AndroidDevice_load_snippet_with_snippet_client_config(
+  def test_AndroidDevice_load_snippet_with_snippet_config(
       self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
     ad = android_device.AndroidDevice(serial='1')
     snippet_configs = snippet_client_v2.Config()
