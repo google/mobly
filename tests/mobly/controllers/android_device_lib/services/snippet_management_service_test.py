@@ -77,10 +77,10 @@ class SnippetManagementServiceTest(unittest.TestCase):
     mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
-    snippet_client_configs = snippet_client_v2.Config()
-    manager.add_snippet_client('foo', MOCK_PACKAGE, snippet_client_configs)
+    snippet_configs = snippet_client_v2.Config()
+    manager.add_snippet_client('foo', MOCK_PACKAGE, snippet_configs)
     mock_class.assert_called_once_with(
-        package=mock.ANY, ad=mock.ANY, configs=snippet_client_configs)
+        package=mock.ANY, ad=mock.ANY, configs=snippet_configs)
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_add_snippet_client_dup_name(self, _):

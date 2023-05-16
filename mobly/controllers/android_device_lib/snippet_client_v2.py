@@ -80,7 +80,7 @@ _CALLBACK_DEFAULT_TIMEOUT_SEC = 60 * 2
 
 @dataclasses.dataclass
 class Config:
-  """A configuration class for configuring the snippet client.
+  """A configuration class.
 
   Attributes:
     am_instrument_options: The Android am instrument options used for

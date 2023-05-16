@@ -901,7 +901,7 @@ class AndroidDevice:
     # So we need to wait for the device to come back before proceeding.
     self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
 
-  def load_snippet(self, name, package, snippet_client_configs=None):
+  def load_snippet(self, name, package, snippet_configs=None):
     """Starts the snippet apk with the given package name and connects.
 
     Examples:
@@ -917,9 +917,9 @@ class AndroidDevice:
         client. E.g. `name='maps'` attaches the snippet client to
         `ad.maps`.
       package: string, the package name of the snippet apk to connect to.
-      snippet_client_configs: snippet_client_v2.Config, the configuration
-        object for controlling the snippet client behaviors. See the docstring
-        of the `Config` class for supported configurations.
+      snippet_configs: snippet_client_v2.Config, the configuration object for
+        controlling the snippet behaviors. See the docstring of the `Config`
+        class for supported configurations.
 
     Raises:
       SnippetError: Illegal load operations are attempted.
@@ -930,7 +930,7 @@ class AndroidDevice:
           self,
           'Attribute "%s" already exists, please use a different name.' % name)
     self.services.snippets.add_snippet_client(
-        name, package, snippet_client_configs=snippet_client_configs
+        name, package, snippet_configs=snippet_configs
     )
 
   def unload_snippet(self, name):

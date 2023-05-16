@@ -55,7 +55,7 @@ class SnippetManagementService(base_service.BaseService):
     if name in self._snippet_clients:
       return self._snippet_clients[name]
 
-  def add_snippet_client(self, name, package, snippet_client_configs=None):
+  def add_snippet_client(self, name, package, snippet_configs=None):
     """Adds a snippet client to the management.
 
     Args:
@@ -63,9 +63,9 @@ class SnippetManagementService(base_service.BaseService):
         client. E.g. `name='maps'` attaches the snippet client to
         `ad.maps`.
       package: string, the package name of the snippet apk to connect to.
-      snippet_client_configs: snippet_client_v2.Config, the configuration
-        object for controlling the snippet client behaviors. See the docstring
-        of the `Config` class for supported configurations.
+      snippet_configs: snippet_client_v2.Config, the configuration object for
+        controlling the snippet behaviors. See the docstring of the `Config`
+        class for supported configurations.
 
     Raises:
       Error, if a duplicated name or package is passed in.
@@ -83,7 +83,7 @@ class SnippetManagementService(base_service.BaseService):
             ' "%s".' % (package, snippet_name))
 
     client = snippet_client_v2.SnippetClientV2(
-        package=package, ad=self._device, configs=snippet_client_configs,
+        package=package, ad=self._device, configs=snippet_configs,
     )
     client.initialize()
     self._snippet_clients[name] = client
