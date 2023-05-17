@@ -901,7 +901,7 @@ class AndroidDevice:
     # So we need to wait for the device to come back before proceeding.
     self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
 
-  def load_snippet(self, name, package, configs=None):
+  def load_snippet(self, name, package, config=None):
     """Starts the snippet apk with the given package name and connects.
 
     Examples:
@@ -917,7 +917,7 @@ class AndroidDevice:
         client. E.g. `name='maps'` attaches the snippet client to
         `ad.maps`.
       package: string, the package name of the snippet apk to connect to.
-      configs: snippet_client_v2.Config, the configuration object for
+      config: snippet_client_v2.Config, the configuration object for
         controlling the snippet behaviors. See the docstring of the `Config`
         class for supported configurations.
 
@@ -930,7 +930,7 @@ class AndroidDevice:
           self,
           'Attribute "%s" already exists, please use a different name.' % name)
     self.services.snippets.add_snippet_client(
-        name, package, configs=configs
+        name, package, config=config
     )
 
   def unload_snippet(self, name):

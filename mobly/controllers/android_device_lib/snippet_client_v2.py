@@ -128,13 +128,13 @@ class SnippetClientV2(client_base.ClientBase):
       the connection to the server is made successfully.
   """
 
-  def __init__(self, package, ad, configs=None):
+  def __init__(self, package, ad, config=None):
     """Initializes the instance of Snippet Client V2.
 
     Args:
       package: str, see base class.
       ad: AndroidDevice, the android device object associated with this client.
-      configs: Config, the configuration object. See the docstring of the
+      config: Config, the configuration object. See the docstring of the
         `Config` class for supported configurations.
     """
     super().__init__(package=package, device=ad)
@@ -147,7 +147,7 @@ class SnippetClientV2(client_base.ClientBase):
     self._client = None  # keep it to prevent close errors on connect failure
     self._conn = None
     self._event_client = None
-    self._configs = configs or Config()
+    self._config = config or Config()
 
   @property
   def user_id(self):
@@ -300,13 +300,13 @@ class SnippetClientV2(client_base.ClientBase):
     self.log.debug(
         'Got am instrument options in snippet client for package %s: %s',
         self.package,
-        self._configs.am_instrument_options,
+        self._config.am_instrument_options,
     )
-    if not self._configs.am_instrument_options:
+    if not self._config.am_instrument_options:
       return ''
 
     return ' '.join(
-        f'-e {k} {v}' for k, v in self._configs.am_instrument_options.items()
+        f'-e {k} {v}' for k, v in self._config.am_instrument_options.items()
     )
 
   def _get_user_command_string(self):

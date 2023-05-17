@@ -1127,11 +1127,11 @@ class AndroidDeviceTest(unittest.TestCase):
   def test_AndroidDevice_load_snippet_with_snippet_config(
       self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
     ad = android_device.AndroidDevice(serial='1')
-    snippet_configs = snippet_client_v2.Config()
-    ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME, snippet_configs)
+    snippet_config = snippet_client_v2.Config()
+    ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME, snippet_config)
     self.assertTrue(hasattr(ad, 'snippet'))
     MockSnippetClient.assert_called_once_with(
-        package=mock.ANY, ad=mock.ANY, configs=snippet_configs
+        package=mock.ANY, ad=mock.ANY, config=snippet_config
     )
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
