@@ -92,7 +92,9 @@ def _setup_mock_socket_file(mock_socket_create_conn, resp):
 class SnippetClientV2Test(unittest.TestCase):
   """Unit tests for SnippetClientV2."""
 
-  def _make_client(self, adb_proxy=None, mock_properties=None):
+  def _make_client(
+      self, adb_proxy=None, mock_properties=None, config=None
+  ):
     adb_proxy = adb_proxy or _MockAdbProxy(instrumented_packages=[
         (MOCK_PACKAGE_NAME, snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
          MOCK_PACKAGE_NAME)
@@ -111,7 +113,9 @@ class SnippetClientV2Test(unittest.TestCase):
     }
     self.device = device
 
-    self.client = snippet_client_v2.SnippetClientV2(MOCK_PACKAGE_NAME, device)
+    self.client = snippet_client_v2.SnippetClientV2(
+        MOCK_PACKAGE_NAME, device, config
+    )
 
   def _make_client_with_extra_adb_properties(self, extra_properties):
     mock_properties = mock_android_device.DEFAULT_MOCK_PROPERTIES.copy()
@@ -408,7 +412,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start '
+        (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start  '
          f'{MOCK_SERVER_PATH}')
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
@@ -427,7 +431,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        f'setsid am instrument  -w -e action start {MOCK_SERVER_PATH}'
+        f'setsid am instrument  -w -e action start  {MOCK_SERVER_PATH}'
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
                          [mock.call(start_cmd_list, shell=False)])
@@ -449,7 +453,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        (f' am instrument --user {MOCK_USER_ID} -w -e action start '
+        (f' am instrument --user {MOCK_USER_ID} -w -e action start  '
          f'{MOCK_SERVER_PATH}')
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
@@ -476,7 +480,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        (f'nohup am instrument --user {MOCK_USER_ID} -w -e action start '
+        (f'nohup am instrument --user {MOCK_USER_ID} -w -e action start  '
          f'{MOCK_SERVER_PATH}')
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
@@ -499,8 +503,30 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.start_server()
     start_cmd_list = [
         'adb', 'shell',
-        (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start '
+        (f'setsid am instrument --user {MOCK_USER_ID} -w -e action start  '
          f'{MOCK_SERVER_PATH}')
+    ]
+    self.assertListEqual(mock_start_subprocess.call_args_list,
+                         [mock.call(start_cmd_list, shell=False)])
+    self.assertEqual(self.client.device_port, 1234)
+
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  def test_start_server_with_instrument_options(self, mock_start_subprocess):
+    """Checks the starting server command with instrument options."""
+    config = snippet_client_v2.Config(
+        am_instrument_options={'key_1': 'val_1', 'key_2': 'val_2'},
+    )
+    instrument_options_str = '-e key_1 val_1 -e key_2 val_2'
+    self._make_client(config=config)
+    self._mock_server_process_starting_response(mock_start_subprocess)
+
+    self.client.start_server()
+
+    start_cmd_list = [
+        'adb', 'shell',
+        (f' am instrument --user {MOCK_USER_ID} -w -e action start '
+         f'{instrument_options_str} {MOCK_SERVER_PATH}')
     ]
     self.assertListEqual(mock_start_subprocess.call_args_list,
                          [mock.call(start_cmd_list, shell=False)])

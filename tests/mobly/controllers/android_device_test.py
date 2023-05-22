@@ -24,6 +24,7 @@ from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
+from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.controllers.android_device_lib.services import base_service
 from mobly.controllers.android_device_lib.services import logcat
 from tests.lib import mock_android_device
@@ -1115,6 +1116,23 @@ class AndroidDeviceTest(unittest.TestCase):
       ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
     except Exception as e:
       assertIs(e, expected_e)
+
+  @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
+              return_value=mock_android_device.MockAdbProxy('1'))
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+              return_value=mock_android_device.MockFastbootProxy('1'))
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.SnippetClientV2')
+  @mock.patch('mobly.utils.get_available_host_port')
+  def test_AndroidDevice_load_snippet_with_snippet_config(
+      self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy):
+    ad = android_device.AndroidDevice(serial='1')
+    snippet_config = snippet_client_v2.Config()
+    ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME, snippet_config)
+    self.assertTrue(hasattr(ad, 'snippet'))
+    MockSnippetClient.assert_called_once_with(
+        package=mock.ANY, ad=mock.ANY, config=snippet_config
+    )
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
               return_value=mock_android_device.MockAdbProxy('1'))

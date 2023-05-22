@@ -13,10 +13,12 @@
 # limitations under the License.
 """Snippet Client V2 for Interacting with Snippet Server on Android Device."""
 
+import dataclasses
 import enum
 import json
 import re
 import socket
+from typing import Dict
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
@@ -30,8 +32,8 @@ _INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunne
 
 # The command template to start the snippet server
 _LAUNCH_CMD = (
-    '{shell_cmd} am instrument {user} -w -e action start {snippet_package}/'
-    f'{_INSTRUMENTATION_RUNNER_PACKAGE}')
+    '{shell_cmd} am instrument {user} -w -e action start {instrument_options} '
+    f'{{snippet_package}}/{_INSTRUMENTATION_RUNNER_PACKAGE}')
 
 # The command template to stop the snippet server
 _STOP_CMD = ('am instrument {user} -w -e action stop {snippet_package}/'
@@ -76,6 +78,23 @@ _SOCKET_READ_TIMEOUT = 60 * 10
 _CALLBACK_DEFAULT_TIMEOUT_SEC = 60 * 2
 
 
+@dataclasses.dataclass
+class Config:
+  """A configuration class.
+
+  Attributes:
+    am_instrument_options: The Android am instrument options used for
+      controlling the `onCreate` process of the app under test. Note that this
+      should only be used for controlling the app launch process, options for
+      other purposes may not take effect and you should use snippet RPCs. This
+      is because Mobly snippet runner changes the subsequent instrumentation
+      process.
+  """
+
+  am_instrument_options: Dict[str, str] = dataclasses.field(
+      default_factory=dict)
+
+
 class ConnectionHandshakeCommand(enum.Enum):
   """Commands to send to the server when sending the handshake request.
 
@@ -109,12 +128,14 @@ class SnippetClientV2(client_base.ClientBase):
       the connection to the server is made successfully.
   """
 
-  def __init__(self, package, ad):
+  def __init__(self, package, ad, config=None):
     """Initializes the instance of Snippet Client V2.
 
     Args:
       package: str, see base class.
       ad: AndroidDevice, the android device object associated with this client.
+      config: Config, the configuration object. See the docstring of the
+        `Config` class for supported configurations.
     """
     super().__init__(package=package, device=ad)
     self.host_port = None
@@ -126,6 +147,7 @@ class SnippetClientV2(client_base.ClientBase):
     self._client = None  # keep it to prevent close errors on connect failure
     self._conn = None
     self._event_client = None
+    self._config = config or Config()
 
   @property
   def user_id(self):
@@ -231,9 +253,11 @@ class SnippetClientV2(client_base.ClientBase):
     self.log.debug('Snippet server for package %s is using protocol %d.%d',
                    self.package, _PROTOCOL_MAJOR_VERSION,
                    _PROTOCOL_MINOR_VERSION)
+    option_str = self._get_instrument_options_str()
     cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
                              user=self._get_user_command_string(),
-                             snippet_package=self.package)
+                             snippet_package=self.package,
+                             instrument_options=option_str)
     self._proc = self._run_adb_cmd(cmd)
 
     # Check protocol version and get the device port
@@ -271,6 +295,19 @@ class SnippetClientV2(client_base.ClientBase):
         'at the same time perform USB disconnections may fail.',
         _SETSID_COMMAND, _NOHUP_COMMAND)
     return ''
+
+  def _get_instrument_options_str(self):
+    self.log.debug(
+        'Got am instrument options in snippet client for package %s: %s',
+        self.package,
+        self._config.am_instrument_options,
+    )
+    if not self._config.am_instrument_options:
+      return ''
+
+    return ' '.join(
+        f'-e {k} {v}' for k, v in self._config.am_instrument_options.items()
+    )
 
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying device user ID.
