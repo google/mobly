@@ -321,7 +321,7 @@ class TestResultRecord:
     termination_signal: ExceptionRecord, the main exception of the test.
     extra_errors: OrderedDict, all exceptions occurred during the entire
       test lifecycle. The order of occurrence is preserved.
-    result: TestResultEnum.TEAT_RESULT_*, PASS/FAIL/SKIP.
+    result: TestResultEnum.TEST_RESULT_*, PASS/FAIL/SKIP.
   """
 
   def __init__(self, t_name, t_class=None):
