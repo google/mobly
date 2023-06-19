@@ -210,6 +210,7 @@ class Logcat(base_service.BaseService):
       self.clear_adb_log()
     self._start()
     self._open_logcat_file()
+    self._ad.log.info(self._generate_logcat_start_log())
 
   def _start(self):
     """The actual logic of starting logcat."""
@@ -262,3 +263,23 @@ class Logcat(base_service.BaseService):
     # Not clearing the log regardless of the config when resuming.
     # Otherwise the logs during the paused time will be lost.
     self._start()
+
+  # LINT.IfChange(logcat_starting)
+  def _generate_logcat_start_log(self):
+    """Gets the log when logcat service start.
+
+    Returns:
+      The log contains logcat starting time.
+    """
+    device_time = str(
+        self._ad.adb.shell(
+            'echo $(date +%Y-%m-%dT%T)${EPOCHREALTIME:10:4}'
+        ).replace(b'\n', b''),
+        'UTF-8',
+    )
+    return f'INFO:{self._ad.serial} Start logcat {device_time}'
+
+
+# LINT.ThenChange(
+#   //depot/google3/testing/web/fission/client/extensions/mobly/mobly_log_analyzer.ts:logcat_starting
+# )

@@ -127,6 +127,8 @@ class MockAdbProxy:
           ]), 'utf-8')
     elif 'which' in params:
       return b''
+    elif params == 'echo $(date +%Y-%m-%dT%T)${EPOCHREALTIME:10:4}':
+      return b'2020-01-01T00:00:00.000'
 
   def getprop(self, params):
     if params in self.mock_properties:

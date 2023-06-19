@@ -128,6 +128,15 @@ class LogcatTest(unittest.TestCase):
     stop_proc_mock.assert_called_with('process')
     self.assertIsNone(logcat_service._adb_logcat_process)
     self.assertEqual(logcat_service.adb_logcat_file_path, expected_log_path)
+    # Expect log info when start logcat
+    ad.log = logging.Logger('test')
+    with self.assertLogs(ad.log, level='INFO') as log_output:
+      logcat_service.start()
+    self.assertIn(
+        'INFO:1 Start logcat 2020-01-01T00:00:00.000',
+        ''.join(log_output.output),
+        'Logcat starting message is absent in log info.',
+    )
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
               return_value=mock_android_device.MockAdbProxy('1'))
