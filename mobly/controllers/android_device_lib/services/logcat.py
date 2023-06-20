@@ -264,7 +264,6 @@ class Logcat(base_service.BaseService):
     # Otherwise the logs during the paused time will be lost.
     self._start()
 
-  # LINT.IfChange(logcat_starting)
   def _generate_logcat_start_log(self):
     """Gets the log when logcat service start.
 
@@ -278,8 +277,3 @@ class Logcat(base_service.BaseService):
         'UTF-8',
     )
     return f'INFO:{self._ad.serial} Start logcat {device_time}'
-
-
-# LINT.ThenChange(
-#   //depot/google3/testing/web/fission/client/extensions/mobly/mobly_log_analyzer.ts:logcat_starting
-# )
