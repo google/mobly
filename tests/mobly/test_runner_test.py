@@ -362,12 +362,12 @@ class TestRunnerTest(unittest.TestCase):
   def test__find_test_class_when_no_test_class(self):
     with self.assertRaises(SystemExit):
       with mock.patch.dict('sys.modules', __main__=mock_controller):
-        test_class = test_runner._find_test_class()
+        _ = test_runner._find_test_class()
 
   def test__find_test_class_when_multiple_test_classes(self):
     with self.assertRaises(SystemExit):
       with mock.patch.dict('sys.modules', __main__=multiple_subclasses_module):
-        test_class = test_runner._find_test_class()
+        _ = test_runner._find_test_class()
 
   def test_print_test_names(self):
     mock_test_class = mock.MagicMock()

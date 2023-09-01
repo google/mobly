@@ -363,7 +363,6 @@ class BaseTestTest(unittest.TestCase):
 
     bt_cls = MockBaseTest(mock_test_config)
     bt_cls.run()
-    test_record = bt_cls.results.passed[0]
     class_record = bt_cls.results.error[0]
     self.assertFalse(bt_cls.results.is_all_pass)
     self.assertEqual(class_record.test_name, 'teardown_class')
@@ -403,7 +402,6 @@ class BaseTestTest(unittest.TestCase):
     bt_cls = MockBaseTest(mock_test_config)
     with self.assertRaisesRegex(signals.TestAbortAll, MSG_EXPECTED_EXCEPTION):
       bt_cls.run()
-    test_record = bt_cls.results.passed[0]
     self.assertTrue(bt_cls.results.is_all_pass)
     expected_summary = ('Error 0, Executed 1, Failed 0, Passed 1, '
                         'Requested 1, Skipped 0')
@@ -2530,7 +2528,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(1, len(bt_cls.results.executed))
     self.assertEqual(1, len(bt_cls.results.passed))
     pass_record = bt_cls.results.passed[0]
-    self.assertEqual(pass_record.test_name, f'test_something')
+    self.assertEqual(pass_record.test_name, 'test_something')
     self.assertEqual(0, len(bt_cls.results.error))
 
   def test_retry_last_pass(self):
@@ -2551,7 +2549,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(3, len(bt_cls.results.executed))
     self.assertEqual(1, len(bt_cls.results.passed))
     pass_record = bt_cls.results.passed[0]
-    self.assertEqual(pass_record.test_name, f'test_something_retry_2')
+    self.assertEqual(pass_record.test_name, 'test_something_retry_2')
     self.assertEqual(2, len(bt_cls.results.error))
     error_record_1, error_record_2 = bt_cls.results.error
     self.assertEqual(error_record_1.test_name, 'test_something')
@@ -2583,7 +2581,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(3, len(bt_cls.results.executed))
     self.assertEqual(1, len(bt_cls.results.passed))
     pass_record = bt_cls.results.passed[0]
-    self.assertEqual(pass_record.test_name, f'test_generated_1_retry_2')
+    self.assertEqual(pass_record.test_name, 'test_generated_1_retry_2')
     self.assertEqual(2, len(bt_cls.results.error))
     error_record_1, error_record_2 = bt_cls.results.error
     self.assertEqual(error_record_1.test_name, 'test_generated_1')

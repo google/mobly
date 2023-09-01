@@ -168,7 +168,7 @@ class AdbTest(unittest.TestCase):
     mock_popen.return_value.stdout.readline.side_effect = ['1', '2', '']
     mock_handler = mock.MagicMock()
 
-    err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+    _ = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
                                                      shell=False,
                                                      handler=mock_handler)
     self.assertEqual(mock_handler.call_count, 2)
@@ -184,7 +184,7 @@ class AdbTest(unittest.TestCase):
     mock_popen.return_value.communicate = mock.Mock(
         return_value=(unexpected_stdout, MOCK_DEFAULT_STDERR.encode('utf-8')))
 
-    err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+    _ = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
                                                      shell=False,
                                                      handler=mock_handler)
     self.assertEqual(mock_handler.call_count, 1)
@@ -201,7 +201,7 @@ class AdbTest(unittest.TestCase):
     mock_popen.return_value.communicate = mock.Mock(
         return_value=(raw_expected_stdout, expected_stderr))
 
-    err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+    _ = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
                                                      shell=False,
                                                      handler=mock.MagicMock())
     mock_debug_logger.assert_called_with(
@@ -220,7 +220,7 @@ class AdbTest(unittest.TestCase):
     mock_popen.return_value.communicate = mock.Mock(
         return_value=(raw_expected_stdout, expected_stderr))
 
-    err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+    _ = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
                                                      shell=False,
                                                      handler=mock.MagicMock())
     mock_debug_logger.assert_called_with(
@@ -234,7 +234,7 @@ class AdbTest(unittest.TestCase):
     mock_popen.return_value.stdout.readline.side_effect = ['1', '2', '3', '']
     mock_handler = mock.MagicMock()
 
-    err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+    _ = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
                                                      shell=False,
                                                      handler=mock_handler)
 
@@ -249,7 +249,7 @@ class AdbTest(unittest.TestCase):
     mock_popen.return_value.stdout.readline.side_effect = ['1', '2', '3', '']
     mock_handler = mock.MagicMock()
 
-    err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+    _ = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
                                                      shell=False,
                                                      handler=mock_handler)
 
@@ -273,7 +273,7 @@ class AdbTest(unittest.TestCase):
     mock_popen.return_value.returncode = 1
 
     with self.assertRaisesRegex(adb.AdbError, 'Error executing adb cmd .*'):
-      err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+      _ = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
                                                        shell=False,
                                                        handler=mock.MagicMock())
 
@@ -285,7 +285,7 @@ class AdbTest(unittest.TestCase):
     mock_handler.side_effect = ['', TypeError('fake crash'), '', '']
 
     with self.assertRaisesRegex(TypeError, 'fake crash'):
-      err = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
+      _ = adb.AdbProxy()._execute_and_process_stdout(['fake_cmd'],
                                                        shell=False,
                                                        handler=mock_handler)
 
@@ -493,7 +493,7 @@ class AdbTest(unittest.TestCase):
 
     with self.assertRaisesRegex(
         adb.AdbError, 'Error executing adb cmd "connect localhost:1234".'):
-      out = adb.AdbProxy().connect(mock_address)
+      _ = adb.AdbProxy().connect(mock_address)
 
   def test_getprop(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
@@ -626,7 +626,7 @@ class AdbTest(unittest.TestCase):
       mock_sleep.assert_called_with(1)
 
   def test_forward(self):
-    with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+    with mock.patch.object(adb.AdbProxy, '_exec_cmd'):
       adb.AdbProxy().forward(MOCK_SHELL_COMMAND)
 
   def test_instrument_without_parameters(self):

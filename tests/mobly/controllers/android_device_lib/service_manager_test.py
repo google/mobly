@@ -66,7 +66,7 @@ class ServiceManagerTest(unittest.TestCase):
       self.assertIn(message, error.details)
 
   def test_service_manager_instantiation(self):
-    manager = service_manager.ServiceManager(mock.MagicMock())
+    _ = service_manager.ServiceManager(mock.MagicMock())
 
   def test_register(self):
     manager = service_manager.ServiceManager(mock.MagicMock())

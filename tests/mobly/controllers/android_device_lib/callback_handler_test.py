@@ -91,7 +91,7 @@ class CallbackHandlerTest(unittest.TestCase):
     def some_condition(event):
       return event.data['successful']
 
-    event = handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
+    _ = handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
 
   def test_wait_for_event_negative(self):
     mock_event_client = mock.Mock()
@@ -127,7 +127,7 @@ class CallbackHandlerTest(unittest.TestCase):
 
     big_timeout = callback_handler.MAX_TIMEOUT * 2
     # This line should not raise.
-    event = handler.waitForEvent('AsyncTaskResult',
+    _ = handler.waitForEvent('AsyncTaskResult',
                                  some_condition,
                                  timeout=big_timeout)
 

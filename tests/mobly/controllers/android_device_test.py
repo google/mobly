@@ -216,7 +216,7 @@ class AndroidDeviceTest(unittest.TestCase):
     expected_msg = ('Could not find a target device that matches condition'
                     ": {'label': 'selected'}.")
     with self.assertRaisesRegex(android_device.Error, expected_msg):
-      selected_ads = android_device.get_devices(ads, label='selected')
+      _ = android_device.get_devices(ads, label='selected')
 
   def test_get_device_success_with_serial(self):
     ads = mock_android_device.get_mock_ads(5)
@@ -240,7 +240,7 @@ class AndroidDeviceTest(unittest.TestCase):
     expected_msg = ('Could not find a target device that matches condition'
                     ": {'serial': 5}.")
     with self.assertRaisesRegex(android_device.Error, expected_msg):
-      ad = android_device.get_device(ads, serial=len(ads))
+      _ = android_device.get_device(ads, serial=len(ads))
 
   def test_get_device_too_many_matches(self):
     ads = mock_android_device.get_mock_ads(5)
@@ -615,7 +615,7 @@ class AndroidDeviceTest(unittest.TestCase):
     sanitize_filename_mock.return_value = '1'
     ad = android_device.AndroidDevice(serial=mock_serial)
     get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
-    filename = ad.generate_filename('MagicLog')
+    _ = ad.generate_filename('MagicLog')
     sanitize_filename_mock.assert_called_with(
         'MagicLog,1,fakemodel,07-22-2019_17-53-34-450')
 

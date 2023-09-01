@@ -64,7 +64,7 @@ def create(configs):
     attenuation_device = module.AttenuatorDevice(
         path_count=len(config[KEY_PATHS]))
     attenuation_device.model = attenuator_model
-    instances = attenuation_device.open(config[KEY_ADDRESS], config[KEY_PORT])
+    attenuation_device.open(config[KEY_ADDRESS], config[KEY_PORT])
     for idx, path_name in enumerate(config[KEY_PATHS]):
       path = AttenuatorPath(attenuation_device, idx=idx, name=path_name)
       objs.append(path)

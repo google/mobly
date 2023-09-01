@@ -100,7 +100,6 @@ class OutputTest(unittest.TestCase):
                    'Symlinks are usually specific to Unix operating systems')
   def test_symlink(self):
     """Verifies the symlink is created and links properly."""
-    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger():
       pass
@@ -115,7 +114,6 @@ class OutputTest(unittest.TestCase):
     shell = client.Dispatch("WScript.Shell")
     shortcut = shell.CreateShortCut(shortcut_path)
     self.assertFalse(shortcut.Targetpath)
-    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger():
       pass
@@ -129,7 +127,6 @@ class OutputTest(unittest.TestCase):
 
   @mock.patch('mobly.utils.create_alias')
   def test_mobly_logger_with_default_latest_log_alias(self, mock_create_alias):
-    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger():
       pass
@@ -139,7 +136,6 @@ class OutputTest(unittest.TestCase):
 
   @mock.patch('mobly.utils.create_alias')
   def test_mobly_logger_with_custom_latest_log_alias(self, mock_create_alias):
-    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger(alias='history'):
       pass
@@ -151,7 +147,6 @@ class OutputTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_alias')
   def test_mobly_logger_skips_latest_log_alias_when_none(
       self, mock_create_alias):
-    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger(alias=None):
       pass
@@ -160,7 +155,6 @@ class OutputTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_alias')
   def test_mobly_logger_skips_latest_log_alias_when_empty(
       self, mock_create_alias):
-    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
     with tr.mobly_logger(alias=''):
       pass
@@ -218,7 +212,6 @@ class OutputTest(unittest.TestCase):
     * Files are correctly created.
     * Basic sanity checks of each output file.
     """
-    mock_test_config = self.create_mock_test_config(self.base_mock_test_config)
     info_uuid1 = '0c3ebb06-700d-496e-b015-62652da9e451'
     debug_uuid1 = '0c3ebb06-700d-496e-b015-62652da9e451'
     info_uuid2 = '484ef7db-f2dd-4b76-a126-c2f263e3808c'

@@ -65,7 +65,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_add_snippet_client_without_config(self, mock_class):
-    mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
     manager.add_snippet_client('foo', MOCK_PACKAGE)
@@ -74,7 +73,6 @@ class SnippetManagementServiceTest(unittest.TestCase):
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_add_snippet_client_with_config(self, mock_class):
-    mock_client = mock_class.return_value
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
     snippet_config = snippet_client_v2.Config()
