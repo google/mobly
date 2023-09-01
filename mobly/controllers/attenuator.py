@@ -33,7 +33,6 @@ Sample Config:
     ]
 """
 import importlib
-import logging
 
 MOBLY_CONTROLLER_CONFIG_NAME = "Attenuator"
 # Keys used inside a config dict for attenuator.
