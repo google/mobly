@@ -17,7 +17,6 @@ import logging
 import os
 import re
 import shutil
-import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -26,7 +25,6 @@ from mobly import config_parser
 from mobly import records
 from mobly import signals
 from mobly import test_runner
-from mobly import utils
 from tests.lib import mock_android_device
 from tests.lib import mock_controller
 from tests.lib import integration_test

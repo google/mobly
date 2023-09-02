@@ -20,7 +20,6 @@ the actual capture (sniff) to sub-classes.
 
 import os
 import shutil
-import signal
 import subprocess
 import tempfile
 from mobly import logger

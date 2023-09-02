@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import inspect
 import io
 import os
 import shutil
@@ -23,8 +22,6 @@ from unittest import mock
 
 from mobly import base_suite
 from mobly import base_test
-from mobly import config_parser
-from mobly import test_runner
 from mobly import suite_runner
 from tests.lib import integration2_test
 from tests.lib import integration_test
