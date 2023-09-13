@@ -1,9 +1,11 @@
-name: CI tests for google/mobly
+name: Daily CI tests for google/mobly
 
-on: [push, pull_request]
+on:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
-  build-and-test:
+  unittest:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
