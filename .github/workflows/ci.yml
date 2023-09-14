@@ -1,4 +1,4 @@
-name: CI tests for google/mobly
+name: CI
 
 on: [push, pull_request]
 
