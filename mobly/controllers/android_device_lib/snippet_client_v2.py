@@ -89,10 +89,12 @@ class Config:
       other purposes may not take effect and you should use snippet RPCs. This
       is because Mobly snippet runner changes the subsequent instrumentation
       process.
+    user_id: The user id under which to launch the snippet process.
   """
 
-  am_instrument_options: Dict[str, str] = dataclasses.field(
-      default_factory=dict)
+  am_instrument_options: Dict[str,
+                              str] = dataclasses.field(default_factory=dict)
+  user_id: int | None = None
 
 
 class ConnectionHandshakeCommand(enum.Enum):
@@ -142,7 +144,7 @@ class SnippetClientV2(client_base.ClientBase):
     self.device_port = None
     self.uid = UNKNOWN_UID
     self._adb = ad.adb
-    self._user_id = None
+    self._user_id = None if config is None else config.user_id
     self._proc = None
     self._client = None  # keep it to prevent close errors on connect failure
     self._conn = None
@@ -306,8 +308,7 @@ class SnippetClientV2(client_base.ClientBase):
       return ''
 
     return ' '.join(
-        f'-e {k} {v}' for k, v in self._config.am_instrument_options.items()
-    )
+        f'-e {k} {v}' for k, v in self._config.am_instrument_options.items())
 
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying device user ID.
