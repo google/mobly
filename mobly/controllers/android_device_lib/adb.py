@@ -442,6 +442,14 @@ class AdbProxy:
                                 timeout=None,
                                 stderr=None)
 
+  def reverse(self, args=None, shell=False) -> bytes:
+    with ADB_PORT_LOCK:
+      return self._exec_adb_cmd('reverse',
+                                args,
+                                shell,
+                                timeout=None,
+                                stderr=None)
+
   def instrument(self,
                  package,
                  options=None,
