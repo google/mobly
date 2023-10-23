@@ -425,9 +425,10 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch.object(_MockAdbProxy, 'shell', return_value=b'setsid')
   def test_start_server_with_config_specific_user_id(self, _,
                                                      mock_start_subprocess):
-    """Tests that `--user` is added to starting command with SDK >= 24."""
+    """Tests that the correct `--user` argument is passed."""
     self._make_client(config=snippet_client_v2.Config(user_id=42))
     self._mock_server_process_starting_response(mock_start_subprocess)
+    self.assertEqual(self.client.user_id, 42)
 
     self.client.start_server()
     start_cmd_list = [
