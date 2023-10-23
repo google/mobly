@@ -18,7 +18,7 @@ import enum
 import json
 import re
 import socket
-from typing import Dict
+from typing import Dict, Union
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
@@ -89,11 +89,12 @@ class Config:
       other purposes may not take effect and you should use snippet RPCs. This
       is because Mobly snippet runner changes the subsequent instrumentation
       process.
+    user_id: The user id under which to launch the snippet process.
   """
 
   am_instrument_options: Dict[str, str] = dataclasses.field(
       default_factory=dict)
-
+  user_id: Union[int, None] = None
 
 class ConnectionHandshakeCommand(enum.Enum):
   """Commands to send to the server when sending the handshake request.
@@ -142,7 +143,7 @@ class SnippetClientV2(client_base.ClientBase):
     self.device_port = None
     self.uid = UNKNOWN_UID
     self._adb = ad.adb
-    self._user_id = None
+    self._user_id = None if config is None else config.user_id
     self._proc = None
     self._client = None  # keep it to prevent close errors on connect failure
     self._conn = None
