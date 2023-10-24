@@ -29,5 +29,6 @@ jobs:
 
     - name: Check formatting
       run: |
-        yapf -irp .
+        python -m pip install yapf
+        yapf -drp .
 
