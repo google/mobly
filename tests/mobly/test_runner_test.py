@@ -380,8 +380,7 @@ class TestRunnerTest(unittest.TestCase):
     mock_cls_instance = mock.MagicMock()
     mock_test_class.return_value = mock_cls_instance
     test_runner._print_test_names(mock_test_class)
-    mock_cls_instance._pre_run.side_effect = Exception(
-        'Something went wrong.')
+    mock_cls_instance._pre_run.side_effect = Exception('Something went wrong.')
     mock_cls_instance._clean_up.assert_called_once()
 
 

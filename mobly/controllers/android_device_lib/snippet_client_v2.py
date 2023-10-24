@@ -92,9 +92,10 @@ class Config:
     user_id: The user id under which to launch the snippet process.
   """
 
-  am_instrument_options: Dict[str, str] = dataclasses.field(
-      default_factory=dict)
+  am_instrument_options: Dict[str,
+                              str] = dataclasses.field(default_factory=dict)
   user_id: Union[int, None] = None
+
 
 class ConnectionHandshakeCommand(enum.Enum):
   """Commands to send to the server when sending the handshake request.
@@ -307,8 +308,7 @@ class SnippetClientV2(client_base.ClientBase):
       return ''
 
     return ' '.join(
-        f'-e {k} {v}' for k, v in self._config.am_instrument_options.items()
-    )
+        f'-e {k} {v}' for k, v in self._config.am_instrument_options.items())
 
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying device user ID.

@@ -83,7 +83,9 @@ class SnippetManagementService(base_service.BaseService):
             ' "%s".' % (package, snippet_name))
 
     client = snippet_client_v2.SnippetClientV2(
-        package=package, ad=self._device, config=config,
+        package=package,
+        ad=self._device,
+        config=config,
     )
     client.initialize()
     self._snippet_clients[name] = client

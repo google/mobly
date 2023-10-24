@@ -37,9 +37,9 @@ import portpicker
 # TODO(#851): Remove this try/except statement and typing_extensions from
 # install_requires when Python 3.8 is the minimum version we support.
 try:
-    from typing import Literal
+  from typing import Literal
 except ImportError:
-    from typing_extensions import Literal
+  from typing_extensions import Literal
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
@@ -384,28 +384,28 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
 
 # Provide hint for pytype checker to avoid the Union[bytes, str] case.
 @overload
-def run_command(cmd,
-                stdout=...,
-                stderr=...,
-                shell=...,
-                timeout=...,
-                cwd=...,
-                env=...,
-                universal_newlines: Literal[False] = ...
-               ) -> Tuple[int, bytes, bytes]:
+def run_command(
+    cmd,
+    stdout=...,
+    stderr=...,
+    shell=...,
+    timeout=...,
+    cwd=...,
+    env=...,
+    universal_newlines: Literal[False] = ...) -> Tuple[int, bytes, bytes]:
   ...
 
 
 @overload
-def run_command(cmd,
-                stdout=...,
-                stderr=...,
-                shell=...,
-                timeout=...,
-                cwd=...,
-                env=...,
-                universal_newlines: Literal[True] = ...
-               ) -> Tuple[int, str, str]:
+def run_command(
+    cmd,
+    stdout=...,
+    stderr=...,
+    shell=...,
+    timeout=...,
+    cwd=...,
+    env=...,
+    universal_newlines: Literal[True] = ...) -> Tuple[int, str, str]:
   ...
 
 

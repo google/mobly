@@ -104,12 +104,13 @@ def _parse_cli_args(argv):
       action='store_true',
       help='Print the names of the tests defined in a script without '
       'executing them.')
-  parser.add_argument('--tests',
-                      '--test_case',
-                      nargs='+',
-                      type=str,
-                      metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
-                      help='A list of test classes and optional tests to execute.')
+  parser.add_argument(
+      '--tests',
+      '--test_case',
+      nargs='+',
+      type=str,
+      metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
+      help='A list of test classes and optional tests to execute.')
   parser.add_argument('-tb',
                       '--test_bed',
                       nargs='+',
@@ -192,8 +193,8 @@ def run_suite_class(argv=None):
   if config_count != 1:
     logging.error('Expect exactly one test config, found %d', config_count)
   config = test_configs[0]
-  runner = test_runner.TestRunner(
-      log_dir=config.log_path, testbed_name=config.testbed_name)
+  runner = test_runner.TestRunner(log_dir=config.log_path,
+                                  testbed_name=config.testbed_name)
   suite = suite_class(runner, config)
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
@@ -238,8 +239,7 @@ def run_suite(test_classes, argv=None):
     sys.exit(0)
 
   # Load test config file.
-  test_configs = config_parser.load_test_config_file(args.config,
-                                                     args.test_bed)
+  test_configs = config_parser.load_test_config_file(args.config, args.test_bed)
   # Find the full list of tests to execute
   selected_tests = compute_selected_tests(test_classes, args.tests)
 

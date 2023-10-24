@@ -185,8 +185,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     adb_proxy = mock.MagicMock()
     adb_proxy.shell.return_value = b'OK (0 tests)'
     client = self._make_client(adb_proxy)
-    event_client = snippet_client.SnippetClient(
-        package=MOCK_PACKAGE_NAME, ad=client._ad)
+    event_client = snippet_client.SnippetClient(package=MOCK_PACKAGE_NAME,
+                                                ad=client._ad)
     client._event_client = event_client
     event_client_conn = mock.Mock()
     event_client._conn = event_client_conn
@@ -204,8 +204,8 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     adb_proxy = mock.MagicMock()
     adb_proxy.shell.return_value = b'OK (0 tests)'
     client = self._make_client(adb_proxy)
-    event_client = snippet_client.SnippetClient(
-        package=MOCK_PACKAGE_NAME, ad=client._ad)
+    event_client = snippet_client.SnippetClient(package=MOCK_PACKAGE_NAME,
+                                                ad=client._ad)
     client._event_client = event_client
     event_client._conn = None
 
@@ -216,8 +216,9 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  def test_snippet_stop_app_without_event_client(
-      self, mock_stop_standing_subprocess, mock_create_connection):
+  def test_snippet_stop_app_without_event_client(self,
+                                                 mock_stop_standing_subprocess,
+                                                 mock_create_connection):
     adb_proxy = mock.MagicMock()
     adb_proxy.shell.return_value = b'OK (0 tests)'
     client = self._make_client(adb_proxy)

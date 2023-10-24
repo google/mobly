@@ -92,9 +92,7 @@ def _setup_mock_socket_file(mock_socket_create_conn, resp):
 class SnippetClientV2Test(unittest.TestCase):
   """Unit tests for SnippetClientV2."""
 
-  def _make_client(
-      self, adb_proxy=None, mock_properties=None, config=None
-  ):
+  def _make_client(self, adb_proxy=None, mock_properties=None, config=None):
     adb_proxy = adb_proxy or _MockAdbProxy(instrumented_packages=[
         (MOCK_PACKAGE_NAME, snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
          MOCK_PACKAGE_NAME)
@@ -113,9 +111,8 @@ class SnippetClientV2Test(unittest.TestCase):
     }
     self.device = device
 
-    self.client = snippet_client_v2.SnippetClientV2(
-        MOCK_PACKAGE_NAME, device, config
-    )
+    self.client = snippet_client_v2.SnippetClientV2(MOCK_PACKAGE_NAME, device,
+                                                    config)
 
   def _make_client_with_extra_adb_properties(self, extra_properties):
     mock_properties = mock_android_device.DEFAULT_MOCK_PROPERTIES.copy()
@@ -168,9 +165,10 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', f'tcp:{mock_get_port.return_value}'])
     self.assertIsNone(self.client._event_client)
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
@@ -206,9 +204,10 @@ class SnippetClientV2Test(unittest.TestCase):
                          expected_socket_writes)
     self.assertEqual(rpc_result, 123)
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
@@ -260,9 +259,10 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertIsNone(event_client.host_port, None)
     self.assertIsNone(event_client.device_port, None)
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
@@ -533,9 +533,10 @@ class SnippetClientV2Test(unittest.TestCase):
               'utils.start_standing_subprocess')
   def test_start_server_with_instrument_options(self, mock_start_subprocess):
     """Checks the starting server command with instrument options."""
-    config = snippet_client_v2.Config(
-        am_instrument_options={'key_1': 'val_1', 'key_2': 'val_2'},
-    )
+    config = snippet_client_v2.Config(am_instrument_options={
+        'key_1': 'val_1',
+        'key_2': 'val_2'
+    },)
     instrument_options_str = '-e key_1 val_1 -e key_2 val_2'
     self._make_client(config=config)
     self._mock_server_process_starting_response(mock_start_subprocess)
@@ -848,9 +849,10 @@ class SnippetClientV2Test(unittest.TestCase):
     self.device.adb.mock_forward_func.assert_called_once_with(
         ['--remove', 'tcp:123'])
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
@@ -1094,9 +1096,10 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   def test_make_connection_normally(self, mock_get_port, mock_start_subprocess,
                                     mock_socket_create_conn):
     """Tests that making a connection works normally."""
@@ -1118,9 +1121,10 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   def test_make_connection_with_preset_host_port(self, mock_get_port,
                                                  mock_start_subprocess,
                                                  mock_socket_create_conn):
@@ -1145,9 +1149,10 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   def test_make_connection_with_ip(self, mock_get_port, mock_start_subprocess,
                                    mock_socket_create_conn):
     """Tests that make a connection with 127.0.0.1 instead of localhost."""
@@ -1178,9 +1183,10 @@ class SnippetClientV2Test(unittest.TestCase):
     self.socket_conn.settimeout.assert_called_once_with(
         snippet_client_v2._SOCKET_READ_TIMEOUT)
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   def test_make_connection_io_error(self, mock_socket_create_conn,
                                     mock_get_port):
@@ -1192,9 +1198,10 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client.device_port = 123
       self.client.make_connection()
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   def test_make_connection_timeout(self, mock_socket_create_conn,
                                    mock_get_port):
@@ -1206,9 +1213,10 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client.device_port = 123
       self.client.make_connection()
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
@@ -1224,9 +1232,10 @@ class SnippetClientV2Test(unittest.TestCase):
         errors.ProtocolError, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
       self.client.make_connection()
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
@@ -1242,9 +1251,10 @@ class SnippetClientV2Test(unittest.TestCase):
         errors.ProtocolError, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE):
       self.client.make_connection()
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
@@ -1259,9 +1269,10 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.make_connection()
     self.assertEqual(self.client.uid, -1)
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
@@ -1278,9 +1289,10 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(errors.Error, 'Socket write error'):
       self.client.make_connection()
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
@@ -1296,9 +1308,10 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(errors.Error, 'Socket read error'):
       self.client.make_connection()
 
-  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
-              'utils.get_available_host_port',
-              return_value=12345)
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.get_available_host_port',
+      return_value=12345)
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')

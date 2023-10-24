@@ -1130,9 +1130,9 @@ class AndroidDeviceTest(unittest.TestCase):
     snippet_config = snippet_client_v2.Config()
     ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME, snippet_config)
     self.assertTrue(hasattr(ad, 'snippet'))
-    MockSnippetClient.assert_called_once_with(
-        package=mock.ANY, ad=mock.ANY, config=snippet_config
-    )
+    MockSnippetClient.assert_called_once_with(package=mock.ANY,
+                                              ad=mock.ANY,
+                                              config=snippet_config)
 
   @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy',
               return_value=mock_android_device.MockAdbProxy('1'))

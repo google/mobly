@@ -69,8 +69,9 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock())
     manager.add_snippet_client('foo', MOCK_PACKAGE)
-    mock_class.assert_called_once_with(
-        package=mock.ANY, ad=mock.ANY, config=None)
+    mock_class.assert_called_once_with(package=mock.ANY,
+                                       ad=mock.ANY,
+                                       config=None)
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_add_snippet_client_with_config(self, mock_class):
@@ -79,8 +80,9 @@ class SnippetManagementServiceTest(unittest.TestCase):
         mock.MagicMock())
     snippet_config = snippet_client_v2.Config()
     manager.add_snippet_client('foo', MOCK_PACKAGE, snippet_config)
-    mock_class.assert_called_once_with(
-        package=mock.ANY, ad=mock.ANY, config=snippet_config)
+    mock_class.assert_called_once_with(package=mock.ANY,
+                                       ad=mock.ANY,
+                                       config=snippet_config)
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_add_snippet_client_dup_name(self, _):

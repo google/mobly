@@ -929,9 +929,7 @@ class AndroidDevice:
       raise SnippetError(
           self,
           'Attribute "%s" already exists, please use a different name.' % name)
-    self.services.snippets.add_snippet_client(
-        name, package, config=config
-    )
+    self.services.snippets.add_snippet_client(name, package, config=config)
 
   def unload_snippet(self, name):
     """Stops a snippet apk.
