@@ -54,5 +54,5 @@ $ pip3 install yapf
 To lint the code:
 
 ```sh
-mobly $ yapf -i {files you modified}
+mobly $ yapf -irp .
 ```

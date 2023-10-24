@@ -29,5 +29,5 @@ jobs:
 
     - name: Check formatting
       run: |
-        yapf -d -r -p --exclude 'venv/**/*.py' --exclude '.tox/**/*.py' .
+        yapf -irp .
 
