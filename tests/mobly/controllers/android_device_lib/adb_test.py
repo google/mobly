@@ -628,6 +628,18 @@ class AdbTest(unittest.TestCase):
   def test_forward(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
       adb.AdbProxy().forward(MOCK_SHELL_COMMAND)
+      mock_exec_cmd.assert_called_with(['adb', 'forward', 'ls'],
+                                       shell=False,
+                                       timeout=None,
+                                       stderr=None)
+
+  def test_reverse(self):
+    with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+      adb.AdbProxy().reverse(MOCK_SHELL_COMMAND)
+      mock_exec_cmd.assert_called_with(['adb', 'reverse', 'ls'],
+                                       shell=False,
+                                       timeout=None,
+                                       stderr=None)
 
   def test_reverse(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
