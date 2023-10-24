@@ -423,6 +423,25 @@ class SnippetClientV2Test(unittest.TestCase):
   @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
               'utils.start_standing_subprocess')
   @mock.patch.object(_MockAdbProxy, 'shell', return_value=b'setsid')
+  def test_start_server_with_config_specific_user_id(self, _,
+                                                     mock_start_subprocess):
+    """Tests that the correct `--user` argument is passed."""
+    self._make_client(config=snippet_client_v2.Config(user_id=42))
+    self._mock_server_process_starting_response(mock_start_subprocess)
+    self.assertEqual(self.client.user_id, 42)
+
+    self.client.start_server()
+    start_cmd_list = [
+        'adb', 'shell',
+        (f'setsid am instrument --user 42 -w -e action start  '
+         f'{MOCK_SERVER_PATH}')
+    ]
+    self.assertListEqual(mock_start_subprocess.call_args_list,
+                         [mock.call(start_cmd_list, shell=False)])
+
+  @mock.patch('mobly.controllers.android_device_lib.snippet_client_v2.'
+              'utils.start_standing_subprocess')
+  @mock.patch.object(_MockAdbProxy, 'shell', return_value=b'setsid')
   def test_start_server_without_user_id(self, mock_adb, mock_start_subprocess):
     """Tests that `--user` is not added to starting command on SDK < 24."""
     self._make_client_with_extra_adb_properties({'ro.build.version.sdk': '21'})
