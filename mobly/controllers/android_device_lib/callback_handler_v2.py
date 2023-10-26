@@ -42,14 +42,19 @@ class CallbackHandlerV2(callback_handler_base.CallbackHandlerBase):
     """
     timeout_ms = int(timeout_sec * 1000)
     try:
-      return self._event_client.eventWaitAndGet(callback_id, event_name,
-                                                timeout_ms)
+      return self._event_client.eventWaitAndGet(
+          callback_id, event_name, timeout_ms
+      )
     except Exception as e:
       if TIMEOUT_ERROR_MESSAGE in str(e):
         raise errors.CallbackHandlerTimeoutError(
-            self._device, (f'Timed out after waiting {timeout_sec}s for event '
-                           f'"{event_name}" triggered by {self._method_name} '
-                           f'({self.callback_id}).')) from e
+            self._device,
+            (
+                f'Timed out after waiting {timeout_sec}s for event '
+                f'"{event_name}" triggered by {self._method_name} '
+                f'({self.callback_id}).'
+            ),
+        ) from e
       raise
 
   def callEventGetAllRpc(self, callback_id, event_name):

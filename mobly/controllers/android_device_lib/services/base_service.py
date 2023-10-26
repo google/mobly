@@ -21,6 +21,7 @@ class BaseService(abc.ABC):
 
   This class defines the interface for Mobly's AndroidDevice service.
   """
+
   _alias = None
 
   def __init__(self, device, configs=None):

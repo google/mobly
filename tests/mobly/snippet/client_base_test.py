@@ -25,7 +25,8 @@ from mobly.snippet import errors
 
 def _generate_fix_length_rpc_response(
     response_length,
-    template='{"id": 0, "result": "%s", "error": null, "callback": null}'):
+    template='{"id": 0, "result": "%s", "error": null, "callback": null}',
+):
   """Generates an RPC response string with specified length.
 
   This function generates a random string and formats the template with the
@@ -46,9 +47,11 @@ def _generate_fix_length_rpc_response(
   # '%s' in the template, of which the length is 2.
   result_length = response_length - (len(template) - 2)
   if result_length < 0:
-    raise ValueError(f'The response_length should be no smaller than '
-                     f'template_length + 2. Got response_length '
-                     f'{response_length}, template_length {len(template)}.')
+    raise ValueError(
+        'The response_length should be no smaller than '
+        'template_length + 2. Got response_length '
+        f'{response_length}, template_length {len(template)}.'
+    )
   chars = string.ascii_letters + string.digits
   return template % ''.join(random.choice(chars) for _ in range(result_length))
 
@@ -102,8 +105,9 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, 'before_starting_server')
   @mock.patch.object(FakeClient, 'start_server')
   @mock.patch.object(FakeClient, '_make_connection')
-  def test_init_server_stage_order(self, mock_make_conn_func, mock_start_func,
-                                   mock_before_func):
+  def test_init_server_stage_order(
+      self, mock_make_conn_func, mock_start_func, mock_before_func
+  ):
     """Test that initialization runs its stages in expected order."""
     order_manager = mock.Mock()
     order_manager.attach_mock(mock_before_func, 'mock_before_func')
@@ -121,8 +125,9 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'stop')
   @mock.patch.object(FakeClient, 'before_starting_server')
-  def test_init_server_before_starting_server_fail(self, mock_before_func,
-                                                   mock_stop_func):
+  def test_init_server_before_starting_server_fail(
+      self, mock_before_func, mock_stop_func
+  ):
     """Test before_starting_server stage of initialization fails."""
     mock_before_func.side_effect = Exception('ha')
 
@@ -142,8 +147,9 @@ class ClientBaseTest(unittest.TestCase):
 
   @mock.patch.object(FakeClient, 'stop')
   @mock.patch.object(FakeClient, '_make_connection')
-  def test_init_server_make_connection_fail(self, mock_make_conn_func,
-                                            mock_stop_func):
+  def test_init_server_make_connection_fail(
+      self, mock_make_conn_func, mock_stop_func
+  ):
     """Test _make_connection stage of initialization fails."""
     mock_make_conn_func.side_effect = Exception('ha')
 
@@ -156,9 +162,14 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, 'send_rpc_request')
   @mock.patch.object(FakeClient, '_decode_response_string_and_validate_format')
   @mock.patch.object(FakeClient, '_handle_rpc_response')
-  def test_rpc_stage_dependencies(self, mock_handle_resp, mock_decode_resp_str,
-                                  mock_send_request, mock_gen_request,
-                                  mock_precheck):
+  def test_rpc_stage_dependencies(
+      self,
+      mock_handle_resp,
+      mock_decode_resp_str,
+      mock_send_request,
+      mock_gen_request,
+      mock_precheck,
+  ):
     """Test the internal dependencies when sending an RPC.
 
     When sending an RPC, it calls multiple functions in specific order, and
@@ -175,16 +186,19 @@ class ClientBaseTest(unittest.TestCase):
     """
     self.client.initialize()
 
-    expected_response_str = ('{"id": 0, "result": 123, "error": null, '
-                             '"callback": null}')
+    expected_response_str = (
+        '{"id": 0, "result": 123, "error": null, "callback": null}'
+    )
     expected_response_dict = {
         'id': 0,
         'result': 123,
         'error': None,
         'callback': None,
     }
-    expected_request = ('{"id": 10, "method": "some_rpc", "params": [1, 2],'
-                        '"kwargs": {"test_key": 3}')
+    expected_request = (
+        '{"id": 10, "method": "some_rpc", "params": [1, 2],'
+        '"kwargs": {"test_key": 3}'
+    )
     expected_result = 123
 
     mock_gen_request.return_value = expected_request
@@ -205,9 +219,14 @@ class ClientBaseTest(unittest.TestCase):
   @mock.patch.object(FakeClient, 'send_rpc_request')
   @mock.patch.object(FakeClient, '_decode_response_string_and_validate_format')
   @mock.patch.object(FakeClient, '_handle_rpc_response')
-  def test_rpc_precheck_fail(self, mock_handle_resp, mock_decode_resp_str,
-                             mock_send_request, mock_gen_request,
-                             mock_precheck):
+  def test_rpc_precheck_fail(
+      self,
+      mock_handle_resp,
+      mock_decode_resp_str,
+      mock_send_request,
+      mock_gen_request,
+      mock_precheck,
+  ):
     """Test when RPC precheck fails it will skip sending the RPC."""
     self.client.initialize()
     mock_precheck.side_effect = Exception('server_died')
@@ -227,8 +246,10 @@ class ClientBaseTest(unittest.TestCase):
     with all required fields.
     """
     request = self.client._gen_rpc_request(0, 'test_rpc', 1, 2, test_key=3)
-    expected_result = ('{"id": 0, "kwargs": {"test_key": 3}, '
-                       '"method": "test_rpc", "params": [1, 2]}')
+    expected_result = (
+        '{"id": 0, "kwargs": {"test_key": 3}, '
+        '"method": "test_rpc", "params": [1, 2]}'
+    )
     self.assertEqual(request, expected_result)
 
   def test_gen_request_without_kwargs(self):
@@ -243,43 +264,52 @@ class ClientBaseTest(unittest.TestCase):
 
   def test_rpc_no_response(self):
     """Test parsing an empty RPC response."""
-    with self.assertRaisesRegex(errors.ProtocolError,
-                                errors.ProtocolError.NO_RESPONSE_FROM_SERVER):
+    with self.assertRaisesRegex(
+        errors.ProtocolError, errors.ProtocolError.NO_RESPONSE_FROM_SERVER
+    ):
       self.client._decode_response_string_and_validate_format(0, '')
 
-    with self.assertRaisesRegex(errors.ProtocolError,
-                                errors.ProtocolError.NO_RESPONSE_FROM_SERVER):
+    with self.assertRaisesRegex(
+        errors.ProtocolError, errors.ProtocolError.NO_RESPONSE_FROM_SERVER
+    ):
       self.client._decode_response_string_and_validate_format(0, None)
 
   def test_rpc_response_missing_fields(self):
     """Test parsing an RPC response that misses some required fields."""
     mock_resp_without_id = '{"result": 123, "error": null, "callback": null}'
     with self.assertRaisesRegex(
-        errors.ProtocolError,
-        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'id'):
+        errors.ProtocolError, errors.ProtocolError.RESPONSE_MISSING_FIELD % 'id'
+    ):
       self.client._decode_response_string_and_validate_format(
-          10, mock_resp_without_id)
+          10, mock_resp_without_id
+      )
 
     mock_resp_without_result = '{"id": 10, "error": null, "callback": null}'
     with self.assertRaisesRegex(
         errors.ProtocolError,
-        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'result'):
+        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'result',
+    ):
       self.client._decode_response_string_and_validate_format(
-          10, mock_resp_without_result)
+          10, mock_resp_without_result
+      )
 
     mock_resp_without_error = '{"id": 10, "result": 123, "callback": null}'
     with self.assertRaisesRegex(
         errors.ProtocolError,
-        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'error'):
+        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'error',
+    ):
       self.client._decode_response_string_and_validate_format(
-          10, mock_resp_without_error)
+          10, mock_resp_without_error
+      )
 
     mock_resp_without_callback = '{"id": 10, "result": 123, "error": null}'
     with self.assertRaisesRegex(
         errors.ProtocolError,
-        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'callback'):
+        errors.ProtocolError.RESPONSE_MISSING_FIELD % 'callback',
+    ):
       self.client._decode_response_string_and_validate_format(
-          10, mock_resp_without_callback)
+          10, mock_resp_without_callback
+      )
 
   def test_rpc_response_error(self):
     """Test parsing an RPC response with a non-empty error field."""
@@ -299,15 +329,17 @@ class ClientBaseTest(unittest.TestCase):
         'id': 10,
         'result': 123,
         'error': None,
-        'callback': '1-0'
+        'callback': '1-0',
     }
-    with mock.patch.object(self.client,
-                           'handle_callback') as mock_handle_callback:
+    with mock.patch.object(
+        self.client, 'handle_callback'
+    ) as mock_handle_callback:
       expected_callback = mock.Mock()
       mock_handle_callback.return_value = expected_callback
 
-      rpc_result = self.client._handle_rpc_response('some_rpc',
-                                                    mock_resp_with_callback)
+      rpc_result = self.client._handle_rpc_response(
+          'some_rpc', mock_resp_with_callback
+      )
       mock_handle_callback.assert_called_with('1-0', 123, 'some_rpc')
       # Ensure the RPC function returns what handle_callback returned
       self.assertIs(expected_callback, rpc_result)
@@ -317,10 +349,11 @@ class ClientBaseTest(unittest.TestCase):
         'id': 10,
         'result': 123,
         'error': None,
-        'callback': None
+        'callback': None,
     }
-    with mock.patch.object(self.client,
-                           'handle_callback') as mock_handle_callback:
+    with mock.patch.object(
+        self.client, 'handle_callback'
+    ) as mock_handle_callback:
       self.client._handle_rpc_response('some_rpc', mock_resp_without_callback)
       mock_handle_callback.assert_not_called()
 
@@ -330,8 +363,9 @@ class ClientBaseTest(unittest.TestCase):
     wrong_id = 20
     resp = f'{{"id": {right_id}, "result": 1, "error": null, "callback": null}}'
 
-    with self.assertRaisesRegex(errors.ProtocolError,
-                                errors.ProtocolError.MISMATCHED_API_ID):
+    with self.assertRaisesRegex(
+        errors.ProtocolError, errors.ProtocolError.MISMATCHED_API_ID
+    ):
       self.client._decode_response_string_and_validate_format(wrong_id, resp)
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
@@ -343,7 +377,8 @@ class ClientBaseTest(unittest.TestCase):
     self.client.initialize()
 
     resp = _generate_fix_length_rpc_response(
-        client_base._MAX_RPC_RESP_LOGGING_LENGTH * 2)
+        client_base._MAX_RPC_RESP_LOGGING_LENGTH * 2
+    )
     mock_send_request.return_value = resp
     self.client.some_rpc(1, 2)
     mock_log.debug.assert_called_with('Snippet received: %s', resp)
@@ -357,7 +392,8 @@ class ClientBaseTest(unittest.TestCase):
     self.client.initialize()
 
     resp = _generate_fix_length_rpc_response(
-        int(client_base._MAX_RPC_RESP_LOGGING_LENGTH // 2))
+        int(client_base._MAX_RPC_RESP_LOGGING_LENGTH // 2)
+    )
     mock_send_request.return_value = resp
     self.client.some_rpc(1, 2)
     mock_log.debug.assert_called_with('Snippet received: %s', resp)
@@ -371,7 +407,8 @@ class ClientBaseTest(unittest.TestCase):
     self.client.initialize()
 
     resp = _generate_fix_length_rpc_response(
-        client_base._MAX_RPC_RESP_LOGGING_LENGTH)
+        client_base._MAX_RPC_RESP_LOGGING_LENGTH
+    )
     mock_send_request.return_value = resp
     self.client.some_rpc(1, 2)
     mock_log.debug.assert_called_with('Snippet received: %s', resp)
@@ -390,8 +427,9 @@ class ClientBaseTest(unittest.TestCase):
     self.client.some_rpc(1, 2)
     mock_log.debug.assert_called_with(
         'Snippet received: %s... %d chars are truncated',
-        resp[:client_base._MAX_RPC_RESP_LOGGING_LENGTH],
-        len(resp) - max_len)
+        resp[: client_base._MAX_RPC_RESP_LOGGING_LENGTH],
+        len(resp) - max_len,
+    )
 
   @mock.patch.object(FakeClient, 'send_rpc_request')
   def test_rpc_call_increment_counter(self, mock_send_request):

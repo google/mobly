@@ -28,13 +28,16 @@ class IntegrationTest(base_test.BaseTestClass):
   def test_hello_world(self):
     asserts.assert_equal(self.user_params['icecream'], 42)
     asserts.assert_equal(self.user_params['extra_param'], 'haha')
-    logging.info('This is a bare minimal test to make sure the basic MOBLY'
-                 ' test flow works.')
+    logging.info(
+        'This is a bare minimal test to make sure the basic MOBLY'
+        ' test flow works.'
+    )
     asserts.explicit_pass(
         'Hello World',
         # Use a unicode string here to make sure the full log pipeline
         # works with unicode.
-        extras=u'\u2022')
+        extras='\u2022',
+    )
 
 
 if __name__ == '__main__':

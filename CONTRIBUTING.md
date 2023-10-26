@@ -43,16 +43,16 @@ mobly $ tox
 ```
 
 ### Code style
-Before pushing your changes, you need to lint the code style via `yapf`
+Before pushing your changes, you need to lint the code style via `pyink`
 
-To install `yapf`:
+To install `pyink`:
 
 ```sh
-$ pip3 install yapf
+$ pip3 install pyink
 ```
 
 To lint the code:
 
 ```sh
-mobly $ yapf -irp .
+mobly $ pyink .
 ```

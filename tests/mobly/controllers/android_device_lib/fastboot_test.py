@@ -24,19 +24,24 @@ class FastbootTest(unittest.TestCase):
   @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
   @mock.patch('logging.debug')
   def test_fastboot_commands_and_results_are_logged_to_debug_log(
-      self, mock_debug_logger, mock_popen):
+      self, mock_debug_logger, mock_popen
+  ):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
     mock_popen.return_value.communicate = mock.Mock(
-        return_value=(expected_stdout, expected_stderr))
+        return_value=(expected_stdout, expected_stderr)
+    )
     mock_popen.return_value.returncode = 123
 
     fastboot.FastbootProxy().fake_command('extra', 'flags')
 
     mock_debug_logger.assert_called_with(
         'cmd: %s, stdout: %s, stderr: %s, ret: %s',
-        '\'fastboot fake-command extra flags\'', expected_stdout,
-        expected_stderr, 123)
+        "'fastboot fake-command extra flags'",
+        expected_stdout,
+        expected_stderr,
+        123,
+    )
 
 
 if __name__ == '__main__':

@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module has classes for test result collection, and test result output.
-"""
+"""This module has classes for test result collection, and test result output."""
 
 import collections
 import copy
@@ -56,7 +55,6 @@ def uid(uid):
     raise ValueError('UID cannot be None.')
 
   def decorate(test_func):
-
     @functools.wraps(test_func)
     def wrapper(*args, **kwargs):
       return test_func(*args, **kwargs)
@@ -77,6 +75,7 @@ class TestSummaryEntryType(enum.Enum):
   The idea is similar to how `TestResult.json_str` categorizes different
   sections of a `TestResult` object in the serialized format.
   """
+
   # A list of all the tests requested for a test run.
   # This is dumped at the beginning of a summary file so we know what was
   # requested in case the test is interrupted and the final summary is not
@@ -153,12 +152,14 @@ class TestSummaryWriter:
       with io.open(self._path, 'a', encoding='utf-8') as f:
         # Use safe_dump here to avoid language-specific tags in final
         # output.
-        yaml.safe_dump(new_content,
-                       f,
-                       explicit_start=True,
-                       explicit_end=True,
-                       allow_unicode=True,
-                       indent=4)
+        yaml.safe_dump(
+            new_content,
+            f,
+            explicit_start=True,
+            explicit_end=True,
+            allow_unicode=True,
+            indent=4,
+        )
 
 
 class TestResultEnums:
@@ -240,7 +241,8 @@ class ExceptionRecord:
     exc_traceback = e.__traceback__
     if exc_traceback:
       self.stacktrace = ''.join(
-          traceback.format_exception(e.__class__, e, exc_traceback))
+          traceback.format_exception(e.__class__, e, exc_traceback)
+      )
     # Populate fields based on the type of the termination signal.
     if self.is_test_signal:
       self._set_details(e.details)
@@ -358,8 +360,7 @@ class TestResultRecord:
 
   @property
   def stacktrace(self):
-    """The stacktrace string for the exception that terminated the test.
-    """
+    """The stacktrace string for the exception that terminated the test."""
     if self.termination_signal:
       return self.termination_signal.stacktrace
 
@@ -468,8 +469,10 @@ class TestResultRecord:
     if self.result != TestResultEnums.TEST_RESULT_FAIL:
       self.result = TestResultEnums.TEST_RESULT_ERROR
     if position in self.extra_errors:
-      raise Error('An exception is already recorded with position "%s",'
-                  ' cannot reuse.' % position)
+      raise Error(
+          'An exception is already recorded with position "%s", cannot reuse.'
+          % position
+      )
     if isinstance(e, ExceptionRecord):
       self.extra_errors[position] = e
     else:
@@ -500,12 +503,14 @@ class TestResultRecord:
     d[TestResultEnums.RECORD_RESULT] = self.result
     d[TestResultEnums.RECORD_UID] = self.uid
     d[TestResultEnums.RECORD_SIGNATURE] = self.signature
-    d[TestResultEnums.
-      RECORD_RETRY_PARENT] = self.retry_parent.signature if self.retry_parent else None
+    d[TestResultEnums.RECORD_RETRY_PARENT] = (
+        self.retry_parent.signature if self.retry_parent else None
+    )
     d[TestResultEnums.RECORD_EXTRAS] = self.extras
     d[TestResultEnums.RECORD_DETAILS] = self.details
-    d[TestResultEnums.
-      RECORD_TERMINATION_SIGNAL_TYPE] = self.termination_signal_type
+    d[TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE] = (
+        self.termination_signal_type
+    )
     d[TestResultEnums.RECORD_EXTRA_ERRORS] = {
         key: value.to_dict() for (key, value) in self.extra_errors.items()
     }
@@ -551,8 +556,9 @@ class TestResult:
       A TestResult instance that's the sum of two TestResult instances.
     """
     if not isinstance(r, TestResult):
-      raise TypeError('Operand %s of type %s is not a TestResult.' %
-                      (r, type(r)))
+      raise TypeError(
+          'Operand %s of type %s is not a TestResult.' % (r, type(r))
+      )
     sum_result = TestResult()
     for name in sum_result.__dict__:
       r_value = getattr(r, name)
@@ -646,8 +652,11 @@ class TestResult:
   @property
   def is_all_pass(self):
     """True if no tests failed or threw errors, False otherwise."""
-    num_of_result_altering_errors = (len(self.failed) + len(self.error) -
-                                     self._count_eventually_passing_retries())
+    num_of_result_altering_errors = (
+        len(self.failed)
+        + len(self.error)
+        - self._count_eventually_passing_retries()
+    )
     if num_of_result_altering_errors == 0:
       return True
     return False

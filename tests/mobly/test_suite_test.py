@@ -36,16 +36,17 @@ class TestSuiteTest(unittest.TestCase):
     self.mock_test_cls_configs = config_parser.TestRunConfig()
     self.summary_file = os.path.join(self.tmp_dir, 'summary.yaml')
     self.mock_test_cls_configs.summary_writer = records.TestSummaryWriter(
-        self.summary_file)
+        self.summary_file
+    )
     self.mock_test_cls_configs.log_path = self.tmp_dir
-    self.mock_test_cls_configs.user_params = {"some_param": "hahaha"}
+    self.mock_test_cls_configs.user_params = {'some_param': 'hahaha'}
     self.mock_test_cls_configs.reporter = mock.MagicMock()
     self.base_mock_test_config = config_parser.TestRunConfig()
     self.base_mock_test_config.testbed_name = 'SampleTestBed'
     self.base_mock_test_config.controller_configs = {}
     self.base_mock_test_config.user_params = {
         'icecream': 42,
-        'extra_param': 'haha'
+        'extra_param': 'haha',
     }
     self.base_mock_test_config.log_path = self.tmp_dir
 
@@ -74,5 +75,5 @@ class TestSuiteTest(unittest.TestCase):
     self.assertIsNot(self.controller1, self.controller2)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   unittest.main()

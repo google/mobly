@@ -30,34 +30,25 @@ LINUX_MAX_FILENAME_LENGTH = 255
 # length seems to be lower.
 WINDOWS_MAX_FILENAME_LENGTH = 237
 WINDOWS_RESERVED_CHARACTERS_REPLACEMENTS = {
-    '<':
-        '-',
-    '>':
-        '-',
-    ':':
-        '-',
-    '"':
-        '_',
-    '/':
-        '_',
-    '\\':
-        '_',
-    '|':
-        ',',
-    '?':
-        ',',
-    '*':
-        ',',
+    '<': '-',
+    '>': '-',
+    ':': '-',
+    '"': '_',
+    '/': '_',
+    '\\': '_',
+    '|': ',',
+    '?': ',',
+    '*': ',',
     # Integer zero (i.e. NUL) is not a valid character.
     # While integers 1-31 are also usually valid, they aren't sanitized because
     # they are situationally valid.
-    chr(0):
-        '0',
+    chr(0): '0',
 }
 # Note, although the documentation does not specify as such, COM0 and LPT0 are
 # also invalid/reserved filenames.
 WINDOWS_RESERVED_FILENAME_REGEX = re.compile(
-    r'^(CON|PRN|AUX|NUL|(COM|LPT)[0-9])(\.[^.]*)?$', re.IGNORECASE)
+    r'^(CON|PRN|AUX|NUL|(COM|LPT)[0-9])(\.[^.]*)?$', re.IGNORECASE
+)
 WINDOWS_RESERVED_FILENAME_PREFIX = 'mobly_'
 
 log_line_format = '%(asctime)s.%(msecs).03d %(levelname)s %(message)s'
@@ -201,11 +192,13 @@ def _setup_test_logger(log_path, console_level, prefix=None):
   f_formatter = logging.Formatter(log_line_format, log_line_time_format)
   # Write logger output to files
   fh_info = logging.FileHandler(
-      os.path.join(log_path, records.OUTPUT_FILE_INFO_LOG))
+      os.path.join(log_path, records.OUTPUT_FILE_INFO_LOG)
+  )
   fh_info.setFormatter(f_formatter)
   fh_info.setLevel(logging.INFO)
   fh_debug = logging.FileHandler(
-      os.path.join(log_path, records.OUTPUT_FILE_DEBUG_LOG))
+      os.path.join(log_path, records.OUTPUT_FILE_DEBUG_LOG)
+  )
   fh_debug.setFormatter(f_formatter)
   fh_debug.setLevel(logging.DEBUG)
   log.addHandler(ch)
@@ -241,10 +234,9 @@ def create_latest_log_alias(actual_path, alias):
   utils.create_alias(actual_path, alias_path)
 
 
-def setup_test_logger(log_path,
-                      prefix=None,
-                      alias='latest',
-                      console_level=logging.INFO):
+def setup_test_logger(
+    log_path, prefix=None, alias='latest', console_level=logging.INFO
+):
   """Customizes the root logger for a test run.
 
   In addition to configuring the Mobly logging handlers, this also sets two
@@ -294,7 +286,7 @@ def _truncate_filename(filename, max_length):
       # This is kind of a degrenerate case where the extension is
       # extremely long, in which case, just return the truncated filename.
       return filename[:max_length]
-    return '.'.join([filename[:max_length - len(extension) - 1], extension])
+    return '.'.join([filename[: max_length - len(extension) - 1], extension])
   else:
     return filename[:max_length]
 

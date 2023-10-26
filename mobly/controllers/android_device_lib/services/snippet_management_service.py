@@ -21,6 +21,7 @@ MISSING_SNIPPET_CLIENT_MSG = 'No snippet client is registered with name "%s".'
 
 class Error(errors.ServiceError):
   """Root error type for snippet management service."""
+
   SERVICE_TYPE = 'SnippetManagementService'
 
 
@@ -73,14 +74,18 @@ class SnippetManagementService(base_service.BaseService):
     # Should not load snippet with the same name more than once.
     if name in self._snippet_clients:
       raise Error(
-          self, 'Name "%s" is already registered with package "%s", it cannot '
-          'be used again.' % (name, self._snippet_clients[name].client.package))
+          self,
+          'Name "%s" is already registered with package "%s", it cannot '
+          'be used again.' % (name, self._snippet_clients[name].client.package),
+      )
     # Should not load the same snippet package more than once.
     for snippet_name, client in self._snippet_clients.items():
       if package == client.package:
         raise Error(
-            self, 'Snippet package "%s" has already been loaded under name'
-            ' "%s".' % (package, snippet_name))
+            self,
+            'Snippet package "%s" has already been loaded under name "%s".'
+            % (package, snippet_name),
+        )
 
     client = snippet_client_v2.SnippetClientV2(
         package=package,
@@ -113,7 +118,8 @@ class SnippetManagementService(base_service.BaseService):
       else:
         self._device.log.debug(
             'Not startng SnippetClient<%s> because it is already alive.',
-            client.package)
+            client.package,
+        )
 
   def stop(self):
     """Stops all the snippet clients under management."""
@@ -124,7 +130,8 @@ class SnippetManagementService(base_service.BaseService):
       else:
         self._device.log.debug(
             'Not stopping SnippetClient<%s> because it is not alive.',
-            client.package)
+            client.package,
+        )
 
   def pause(self):
     """Pauses all the snippet clients under management.
@@ -143,8 +150,9 @@ class SnippetManagementService(base_service.BaseService):
         self._device.log.debug('Resuming SnippetClient<%s>.', client.package)
         client.restore_server_connection()
       else:
-        self._device.log.debug('Not resuming SnippetClient<%s>.',
-                               client.package)
+        self._device.log.debug(
+            'Not resuming SnippetClient<%s>.', client.package
+        )
 
   def __getattr__(self, name):
     client = self.get_snippet_client(name)

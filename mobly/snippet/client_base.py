@@ -127,26 +127,34 @@ class ClientBase(abc.ABC):
       self.log.debug('Starting the snippet server of %s.', self.package)
       self.start_server()
 
-      self.log.debug('Making a connection to the snippet server of %s.',
-                     self.package)
+      self.log.debug(
+          'Making a connection to the snippet server of %s.', self.package
+      )
       self._make_connection()
 
     except Exception:
       self.log.error(
           'Error occurred trying to start and connect to the snippet server '
-          'of %s.', self.package)
+          'of %s.',
+          self.package,
+      )
       try:
         self.stop()
       except Exception:  # pylint: disable=broad-except
         # Only prints this exception and re-raises the original exception
         self.log.exception(
             'Failed to stop the snippet package %s after failure to start '
-            'and connect.', self.package)
+            'and connect.',
+            self.package,
+        )
 
       raise
 
-    self.log.debug('Snippet package %s initialized after %.1fs.', self.package,
-                   time.perf_counter() - start_time)
+    self.log.debug(
+        'Snippet package %s initialized after %.1fs.',
+        self.package,
+        time.perf_counter() - start_time,
+    )
 
   @abc.abstractmethod
   def before_starting_server(self):
@@ -271,7 +279,8 @@ class ClientBase(abc.ABC):
     except Exception:
       self.log.error(
           'Server process running check failed, skip sending RPC method(%s).',
-          rpc_func_name)
+          rpc_func_name,
+      )
       raise
 
     with self._lock:
@@ -285,12 +294,15 @@ class ClientBase(abc.ABC):
       if self.verbose_logging or _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
         self.log.debug('Snippet received: %s', response)
       else:
-        self.log.debug('Snippet received: %s... %d chars are truncated',
-                       response[:_MAX_RPC_RESP_LOGGING_LENGTH],
-                       len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
+        self.log.debug(
+            'Snippet received: %s... %d chars are truncated',
+            response[:_MAX_RPC_RESP_LOGGING_LENGTH],
+            len(response) - _MAX_RPC_RESP_LOGGING_LENGTH,
+        )
 
     response_decoded = self._decode_response_string_and_validate_format(
-        rpc_id, response)
+        rpc_id, response
+    )
     return self._handle_rpc_response(rpc_func_name, response_decoded)
 
   @abc.abstractmethod
@@ -360,19 +372,22 @@ class ClientBase(abc.ABC):
       errors.ProtocolError: if the response format is invalid.
     """
     if not response:
-      raise errors.ProtocolError(self._device,
-                                 errors.ProtocolError.NO_RESPONSE_FROM_SERVER)
+      raise errors.ProtocolError(
+          self._device, errors.ProtocolError.NO_RESPONSE_FROM_SERVER
+      )
 
     result = json.loads(response)
     for field_name in RPC_RESPONSE_REQUIRED_FIELDS:
       if field_name not in result:
         raise errors.ProtocolError(
             self._device,
-            errors.ProtocolError.RESPONSE_MISSING_FIELD % field_name)
+            errors.ProtocolError.RESPONSE_MISSING_FIELD % field_name,
+        )
 
     if result['id'] != rpc_id:
-      raise errors.ProtocolError(self._device,
-                                 errors.ProtocolError.MISMATCHED_API_ID)
+      raise errors.ProtocolError(
+          self._device, errors.ProtocolError.MISMATCHED_API_ID
+      )
 
     return result
 
@@ -399,8 +414,9 @@ class ClientBase(abc.ABC):
     if response['error']:
       raise errors.ApiError(self._device, response['error'])
     if response['callback'] is not None:
-      return self.handle_callback(response['callback'], response['result'],
-                                  rpc_func_name)
+      return self.handle_callback(
+          response['callback'], response['result'], rpc_func_name
+      )
     return response['result']
 
   @abc.abstractmethod

@@ -93,35 +93,45 @@ def _parse_cli_args(argv):
   """
   parser = argparse.ArgumentParser(description='Mobly Suite Executable.')
   group = parser.add_mutually_exclusive_group(required=True)
-  group.add_argument('-c',
-                     '--config',
-                     type=str,
-                     metavar='<PATH>',
-                     help='Path to the test configuration file.')
+  group.add_argument(
+      '-c',
+      '--config',
+      type=str,
+      metavar='<PATH>',
+      help='Path to the test configuration file.',
+  )
   group.add_argument(
       '-l',
       '--list_tests',
       action='store_true',
-      help='Print the names of the tests defined in a script without '
-      'executing them.')
+      help=(
+          'Print the names of the tests defined in a script without '
+          'executing them.'
+      ),
+  )
   parser.add_argument(
       '--tests',
       '--test_case',
       nargs='+',
       type=str,
       metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
-      help='A list of test classes and optional tests to execute.')
-  parser.add_argument('-tb',
-                      '--test_bed',
-                      nargs='+',
-                      type=str,
-                      metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
-                      help='Specify which test beds to run tests on.')
+      help='A list of test classes and optional tests to execute.',
+  )
+  parser.add_argument(
+      '-tb',
+      '--test_bed',
+      nargs='+',
+      type=str,
+      metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
+      help='Specify which test beds to run tests on.',
+  )
 
-  parser.add_argument('-v',
-                      '--verbose',
-                      action='store_true',
-                      help='Set console logger level to DEBUG')
+  parser.add_argument(
+      '-v',
+      '--verbose',
+      action='store_true',
+      help='Set console logger level to DEBUG',
+  )
   if not argv:
     argv = sys.argv[1:]
   return parser.parse_known_args(argv)[0]
@@ -143,8 +153,10 @@ def _find_suite_class():
       if issubclass(module_member, base_suite.BaseSuite):
         test_suites.append(module_member)
   if len(test_suites) != 1:
-    logging.error('Expected 1 test class per file, found %s.',
-                  [t.__name__ for t in test_suites])
+    logging.error(
+        'Expected 1 test class per file, found %s.',
+        [t.__name__ for t in test_suites],
+    )
     sys.exit(1)
   return test_suites[0]
 
@@ -173,7 +185,7 @@ def _print_test_names(test_classes):
       cls._clean_up()
     print('==========> %s <==========' % cls.TAG)
     for name in test_names:
-      print(f"{cls.TAG}.{name}")
+      print(f'{cls.TAG}.{name}')
 
 
 def run_suite_class(argv=None):
@@ -187,14 +199,16 @@ def run_suite_class(argv=None):
   if cli_args.list_tests:
     _print_test_names([suite_class])
     sys.exit(0)
-  test_configs = config_parser.load_test_config_file(cli_args.config,
-                                                     cli_args.test_bed)
+  test_configs = config_parser.load_test_config_file(
+      cli_args.config, cli_args.test_bed
+  )
   config_count = len(test_configs)
   if config_count != 1:
     logging.error('Expect exactly one test config, found %d', config_count)
   config = test_configs[0]
-  runner = test_runner.TestRunner(log_dir=config.log_path,
-                                  testbed_name=config.testbed_name)
+  runner = test_runner.TestRunner(
+      log_dir=config.log_path, testbed_name=config.testbed_name
+  )
   suite = suite_class(runner, config)
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
@@ -230,8 +244,9 @@ def run_suite(test_classes, argv=None):
   for test_class in test_classes:
     if not issubclass(test_class, base_test.BaseTestClass):
       logging.error(
-          'Test class %s does not extend '
-          'mobly.base_test.BaseTestClass', test_class)
+          'Test class %s does not extend mobly.base_test.BaseTestClass',
+          test_class,
+      )
       sys.exit(1)
 
   if args.list_tests:
@@ -249,7 +264,7 @@ def run_suite(test_classes, argv=None):
   for config in test_configs:
     runner = test_runner.TestRunner(config.log_path, config.testbed_name)
     with runner.mobly_logger(console_level=console_level):
-      for (test_class, tests) in selected_tests.items():
+      for test_class, tests in selected_tests.items():
         runner.add_test_class(config, test_class, tests)
       try:
         runner.run()

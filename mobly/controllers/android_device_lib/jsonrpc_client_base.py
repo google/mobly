@@ -86,6 +86,7 @@ class JsonRpcCommand:
   INIT: Initializes a new session.
   CONTINUE: Creates a connection.
   """
+
   INIT = 'initiate'
   CONTINUE = 'continue'
 
@@ -203,16 +204,20 @@ class JsonRpcClientBase(abc.ABC):
     """
     self._counter = self._id_counter()
     try:
-      self._conn = socket.create_connection(('localhost', self.host_port),
-                                            _SOCKET_CONNECTION_TIMEOUT)
+      self._conn = socket.create_connection(
+          ('localhost', self.host_port), _SOCKET_CONNECTION_TIMEOUT
+      )
     except ConnectionRefusedError as err:
       # Retry using '127.0.0.1' for IPv4 enabled machines that only resolve
       # 'localhost' to '[::1]'.
       self.log.debug(
           'Failed to connect to localhost, trying 127.0.0.1: {}'.format(
-              str(err)))
-      self._conn = socket.create_connection(('127.0.0.1', self.host_port),
-                                            _SOCKET_CONNECTION_TIMEOUT)
+              str(err)
+          )
+      )
+      self._conn = socket.create_connection(
+          ('127.0.0.1', self.host_port), _SOCKET_CONNECTION_TIMEOUT
+      )
 
     self._conn.settimeout(_SOCKET_READ_TIMEOUT)
     self._client = self._conn.makefile(mode='brw')
@@ -248,8 +253,7 @@ class JsonRpcClientBase(abc.ABC):
       self._conn = None
 
   def clear_host_port(self):
-    """Stops the adb port forwarding of the host port used by this client.
-    """
+    """Stops the adb port forwarding of the host port used by this client."""
     if self.host_port:
       self._ad.adb.forward(['--remove', 'tcp:%d' % self.host_port])
       self.host_port = None
@@ -264,13 +268,14 @@ class JsonRpcClientBase(abc.ABC):
       Error: a socket error occurred during the send.
     """
     try:
-      self._client.write(msg.encode("utf8") + b'\n')
+      self._client.write(msg.encode('utf8') + b'\n')
       self._client.flush()
       self.log.debug('Snippet sent %s.', msg)
     except socket.error as e:
       raise Error(
           self._ad,
-          'Encountered socket error "%s" sending RPC message "%s"' % (e, msg))
+          'Encountered socket error "%s" sending RPC message "%s"' % (e, msg),
+      )
 
   def _client_receive(self):
     """Receives the server's response of an Rpc message.
@@ -289,13 +294,16 @@ class JsonRpcClientBase(abc.ABC):
         if _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
           self.log.debug('Snippet received: %s', response)
         else:
-          self.log.debug('Snippet received: %s... %d chars are truncated',
-                         response[:_MAX_RPC_RESP_LOGGING_LENGTH],
-                         len(response) - _MAX_RPC_RESP_LOGGING_LENGTH)
+          self.log.debug(
+              'Snippet received: %s... %d chars are truncated',
+              response[:_MAX_RPC_RESP_LOGGING_LENGTH],
+              len(response) - _MAX_RPC_RESP_LOGGING_LENGTH,
+          )
       return response
     except socket.error as e:
-      raise Error(self._ad,
-                  'Encountered socket error reading RPC response "%s"' % e)
+      raise Error(
+          self._ad, 'Encountered socket error reading RPC response "%s"' % e
+      )
 
   def _cmd(self, command, uid=None):
     """Send a command to the server.
@@ -342,11 +350,13 @@ class JsonRpcClientBase(abc.ABC):
     if result.get('callback') is not None:
       if self._event_client is None:
         self._event_client = self._start_event_client()
-      return callback_handler.CallbackHandler(callback_id=result['callback'],
-                                              event_client=self._event_client,
-                                              ret_value=result['result'],
-                                              method_name=method,
-                                              ad=self._ad)
+      return callback_handler.CallbackHandler(
+          callback_id=result['callback'],
+          event_client=self._event_client,
+          ret_value=result['result'],
+          method_name=method,
+          ad=self._ad,
+      )
     return result['result']
 
   def disable_hidden_api_blacklist(self):
@@ -357,7 +367,8 @@ class JsonRpcClientBase(abc.ABC):
     # in development report sdk_version 27, but still enforce the blacklist.
     if self._ad.is_rootable and (sdk_version >= 28 or version_codename == 'P'):
       self._ad.adb.shell(
-          'settings put global hidden_api_blacklist_exemptions "*"')
+          'settings put global hidden_api_blacklist_exemptions "*"'
+      )
 
   def __getattr__(self, name):
     """Wrapper for python magic to turn method calls into RPC calls."""

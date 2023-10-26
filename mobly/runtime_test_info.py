@@ -40,7 +40,8 @@ class RuntimeTestInfo:
     self._name = test_name
     self._record = record
     self._output_dir_path = utils.abs_path(
-        os.path.join(log_path, self._record.signature))
+        os.path.join(log_path, self._record.signature)
+    )
 
   @property
   def name(self):

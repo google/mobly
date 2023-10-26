@@ -59,8 +59,11 @@ class JsonRpcShellBase:
       elif len(serials) == 1:
         serial = serials[0]
       else:
-        raise Error('Expected one phone, but %d found. Use the -s flag or '
-                    'specify ANDROID_SERIAL.' % len(serials))
+        raise Error(
+            'Expected one phone, but %d found. Use the -s flag or '
+            'specify ANDROID_SERIAL.'
+            % len(serials)
+        )
     if serial not in serials:
       raise Error('Device "%s" is not found by adb.' % serial)
     ads = android_device.get_instances([serial])

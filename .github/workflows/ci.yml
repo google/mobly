@@ -29,6 +29,6 @@ jobs:
 
     - name: Check formatting
       run: |
-        python -m pip install yapf
-        yapf -drp .
+        python -m pip install pyink
+        pyink --check .
 

@@ -28,16 +28,22 @@ from mobly.snippet import client_base
 from mobly.snippet import errors
 
 # The package of the instrumentation runner used for mobly snippet
-_INSTRUMENTATION_RUNNER_PACKAGE = 'com.google.android.mobly.snippet.SnippetRunner'
+_INSTRUMENTATION_RUNNER_PACKAGE = (
+    'com.google.android.mobly.snippet.SnippetRunner'
+)
 
 # The command template to start the snippet server
 _LAUNCH_CMD = (
-    '{shell_cmd} am instrument {user} -w -e action start {instrument_options} '
-    f'{{snippet_package}}/{_INSTRUMENTATION_RUNNER_PACKAGE}')
+    '{shell_cmd} am instrument {user} -w -e action start'
+    ' {instrument_options}'
+    f' {{snippet_package}}/{_INSTRUMENTATION_RUNNER_PACKAGE}'
+)
 
 # The command template to stop the snippet server
-_STOP_CMD = ('am instrument {user} -w -e action stop {snippet_package}/'
-             f'{_INSTRUMENTATION_RUNNER_PACKAGE}')
+_STOP_CMD = (
+    'am instrument {user} -w -e action stop {snippet_package}/'
+    f'{_INSTRUMENTATION_RUNNER_PACKAGE}'
+)
 
 # Major version of the launch and communication protocol being used by this
 # client.
@@ -92,8 +98,9 @@ class Config:
     user_id: The user id under which to launch the snippet process.
   """
 
-  am_instrument_options: Dict[str,
-                              str] = dataclasses.field(default_factory=dict)
+  am_instrument_options: Dict[str, str] = dataclasses.field(
+      default_factory=dict
+  )
   user_id: Union[int, None] = None
 
 
@@ -108,6 +115,7 @@ class ConnectionHandshakeCommand(enum.Enum):
   INIT: Initiates a new session and makes a connection with this session.
   CONTINUE: Makes a connection with the current session.
   """
+
   INIT = 'initiate'
   CONTINUE = 'continue'
 
@@ -207,19 +215,23 @@ class SnippetClientV2(client_base.ClientBase):
     if not utils.grep(f'^package:{self.package}$', out):
       raise errors.ServerStartPreCheckError(
           self._device,
-          f'{self.package} is not installed for user {self.user_id}.')
+          f'{self.package} is not installed for user {self.user_id}.',
+      )
 
     # Validate that the app is instrumented.
     out = self._adb.shell('pm list instrumentation')
     matched_out = utils.grep(
         f'^instrumentation:{self.package}/{_INSTRUMENTATION_RUNNER_PACKAGE}',
-        out)
+        out,
+    )
     if not matched_out:
       raise errors.ServerStartPreCheckError(
           self._device,
-          f'{self.package} is installed, but it is not instrumented.')
-    match = re.search(r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$',
-                      matched_out[0])
+          f'{self.package} is installed, but it is not instrumented.',
+      )
+    match = re.search(
+        r'^instrumentation:(.*)\/(.*) \(target=(.*)\)$', matched_out[0]
+    )
     target_name = match.group(3)
     # Validate that the instrumentation target is installed if it's not the
     # same as the snippet package.
@@ -229,14 +241,16 @@ class SnippetClientV2(client_base.ClientBase):
         raise errors.ServerStartPreCheckError(
             self._device,
             f'Instrumentation target {target_name} is not installed for user '
-            f'{self.user_id}.')
+            f'{self.user_id}.',
+        )
 
   def _disable_hidden_api_blocklist(self):
     """If necessary and possible, disables hidden api blocklist."""
     sdk_version = int(self._device.build_info['build_version_sdk'])
     if self._device.is_rootable and sdk_version >= 28:
       self._device.adb.shell(
-          'settings put global hidden_api_blacklist_exemptions "*"')
+          'settings put global hidden_api_blacklist_exemptions "*"'
+      )
 
   def start_server(self):
     """Starts the server on the remote device.
@@ -252,14 +266,19 @@ class SnippetClientV2(client_base.ClientBase):
         server output.
     """
     persists_shell_cmd = self._get_persisting_command()
-    self.log.debug('Snippet server for package %s is using protocol %d.%d',
-                   self.package, _PROTOCOL_MAJOR_VERSION,
-                   _PROTOCOL_MINOR_VERSION)
+    self.log.debug(
+        'Snippet server for package %s is using protocol %d.%d',
+        self.package,
+        _PROTOCOL_MAJOR_VERSION,
+        _PROTOCOL_MINOR_VERSION,
+    )
     option_str = self._get_instrument_options_str()
-    cmd = _LAUNCH_CMD.format(shell_cmd=persists_shell_cmd,
-                             user=self._get_user_command_string(),
-                             snippet_package=self.package,
-                             instrument_options=option_str)
+    cmd = _LAUNCH_CMD.format(
+        shell_cmd=persists_shell_cmd,
+        user=self._get_user_command_string(),
+        snippet_package=self.package,
+        instrument_options=option_str,
+    )
     self._proc = self._run_adb_cmd(cmd)
 
     # Check protocol version and get the device port
@@ -295,7 +314,9 @@ class SnippetClientV2(client_base.ClientBase):
         'No %s and %s commands available to launch instrument '
         'persistently, tests that depend on UiAutomator and '
         'at the same time perform USB disconnections may fail.',
-        _SETSID_COMMAND, _NOHUP_COMMAND)
+        _SETSID_COMMAND,
+        _NOHUP_COMMAND,
+    )
     return ''
 
   def _get_instrument_options_str(self):
@@ -308,7 +329,8 @@ class SnippetClientV2(client_base.ClientBase):
       return ''
 
     return ' '.join(
-        f'-e {k} {v}' for k, v in self._config.am_instrument_options.items())
+        f'-e {k} {v}' for k, v in self._config.am_instrument_options.items()
+    )
 
   def _get_user_command_string(self):
     """Gets the appropriate command argument for specifying device user ID.
@@ -344,15 +366,17 @@ class SnippetClientV2(client_base.ClientBase):
       line = self._proc.stdout.readline().decode('utf-8')
       if not line:
         raise errors.ServerStartError(
-            self._device, 'Unexpected EOF when waiting for server to start.')
+            self._device, 'Unexpected EOF when waiting for server to start.'
+        )
 
       # readline() uses an empty string to mark EOF, and a single newline
       # to mark regular empty lines in the output. Don't move the strip()
       # call above the truthiness check, or this method will start
       # considering any blank output line to be EOF.
       line = line.strip()
-      if (line.startswith('INSTRUMENTATION_RESULT:') or
-          line.startswith('SNIPPET ')):
+      if line.startswith('INSTRUMENTATION_RESULT:') or line.startswith(
+          'SNIPPET '
+      ):
         self.log.debug('Accepted line from instrumentation output: "%s"', line)
         return line
 
@@ -398,23 +422,29 @@ class SnippetClientV2(client_base.ClientBase):
     try:
       self.log.debug(
           'Snippet client is creating socket connection to the snippet server '
-          'of %s through host port %d.', self.package, self.host_port)
-      self._conn = socket.create_connection(('localhost', self.host_port),
-                                            _SOCKET_CONNECTION_TIMEOUT)
+          'of %s through host port %d.',
+          self.package,
+          self.host_port,
+      )
+      self._conn = socket.create_connection(
+          ('localhost', self.host_port), _SOCKET_CONNECTION_TIMEOUT
+      )
     except ConnectionRefusedError as err:
       # Retry using '127.0.0.1' for IPv4 enabled machines that only resolve
       # 'localhost' to '[::1]'.
-      self.log.debug('Failed to connect to localhost, trying 127.0.0.1: %s',
-                     str(err))
-      self._conn = socket.create_connection(('127.0.0.1', self.host_port),
-                                            _SOCKET_CONNECTION_TIMEOUT)
+      self.log.debug(
+          'Failed to connect to localhost, trying 127.0.0.1: %s', str(err)
+      )
+      self._conn = socket.create_connection(
+          ('127.0.0.1', self.host_port), _SOCKET_CONNECTION_TIMEOUT
+      )
 
     self._conn.settimeout(_SOCKET_READ_TIMEOUT)
     self._client = self._conn.makefile(mode='brw')
 
-  def send_handshake_request(self,
-                             uid=UNKNOWN_UID,
-                             cmd=ConnectionHandshakeCommand.INIT):
+  def send_handshake_request(
+      self, uid=UNKNOWN_UID, cmd=ConnectionHandshakeCommand.INIT
+  ):
     """Sends a handshake request to the server to prepare for the communication.
 
     Through the handshake response, this function checks whether the server
@@ -439,7 +469,8 @@ class SnippetClientV2(client_base.ClientBase):
 
     if not response:
       raise errors.ProtocolError(
-          self._device, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE)
+          self._device, errors.ProtocolError.NO_RESPONSE_FROM_HANDSHAKE
+      )
 
     response = self._decode_socket_response_bytes(response)
 
@@ -472,8 +503,9 @@ class SnippetClientV2(client_base.ClientBase):
     self._client_send(request)
     response = self._client_receive()
     if not response:
-      raise errors.ProtocolError(self._device,
-                                 errors.ProtocolError.NO_RESPONSE_FROM_SERVER)
+      raise errors.ProtocolError(
+          self._device, errors.ProtocolError.NO_RESPONSE_FROM_SERVER
+      )
     return self._decode_socket_response_bytes(response)
 
   def _client_send(self, message):
@@ -491,7 +523,7 @@ class SnippetClientV2(client_base.ClientBase):
     except socket.error as e:
       raise errors.Error(
           self._device,
-          f'Encountered socket error "{e}" sending RPC message "{message}"'
+          f'Encountered socket error "{e}" sending RPC message "{message}"',
       ) from e
 
   def _client_receive(self):
@@ -507,8 +539,8 @@ class SnippetClientV2(client_base.ClientBase):
       return self._client.readline()
     except socket.error as e:
       raise errors.Error(
-          self._device,
-          f'Encountered socket error "{e}" reading RPC response') from e
+          self._device, f'Encountered socket error "{e}" reading RPC response'
+      ) from e
 
   def _decode_socket_response_bytes(self, response):
     """Returns a string decoded from the socket response bytes.
@@ -526,8 +558,9 @@ class SnippetClientV2(client_base.ClientBase):
       return str(response, encoding='utf8')
     except UnicodeError:
       self.log.error(
-          'Failed to decode socket response bytes using encoding '
-          'utf8: %s', response)
+          'Failed to decode socket response bytes using encoding utf8: %s',
+          response,
+      )
       raise
 
   def handle_callback(self, callback_id, ret_value, rpc_func_name):
@@ -553,7 +586,8 @@ class SnippetClientV2(client_base.ClientBase):
         method_name=rpc_func_name,
         device=self._device,
         rpc_max_timeout_sec=_SOCKET_READ_TIMEOUT,
-        default_timeout_sec=_CALLBACK_DEFAULT_TIMEOUT_SEC)
+        default_timeout_sec=_CALLBACK_DEFAULT_TIMEOUT_SEC,
+    )
 
   def _create_event_client(self):
     """Creates a separate client to the same session for propagating events.
@@ -564,14 +598,19 @@ class SnippetClientV2(client_base.ClientBase):
     """
     self._event_client = SnippetClientV2(package=self.package, ad=self._device)
     self._event_client.make_connection_with_forwarded_port(
-        self.host_port, self.device_port, self.uid,
-        ConnectionHandshakeCommand.CONTINUE)
+        self.host_port,
+        self.device_port,
+        self.uid,
+        ConnectionHandshakeCommand.CONTINUE,
+    )
 
-  def make_connection_with_forwarded_port(self,
-                                          host_port,
-                                          device_port,
-                                          uid=UNKNOWN_UID,
-                                          cmd=ConnectionHandshakeCommand.INIT):
+  def make_connection_with_forwarded_port(
+      self,
+      host_port,
+      device_port,
+      uid=UNKNOWN_UID,
+      cmd=ConnectionHandshakeCommand.INIT,
+  ):
     """Makes a connection to the server with the given forwarded port.
 
     This process assumes that a device port has already been forwarded to a
@@ -654,13 +693,16 @@ class SnippetClientV2(client_base.ClientBase):
 
     # Send the stop signal to the server running on the device side.
     out = self._adb.shell(
-        _STOP_CMD.format(snippet_package=self.package,
-                         user=self._get_user_command_string())).decode('utf-8')
+        _STOP_CMD.format(
+            snippet_package=self.package, user=self._get_user_command_string()
+        )
+    ).decode('utf-8')
 
     if 'OK (0 tests)' not in out:
       raise android_device_lib_errors.DeviceError(
           self._device,
-          f'Failed to stop existing apk. Unexpected output: {out}.')
+          f'Failed to stop existing apk. Unexpected output: {out}.',
+      )
 
   def _destroy_event_client(self):
     """Releases all the resources acquired in `_create_event_client`."""
@@ -700,9 +742,11 @@ class SnippetClientV2(client_base.ClientBase):
       self.log.error('Failed to re-connect to the server.')
       raise errors.ServerRestoreConnectionError(
           self._device,
-          (f'Failed to restore server connection for {self.package} at '
-           f'host port {self.host_port}, device port {self.device_port}.'
-          )) from e
+          (
+              f'Failed to restore server connection for {self.package} at '
+              f'host port {self.host_port}, device port {self.device_port}.'
+          ),
+      ) from e
 
     # Because the previous connection was lost, update self._proc
     self._proc = None
@@ -720,7 +764,8 @@ class SnippetClientV2(client_base.ClientBase):
     """
     if self._event_client:
       self._event_client.make_connection_with_forwarded_port(
-          self.host_port, self.device_port)
+          self.host_port, self.device_port
+      )
 
   def help(self, print_output=True):
     """Calls the help RPC, which returns the list of RPC calls available.

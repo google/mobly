@@ -29,7 +29,7 @@ DEFAULT_MOCK_PROPERTIES = {
     'ro.build.version.sdk': '28',
     'ro.product.name': 'FakeModel',
     'ro.debuggable': '1',
-    'sys.boot_completed': "1",
+    'sys.boot_completed': '1',
     'ro.build.characteristics': 'emulator,phone',
     'ro.hardware': 'marlin',
 }
@@ -50,7 +50,7 @@ def get_mock_ads(num):
   """
   ads = []
   for i in range(num):
-    ad = mock.MagicMock(name="AndroidDevice", serial=str(i), h_port=None)
+    ad = mock.MagicMock(name='AndroidDevice', serial=str(i), h_port=None)
     ad.skip_logcat = False
     ads.append(ad)
   return ads
@@ -63,7 +63,7 @@ def get_all_instances():
 def get_instances(serials):
   ads = []
   for serial in serials:
-    ad = mock.MagicMock(name="AndroidDevice", serial=serial, h_port=None)
+    ad = mock.MagicMock(name='AndroidDevice', serial=serial, h_port=None)
     ads.append(ad)
   return ads
 
@@ -79,13 +79,15 @@ def list_adb_devices():
 class MockAdbProxy:
   """Mock class that swaps out calls to adb with mock calls."""
 
-  def __init__(self,
-               serial='',
-               fail_br=False,
-               fail_br_before_N=False,
-               mock_properties=None,
-               installed_packages=None,
-               instrumented_packages=None):
+  def __init__(
+      self,
+      serial='',
+      fail_br=False,
+      fail_br_before_N=False,
+      mock_properties=None,
+      installed_packages=None,
+      instrumented_packages=None,
+  ):
     self.serial = serial
     self.fail_br = fail_br
     self.fail_br_before_N = fail_br_before_N
@@ -103,28 +105,34 @@ class MockAdbProxy:
     self.instrumented_packages = instrumented_packages
 
   def shell(self, params, timeout=None):
-    if params == "id -u":
-      return b"root"
-    elif params == "bugreportz":
+    if params == 'id -u':
+      return b'root'
+    elif params == 'bugreportz':
       if self.fail_br:
-        return b"OMG I died!\n"
+        return b'OMG I died!\n'
       return b'OK:/path/bugreport.zip\n'
-    elif params == "bugreportz -v":
+    elif params == 'bugreportz -v':
       if self.fail_br_before_N:
-        return b"/system/bin/sh: bugreportz: not found"
+        return b'/system/bin/sh: bugreportz: not found'
       return b'1.1'
     elif 'pm list package' in params:
       packages = self.installed_packages + [
           package for package, _, _ in self.instrumented_packages
       ]
-      return bytes('\n'.join(['package:%s' % package for package in packages]),
-                   'utf-8')
+      return bytes(
+          '\n'.join(['package:%s' % package for package in packages]), 'utf-8'
+      )
     elif 'pm list instrumentation' in params:
       return bytes(
-          '\n'.join([
-              'instrumentation:%s/%s (target=%s)' % (package, runner, target)
-              for package, runner, target in self.instrumented_packages
-          ]), 'utf-8')
+          '\n'.join(
+              [
+                  'instrumentation:%s/%s (target=%s)'
+                  % (package, runner, target)
+                  for package, runner, target in self.instrumented_packages
+              ]
+          ),
+          'utf-8',
+      )
     elif 'which' in params:
       return b''
 
@@ -138,8 +146,11 @@ class MockAdbProxy:
 
   def bugreport(self, args, shell=False, timeout=None):
     expected = os.path.join(
-        logging.log_path, 'AndroidDevice%s' % self.serial, 'BugReports',
-        'bugreport,test_something,%s,fakemodel,sometime' % self.serial)
+        logging.log_path,
+        'AndroidDevice%s' % self.serial,
+        'BugReports',
+        'bugreport,test_something,%s,fakemodel,sometime' % self.serial,
+    )
     if expected not in args:
       raise Error('"Expected "%s", got "%s"' % (expected, args))
 
@@ -162,10 +173,9 @@ class MockFastbootProxy:
     self.serial = serial
 
   def devices(self):
-    return b"xxxx device\nyyyy device"
+    return b'xxxx device\nyyyy device'
 
   def __getattr__(self, name):
-
     def fastboot_call(*args):
       arg_str = ' '.join(str(elem) for elem in args)
       return arg_str
