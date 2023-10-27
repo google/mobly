@@ -70,8 +70,9 @@ def main(argv=None):
   # Execute the test class with configs.
   ok = True
   for config in test_configs:
-    runner = TestRunner(log_dir=config.log_path,
-                        testbed_name=config.testbed_name)
+    runner = TestRunner(
+        log_dir=config.log_path, testbed_name=config.testbed_name
+    )
     with runner.mobly_logger(console_level=console_level):
       runner.add_test_class(config, test_class, tests)
       try:
@@ -104,34 +105,45 @@ def parse_mobly_cli_args(argv):
   """
   parser = argparse.ArgumentParser(description='Mobly Test Executable.')
   group = parser.add_mutually_exclusive_group(required=True)
-  group.add_argument('-c',
-                     '--config',
-                     type=str,
-                     metavar='<PATH>',
-                     help='Path to the test configuration file.')
+  group.add_argument(
+      '-c',
+      '--config',
+      type=str,
+      metavar='<PATH>',
+      help='Path to the test configuration file.',
+  )
   group.add_argument(
       '-l',
       '--list_tests',
       action='store_true',
-      help='Print the names of the tests defined in a script without '
-      'executing them.')
-  parser.add_argument('--tests',
-                      '--test_case',
-                      nargs='+',
-                      type=str,
-                      metavar='[test_a test_b...]',
-                      help='A list of tests in the test class to execute.')
-  parser.add_argument('-tb',
-                      '--test_bed',
-                      nargs='+',
-                      type=str,
-                      metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
-                      help='Specify which test beds to run tests on.')
+      help=(
+          'Print the names of the tests defined in a script without '
+          'executing them.'
+      ),
+  )
+  parser.add_argument(
+      '--tests',
+      '--test_case',
+      nargs='+',
+      type=str,
+      metavar='[test_a test_b...]',
+      help='A list of tests in the test class to execute.',
+  )
+  parser.add_argument(
+      '-tb',
+      '--test_bed',
+      nargs='+',
+      type=str,
+      metavar='[<TEST BED NAME1> <TEST BED NAME2> ...]',
+      help='Specify which test beds to run tests on.',
+  )
 
-  parser.add_argument('-v',
-                      '--verbose',
-                      action='store_true',
-                      help='Set console logger level to DEBUG')
+  parser.add_argument(
+      '-v',
+      '--verbose',
+      action='store_true',
+      help='Set console logger level to DEBUG',
+  )
   if not argv:
     argv = sys.argv[1:]
   return parser.parse_known_args(argv)[0]
@@ -150,11 +162,14 @@ def _find_test_class():
     SystemExit: Raised if the number of test classes is not exactly one.
   """
   try:
-    return utils.find_subclass_in_module(base_test.BaseTestClass,
-                                         sys.modules['__main__'])
+    return utils.find_subclass_in_module(
+        base_test.BaseTestClass, sys.modules['__main__']
+    )
   except ValueError:
-    logging.exception('Exactly one subclass of `base_test.BaseTestClass`'
-                      ' should be in the main file.')
+    logging.exception(
+        'Exactly one subclass of `base_test.BaseTestClass`'
+        ' should be in the main file.'
+    )
     sys.exit(1)
 
 
@@ -206,11 +221,9 @@ class TestRunner:
     run it with.
     """
 
-    def __init__(self,
-                 config,
-                 test_class,
-                 tests=None,
-                 test_class_name_suffix=None):
+    def __init__(
+        self, config, test_class, tests=None, test_class_name_suffix=None
+    ):
       self.config = config
       self.test_class = test_class
       self.test_class_name_suffix = test_class_name_suffix
@@ -255,8 +268,9 @@ class TestRunner:
         String, the generated log path.
       """
       self._logger_start_time = logger.get_log_file_timestamp()
-      self.root_output_path = os.path.join(self._log_dir, self._testbed_name,
-                                           self._logger_start_time)
+      self.root_output_path = os.path.join(
+          self._log_dir, self._testbed_name, self._logger_start_time
+      )
       return self.root_output_path
 
     @property
@@ -323,10 +337,12 @@ class TestRunner:
     """
     # Refresh the log path at the beginning of the logger context.
     root_output_path = self._test_run_metadata.generate_test_run_log_path()
-    logger.setup_test_logger(root_output_path,
-                             self._testbed_name,
-                             alias=alias,
-                             console_level=console_level)
+    logger.setup_test_logger(
+        root_output_path,
+        self._testbed_name,
+        alias=alias,
+        console_level=console_level,
+    )
     try:
       yield self._test_run_metadata.root_output_path
     finally:
@@ -351,18 +367,25 @@ class TestRunner:
         constructor.
     """
     if self._log_dir != config.log_path:
-      raise Error('TestRunner\'s log folder is "%s", but a test config with a '
-                  'different log folder ("%s") was added.' %
-                  (self._log_dir, config.log_path))
+      raise Error(
+          'TestRunner\'s log folder is "%s", but a test config with a '
+          'different log folder ("%s") was added.'
+          % (self._log_dir, config.log_path)
+      )
     if self._testbed_name != config.testbed_name:
-      raise Error('TestRunner\'s test bed is "%s", but a test config with a '
-                  'different test bed ("%s") was added.' %
-                  (self._testbed_name, config.testbed_name))
+      raise Error(
+          'TestRunner\'s test bed is "%s", but a test config with a '
+          'different test bed ("%s") was added.'
+          % (self._testbed_name, config.testbed_name)
+      )
     self._test_run_infos.append(
-        TestRunner._TestRunInfo(config=config,
-                                test_class=test_class,
-                                tests=tests,
-                                test_class_name_suffix=name_suffix))
+        TestRunner._TestRunInfo(
+            config=config,
+            test_class=test_class,
+            tests=tests,
+            test_class_name_suffix=name_suffix,
+        )
+    )
 
   def _run_test_class(self, config, test_class, tests=None):
     """Instantiates and executes a test class.
@@ -377,8 +400,9 @@ class TestRunner:
       tests: Optional list of test names within the class to execute.
     """
     test_instance = test_class(config)
-    logging.debug('Executing test class "%s" with config: %s',
-                  test_class.__name__, config)
+    logging.debug(
+        'Executing test class "%s" with config: %s', test_class.__name__, config
+    )
     try:
       cls_result = test_instance.run(tests)
       self.results += cls_result
@@ -412,7 +436,8 @@ class TestRunner:
     utils.create_dir(self._test_run_metadata.root_output_path)
 
     summary_writer = records.TestSummaryWriter(
-        self._test_run_metadata.summary_file_path)
+        self._test_run_metadata.summary_file_path
+    )
 
     # When a SIGTERM is received during the execution of a test, the Mobly test
     # immediately terminates without executing any of the finally blocks. This
@@ -432,24 +457,35 @@ class TestRunner:
         test_config = test_run_info.config.copy()
         test_config.log_path = self._test_run_metadata.root_output_path
         test_config.summary_writer = summary_writer
-        test_config.test_class_name_suffix = test_run_info.test_class_name_suffix
+        test_config.test_class_name_suffix = (
+            test_run_info.test_class_name_suffix
+        )
         try:
-          self._run_test_class(config=test_config,
-                               test_class=test_run_info.test_class,
-                               tests=test_run_info.tests)
+          self._run_test_class(
+              config=test_config,
+              test_class=test_run_info.test_class,
+              tests=test_run_info.tests,
+          )
         except signals.TestAbortAll as e:
           logging.warning('Abort all subsequent test classes. Reason: %s', e)
           raise
     finally:
-      summary_writer.dump(self.results.summary_dict(),
-                          records.TestSummaryEntryType.SUMMARY)
+      summary_writer.dump(
+          self.results.summary_dict(), records.TestSummaryEntryType.SUMMARY
+      )
       self._test_run_metadata.set_end_point()
       # Show the test run summary.
       summary_lines = [
           f'Summary for test run {self._test_run_metadata.run_id}:',
           f'Total time elapsed {self._test_run_metadata.time_elapsed_sec}s',
-          f'Artifacts are saved in "{self._test_run_metadata.root_output_path}"',
-          f'Test summary saved in "{self._test_run_metadata.summary_file_path}"',
-          f'Test results: {self.results.summary_str()}'
+          (
+              'Artifacts are saved in'
+              f' "{self._test_run_metadata.root_output_path}"'
+          ),
+          (
+              'Test summary saved in'
+              f' "{self._test_run_metadata.summary_file_path}"'
+          ),
+          f'Test results: {self.results.summary_str()}',
       ]
       logging.info('\n'.join(summary_lines))

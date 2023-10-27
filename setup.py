@@ -34,11 +34,12 @@ class PyTest(test.test):
 
   def finalize_options(self):
     test.test.finalize_options(self)
-    self.test_args = ['-x', "tests/mobly"]
+    self.test_args = ['-x', 'tests/mobly']
     self.test_suite = True
 
   def run_tests(self):
     import pytest
+
     errno = pytest.main(self.test_args)
     sys.exit(errno)
 

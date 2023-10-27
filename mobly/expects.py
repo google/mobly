@@ -129,8 +129,9 @@ def expect_equal(first, second, msg=None, extras=None):
   try:
     asserts.assert_equal(first, second, msg, extras)
   except signals.TestSignal as e:
-    logging.exception('Expected %s equals to %s, but they are not.', first,
-                      second)
+    logging.exception(
+        'Expected %s equals to %s, but they are not.', first, second
+    )
     recorder.add_error(e)
 
 

@@ -23,14 +23,14 @@ from mobly.controllers import attenuator
 
 
 def _ascii_string(uc_string):
-  return str(uc_string).encode('ASCII')
+  return str(uc_string).encode("ASCII")
 
 
 class TelnetScpiClient:
   """This is an internal helper class for Telnet+SCPI command-based
-    instruments. It should only be used by those implemention control libraries
-    and not by any user code directly.
-    """
+  instruments. It should only be used by those implemention control libraries
+  and not by any user code directly.
+  """
 
   def __init__(self, tx_cmd_separator="\n", rx_cmd_separator="\n", prompt=""):
     self._tn = None
@@ -70,13 +70,15 @@ class TelnetScpiClient:
       return None
 
     match_idx, match_val, ret_text = self._tn.expect(
-        [_ascii_string("\S+" + self.rx_cmd_separator)], 1)
+        [_ascii_string("\S+" + self.rx_cmd_separator)], 1
+    )
 
     if match_idx == -1:
       raise attenuator.Error("Telnet command failed to return valid data")
 
     ret_text = ret_text.decode()
-    ret_text = ret_text.strip(self.tx_cmd_separator + self.rx_cmd_separator +
-                              self.prompt)
+    ret_text = ret_text.strip(
+        self.tx_cmd_separator + self.rx_cmd_separator + self.prompt
+    )
 
     return ret_text

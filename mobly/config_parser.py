@@ -39,8 +39,9 @@ def _validate_test_config(test_config):
   """
   required_key = keys.Config.key_testbed.value
   if required_key not in test_config:
-    raise MoblyConfigError('Required key %s missing in test config.' %
-                           required_key)
+    raise MoblyConfigError(
+        'Required key %s missing in test config.' % required_key
+    )
 
 
 def _validate_testbed_name(name):
@@ -60,8 +61,9 @@ def _validate_testbed_name(name):
   name = str(name)
   for char in name:
     if char not in utils.valid_filename_chars:
-      raise MoblyConfigError('Char "%s" is not allowed in test bed names.' %
-                             char)
+      raise MoblyConfigError(
+          'Char "%s" is not allowed in test bed names.' % char
+      )
 
 
 def _validate_testbed_configs(testbed_configs):
@@ -111,7 +113,8 @@ def load_test_config_file(test_config_path, tb_filters=None):
     if len(tbs) != len(tb_filters):
       raise MoblyConfigError(
           'Expect to find %d test bed configs, found %d. Check if'
-          ' you have the correct test bed names.' % (len(tb_filters), len(tbs)))
+          ' you have the correct test bed names.' % (len(tb_filters), len(tbs))
+      )
     configs[keys.Config.key_testbed.value] = tbs
   mobly_params = configs.get(keys.Config.key_mobly_params.value, {})
   # Decide log path.
@@ -127,14 +130,17 @@ def load_test_config_file(test_config_path, tb_filters=None):
   for original_bed_config in configs[keys.Config.key_testbed.value]:
     test_run_config = TestRunConfig()
     test_run_config.testbed_name = original_bed_config[
-        keys.Config.key_testbed_name.value]
+        keys.Config.key_testbed_name.value
+    ]
     # Deprecated, use testbed_name
     test_run_config.test_bed_name = test_run_config.testbed_name
     test_run_config.log_path = log_path
     test_run_config.controller_configs = original_bed_config.get(
-        keys.Config.key_testbed_controllers.value, {})
+        keys.Config.key_testbed_controllers.value, {}
+    )
     test_run_config.user_params = original_bed_config.get(
-        keys.Config.key_testbed_test_params.value, {})
+        keys.Config.key_testbed_test_params.value, {}
+    )
     test_configs.append(test_run_config)
   return test_configs
 
@@ -186,8 +192,7 @@ class TestRunConfig:
     self.test_class_name_suffix = None
 
   def copy(self):
-    """Returns a deep copy of the current config.
-    """
+    """Returns a deep copy of the current config."""
     return copy.deepcopy(self)
 
   def __str__(self):

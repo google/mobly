@@ -14,6 +14,7 @@
 
 import abc
 
+
 class BaseSuite(abc.ABC):
   """Class used to define a Mobly suite.
 

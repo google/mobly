@@ -35,26 +35,26 @@ class OutputTest(unittest.TestCase):
   def test__load_config_file(self):
     tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
     with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write(u'TestBeds:\n')
-      f.write(u'  # A test bed where adb will find Android devices.\n')
-      f.write(u'  - Name: SampleTestBed\n')
-      f.write(u'    Controllers:\n')
-      f.write(u'        AndroidDevice: \'*\'\n')
+      f.write('TestBeds:\n')
+      f.write('  # A test bed where adb will find Android devices.\n')
+      f.write('  - Name: SampleTestBed\n')
+      f.write('    Controllers:\n')
+      f.write("        AndroidDevice: '*'\n")
 
     config = config_parser._load_config_file(tmp_file_path)
-    self.assertEqual(config['TestBeds'][0]['Name'], u'SampleTestBed')
+    self.assertEqual(config['TestBeds'][0]['Name'], 'SampleTestBed')
 
   def test__load_config_file_with_unicode(self):
     tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
     with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write(u'TestBeds:\n')
-      f.write(u'  # A test bed where adb will find Android devices.\n')
-      f.write(u'  - Name: \u901a\n')
-      f.write(u'    Controllers:\n')
-      f.write(u'        AndroidDevice: \'*\'\n')
+      f.write('TestBeds:\n')
+      f.write('  # A test bed where adb will find Android devices.\n')
+      f.write('  - Name: \u901a\n')
+      f.write('    Controllers:\n')
+      f.write("        AndroidDevice: '*'\n")
 
     config = config_parser._load_config_file(tmp_file_path)
-    self.assertEqual(config['TestBeds'][0]['Name'], u'\u901a')
+    self.assertEqual(config['TestBeds'][0]['Name'], '\u901a')
 
   def test_run_config_type(self):
     config = config_parser.TestRunConfig()
@@ -66,13 +66,16 @@ class OutputTest(unittest.TestCase):
     expected_value = 'SOME_VALUE'
     self.assertEqual(
         config.controller_configs.get('NON_EXISTENT_KEY', expected_value),
-        expected_value)
+        expected_value,
+    )
 
   def test_run_config_user_params_is_already_initialized(self):
     config = config_parser.TestRunConfig()
     expected_value = 'SOME_VALUE'
-    self.assertEqual(config.user_params.get('NON_EXISTENT_KEY', expected_value),
-                     expected_value)
+    self.assertEqual(
+        config.user_params.get('NON_EXISTENT_KEY', expected_value),
+        expected_value,
+    )
 
 
 if __name__ == '__main__':

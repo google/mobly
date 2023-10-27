@@ -54,7 +54,7 @@ class AnotherMagicDevice:
     return self.magic
 
   def set_magic(self, extra_magic):
-    self.magic['extra_magic'] = extra_magic
+    self.magic["extra_magic"] = extra_magic
 
   def who_am_i(self):
     return {"MyOtherMagic": self.magic}

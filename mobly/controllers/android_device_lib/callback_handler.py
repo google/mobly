@@ -21,7 +21,8 @@ from mobly.snippet import errors
 logging.warning(
     'The module mobly.controllers.android_device_lib.callback_handler is '
     'deprecated and will be removed in a future version. Use module '
-    'mobly.controllers.android_device_lib.callback_handler_v2 instead.')
+    'mobly.controllers.android_device_lib.callback_handler_v2 instead.'
+)
 
 # The max timeout cannot be larger than the max time the socket waits for a
 # response message. Otherwise, the socket would timeout before the Rpc call
@@ -91,8 +92,9 @@ class CallbackHandler:
     """
     # Convert to milliseconds for Java side.
     timeout_ms = int(timeout * 1000)
-    return self._event_client.eventWaitAndGet(callback_id, event_name,
-                                              timeout_ms)
+    return self._event_client.eventWaitAndGet(
+        callback_id, event_name, timeout_ms
+    )
 
   def _callEventGetAll(self, callback_id, event_name):
     """Calls snippet lib's eventGetAll.
@@ -128,15 +130,19 @@ class CallbackHandler:
     if timeout:
       if timeout > MAX_TIMEOUT:
         raise Error(
-            self._ad, 'Specified timeout %s is longer than max timeout %s.' %
-            (timeout, MAX_TIMEOUT))
+            self._ad,
+            'Specified timeout %s is longer than max timeout %s.'
+            % (timeout, MAX_TIMEOUT),
+        )
     try:
       raw_event = self._callEventWaitAndGet(self._id, event_name, timeout)
     except Exception as e:
       if 'EventSnippetException: timeout.' in str(e):
         raise TimeoutError(
-            self._ad, 'Timed out after waiting %ss for event "%s" triggered by'
-            ' %s (%s).' % (timeout, event_name, self._method_name, self._id))
+            self._ad,
+            'Timed out after waiting %ss for event "%s" triggered by %s (%s).'
+            % (timeout, event_name, self._method_name, self._id),
+        )
       raise
     return snippet_event.from_dict(raw_event)
 
@@ -186,7 +192,8 @@ class CallbackHandler:
     raise TimeoutError(
         self._ad,
         'Timed out after %ss waiting for an "%s" event that satisfies the '
-        'predicate "%s".' % (timeout, event_name, predicate.__name__))
+        'predicate "%s".' % (timeout, event_name, predicate.__name__),
+    )
 
   def getAll(self, event_name):
     """Gets all the events of a certain name that have been received so

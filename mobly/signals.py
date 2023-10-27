@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module is where all the test signal classes and related utilities live.
-"""
+"""This module is where all the test signal classes and related utilities live."""
 
 import json
 
@@ -38,8 +37,9 @@ class TestSignal(Exception):
       json.dumps(extras)
       self.extras = extras
     except TypeError:
-      raise TestSignalError('Extras must be json serializable. %s '
-                            'is not.' % extras)
+      raise TestSignalError(
+          'Extras must be json serializable. %s is not.' % extras
+      )
 
   def __str__(self):
     return 'Details=%s, Extras=%s' % (self.details, self.extras)
@@ -62,8 +62,7 @@ class TestSkip(TestSignal):
 
 
 class TestAbortSignal(TestSignal):
-  """Base class for abort signals.
-  """
+  """Base class for abort signals."""
 
 
 class TestAbortClass(TestAbortSignal):

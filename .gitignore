@@ -12,3 +12,4 @@ Gemfile.lock
 .sass-cache
 _site
 .tox/
+venv/

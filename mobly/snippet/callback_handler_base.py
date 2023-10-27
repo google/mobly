@@ -45,14 +45,16 @@ class CallbackHandlerBase(abc.ABC):
     ret_value: any, the direct return value of the async RPC call.
   """
 
-  def __init__(self,
-               callback_id,
-               event_client,
-               ret_value,
-               method_name,
-               device,
-               rpc_max_timeout_sec,
-               default_timeout_sec=120):
+  def __init__(
+      self,
+      callback_id,
+      event_client,
+      ret_value,
+      method_name,
+      device,
+      rpc_max_timeout_sec,
+      default_timeout_sec=120,
+  ):
     """Initializes a callback handler base object.
 
     Args:
@@ -74,10 +76,12 @@ class CallbackHandlerBase(abc.ABC):
     self._method_name = method_name
 
     if rpc_max_timeout_sec < default_timeout_sec:
-      raise ValueError('The max timeout of a single RPC must be no smaller '
-                       'than the default timeout of the callback handler. '
-                       f'Got rpc_max_timeout_sec={rpc_max_timeout_sec}, '
-                       f'default_timeout_sec={default_timeout_sec}.')
+      raise ValueError(
+          'The max timeout of a single RPC must be no smaller '
+          'than the default timeout of the callback handler. '
+          f'Got rpc_max_timeout_sec={rpc_max_timeout_sec}, '
+          f'default_timeout_sec={default_timeout_sec}.'
+      )
     self._rpc_max_timeout_sec = rpc_max_timeout_sec
     self._default_timeout_sec = default_timeout_sec
 
@@ -168,7 +172,8 @@ class CallbackHandlerBase(abc.ABC):
         raise errors.CallbackHandlerBaseError(
             self._device,
             f'Specified timeout {timeout} is longer than max timeout '
-            f'{self.rpc_max_timeout_sec}.')
+            f'{self.rpc_max_timeout_sec}.',
+        )
 
     raw_event = self.callEventWaitAndGetRpc(self._id, event_name, timeout)
     return callback_event.from_dict(raw_event)
@@ -223,7 +228,8 @@ class CallbackHandlerBase(abc.ABC):
     raise errors.CallbackHandlerTimeoutError(
         self._device,
         f'Timed out after {timeout}s waiting for an "{event_name}" event that '
-        f'satisfies the predicate "{predicate.__name__}".')
+        f'satisfies the predicate "{predicate.__name__}".',
+    )
 
   def getAll(self, event_name):
     """Gets all existing events in the server with the specified identifier.

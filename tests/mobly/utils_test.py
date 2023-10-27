@@ -45,11 +45,14 @@ ADB_MODULE_PACKAGE_NAME = 'mobly.controllers.android_device_lib.adb'
 def _is_process_running(pid):
   """Whether the process with given PID is running."""
   if os.name == 'nt':
-    return str(pid) in subprocess.check_output([
-        'tasklist',
-        '/fi',
-        f'PID eq {pid}',
-    ]).decode()
+    return (
+        str(pid)
+        in subprocess.check_output([
+            'tasklist',
+            '/fi',
+            f'PID eq {pid}',
+        ]).decode()
+    )
 
   try:
     # os.kill throws OSError if the process with PID pid is not running.
@@ -102,19 +105,24 @@ class UtilsTest(unittest.TestCase):
     else:
       return ['sleep', str(wait_secs)]
 
-  @unittest.skipIf(os.name == "nt",
-                   'collect_process_tree only available on Unix like system.')
+  @unittest.skipIf(
+      os.name == 'nt',
+      'collect_process_tree only available on Unix like system.',
+  )
   @mock.patch('subprocess.check_output')
   def test_collect_process_tree_without_child(self, mock_check_output):
-    mock_check_output.side_effect = (subprocess.CalledProcessError(
-        -1, 'fake_cmd'))
+    mock_check_output.side_effect = subprocess.CalledProcessError(
+        -1, 'fake_cmd'
+    )
 
     pid_list = utils._collect_process_tree(123)
 
     self.assertListEqual(pid_list, [])
 
-  @unittest.skipIf(os.name == "nt",
-                   'collect_process_tree only available on Unix like system.')
+  @unittest.skipIf(
+      os.name == 'nt',
+      'collect_process_tree only available on Unix like system.',
+  )
   @mock.patch('subprocess.check_output')
   def test_collect_process_tree_returns_list(self, mock_check_output):
     # Creates subprocess 777 with descendants looks like:
@@ -151,8 +159,9 @@ class UtilsTest(unittest.TestCase):
 
   @mock.patch.object(os, 'kill')
   @mock.patch.object(utils, '_collect_process_tree')
-  def test_kill_process_tree_on_unix_succeeds(self, mock_collect_process_tree,
-                                              mock_os_kill):
+  def test_kill_process_tree_on_unix_succeeds(
+      self, mock_collect_process_tree, mock_os_kill
+  ):
     mock_collect_process_tree.return_value = [799, 888, 890]
     mock_proc = mock.MagicMock()
     mock_proc.pid = 123
@@ -170,7 +179,8 @@ class UtilsTest(unittest.TestCase):
   @mock.patch.object(os, 'kill')
   @mock.patch.object(utils, '_collect_process_tree')
   def test_kill_process_tree_on_unix_kill_children_failed_throws_error(
-      self, mock_collect_process_tree, mock_os_kill):
+      self, mock_collect_process_tree, mock_os_kill
+  ):
     mock_collect_process_tree.return_value = [799, 888, 890]
     mock_os_kill.side_effect = [None, OSError(), None]
     mock_proc = mock.MagicMock()
@@ -184,7 +194,8 @@ class UtilsTest(unittest.TestCase):
 
   @mock.patch.object(utils, '_collect_process_tree')
   def test_kill_process_tree_on_unix_kill_proc_failed_throws_error(
-      self, mock_collect_process_tree):
+      self, mock_collect_process_tree
+  ):
     mock_collect_process_tree.return_value = []
     mock_proc = mock.MagicMock()
     mock_proc.pid = 123
@@ -262,13 +273,15 @@ class UtilsTest(unittest.TestCase):
     mock_proc.communicate.return_value = ('fake_out', 'fake_err')
     mock_proc.returncode = 127
 
-    out = utils.run_command(mock_command,
-                            stdout=mock_stdout,
-                            stderr=mock_stderr,
-                            shell=mock_shell,
-                            timeout=mock_timeout,
-                            env=mock_env,
-                            universal_newlines=mock_universal_newlines)
+    out = utils.run_command(
+        mock_command,
+        stdout=mock_stdout,
+        stderr=mock_stderr,
+        shell=mock_shell,
+        timeout=mock_timeout,
+        env=mock_env,
+        universal_newlines=mock_universal_newlines,
+    )
 
     self.assertEqual(out, (127, 'fake_out', 'fake_err'))
     mock_popen.assert_called_with(
@@ -283,8 +296,9 @@ class UtilsTest(unittest.TestCase):
     mock_timer.assert_called_with(1234, mock.ANY)
 
   def test_run_command_with_universal_newlines_false(self):
-    _, out, _ = utils.run_command(self.sleep_cmd(0.01),
-                                  universal_newlines=False)
+    _, out, _ = utils.run_command(
+        self.sleep_cmd(0.01), universal_newlines=False
+    )
 
     self.assertIsInstance(out, bytes)
 
@@ -352,19 +366,29 @@ class UtilsTest(unittest.TestCase):
     #   │  └─ Y (grandchild)
     #   ├─ C (child)
     #   └─ D (child)
-    process_tree_args = ('subprocess_a', [
-        ('child_b', [
-            ('grand_child_x', [
-                ('great_grand_child_1', []),
-                ('great_grand_child_2', []),
-            ]),
-            ('grand_child_y', []),
-        ]),
-        ('child_c', []),
-        ('child_d', []),
-    ])
-    subprocess_a = multiprocessing.Process(target=_fork_children_processes,
-                                           args=process_tree_args)
+    process_tree_args = (
+        'subprocess_a',
+        [
+            (
+                'child_b',
+                [
+                    (
+                        'grand_child_x',
+                        [
+                            ('great_grand_child_1', []),
+                            ('great_grand_child_2', []),
+                        ],
+                    ),
+                    ('grand_child_y', []),
+                ],
+            ),
+            ('child_c', []),
+            ('child_d', []),
+        ],
+    )
+    subprocess_a = multiprocessing.Process(
+        target=_fork_children_processes, args=process_tree_args
+    )
     subprocess_a.start()
     mock_subprocess_a_popen = mock.MagicMock()
     mock_subprocess_a_popen.pid = subprocess_a.pid
@@ -376,16 +400,17 @@ class UtilsTest(unittest.TestCase):
     subprocess_a.join(timeout=1)
     mock_subprocess_a_popen.wait.assert_called_once()
 
-  @unittest.skipIf(sys.version_info >= (3, 4) and sys.version_info < (3, 5),
-                   'Python 3.4 does not support `None` max_workers.')
+  @unittest.skipIf(
+      sys.version_info >= (3, 4) and sys.version_info < (3, 5),
+      'Python 3.4 does not support `None` max_workers.',
+  )
   def test_concurrent_exec_when_none_workers(self):
-
     def adder(a, b):
       return a + b
 
-    with mock.patch.object(futures,
-                           'ThreadPoolExecutor',
-                           wraps=futures.ThreadPoolExecutor) as thread_pool_spy:
+    with mock.patch.object(
+        futures, 'ThreadPoolExecutor', wraps=futures.ThreadPoolExecutor
+    ) as thread_pool_spy:
       results = utils.concurrent_exec(adder, [(1, 1), (2, 2)], max_workers=None)
 
     thread_pool_spy.assert_called_once_with(max_workers=None)
@@ -395,13 +420,12 @@ class UtilsTest(unittest.TestCase):
     self.assertIn(4, results)
 
   def test_concurrent_exec_when_default_max_workers(self):
-
     def adder(a, b):
       return a + b
 
-    with mock.patch.object(futures,
-                           'ThreadPoolExecutor',
-                           wraps=futures.ThreadPoolExecutor) as thread_pool_spy:
+    with mock.patch.object(
+        futures, 'ThreadPoolExecutor', wraps=futures.ThreadPoolExecutor
+    ) as thread_pool_spy:
       results = utils.concurrent_exec(adder, [(1, 1), (2, 2)])
 
     thread_pool_spy.assert_called_once_with(max_workers=30)
@@ -411,13 +435,12 @@ class UtilsTest(unittest.TestCase):
     self.assertIn(4, results)
 
   def test_concurrent_exec_when_custom_max_workers(self):
-
     def adder(a, b):
       return a + b
 
-    with mock.patch.object(futures,
-                           'ThreadPoolExecutor',
-                           wraps=futures.ThreadPoolExecutor) as thread_pool_spy:
+    with mock.patch.object(
+        futures, 'ThreadPoolExecutor', wraps=futures.ThreadPoolExecutor
+    ) as thread_pool_spy:
       results = utils.concurrent_exec(adder, [(1, 1), (2, 2)], max_workers=1)
 
     thread_pool_spy.assert_called_once_with(max_workers=1)
@@ -427,18 +450,20 @@ class UtilsTest(unittest.TestCase):
 
   def test_concurrent_exec_makes_all_calls(self):
     mock_function = mock.MagicMock()
-    _ = utils.concurrent_exec(mock_function, [
-        (1, 1),
-        (2, 2),
-        (3, 3),
-    ])
+    _ = utils.concurrent_exec(
+        mock_function,
+        [
+            (1, 1),
+            (2, 2),
+            (3, 3),
+        ],
+    )
     self.assertEqual(mock_function.call_count, 3)
     mock_function.assert_has_calls(
-        [mock.call(1, 1), mock.call(2, 2),
-         mock.call(3, 3)], any_order=True)
+        [mock.call(1, 1), mock.call(2, 2), mock.call(3, 3)], any_order=True
+    )
 
   def test_concurrent_exec_generates_results(self):
-
     def adder(a, b):
       return a + b
 
@@ -451,42 +476,54 @@ class UtilsTest(unittest.TestCase):
     mock_call_recorder = mock.MagicMock()
     lock_call_count = threading.Lock()
 
-    def fake_int(a,):
+    def fake_int(
+        a,
+    ):
       with lock_call_count:
         mock_call_recorder(a)
       return int(a)
 
-    utils.concurrent_exec(fake_int, [
-        (1,),
-        ('123',),
-        ('not_int',),
-        (5435,),
-    ])
+    utils.concurrent_exec(
+        fake_int,
+        [
+            (1,),
+            ('123',),
+            ('not_int',),
+            (5435,),
+        ],
+    )
 
     self.assertEqual(mock_call_recorder.call_count, 4)
-    mock_call_recorder.assert_has_calls([
-        mock.call(1),
-        mock.call('123'),
-        mock.call('not_int'),
-        mock.call(5435),
-    ],
-                                        any_order=True)
+    mock_call_recorder.assert_has_calls(
+        [
+            mock.call(1),
+            mock.call('123'),
+            mock.call('not_int'),
+            mock.call(5435),
+        ],
+        any_order=True,
+    )
 
   def test_concurrent_exec_when_exception_generates_results(self):
     mock_call_recorder = mock.MagicMock()
     lock_call_count = threading.Lock()
 
-    def fake_int(a,):
+    def fake_int(
+        a,
+    ):
       with lock_call_count:
         mock_call_recorder(a)
       return int(a)
 
-    results = utils.concurrent_exec(fake_int, [
-        (1,),
-        ('123',),
-        ('not_int',),
-        (5435,),
-    ])
+    results = utils.concurrent_exec(
+        fake_int,
+        [
+            (1,),
+            ('123',),
+            ('not_int',),
+            (5435,),
+        ],
+    )
 
     self.assertEqual(len(results), 4)
     self.assertIn(1, results)
@@ -500,42 +537,54 @@ class UtilsTest(unittest.TestCase):
     mock_call_recorder = mock.MagicMock()
     lock_call_count = threading.Lock()
 
-    def fake_int(a,):
+    def fake_int(
+        a,
+    ):
       with lock_call_count:
         mock_call_recorder(a)
       return int(a)
 
-    utils.concurrent_exec(fake_int, [
-        (1,),
-        ('not_int1',),
-        ('not_int2',),
-        (5435,),
-    ])
+    utils.concurrent_exec(
+        fake_int,
+        [
+            (1,),
+            ('not_int1',),
+            ('not_int2',),
+            (5435,),
+        ],
+    )
 
     self.assertEqual(mock_call_recorder.call_count, 4)
-    mock_call_recorder.assert_has_calls([
-        mock.call(1),
-        mock.call('not_int1'),
-        mock.call('not_int2'),
-        mock.call(5435),
-    ],
-                                        any_order=True)
+    mock_call_recorder.assert_has_calls(
+        [
+            mock.call(1),
+            mock.call('not_int1'),
+            mock.call('not_int2'),
+            mock.call(5435),
+        ],
+        any_order=True,
+    )
 
   def test_concurrent_exec_when_multiple_exceptions_generates_results(self):
     mock_call_recorder = mock.MagicMock()
     lock_call_count = threading.Lock()
 
-    def fake_int(a,):
+    def fake_int(
+        a,
+    ):
       with lock_call_count:
         mock_call_recorder(a)
       return int(a)
 
-    results = utils.concurrent_exec(fake_int, [
-        (1,),
-        ('not_int1',),
-        ('not_int2',),
-        (5435,),
-    ])
+    results = utils.concurrent_exec(
+        fake_int,
+        [
+            (1,),
+            ('not_int1',),
+            ('not_int2',),
+            (5435,),
+        ],
+    )
 
     self.assertEqual(len(results), 4)
     self.assertIn(1, results)
@@ -547,12 +596,12 @@ class UtilsTest(unittest.TestCase):
     self.assertNotEqual(exceptions[0], exceptions[1])
 
   def test_concurrent_exec_when_raising_exception_generates_results(self):
-
     def adder(a, b):
       return a + b
 
-    results = utils.concurrent_exec(adder, [(1, 1), (2, 2)],
-                                    raise_on_exception=True)
+    results = utils.concurrent_exec(
+        adder, [(1, 1), (2, 2)], raise_on_exception=True
+    )
     self.assertEqual(len(results), 2)
     self.assertIn(2, results)
     self.assertIn(4, results)
@@ -561,58 +610,74 @@ class UtilsTest(unittest.TestCase):
     mock_call_recorder = mock.MagicMock()
     lock_call_count = threading.Lock()
 
-    def fake_int(a,):
+    def fake_int(
+        a,
+    ):
       with lock_call_count:
         mock_call_recorder(a)
       return int(a)
 
     with self.assertRaisesRegex(RuntimeError, '.*not_int.*'):
-      _ = utils.concurrent_exec(fake_int, [
-          (1,),
-          ('123',),
-          ('not_int',),
-          (5435,),
-      ],
-                                raise_on_exception=True)
+      _ = utils.concurrent_exec(
+          fake_int,
+          [
+              (1,),
+              ('123',),
+              ('not_int',),
+              (5435,),
+          ],
+          raise_on_exception=True,
+      )
 
     self.assertEqual(mock_call_recorder.call_count, 4)
-    mock_call_recorder.assert_has_calls([
-        mock.call(1),
-        mock.call('123'),
-        mock.call('not_int'),
-        mock.call(5435),
-    ],
-                                        any_order=True)
+    mock_call_recorder.assert_has_calls(
+        [
+            mock.call(1),
+            mock.call('123'),
+            mock.call('not_int'),
+            mock.call(5435),
+        ],
+        any_order=True,
+    )
 
   def test_concurrent_exec_when_raising_multiple_exceptions_makes_all_calls(
-      self):
+      self,
+  ):
     mock_call_recorder = mock.MagicMock()
     lock_call_count = threading.Lock()
 
-    def fake_int(a,):
+    def fake_int(
+        a,
+    ):
       with lock_call_count:
         mock_call_recorder(a)
       return int(a)
 
     with self.assertRaisesRegex(
         RuntimeError,
-        r'(?m).*(not_int1(.|\s)+not_int2|not_int2(.|\s)+not_int1).*'):
-      _ = utils.concurrent_exec(fake_int, [
-          (1,),
-          ('not_int1',),
-          ('not_int2',),
-          (5435,),
-      ],
-                                raise_on_exception=True)
+        r'(?m).*(not_int1(.|\s)+not_int2|not_int2(.|\s)+not_int1).*',
+    ):
+      _ = utils.concurrent_exec(
+          fake_int,
+          [
+              (1,),
+              ('not_int1',),
+              ('not_int2',),
+              (5435,),
+          ],
+          raise_on_exception=True,
+      )
 
     self.assertEqual(mock_call_recorder.call_count, 4)
-    mock_call_recorder.assert_has_calls([
-        mock.call(1),
-        mock.call('not_int1'),
-        mock.call('not_int2'),
-        mock.call(5435),
-    ],
-                                        any_order=True)
+    mock_call_recorder.assert_has_calls(
+        [
+            mock.call(1),
+            mock.call('not_int1'),
+            mock.call('not_int2'),
+            mock.call(5435),
+        ],
+        any_order=True,
+    )
 
   def test_create_dir(self):
     new_path = os.path.join(self.tmp_dir, 'haha')
@@ -634,14 +699,17 @@ class UtilsTest(unittest.TestCase):
   @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.is_adb_available', return_value=False)
   @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
   @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports')
-  def test_get_available_port_positive_no_adb(self,
-                                              mock_list_occupied_adb_ports, *_):
+  def test_get_available_port_positive_no_adb(
+      self, mock_list_occupied_adb_ports, *_
+  ):
     self.assertEqual(utils.get_available_host_port(), MOCK_AVAILABLE_PORT)
     mock_list_occupied_adb_ports.assert_not_called()
 
   @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.is_adb_available', return_value=True)
-  @mock.patch(f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports',
-              return_value=[MOCK_AVAILABLE_PORT])
+  @mock.patch(
+      f'{ADB_MODULE_PACKAGE_NAME}.list_occupied_adb_ports',
+      return_value=[MOCK_AVAILABLE_PORT],
+  )
   @mock.patch('portpicker.pick_unused_port', return_value=MOCK_AVAILABLE_PORT)
   def test_get_available_port_negative(self, *_):
     with self.assertRaisesRegex(utils.Error, 'Failed to find.* retries'):
@@ -672,36 +740,38 @@ class UtilsTest(unittest.TestCase):
 
   def test_load_file_to_base64_str_reads_bytes_file_as_base64_string(self):
     tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
-    expected_base64_encoding = u'SGVsbG93IHdvcmxkIQ=='
+    expected_base64_encoding = 'SGVsbG93IHdvcmxkIQ=='
     with io.open(tmp_file_path, 'wb') as f:
       f.write(b'Hellow world!')
-    self.assertEqual(utils.load_file_to_base64_str(tmp_file_path),
-                     expected_base64_encoding)
+    self.assertEqual(
+        utils.load_file_to_base64_str(tmp_file_path), expected_base64_encoding
+    )
 
   def test_load_file_to_base64_str_reads_text_file_as_base64_string(self):
     tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
-    expected_base64_encoding = u'SGVsbG93IHdvcmxkIQ=='
+    expected_base64_encoding = 'SGVsbG93IHdvcmxkIQ=='
     with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write(u'Hellow world!')
-    self.assertEqual(utils.load_file_to_base64_str(tmp_file_path),
-                     expected_base64_encoding)
+      f.write('Hellow world!')
+    self.assertEqual(
+        utils.load_file_to_base64_str(tmp_file_path), expected_base64_encoding
+    )
 
   def test_load_file_to_base64_str_reads_unicode_file_as_base64_string(self):
     tmp_file_path = os.path.join(self.tmp_dir, 'b64.bin')
-    expected_base64_encoding = u'6YCa'
+    expected_base64_encoding = '6YCa'
     with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write(u'\u901a')
-    self.assertEqual(utils.load_file_to_base64_str(tmp_file_path),
-                     expected_base64_encoding)
+      f.write('\u901a')
+    self.assertEqual(
+        utils.load_file_to_base64_str(tmp_file_path), expected_base64_encoding
+    )
 
   def test_cli_cmd_to_string(self):
     cmd = ['"adb"', 'a b', 'c//']
-    self.assertEqual(utils.cli_cmd_to_string(cmd), '\'"adb"\' \'a b\' c//')
+    self.assertEqual(utils.cli_cmd_to_string(cmd), "'\"adb\"' 'a b' c//")
     cmd = 'adb -s meme do something ab_cd'
     self.assertEqual(utils.cli_cmd_to_string(cmd), cmd)
 
   def test_get_settable_properties(self):
-
     class SomeClass:
       regular_attr = 'regular_attr'
       _foo = 'foo'
@@ -726,26 +796,31 @@ class UtilsTest(unittest.TestCase):
     self.assertEqual(actual, ['settable_prop'])
 
   def test_find_subclasses_in_module_when_one_subclass(self):
-    subclasses = utils.find_subclasses_in_module([base_test.BaseTestClass],
-                                                 integration_test)
+    subclasses = utils.find_subclasses_in_module(
+        [base_test.BaseTestClass], integration_test
+    )
     self.assertEqual(len(subclasses), 1)
     self.assertEqual(subclasses[0], integration_test.IntegrationTest)
 
   def test_find_subclasses_in_module_when_indirect_subclass(self):
-    subclasses = utils.find_subclasses_in_module([base_test.BaseTestClass],
-                                                 mock_instrumentation_test)
+    subclasses = utils.find_subclasses_in_module(
+        [base_test.BaseTestClass], mock_instrumentation_test
+    )
     self.assertEqual(len(subclasses), 1)
-    self.assertEqual(subclasses[0],
-                     mock_instrumentation_test.MockInstrumentationTest)
+    self.assertEqual(
+        subclasses[0], mock_instrumentation_test.MockInstrumentationTest
+    )
 
   def test_find_subclasses_in_module_when_no_subclasses(self):
-    subclasses = utils.find_subclasses_in_module([base_test.BaseTestClass],
-                                                 mock_controller)
+    subclasses = utils.find_subclasses_in_module(
+        [base_test.BaseTestClass], mock_controller
+    )
     self.assertEqual(len(subclasses), 0)
 
   def test_find_subclasses_in_module_when_multiple_subclasses(self):
-    subclasses = utils.find_subclasses_in_module([base_test.BaseTestClass],
-                                                 multiple_subclasses_module)
+    subclasses = utils.find_subclasses_in_module(
+        [base_test.BaseTestClass], multiple_subclasses_module
+    )
     self.assertEqual(len(subclasses), 2)
     self.assertIn(multiple_subclasses_module.Subclass1Test, subclasses)
     self.assertIn(multiple_subclasses_module.Subclass2Test, subclasses)
@@ -753,7 +828,8 @@ class UtilsTest(unittest.TestCase):
   def test_find_subclasses_in_module_when_multiple_base_classes(self):
     subclasses = utils.find_subclasses_in_module(
         [base_test.BaseTestClass, test_runner.TestRunner],
-        multiple_subclasses_module)
+        multiple_subclasses_module,
+    )
     self.assertEqual(len(subclasses), 4)
     self.assertIn(multiple_subclasses_module.Subclass1Test, subclasses)
     self.assertIn(multiple_subclasses_module.Subclass2Test, subclasses)
@@ -762,37 +838,45 @@ class UtilsTest(unittest.TestCase):
 
   def test_find_subclasses_in_module_when_only_some_base_classes_present(self):
     subclasses = utils.find_subclasses_in_module(
-        [signals.TestSignal, test_runner.TestRunner],
-        multiple_subclasses_module)
+        [signals.TestSignal, test_runner.TestRunner], multiple_subclasses_module
+    )
     self.assertEqual(len(subclasses), 2)
     self.assertIn(multiple_subclasses_module.Subclass1Runner, subclasses)
     self.assertIn(multiple_subclasses_module.Subclass2Runner, subclasses)
 
   def test_find_subclass_in_module_when_one_subclass(self):
-    subclass = utils.find_subclass_in_module(base_test.BaseTestClass,
-                                             integration_test)
+    subclass = utils.find_subclass_in_module(
+        base_test.BaseTestClass, integration_test
+    )
     self.assertEqual(subclass, integration_test.IntegrationTest)
 
   def test_find_subclass_in_module_when_indirect_subclass(self):
-    subclass = utils.find_subclass_in_module(base_test.BaseTestClass,
-                                             mock_instrumentation_test)
-    self.assertEqual(subclass,
-                     mock_instrumentation_test.MockInstrumentationTest)
+    subclass = utils.find_subclass_in_module(
+        base_test.BaseTestClass, mock_instrumentation_test
+    )
+    self.assertEqual(
+        subclass, mock_instrumentation_test.MockInstrumentationTest
+    )
 
   def test_find_subclass_in_module_when_no_subclasses(self):
     with self.assertRaisesRegex(
-        ValueError, '.*Expected 1 subclass of BaseTestClass per module, found'
-        r' \[\].*'):
-      _ = utils.find_subclass_in_module(base_test.BaseTestClass,
-                                        mock_controller)
+        ValueError,
+        '.*Expected 1 subclass of BaseTestClass per module, found' r' \[\].*',
+    ):
+      _ = utils.find_subclass_in_module(
+          base_test.BaseTestClass, mock_controller
+      )
 
   def test_find_subclass_in_module_when_multiple_subclasses(self):
     with self.assertRaisesRegex(
-        ValueError, '.*Expected 1 subclass of BaseTestClass per module, found'
+        ValueError,
+        '.*Expected 1 subclass of BaseTestClass per module, found'
         r' \[(\'Subclass1Test\', \'Subclass2Test\''
-        r'|\'Subclass2Test\', \'Subclass1Test\')\].*'):
-      _ = utils.find_subclass_in_module(base_test.BaseTestClass,
-                                        multiple_subclasses_module)
+        r'|\'Subclass2Test\', \'Subclass1Test\')\].*',
+    ):
+      _ = utils.find_subclass_in_module(
+          base_test.BaseTestClass, multiple_subclasses_module
+      )
 
 
 if __name__ == '__main__':
