@@ -42,6 +42,7 @@ class ServiceError(DeviceError):
   A service is inherently associated with a device instance, so the service
   error type is a subtype of `DeviceError`.
   """
+
   SERVICE_TYPE = None
 
   def __init__(self, device, msg):

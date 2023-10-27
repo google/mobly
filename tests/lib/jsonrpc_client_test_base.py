@@ -26,21 +26,26 @@ class JsonRpcClientTestBase(unittest.TestCase):
 
   MOCK_RESP = (
       b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
-      b'"callback": null}')
+      b'"callback": null}'
+  )
   MOCK_RESP_WITHOUT_CALLBACK = (
-      b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1}')
+      b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1}'
+  )
   MOCK_RESP_TEMPLATE = (
       '{"id": %d, "result": 123, "error": null, "status": 1, "uid": 1, '
-      '"callback": null}')
+      '"callback": null}'
+  )
   MOCK_RESP_UNKNOWN_STATUS = (
-      b'{"id": 0, "result": 123, "error": null, "status": 0, '
-      b'"callback": null}')
+      b'{"id": 0, "result": 123, "error": null, "status": 0, "callback": null}'
+  )
   MOCK_RESP_WITH_CALLBACK = (
       b'{"id": 0, "result": 123, "error": null, "status": 1, "uid": 1, '
-      b'"callback": "1-0"}')
+      b'"callback": "1-0"}'
+  )
   MOCK_RESP_WITH_ERROR = b'{"id": 0, "error": 1, "status": 1, "uid": 1}'
   MOCK_RESP_FLEXIABLE_RESULT_LENGTH = (
-      '{"id": 0, "result": "%s", "error": null, "status": 0, "callback": null}')
+      '{"id": 0, "result": "%s", "error": null, "status": 0, "callback": null}'
+  )
 
   class MockSocketFile:
 

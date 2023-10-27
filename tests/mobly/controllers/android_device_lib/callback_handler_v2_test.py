@@ -28,22 +28,24 @@ MOCK_RAW_EVENT = {
     'data': {
         'exampleData': "Here's a simple event.",
         'successful': True,
-        'secretNumber': 12
-    }
+        'secretNumber': 12,
+    },
 }
 
 
 class CallbackHandlerV2Test(unittest.TestCase):
   """Unit tests for callback_handler_v2.CallbackHandlerV2."""
 
-  def _make_callback_handler(self,
-                             callback_id=None,
-                             event_client=None,
-                             ret_value=None,
-                             method_name=None,
-                             device=None,
-                             rpc_max_timeout_sec=600,
-                             default_timeout_sec=120):
+  def _make_callback_handler(
+      self,
+      callback_id=None,
+      event_client=None,
+      ret_value=None,
+      method_name=None,
+      device=None,
+      rpc_max_timeout_sec=600,
+      default_timeout_sec=120,
+  ):
     return callback_handler_v2.CallbackHandlerV2(
         callback_id=callback_id,
         event_client=event_client,
@@ -51,7 +53,8 @@ class CallbackHandlerV2Test(unittest.TestCase):
         method_name=method_name,
         device=device,
         rpc_max_timeout_sec=rpc_max_timeout_sec,
-        default_timeout_sec=default_timeout_sec)
+        default_timeout_sec=default_timeout_sec,
+    )
 
   def assert_event_correct(self, actual_event, expected_raw_event_dict):
     expected_event = callback_event.from_dict(expected_raw_event_dict)
@@ -60,12 +63,14 @@ class CallbackHandlerV2Test(unittest.TestCase):
   def test_wait_and_get(self):
     mock_event_client = mock.Mock()
     mock_event_client.eventWaitAndGet = mock.Mock(return_value=MOCK_RAW_EVENT)
-    handler = self._make_callback_handler(callback_id=MOCK_CALLBACK_ID,
-                                          event_client=mock_event_client)
+    handler = self._make_callback_handler(
+        callback_id=MOCK_CALLBACK_ID, event_client=mock_event_client
+    )
     event = handler.waitAndGet('ha')
     self.assert_event_correct(event, MOCK_RAW_EVENT)
     mock_event_client.eventWaitAndGet.assert_called_once_with(
-        MOCK_CALLBACK_ID, 'ha', mock.ANY)
+        MOCK_CALLBACK_ID, 'ha', mock.ANY
+    )
 
   def test_wait_and_get_timeout_arg_transform(self):
     mock_event_client = mock.Mock()
@@ -76,12 +81,14 @@ class CallbackHandlerV2Test(unittest.TestCase):
     expected_rpc_timeout_ms = 10000
     _ = handler.waitAndGet('ha', timeout=wait_and_get_timeout_sec)
     mock_event_client.eventWaitAndGet.assert_called_once_with(
-        mock.ANY, mock.ANY, expected_rpc_timeout_ms)
+        mock.ANY, mock.ANY, expected_rpc_timeout_ms
+    )
 
   def test_wait_for_event(self):
     mock_event_client = mock.Mock()
-    handler = self._make_callback_handler(callback_id=MOCK_CALLBACK_ID,
-                                          event_client=mock_event_client)
+    handler = self._make_callback_handler(
+        callback_id=MOCK_CALLBACK_ID, event_client=mock_event_client
+    )
 
     event_should_ignore = {
         'callbackId': '2-1',
@@ -89,10 +96,11 @@ class CallbackHandlerV2Test(unittest.TestCase):
         'time': 20460228696,
         'data': {
             'successful': False,
-        }
+        },
     }
     mock_event_client.eventWaitAndGet.side_effect = [
-        event_should_ignore, MOCK_RAW_EVENT
+        event_should_ignore,
+        MOCK_RAW_EVENT,
     ]
 
     def some_condition(event):
@@ -107,11 +115,13 @@ class CallbackHandlerV2Test(unittest.TestCase):
 
   def test_get_all(self):
     mock_event_client = mock.Mock()
-    handler = self._make_callback_handler(callback_id=MOCK_CALLBACK_ID,
-                                          event_client=mock_event_client)
+    handler = self._make_callback_handler(
+        callback_id=MOCK_CALLBACK_ID, event_client=mock_event_client
+    )
 
     mock_event_client.eventGetAll = mock.Mock(
-        return_value=[MOCK_RAW_EVENT, MOCK_RAW_EVENT])
+        return_value=[MOCK_RAW_EVENT, MOCK_RAW_EVENT]
+    )
 
     all_events = handler.getAll('ha')
     self.assertEqual(len(all_events), 2)
@@ -119,29 +129,36 @@ class CallbackHandlerV2Test(unittest.TestCase):
       self.assert_event_correct(event, MOCK_RAW_EVENT)
 
     mock_event_client.eventGetAll.assert_called_once_with(
-        MOCK_CALLBACK_ID, 'ha')
+        MOCK_CALLBACK_ID, 'ha'
+    )
 
   def test_wait_and_get_timeout_message_pattern_matches(self):
     mock_event_client = mock.Mock()
     android_snippet_timeout_msg = (
         'com.google.android.mobly.snippet.event.EventSnippet$'
-        'EventSnippetException: timeout.')
+        'EventSnippetException: timeout.'
+    )
     mock_event_client.eventWaitAndGet = mock.Mock(
-        side_effect=errors.ApiError(mock.Mock(), android_snippet_timeout_msg))
-    handler = self._make_callback_handler(event_client=mock_event_client,
-                                          method_name='test_method')
+        side_effect=errors.ApiError(mock.Mock(), android_snippet_timeout_msg)
+    )
+    handler = self._make_callback_handler(
+        event_client=mock_event_client, method_name='test_method'
+    )
 
-    expected_msg = ('Timed out after waiting .*s for event "ha" triggered by '
-                    'test_method .*')
-    with self.assertRaisesRegex(errors.CallbackHandlerTimeoutError,
-                                expected_msg):
+    expected_msg = (
+        'Timed out after waiting .*s for event "ha" triggered by test_method .*'
+    )
+    with self.assertRaisesRegex(
+        errors.CallbackHandlerTimeoutError, expected_msg
+    ):
       handler.waitAndGet('ha')
 
   def test_wait_and_get_reraise_if_pattern_not_match(self):
     mock_event_client = mock.Mock()
     snippet_timeout_msg = 'Snippet executed with error.'
     mock_event_client.eventWaitAndGet = mock.Mock(
-        side_effect=errors.ApiError(mock.Mock(), snippet_timeout_msg))
+        side_effect=errors.ApiError(mock.Mock(), snippet_timeout_msg)
+    )
     handler = self._make_callback_handler(event_client=mock_event_client)
 
     with self.assertRaisesRegex(errors.ApiError, snippet_timeout_msg):

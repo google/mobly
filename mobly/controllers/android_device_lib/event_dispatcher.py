@@ -25,18 +25,15 @@ class EventDispatcherError(Exception):
 
 
 class IllegalStateError(EventDispatcherError):
-  """Raise when user tries to put event_dispatcher into an illegal state.
-  """
+  """Raise when user tries to put event_dispatcher into an illegal state."""
 
 
 class DuplicateError(EventDispatcherError):
-  """Raise when a duplicate is being created and it shouldn't.
-  """
+  """Raise when a duplicate is being created and it shouldn't."""
 
 
 class EventDispatcher:
-  """Class managing events for an sl4a connection.
-  """
+  """Class managing events for an sl4a connection."""
 
   DEFAULT_TIMEOUT = 60
 
@@ -69,11 +66,11 @@ class EventDispatcher:
           raise
       if not event_obj:
         continue
-      elif 'name' not in event_obj:
+      elif "name" not in event_obj:
         print("Received Malformed event {}".format(event_obj))
         continue
       else:
-        event_name = event_obj['name']
+        event_name = event_obj["name"]
       # if handler registered, process event
       if event_name in self.handlers:
         self.handle_subscribed_event(event_obj, event_name)
@@ -107,13 +104,13 @@ class EventDispatcher:
         handler for one type of event.
     """
     if self.started:
-      raise IllegalStateError(("Can't register service after polling is"
-                               " started"))
+      raise IllegalStateError("Can't register service after polling is started")
     self.lock.acquire()
     try:
       if event_name in self.handlers:
         raise DuplicateError(
-            'A handler for {} already exists'.format(event_name))
+            "A handler for {} already exists".format(event_name)
+        )
       self.handlers[event_name] = (handler, args)
     finally:
       self.lock.release()
@@ -194,15 +191,13 @@ class EventDispatcher:
         # Block forever on event wait
         return e_queue.get(True)
     except queue.Empty:
-      raise queue.Empty('Timeout after {}s waiting for event: {}'.format(
-          timeout, event_name))
+      raise queue.Empty(
+          "Timeout after {}s waiting for event: {}".format(timeout, event_name)
+      )
 
-  def wait_for_event(self,
-                     event_name,
-                     predicate,
-                     timeout=DEFAULT_TIMEOUT,
-                     *args,
-                     **kwargs):
+  def wait_for_event(
+      self, event_name, predicate, timeout=DEFAULT_TIMEOUT, *args, **kwargs
+  ):
     """Wait for an event that satisfies a predicate to appear.
 
     Continuously pop events of a particular name and check against the
@@ -238,8 +233,11 @@ class EventDispatcher:
         return event
 
       if time.perf_counter() > deadline:
-        raise queue.Empty('Timeout after {}s waiting for event: {}'.format(
-            timeout, event_name))
+        raise queue.Empty(
+            "Timeout after {}s waiting for event: {}".format(
+                timeout, event_name
+            )
+        )
 
   def pop_events(self, regex_pattern, timeout):
     """Pop events whose names match a regex pattern.
@@ -275,10 +273,13 @@ class EventDispatcher:
         break
       time.sleep(1)
     if len(results) == 0:
-      raise queue.Empty('Timeout after {}s waiting for event: {}'.format(
-          timeout, regex_pattern))
+      raise queue.Empty(
+          "Timeout after {}s waiting for event: {}".format(
+              timeout, regex_pattern
+          )
+      )
 
-    return sorted(results, key=lambda event: event['time'])
+    return sorted(results, key=lambda event: event["time"])
 
   def _match_and_pop(self, regex_pattern):
     """Pop one event from each of the event queues whose names
@@ -331,8 +332,15 @@ class EventDispatcher:
     handler, args = self.handlers[event_name]
     self.executor.submit(handler, event_obj, *args)
 
-  def _handle(self, event_handler, event_name, user_args, event_timeout, cond,
-              cond_timeout):
+  def _handle(
+      self,
+      event_handler,
+      event_name,
+      user_args,
+      event_timeout,
+      cond,
+      cond_timeout,
+  ):
     """Pop an event of specified type and calls its handler on it. If
     condition is not None, block until condition is met or timeout.
     """
@@ -341,13 +349,15 @@ class EventDispatcher:
     event = self.pop_event(event_name, event_timeout)
     return event_handler(event, *user_args)
 
-  def handle_event(self,
-                   event_handler,
-                   event_name,
-                   user_args,
-                   event_timeout=None,
-                   cond=None,
-                   cond_timeout=None):
+  def handle_event(
+      self,
+      event_handler,
+      event_name,
+      user_args,
+      event_timeout=None,
+      cond=None,
+      cond_timeout=None,
+  ):
     """Handle events that don't have registered handlers
 
     In a new thread, poll one event of specified type from its queue and
@@ -371,8 +381,15 @@ class EventDispatcher:
       If blocking call worker.result() is triggered, the handler
       needs to return something to unblock.
     """
-    worker = self.executor.submit(self._handle, event_handler, event_name,
-                                  user_args, event_timeout, cond, cond_timeout)
+    worker = self.executor.submit(
+        self._handle,
+        event_handler,
+        event_name,
+        user_args,
+        event_timeout,
+        cond,
+        cond_timeout,
+    )
     return worker
 
   def pop_all(self, event_name):
@@ -392,8 +409,7 @@ class EventDispatcher:
         starts polling.
     """
     if not self.started:
-      raise IllegalStateError(("Dispatcher needs to be started before "
-                               "popping."))
+      raise IllegalStateError("Dispatcher needs to be started before popping.")
     results = []
     try:
       self.lock.acquire()

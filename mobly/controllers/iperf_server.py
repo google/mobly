@@ -19,7 +19,7 @@ import os
 
 from mobly import utils
 
-MOBLY_CONTROLLER_CONFIG_NAME = "IPerfServer"
+MOBLY_CONTROLLER_CONFIG_NAME = 'IPerfServer'
 
 
 def create(configs):
@@ -56,16 +56,16 @@ class IPerfResult:
   def _has_data(self):
     """Checks if the iperf result has valid throughput data.
 
-        Returns:
-            True if the result contains throughput data. False otherwise.
-        """
-    return ('end' in self.result) and ('sum' in self.result["end"])
+    Returns:
+        True if the result contains throughput data. False otherwise.
+    """
+    return ('end' in self.result) and ('sum' in self.result['end'])
 
   def get_json(self):
     """
-        Returns:
-            The raw json output from iPerf.
-        """
+    Returns:
+        The raw json output from iPerf.
+    """
     return self.result
 
   @property
@@ -78,8 +78,8 @@ class IPerfResult:
   def avg_rate(self):
     """Average receiving rate in MB/s over the entire run.
 
-        If the result is not from a success run, this property is None.
-        """
+    If the result is not from a success run, this property is None.
+    """
     if not self._has_data or 'sum' not in self.result['end']:
       return None
     bps = self.result['end']['sum']['bits_per_second']
@@ -88,10 +88,10 @@ class IPerfResult:
   @property
   def avg_receive_rate(self):
     """Average receiving rate in MB/s over the entire run. This data may
-        not exist if iperf was interrupted.
+    not exist if iperf was interrupted.
 
-        If the result is not from a success run, this property is None.
-        """
+    If the result is not from a success run, this property is None.
+    """
     if not self._has_data or 'sum_received' not in self.result['end']:
       return None
     bps = self.result['end']['sum_received']['bits_per_second']
@@ -100,44 +100,44 @@ class IPerfResult:
   @property
   def avg_send_rate(self):
     """Average sending rate in MB/s over the entire run. This data may
-        not exist if iperf was interrupted.
+    not exist if iperf was interrupted.
 
-        If the result is not from a success run, this property is None.
-        """
+    If the result is not from a success run, this property is None.
+    """
     if not self._has_data or 'sum_sent' not in self.result['end']:
       return None
     bps = self.result['end']['sum_sent']['bits_per_second']
     return bps / 8 / 1024 / 1024
 
 
-class IPerfServer():
-  """Class that handles iperf3 operations.
-    """
+class IPerfServer:
+  """Class that handles iperf3 operations."""
 
   def __init__(self, port, log_path):
     self.port = port
-    self.log_path = os.path.join(log_path, "iPerf{}".format(self.port))
-    self.iperf_str = "iperf3 -s -J -p {}".format(port)
+    self.log_path = os.path.join(log_path, 'iPerf{}'.format(self.port))
+    self.iperf_str = 'iperf3 -s -J -p {}'.format(port)
     self.iperf_process = None
     self.log_files = []
     self.started = False
 
-  def start(self, extra_args="", tag=""):
+  def start(self, extra_args='', tag=''):
     """Starts iperf server on specified port.
 
-        Args:
-            extra_args: A string representing extra arguments to start iperf
-                server with.
-            tag: Appended to log file name to identify logs from different
-                iperf runs.
-        """
+    Args:
+        extra_args: A string representing extra arguments to start iperf
+            server with.
+        tag: Appended to log file name to identify logs from different
+            iperf runs.
+    """
     if self.started:
       return
     utils.create_dir(self.log_path)
     if tag:
       tag = tag + ','
-    out_file_name = "IPerfServer,{},{}{}.log".format(self.port, tag,
-                                                     len(self.log_files))
+    out_file_name = 'IPerfServer,{},{}{}.log'.format(
+        self.port, tag, len(self.log_files)
+    )
     full_out_path = os.path.join(self.log_path, out_file_name)
     cmd = '%s %s > %s' % (self.iperf_str, extra_args, full_out_path)
     self.iperf_process = utils.start_standing_subprocess(cmd, shell=True)

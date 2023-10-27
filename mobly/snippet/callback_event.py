@@ -23,10 +23,12 @@ def from_dict(event_dict):
   Returns:
     A CallbackEvent object.
   """
-  return CallbackEvent(callback_id=event_dict['callbackId'],
-                       name=event_dict['name'],
-                       creation_time=event_dict['time'],
-                       data=event_dict['data'])
+  return CallbackEvent(
+      callback_id=event_dict['callbackId'],
+      name=event_dict['name'],
+      creation_time=event_dict['time'],
+      data=event_dict['data'],
+  )
 
 
 class CallbackEvent:
@@ -49,4 +51,5 @@ class CallbackEvent:
   def __repr__(self):
     return (
         f'CallbackEvent(callback_id: {self.callback_id}, name: {self.name}, '
-        f'creation_time: {self.creation_time}, data: {self.data})')
+        f'creation_time: {self.creation_time}, data: {self.data})'
+    )
