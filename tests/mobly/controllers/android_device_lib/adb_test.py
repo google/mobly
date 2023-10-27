@@ -718,6 +718,10 @@ class AdbTest(unittest.TestCase):
           timeout=None,
           stderr=None)
 
+  def test_reverse(self):
+    with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
+      adb.AdbProxy().reverse(MOCK_SHELL_COMMAND)
+
   def test_instrument_without_parameters(self):
     """Verifies the AndroidDevice object's instrument command is correct in
     the basic case.
