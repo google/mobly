@@ -709,6 +709,7 @@ class AdbTest(unittest.TestCase):
           timeout=None,
           stderr=None,
       )
+
   def test_reverse(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
       adb.AdbProxy().reverse(['tcp:12345', 'tcp:98765'])
