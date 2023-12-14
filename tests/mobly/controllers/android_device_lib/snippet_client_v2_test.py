@@ -44,8 +44,8 @@ class _MockAdbProxy(mock_android_device.MockAdbProxy):
 
 
   Attributes:
-    default_host_port: Return this port if `self.forward` got 'tcp:0' as host
-      port.
+    default_host_port: int, return this port if `self.forward` got 'tcp:0' as
+      host port.
     mock_shell_func: mock.Mock, used for recording the calls to the shell
       method.
     mock_forward_func: mock.Mock, used for recording the calls to the forward
