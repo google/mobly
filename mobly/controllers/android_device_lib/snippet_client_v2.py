@@ -403,9 +403,10 @@ class SnippetClientV2(client_base.ClientBase):
 
   def _forward_device_port(self):
     """Forwards the device port to a host port."""
-    if not self.host_port:
-      self.host_port = utils.get_available_host_port()
-    self._adb.forward([f'tcp:{self.host_port}', f'tcp:{self.device_port}'])
+    host_port = self.host_port or 0
+    stdout = self._adb.forward([f'tcp:{host_port}', f'tcp:{self.device_port}'])
+    # Example stdout: '12345\n'
+    self.host_port = int(stdout.rstrip())
 
   def create_socket_connection(self):
     """Creates a socket connection to the server.
