@@ -59,7 +59,6 @@ class _MockAdbProxy(mock_android_device.MockAdbProxy):
     self.mock_shell_func = mock.Mock()
     self.mock_forward_func = mock.Mock()
 
-
   def shell(self, *args, **kwargs):
     """Mock `shell` of mobly.controllers.android_device_lib.adb.AdbProxy."""
     # Record all the call args
@@ -190,9 +189,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertIs(self.client._conn, None)
     self.socket_conn.close.assert_called()
     self.assertIs(self.client.host_port, None)
-    self.adb.mock_forward_func.assert_any_call(
-        ['--remove', f'tcp:{host_port}']
-    )
+    self.adb.mock_forward_func.assert_any_call(['--remove', f'tcp:{host_port}'])
     self.assertIsNone(self.client._event_client)
 
   @mock.patch('socket.create_connection')
@@ -1105,7 +1102,9 @@ class SnippetClientV2Test(unittest.TestCase):
     host_port = 12345
     socket_resp = [b'{"status": true, "uid": 1}']
     self._make_client_and_mock_socket_conn(
-        mock_socket_create_conn, socket_resp, set_counter=True,
+        mock_socket_create_conn,
+        socket_resp,
+        set_counter=True,
     )
     self.device.adb.default_host_port = host_port
     self._mock_server_process_starting_response(mock_start_subprocess)
@@ -1364,9 +1363,7 @@ class SnippetClientV2Test(unittest.TestCase):
     )
 
   @mock.patch('socket.create_connection')
-  def test_make_connection_io_error(
-      self, mock_socket_create_conn
-  ):
+  def test_make_connection_io_error(self, mock_socket_create_conn):
     """Tests IOError occurred trying to create a socket connection."""
     mock_socket_create_conn.side_effect = IOError()
     with self.assertRaises(IOError):
@@ -1375,9 +1372,7 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client.make_connection()
 
   @mock.patch('socket.create_connection')
-  def test_make_connection_timeout(
-      self, mock_socket_create_conn
-  ):
+  def test_make_connection_timeout(self, mock_socket_create_conn):
     """Tests timeout occurred trying to create a socket connection."""
     mock_socket_create_conn.side_effect = socket.timeout
     with self.assertRaises(socket.timeout):
