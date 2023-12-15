@@ -192,6 +192,11 @@ class SnippetClientV2Test(unittest.TestCase):
     self.adb.mock_forward_func.assert_any_call(['--remove', f'tcp:{host_port}'])
     self.assertIsNone(self.client._event_client)
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch(
@@ -203,6 +208,7 @@ class SnippetClientV2Test(unittest.TestCase):
       mock_start_subprocess,
       mock_stop_standing_subprocess,
       mock_socket_create_conn,
+      _,
   ):
     """Tests the whole lifecycle of the client with sending a sync RPC."""
     socket_resp = [
@@ -233,6 +239,11 @@ class SnippetClientV2Test(unittest.TestCase):
     )
     self.assertEqual(rpc_result, 123)
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch(
@@ -249,6 +260,7 @@ class SnippetClientV2Test(unittest.TestCase):
       mock_start_subprocess,
       mock_stop_standing_subprocess,
       mock_socket_create_conn,
+      _,
   ):
     """Tests the whole lifecycle of the client with sending an async RPC."""
     mock_socket_resp = [
@@ -294,6 +306,11 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertIsNone(event_client.host_port, None)
     self.assertIsNone(event_client.device_port, None)
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch(
@@ -310,6 +327,7 @@ class SnippetClientV2Test(unittest.TestCase):
       mock_start_subprocess,
       mock_stop_standing_subprocess,
       mock_socket_create_conn,
+      _,
   ):
     """Tests the whole lifecycle of the client with sending multiple RPCs."""
     # Prepare the test
@@ -995,13 +1013,18 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:123']
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_send_sync_rpc_normally(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests that sending a sync RPC works normally."""
     socket_resp = [
@@ -1019,6 +1042,11 @@ class SnippetClientV2Test(unittest.TestCase):
         b'{"id": 0, "method": "some_rpc", "params": [1, 2, "hello"]}\n'
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
@@ -1029,7 +1057,7 @@ class SnippetClientV2Test(unittest.TestCase):
       'CallbackHandlerV2'
   )
   def test_async_rpc_start_event_client(
-      self, mock_callback_class, mock_start_subprocess, mock_socket_create_conn
+      self, mock_callback_class, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests that sending an async RPC starts the event client."""
     socket_resp = [
@@ -1090,13 +1118,18 @@ class SnippetClientV2Test(unittest.TestCase):
         socket_write_expected,
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_initialize_client_normally(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests that initializing the client works normally."""
     host_port = 12345
@@ -1116,13 +1149,18 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
     self.assertEqual(next(self.client._counter), 0)
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_restore_event_client(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests restoring the event client."""
     host_port = 12345
@@ -1265,13 +1303,18 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertEqual(mock_rpc.return_value, result)
     mock_print.assert_not_called()
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_make_connection_normally(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests that making a connection works normally."""
     socket_resp = [b'{"status": true, "uid": 1}']
@@ -1293,13 +1336,18 @@ class SnippetClientV2Test(unittest.TestCase):
         snippet_client_v2._SOCKET_READ_TIMEOUT
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_make_connection_with_preset_host_port(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests that make a connection with the preset host port."""
     host_port = 23456
@@ -1322,13 +1370,44 @@ class SnippetClientV2Test(unittest.TestCase):
         snippet_client_v2._SOCKET_READ_TIMEOUT
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
+  @mock.patch('socket.create_connection')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
+  def test_make_connection_with_preset_host_port_that_is_forwarded(
+      self, mock_start_subprocess, mock_socket_create_conn, mock_occupied_ports
+  ):
+    """Tests that make a connection with the preset host port."""
+    host_port = 23456
+    mock_occupied_ports.return_value = [host_port]
+    socket_resp = [b'{"status": true, "uid": 1}']
+    self._make_client_and_mock_socket_conn(mock_socket_create_conn, socket_resp)
+    self._mock_server_process_starting_response(mock_start_subprocess)
+    self.client.host_port = host_port
+
+    with self.assertRaisesRegex(
+        errors.Error, f'Cannot forward to host port {host_port}'
+    ):
+      self.client.make_connection()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_make_connection_with_ip(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests that make a connection with 127.0.0.1 instead of localhost."""
     host_port = 12345
@@ -1362,8 +1441,13 @@ class SnippetClientV2Test(unittest.TestCase):
         snippet_client_v2._SOCKET_READ_TIMEOUT
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
-  def test_make_connection_io_error(self, mock_socket_create_conn):
+  def test_make_connection_io_error(self, mock_socket_create_conn, _):
     """Tests IOError occurred trying to create a socket connection."""
     mock_socket_create_conn.side_effect = IOError()
     with self.assertRaises(IOError):
@@ -1371,8 +1455,13 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client.device_port = 123
       self.client.make_connection()
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
-  def test_make_connection_timeout(self, mock_socket_create_conn):
+  def test_make_connection_timeout(self, mock_socket_create_conn, _):
     """Tests timeout occurred trying to create a socket connection."""
     mock_socket_create_conn.side_effect = socket.timeout
     with self.assertRaises(socket.timeout):
@@ -1380,13 +1469,18 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client.device_port = 123
       self.client.make_connection()
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_make_connection_receives_none_handshake_response(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests make_connection receives None as the handshake response."""
     socket_resp = [None]
@@ -1398,13 +1492,18 @@ class SnippetClientV2Test(unittest.TestCase):
     ):
       self.client.make_connection()
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_make_connection_receives_empty_handshake_response(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests make_connection receives an empty handshake response."""
     socket_resp = [b'']
@@ -1416,13 +1515,18 @@ class SnippetClientV2Test(unittest.TestCase):
     ):
       self.client.make_connection()
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_make_connection_receives_invalid_handshake_response(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests make_connection receives an invalid handshake response."""
     socket_resp = [b'{"status": false, "uid": 1}']
@@ -1432,13 +1536,18 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.make_connection()
     self.assertEqual(self.client.uid, -1)
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_make_connection_send_handshake_request_error(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests that an error occurred trying to send a handshake request."""
     self._make_client_and_mock_socket_conn(mock_socket_create_conn)
@@ -1448,13 +1557,18 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(errors.Error, 'Socket write error'):
       self.client.make_connection()
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_make_connection_receive_handshake_response_error(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests that an error occurred trying to receive a handshake response."""
     self._make_client_and_mock_socket_conn(mock_socket_create_conn)
@@ -1466,13 +1580,18 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(errors.Error, 'Socket read error'):
       self.client.make_connection()
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
   def test_make_connection_decode_handshake_response_bytes_error(
-      self, mock_start_subprocess, mock_socket_create_conn
+      self, mock_start_subprocess, mock_socket_create_conn, _
   ):
     """Tests that an error occurred trying to decode a handshake response."""
     self._make_client_and_mock_socket_conn(mock_socket_create_conn)
