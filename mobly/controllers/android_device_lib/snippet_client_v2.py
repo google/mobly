@@ -408,8 +408,8 @@ class SnippetClientV2(client_base.ClientBase):
       if self.host_port in adb.list_occupied_adb_ports():
         raise errors.Error(
             self._device,
-            f'Cannot forward to host port {self.host_port} because adb has forwarded'
-            ' another device port to it.'
+            f'Cannot forward to host port {self.host_port} because adb has'
+            ' forwarded another device port to it.',
         )
       host_port = self.host_port
 

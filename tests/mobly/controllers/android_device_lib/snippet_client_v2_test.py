@@ -1057,7 +1057,11 @@ class SnippetClientV2Test(unittest.TestCase):
       'CallbackHandlerV2'
   )
   def test_async_rpc_start_event_client(
-      self, mock_callback_class, mock_start_subprocess, mock_socket_create_conn, _
+      self,
+      mock_callback_class,
+      mock_start_subprocess,
+      mock_socket_create_conn,
+      _,
   ):
     """Tests that sending an async RPC starts the event client."""
     socket_resp = [
