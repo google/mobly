@@ -403,9 +403,17 @@ class SnippetClientV2(client_base.ClientBase):
 
   def _forward_device_port(self):
     """Forwards the device port to a host port."""
-    if not self.host_port:
-      self.host_port = utils.get_available_host_port()
-    self._adb.forward([f'tcp:{self.host_port}', f'tcp:{self.device_port}'])
+    if self.host_port and self.host_port in adb.list_occupied_adb_ports():
+      raise errors.Error(
+          self._device,
+          f'Cannot forward to host port {self.host_port} because adb has'
+          ' forwarded another device port to it.',
+      )
+
+    host_port = self.host_port or 0
+    # Example stdout: b'12345\n'
+    stdout = self._adb.forward([f'tcp:{host_port}', f'tcp:{self.device_port}'])
+    self.host_port = int(stdout.strip())
 
   def create_socket_connection(self):
     """Creates a socket connection to the server.
