@@ -37,6 +37,13 @@ class Error(Exception):
   """Raised for errors in record module members."""
 
 
+class TestParentType(enum.Enum):
+  """The type of parent in a chain of executions of the same test."""
+
+  REPEAT = 'repeat'
+  RETRY = 'retry'
+
+
 def uid(uid):
   """Decorator specifying the unique identifier (UID) of a test case.
 
@@ -182,6 +189,7 @@ class TestResultEnums:
   RECORD_STACKTRACE = 'Stacktrace'
   RECORD_SIGNATURE = 'Signature'
   RECORD_RETRY_PARENT = 'Retry Parent'
+  RECORD_PARENT = 'Parent'
   RECORD_POSITION = 'Position'
   TEST_RESULT_PASS = 'PASS'
   TEST_RESULT_FAIL = 'FAIL'
@@ -320,6 +328,9 @@ class TestResultRecord:
     retry_parent: TestResultRecord, only set for retry iterations. This is the
       test result record of the previous retry iteration. Parsers can use this
       field to construct the chain of execution for each retried test.
+    parent: tuple[TestResultRecord, TestParentType], set for multiple iterations
+      of a test. This is the test result record of the previous iteration.
+      Parsers can use this field to construct the chain of execution for each test.
     termination_signal: ExceptionRecord, the main exception of the test.
     extra_errors: OrderedDict, all exceptions occurred during the entire
       test lifecycle. The order of occurrence is preserved.
@@ -334,6 +345,7 @@ class TestResultRecord:
     self.uid = None
     self.signature = None
     self.retry_parent = None
+    self.parent = None
     self.termination_signal = None
     self.extra_errors = collections.OrderedDict()
     self.result = None
@@ -506,6 +518,14 @@ class TestResultRecord:
     d[TestResultEnums.RECORD_RETRY_PARENT] = (
         self.retry_parent.signature if self.retry_parent else None
     )
+    d[TestResultEnums.RECORD_PARENT] = (
+        {
+            'parent': self.parent[0].signature,
+            'type': self.parent[1].value,
+        }
+        if self.parent
+        else None
+    )
     d[TestResultEnums.RECORD_EXTRAS] = self.extras
     d[TestResultEnums.RECORD_DETAILS] = self.details
     d[TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE] = (
@@ -644,9 +664,9 @@ class TestResult:
     count = 0
     for record in self.passed:
       r = record
-      while r.retry_parent:
+      while r.parent is not None:
         count += 1
-        r = r.retry_parent
+        r = r.parent[0]
     return count
 
   @property

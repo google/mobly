@@ -98,6 +98,7 @@ class RecordsTest(unittest.TestCase):
     )
     d[records.TestResultEnums.RECORD_UID] = None
     d[records.TestResultEnums.RECORD_RETRY_PARENT] = None
+    d[records.TestResultEnums.RECORD_PARENT] = None
     d[records.TestResultEnums.RECORD_CLASS] = None
     d[records.TestResultEnums.RECORD_EXTRA_ERRORS] = {}
     d[records.TestResultEnums.RECORD_STACKTRACE] = stacktrace

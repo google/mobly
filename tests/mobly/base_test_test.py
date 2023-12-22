@@ -2615,7 +2615,13 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(error_record_1.test_name, 'test_something')
     self.assertEqual(error_record_2.test_name, 'test_something_retry_1')
     self.assertIs(error_record_1, error_record_2.retry_parent)
+    self.assertEqual(
+        (error_record_1, records.TestParentType.RETRY), error_record_2.parent
+    )
     self.assertIs(error_record_2, pass_record.retry_parent)
+    self.assertEqual(
+        (error_record_2, records.TestParentType.RETRY), pass_record.parent
+    )
 
   def test_retry_generated_test_last_pass(self):
     max_count = 3
@@ -2650,7 +2656,13 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(error_record_1.test_name, 'test_generated_1')
     self.assertEqual(error_record_2.test_name, 'test_generated_1_retry_1')
     self.assertIs(error_record_1, error_record_2.retry_parent)
+    self.assertEqual(
+        (error_record_1, records.TestParentType.RETRY), error_record_2.parent
+    )
     self.assertIs(error_record_2, pass_record.retry_parent)
+    self.assertEqual(
+        (error_record_2, records.TestParentType.RETRY), pass_record.parent
+    )
 
   def test_retry_all_fail(self):
     max_count = 3
@@ -2679,7 +2691,13 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(error_record_2.test_name, 'test_something_retry_1')
     self.assertEqual(error_record_3.test_name, 'test_something_retry_2')
     self.assertIs(error_record_1, error_record_2.retry_parent)
+    self.assertEqual(
+        (error_record_1, records.TestParentType.RETRY), error_record_2.parent
+    )
     self.assertIs(error_record_2, error_record_3.retry_parent)
+    self.assertEqual(
+        (error_record_2, records.TestParentType.RETRY), error_record_3.parent
+    )
 
   def test_uid(self):
     class MockBaseTest(base_test.BaseTestClass):
@@ -2726,9 +2744,17 @@ class BaseTestTest(unittest.TestCase):
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
     self.assertEqual(repeat_count, len(bt_cls.results.passed))
+    previous_record = None
     for i, record in enumerate(bt_cls.results.passed):
       self.assertEqual(record.test_name, f'test_something_{i}')
       self.assertEqual(record.uid, 'some-uid')
+      if i == 0:
+        self.assertIsNone(record.parent)
+      else:
+        self.assertEqual(
+            record.parent, (previous_record, records.TestParentType.REPEAT)
+        )
+      previous_record = record
 
   def test_uid_with_repeat(self):
     repeat_count = 3
