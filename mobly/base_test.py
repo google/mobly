@@ -720,6 +720,7 @@ class BaseTestClass:
       retry_name = f'{test_name}_retry_{i+1}'
       new_record = records.TestResultRecord(retry_name, self.TAG)
       new_record.retry_parent = previous_record
+      new_record.parent = (previous_record, records.TestParentType.RETRY)
       previous_record = self.exec_one_test(retry_name, test_method, new_record)
       if not should_retry(previous_record):
         break
@@ -749,16 +750,23 @@ class BaseTestClass:
     if max_consecutive_error == 0:
       max_consecutive_error = repeat_count
 
+    previous_record = None
     for i in range(repeat_count):
       new_test_name = f'{test_name}_{i}'
-      record = self.exec_one_test(new_test_name, test_method)
-      if record.result in [
+      new_record = records.TestResultRecord(new_test_name, self.TAG)
+      if i > 0:
+        new_record.parent = (previous_record, records.TestParentType.REPEAT)
+      previous_record = self.exec_one_test(
+          new_test_name, test_method, new_record
+      )
+      if previous_record.result in [
           records.TestResultEnums.TEST_RESULT_FAIL,
           records.TestResultEnums.TEST_RESULT_ERROR,
       ]:
         consecutive_error_count += 1
       else:
         consecutive_error_count = 0
+
       if consecutive_error_count == max_consecutive_error:
         logging.error(
             'Repeated test case "%s" has consecutively failed %d iterations, '
