@@ -380,6 +380,36 @@ class RecordsTest(unittest.TestCase):
     utils.validate_test_result(tr)
     self.assertFalse(tr.is_all_pass)
 
+  def test_is_all_pass_with_retry(self):
+    s = signals.TestFailure(self.details, self.float_extra)
+    record1 = records.TestResultRecord(self.tn)
+    record1.test_begin()
+    record1.test_fail(s)
+    record2 = records.TestResultRecord(self.tn)
+    record2.test_begin()
+    record2.test_pass()
+    record2.parent = (record1, records.TestParentType.RETRY)
+    tr = records.TestResult()
+    tr.add_record(record1)
+    tr.add_record(record2)
+    utils.validate_test_result(tr)
+    self.assertTrue(tr.is_all_pass)
+
+  def test_is_all_pass_with_repeat(self):
+    s = signals.TestFailure(self.details, self.float_extra)
+    record1 = records.TestResultRecord(self.tn)
+    record1.test_begin()
+    record1.test_fail(s)
+    record2 = records.TestResultRecord(self.tn)
+    record2.test_begin()
+    record2.test_pass()
+    record2.parent = (record1, records.TestParentType.REPEAT)
+    tr = records.TestResult()
+    tr.add_record(record1)
+    tr.add_record(record2)
+    utils.validate_test_result(tr)
+    self.assertFalse(tr.is_all_pass)
+
   def test_is_all_pass_with_add_class_error(self):
     """Verifies that is_all_pass yields correct value when add_class_error is
     used.
