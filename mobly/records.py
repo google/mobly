@@ -662,7 +662,7 @@ class TestResult:
     count = 0
     for record in self.passed:
       r = record
-      while r.parent is not None:
+      while r.parent is not None and r.parent[1] == TestParentType.RETRY:
         count += 1
         r = r.parent[0]
     return count
