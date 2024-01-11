@@ -615,7 +615,7 @@ def get_available_host_port():
   """
   logging.warning(
       'The method mobly.utils.get_available_host_port is deprecated because it '
-      'is inherently racy. Instead you should pass `tcp:0` to adb and let adb '
+      'is inherently racy. Instead you should pass "tcp:0" to adb and let adb '
       'take care of the port allocation.'
   )
 
