@@ -20,10 +20,10 @@ import inspect
 import io
 import logging
 import os
-import pipes
 import platform
 import random
 import re
+import shlex
 import signal
 import string
 import subprocess
@@ -664,7 +664,7 @@ def cli_cmd_to_string(args):
   if isinstance(args, str):
     # Return directly if it's already a string.
     return args
-  return ' '.join([pipes.quote(arg) for arg in args])
+  return ' '.join([shlex.quote(arg) for arg in args])
 
 
 def get_settable_properties(cls):

@@ -20,7 +20,7 @@ import sys
 install_requires = [
     'portpicker',
     'pyyaml',
-    'typing_extensions>=4.1.1; python_version<"3.8"',
+    'typing_extensions>=4.1.1; python_version>="3.11"',
 ]
 
 if platform.system() == 'Windows':
