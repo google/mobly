@@ -124,13 +124,10 @@ class MockAdbProxy:
       )
     elif 'pm list instrumentation' in params:
       return bytes(
-          '\n'.join(
-              [
-                  'instrumentation:%s/%s (target=%s)'
-                  % (package, runner, target)
-                  for package, runner, target in self.instrumented_packages
-              ]
-          ),
+          '\n'.join([
+              'instrumentation:%s/%s (target=%s)' % (package, runner, target)
+              for package, runner, target in self.instrumented_packages
+          ]),
           'utf-8',
       )
     elif 'which' in params:
