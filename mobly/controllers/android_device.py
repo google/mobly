@@ -14,6 +14,7 @@
 
 import contextlib
 import enum
+import functools
 import logging
 import os
 import re
@@ -845,10 +846,11 @@ class AndroidDevice:
   def is_rootable(self):
     return not self.is_bootloader and self.build_info['debuggable'] == '1'
 
-  @property
+  @functools.cached_property
   def model(self):
     """The Android code name for the device."""
     # If device is in bootloader mode, get mode name from fastboot.
+    print(self.is_bootloader)
     if self.is_bootloader:
       out = self.fastboot.getvar('product').strip()
       # 'out' is never empty because of the 'total time' message fastboot
