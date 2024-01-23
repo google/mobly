@@ -850,7 +850,6 @@ class AndroidDevice:
   def model(self):
     """The Android code name for the device."""
     # If device is in bootloader mode, get mode name from fastboot.
-    print(self.is_bootloader)
     if self.is_bootloader:
       out = self.fastboot.getvar('product').strip()
       # 'out' is never empty because of the 'total time' message fastboot
