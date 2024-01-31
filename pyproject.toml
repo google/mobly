@@ -1,6 +1,44 @@
+[build-system]
+requires = [ "setuptools>=61.2",]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mobly"
+version = "1.12.2"
+description = "Automation framework for special end-to-end test cases"
+requires-python = ">=3.11"
+dependencies = [ "portpicker", "pywin32; platform_system == \"Windows\"", "pyyaml",]
+
+[[project.maintainers]]
+name = "Ang Li"
+email = "mobly-github@googlegroups.com"
+
+[project.license]
+text = "Apache2.0"
+
+[project.urls]
+Homepage = "https://github.com/google/mobly"
+Download = "https://github.com/google/mobly/tarball/1.12.2"
+
+[project.optional-dependencies]
+testing = [ "mock", "pytest", "pytz",]
+
+[tool.setuptools]
+include-package-data = false
+script-files = [ "tools/sl4a_shell.py", "tools/snippet_shell.py",]
+
 [tool.pyink]
 line-length = 80
 preview = true
 pyink-indentation = 2
 pyink-use-majority-quotes = true
 extend-exclude = '.*\/venv/.*|.*\/\.tox\/.*'
+
+[tool.pytest.ini_options]
+python_classes = [ "*Test",]
+python_files = [ "*_test.py",]
+testpaths = [ "tests/mobly",]
+
+[tool.setuptools.packages.find]
+exclude = [ "tests",]
+namespaces = false
