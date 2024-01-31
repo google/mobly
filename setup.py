@@ -12,19 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import platform
 import setuptools
 from setuptools.command import test
 import sys
-
-install_requires = [
-    'portpicker',
-    'pyyaml',
-    'typing_extensions>=4.1.1; python_version>="3.11"',
-]
-
-if platform.system() == 'Windows':
-  install_requires.append('pywin32')
 
 
 class PyTest(test.test):
@@ -55,6 +45,7 @@ def main():
       url='https://github.com/google/mobly',
       download_url='https://github.com/google/mobly/tarball/1.12.2',
       packages=setuptools.find_packages(exclude=['tests']),
+      python_requires='>=3.11',
       include_package_data=False,
       scripts=['tools/sl4a_shell.py', 'tools/snippet_shell.py'],
       tests_require=[
@@ -62,7 +53,11 @@ def main():
           'pytest',
           'pytz',
       ],
-      install_requires=install_requires,
+      install_requires= [
+         'portpicker',
+         'pyyaml',
+         'pywin32; platform_system == "Windows"'
+      ],
       cmdclass={'test': PyTest},
   )
 
