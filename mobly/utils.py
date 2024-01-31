@@ -20,26 +20,19 @@ import inspect
 import io
 import logging
 import os
-import pipes
 import platform
 import random
 import re
+import shlex
 import signal
 import string
 import subprocess
 import threading
 import time
 import traceback
-from typing import Tuple, overload
+from typing import Literal, Tuple, overload
 
 import portpicker
-
-# TODO(#851): Remove this try/except statement and typing_extensions from
-# install_requires when Python 3.8 is the minimum version we support.
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
@@ -75,7 +68,7 @@ GMT_to_olson = {
     'GMT+12': 'Pacific/Fiji',
     'GMT+13': 'Pacific/Tongatapu',
     'GMT-11': 'Pacific/Midway',
-    'GMT-10': 'Pacific/Honolulu'
+    'GMT-10': 'Pacific/Honolulu',
 }
 
 
@@ -127,6 +120,7 @@ def create_alias(target_path, alias_path):
     os.remove(alias_path)
   if platform.system() == 'Windows':
     from win32com import client
+
     shell = client.Dispatch('WScript.Shell')
     shortcut = shell.CreateShortCut(alias_path)
     shortcut.Targetpath = target_path
@@ -280,14 +274,18 @@ def _collect_process_tree(starting_pid):
   while stack:
     pid = stack.pop()
     try:
-      ps_results = subprocess.check_output([
-          'ps',
-          '-o',
-          'pid',
-          '--ppid',
-          str(pid),
-          '--noheaders',
-      ]).decode().strip()
+      ps_results = (
+          subprocess.check_output([
+              'ps',
+              '-o',
+              'pid',
+              '--ppid',
+              str(pid),
+              '--noheaders',
+          ])
+          .decode()
+          .strip()
+      )
     except subprocess.CalledProcessError:
       # Ignore if there is not child process.
       continue
@@ -358,7 +356,8 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
       `raise_on_exception` is True.
   """
   with concurrent.futures.ThreadPoolExecutor(
-      max_workers=max_workers) as executor:
+      max_workers=max_workers
+  ) as executor:
     # Start the load operations and mark each future with its params
     future_to_params = {executor.submit(func, *p): p for p in param_list}
     return_vals = []
@@ -368,55 +367,64 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
       try:
         return_vals.append(future.result())
       except Exception as exc:  # pylint: disable=broad-except
-        logging.exception('%s generated an exception: %s', params,
-                          traceback.format_exc())
+        logging.exception(
+            '%s generated an exception: %s', params, traceback.format_exc()
+        )
         return_vals.append(exc)
         exceptions.append(exc)
     if raise_on_exception and exceptions:
       error_messages = []
       for exception in exceptions:
-        error_messages.append(''.join(
-            traceback.format_exception(exception.__class__, exception,
-                                       exception.__traceback__)))
+        error_messages.append(
+            ''.join(
+                traceback.format_exception(
+                    exception.__class__, exception, exception.__traceback__
+                )
+            )
+        )
       raise RuntimeError('\n\n'.join(error_messages))
     return return_vals
 
 
 # Provide hint for pytype checker to avoid the Union[bytes, str] case.
 @overload
-def run_command(cmd,
-                stdout=...,
-                stderr=...,
-                shell=...,
-                timeout=...,
-                cwd=...,
-                env=...,
-                universal_newlines: Literal[False] = ...
-               ) -> Tuple[int, bytes, bytes]:
+def run_command(
+    cmd,
+    stdout=...,
+    stderr=...,
+    shell=...,
+    timeout=...,
+    cwd=...,
+    env=...,
+    universal_newlines: Literal[False] = ...,
+) -> Tuple[int, bytes, bytes]:
   ...
 
 
 @overload
-def run_command(cmd,
-                stdout=...,
-                stderr=...,
-                shell=...,
-                timeout=...,
-                cwd=...,
-                env=...,
-                universal_newlines: Literal[True] = ...
-               ) -> Tuple[int, str, str]:
+def run_command(
+    cmd,
+    stdout=...,
+    stderr=...,
+    shell=...,
+    timeout=...,
+    cwd=...,
+    env=...,
+    universal_newlines: Literal[True] = ...,
+) -> Tuple[int, str, str]:
   ...
 
 
-def run_command(cmd,
-                stdout=None,
-                stderr=None,
-                shell=False,
-                timeout=None,
-                cwd=None,
-                env=None,
-                universal_newlines=False):
+def run_command(
+    cmd,
+    stdout=None,
+    stderr=None,
+    shell=False,
+    timeout=None,
+    cwd=None,
+    env=None,
+    universal_newlines=False,
+):
   """Runs a command in a subprocess.
 
   This function is very similar to subprocess.check_output. The main
@@ -457,13 +465,15 @@ def run_command(cmd,
     stdout = subprocess.PIPE
   if stderr is None:
     stderr = subprocess.PIPE
-  process = subprocess.Popen(cmd,
-                             stdout=stdout,
-                             stderr=stderr,
-                             shell=shell,
-                             cwd=cwd,
-                             env=env,
-                             universal_newlines=universal_newlines)
+  process = subprocess.Popen(
+      cmd,
+      stdout=stdout,
+      stderr=stderr,
+      shell=shell,
+      cwd=cwd,
+      env=env,
+      universal_newlines=universal_newlines,
+  )
   timer = None
   timer_triggered = threading.Event()
   if timeout and timeout > 0:
@@ -482,10 +492,9 @@ def run_command(cmd,
   if timer is not None:
     timer.cancel()
   if timer_triggered.is_set():
-    raise subprocess.TimeoutExpired(cmd=cmd,
-                                    timeout=timeout,
-                                    output=out,
-                                    stderr=err)
+    raise subprocess.TimeoutExpired(
+        cmd=cmd, timeout=timeout, output=out, stderr=err
+    )
   return process.returncode, out, err
 
 
@@ -510,12 +519,14 @@ def start_standing_subprocess(cmd, shell=False, env=None):
     The subprocess that was started.
   """
   logging.debug('Starting standing subprocess with: %s', cmd)
-  proc = subprocess.Popen(cmd,
-                          stdin=subprocess.PIPE,
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE,
-                          shell=shell,
-                          env=env)
+  proc = subprocess.Popen(
+      cmd,
+      stdin=subprocess.PIPE,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
+      shell=shell,
+      env=env,
+  )
   # Leaving stdin open causes problems for input, e.g. breaking the
   # code.inspect() shell (http://stackoverflow.com/a/25512460/1612937), so
   # explicitly close it assuming it is not needed for standing subprocesses.
@@ -594,6 +605,7 @@ def get_available_host_port():
   """
   # Only import adb module if needed.
   from mobly.controllers.android_device_lib import adb
+
   port = portpicker.pick_unused_port()
   if not adb.is_adb_available():
     return port
@@ -603,8 +615,11 @@ def get_available_host_port():
     if port not in adb.list_occupied_adb_ports():
       return port
     port = portpicker.pick_unused_port()
-  raise Error('Failed to find available port after {} retries'.format(
-      MAX_PORT_ALLOCATION_RETRY))
+  raise Error(
+      'Failed to find available port after {} retries'.format(
+          MAX_PORT_ALLOCATION_RETRY
+      )
+  )
 
 
 def grep(regex, output):
@@ -642,7 +657,7 @@ def cli_cmd_to_string(args):
   if isinstance(args, str):
     # Return directly if it's already a string.
     return args
-  return ' '.join([pipes.quote(arg) for arg in args])
+  return ' '.join([shlex.quote(arg) for arg in args])
 
 
 def get_settable_properties(cls):
@@ -696,6 +711,7 @@ def find_subclass_in_module(base_class, module):
   subclasses = find_subclasses_in_module([base_class], module)
   if len(subclasses) != 1:
     raise ValueError(
-        'Expected 1 subclass of %s per module, found %s.' %
-        (base_class.__name__, [subclass.__name__ for subclass in subclasses]))
+        'Expected 1 subclass of %s per module, found %s.'
+        % (base_class.__name__, [subclass.__name__ for subclass in subclasses])
+    )
   return subclasses[0]

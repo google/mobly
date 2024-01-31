@@ -34,5 +34,6 @@ def validate_test_result(result):
   for bucket_list, expected_enum in buckets:
     for record in bucket_list:
       if record.result != expected_enum:
-        raise AssertionError('Expected result %s, got %s.' %
-                             (expected_enum, record.result))
+        raise AssertionError(
+            'Expected result %s, got %s.' % (expected_enum, record.result)
+        )

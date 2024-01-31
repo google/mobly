@@ -37,14 +37,19 @@ def exe_cmd(*cmds):
   proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
   (out, err) = proc.communicate()
   ret = proc.returncode
-  logging.debug('cmd: %s, stdout: %s, stderr: %s, ret: %s',
-                utils.cli_cmd_to_string(cmds), out, err, ret)
+  logging.debug(
+      'cmd: %s, stdout: %s, stderr: %s, ret: %s',
+      utils.cli_cmd_to_string(cmds),
+      out,
+      err,
+      ret,
+  )
   if not err:
     return out
   return err
 
 
-class FastbootProxy():
+class FastbootProxy:
   """Proxy class for fastboot.
 
   For syntactic reasons, the '-' in fastboot commands need to be replaced
@@ -53,12 +58,12 @@ class FastbootProxy():
   >> fb.devices() # will return the console output of "fastboot devices".
   """
 
-  def __init__(self, serial=""):
+  def __init__(self, serial=''):
     self.serial = serial
     if serial:
-      self.fastboot_str = "fastboot -s {}".format(serial)
+      self.fastboot_str = 'fastboot -s {}'.format(serial)
     else:
-      self.fastboot_str = "fastboot"
+      self.fastboot_str = 'fastboot'
 
   def _exec_fastboot_cmd(self, name, arg_str):
     return exe_cmd(' '.join((self.fastboot_str, name, arg_str)))
@@ -67,7 +72,6 @@ class FastbootProxy():
     return exe_cmd(' '.join((self.fastboot_str,) + args))
 
   def __getattr__(self, name):
-
     def fastboot_call(*args):
       clean_name = name.replace('_', '-')
       arg_str = ' '.join(str(elem) for elem in args)

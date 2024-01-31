@@ -25,14 +25,15 @@ MOCK_DATA = {'foo': 'bar'}
 class SnippetEventTest(unittest.TestCase):
 
   def test_basic(self):
-    """Verifies that an event object can be created and logged properly.
-    """
-    event = snippet_event.SnippetEvent(MOCK_CALLBACK_ID, MOCK_EVENT_NAME,
-                                       MOCK_CREATION_TIME, MOCK_DATA)
+    """Verifies that an event object can be created and logged properly."""
+    event = snippet_event.SnippetEvent(
+        MOCK_CALLBACK_ID, MOCK_EVENT_NAME, MOCK_CREATION_TIME, MOCK_DATA
+    )
     self.assertEqual(
         repr(event),
-        "SnippetEvent(callback_id: myCallbackId, name: onXyzEvent, "
-        "creation_time: 12345678, data: {'foo': 'bar'})")
+        'SnippetEvent(callback_id: myCallbackId, name: onXyzEvent, '
+        "creation_time: 12345678, data: {'foo': 'bar'})",
+    )
 
 
 if __name__ == '__main__':

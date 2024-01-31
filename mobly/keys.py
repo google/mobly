@@ -17,6 +17,7 @@ import enum
 
 class Config(enum.Enum):
   """The reserved keywordss used in configurations."""
+
   # Keywords for params consumed by Mobly itself.
   key_mobly_params = 'MoblyParams'
   key_log_path = 'LogPath'

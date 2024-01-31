@@ -33,18 +33,19 @@ class LoggerTest(unittest.TestCase):
     shutil.rmtree(self.log_dir)
 
   def test_epoch_to_log_line_timestamp(self):
-    actual_stamp = logger.epoch_to_log_line_timestamp(1469134262116,
-                                                      time_zone=pytz.utc)
-    self.assertEqual("07-21 20:51:02.116", actual_stamp)
+    actual_stamp = logger.epoch_to_log_line_timestamp(
+        1469134262116, time_zone=pytz.utc
+    )
+    self.assertEqual('07-21 20:51:02.116', actual_stamp)
 
   def test_is_valid_logline_timestamp(self):
-    self.assertTrue(logger.is_valid_logline_timestamp("06-21 17:44:42.336"))
+    self.assertTrue(logger.is_valid_logline_timestamp('06-21 17:44:42.336'))
 
   def test_is_valid_logline_timestamp_when_wrong_length(self):
-    self.assertFalse(logger.is_valid_logline_timestamp("  06-21 17:44:42.336"))
+    self.assertFalse(logger.is_valid_logline_timestamp('  06-21 17:44:42.336'))
 
   def test_is_valid_logline_timestamp_when_invalid_content(self):
-    self.assertFalse(logger.is_valid_logline_timestamp("------------------"))
+    self.assertFalse(logger.is_valid_logline_timestamp('------------------'))
 
   @mock.patch('mobly.utils.create_alias')
   def test_create_latest_log_alias(self, mock_create_alias):
@@ -53,24 +54,28 @@ class LoggerTest(unittest.TestCase):
 
   @mock.patch('mobly.logger._setup_test_logger')
   @mock.patch('mobly.logger.create_latest_log_alias')
-  def test_setup_test_logger_creates_log_alias(self,
-                                               mock_create_latest_log_alias,
-                                               mock__setup_test_logger):
+  def test_setup_test_logger_creates_log_alias(
+      self, mock_create_latest_log_alias, mock__setup_test_logger
+  ):
     logger.setup_test_logger(self.log_dir)
-    mock__setup_test_logger.assert_called_once_with(self.log_dir, logging.INFO,
-                                                    None)
-    mock_create_latest_log_alias.assert_called_once_with(self.log_dir,
-                                                         alias='latest')
+    mock__setup_test_logger.assert_called_once_with(
+        self.log_dir, logging.INFO, None
+    )
+    mock_create_latest_log_alias.assert_called_once_with(
+        self.log_dir, alias='latest'
+    )
 
   @mock.patch('mobly.logger._setup_test_logger')
   @mock.patch('mobly.logger.create_latest_log_alias')
   def test_setup_test_logger_creates_log_alias_with_custom_value(
-      self, mock_create_latest_log_alias, mock__setup_test_logger):
+      self, mock_create_latest_log_alias, mock__setup_test_logger
+  ):
     mock_alias = mock.MagicMock()
     logger.setup_test_logger(self.log_dir, alias=mock_alias)
 
-    mock_create_latest_log_alias.assert_called_once_with(self.log_dir,
-                                                         alias=mock_alias)
+    mock_create_latest_log_alias.assert_called_once_with(
+        self.log_dir, alias=mock_alias
+    )
 
   def test_sanitize_filename_when_valid(self):
     fake_filename = 'logcat.txt'
@@ -114,8 +119,9 @@ class LoggerTest(unittest.TestCase):
   def test__sanitize_windows_filename_when_path_characters(self):
     fake_filename = '/\\'
     expected_filename = '__'
-    self.assertEqual(logger._sanitize_windows_filename(fake_filename),
-                     expected_filename)
+    self.assertEqual(
+        logger._sanitize_windows_filename(fake_filename), expected_filename
+    )
 
   def test_sanitize_filename_when_specical_characters(self):
     fake_filename = '<>:"|?*\x00'
@@ -129,8 +135,9 @@ class LoggerTest(unittest.TestCase):
         ('con.txt', 'mobly_con.txt'),
         ('connections.log', 'connections.log'),
     ]:
-      self.assertEqual(logger.sanitize_filename(fake_filename),
-                       expected_filename)
+      self.assertEqual(
+          logger.sanitize_filename(fake_filename), expected_filename
+      )
 
   def test_sanitize_filename_when_prn(self):
     for fake_filename, expected_filename in [
@@ -139,8 +146,9 @@ class LoggerTest(unittest.TestCase):
         ('prn.txt', 'mobly_prn.txt'),
         ('prnters.log', 'prnters.log'),
     ]:
-      self.assertEqual(logger.sanitize_filename(fake_filename),
-                       expected_filename)
+      self.assertEqual(
+          logger.sanitize_filename(fake_filename), expected_filename
+      )
 
   def test_sanitize_filename_when_aux(self):
     for fake_filename, expected_filename in [
@@ -149,8 +157,9 @@ class LoggerTest(unittest.TestCase):
         ('aux.txt', 'mobly_aux.txt'),
         ('auxiliaries.log', 'auxiliaries.log'),
     ]:
-      self.assertEqual(logger.sanitize_filename(fake_filename),
-                       expected_filename)
+      self.assertEqual(
+          logger.sanitize_filename(fake_filename), expected_filename
+      )
 
   def test_sanitize_filename_when_nul(self):
     for fake_filename, expected_filename in [
@@ -159,8 +168,9 @@ class LoggerTest(unittest.TestCase):
         ('nul.txt', 'mobly_nul.txt'),
         ('nullptrs.log', 'nullptrs.log'),
     ]:
-      self.assertEqual(logger.sanitize_filename(fake_filename),
-                       expected_filename)
+      self.assertEqual(
+          logger.sanitize_filename(fake_filename), expected_filename
+      )
 
   def test_sanitize_filename_when_com(self):
     for fake_filename, expected_filename in [
@@ -178,8 +188,9 @@ class LoggerTest(unittest.TestCase):
         ('com0.log', 'mobly_com0.log'),
         ('com0files.log', 'com0files.log'),
     ]:
-      self.assertEqual(logger.sanitize_filename(fake_filename),
-                       expected_filename)
+      self.assertEqual(
+          logger.sanitize_filename(fake_filename), expected_filename
+      )
 
   def test_sanitize_filename_when_lpt(self):
     for fake_filename, expected_filename in [
@@ -197,8 +208,9 @@ class LoggerTest(unittest.TestCase):
         ('lpt3.txt', 'mobly_lpt3.txt'),
         ('lpt3_file.txt', 'lpt3_file.txt'),
     ]:
-      self.assertEqual(logger.sanitize_filename(fake_filename),
-                       expected_filename)
+      self.assertEqual(
+          logger.sanitize_filename(fake_filename), expected_filename
+      )
 
   def test_sanitize_filename_when_ends_with_space(self):
     fake_filename = 'logcat.txt '
@@ -217,8 +229,9 @@ class LoggerTest(unittest.TestCase):
     adapted_logger = logger.PrefixLoggerAdapter(mock.Mock(), extra)
 
     kwargs = mock.Mock()
-    processed_log, processed_kwargs = adapted_logger.process('mock log line',
-                                                             kwargs=kwargs)
+    processed_log, processed_kwargs = adapted_logger.process(
+        'mock log line', kwargs=kwargs
+    )
 
     self.assertEqual(processed_log, '[MOCK_PREFIX] mock log line')
     self.assertIs(processed_kwargs, kwargs)
@@ -231,12 +244,13 @@ class LoggerTest(unittest.TestCase):
     adapted_logger.set_log_prefix('[NEW]')
 
     kwargs = mock.Mock()
-    processed_log, processed_kwargs = adapted_logger.process('mock log line',
-                                                             kwargs=kwargs)
+    processed_log, processed_kwargs = adapted_logger.process(
+        'mock log line', kwargs=kwargs
+    )
 
     self.assertEqual(processed_log, '[NEW] mock log line')
     self.assertIs(processed_kwargs, kwargs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   unittest.main()

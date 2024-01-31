@@ -14,6 +14,7 @@
 
 import contextlib
 import enum
+import functools
 import logging
 import os
 import re
@@ -149,12 +150,17 @@ def _validate_device_existence(serials):
     serials: list of strings, the serials of all the devices that are expected
       to exist.
   """
-  valid_ad_identifiers = (list_adb_devices() + list_adb_devices_by_usb_id() +
-                          list_fastboot_devices())
+  valid_ad_identifiers = (
+      list_adb_devices()
+      + list_adb_devices_by_usb_id()
+      + list_fastboot_devices()
+  )
   for serial in serials:
     if serial not in valid_ad_identifiers:
-      raise Error(f'Android device serial "{serial}" is specified in '
-                  'config but is not reachable.')
+      raise Error(
+          f'Android device serial "{serial}" is specified in '
+          'config but is not reachable.'
+      )
 
 
 def _start_services_on_ads(ads):
@@ -172,15 +178,18 @@ def _start_services_on_ads(ads):
       if start_logcat:
         ad.services.logcat.start()
     except Exception:
-      is_required = getattr(ad, KEY_DEVICE_REQUIRED,
-                            DEFAULT_VALUE_DEVICE_REQUIRED)
+      is_required = getattr(
+          ad, KEY_DEVICE_REQUIRED, DEFAULT_VALUE_DEVICE_REQUIRED
+      )
       if is_required:
         ad.log.exception('Failed to start some services, abort!')
         destroy(ads)
         raise
       else:
-        ad.log.exception('Skipping this optional device because some '
-                         'services failed to start.')
+        ad.log.exception(
+            'Skipping this optional device because some '
+            'services failed to start.'
+        )
 
 
 def parse_device_list(device_list_str, key=None):
@@ -201,7 +210,7 @@ def parse_device_list(device_list_str, key=None):
   try:
     clean_lines = str(device_list_str, 'utf-8').strip().split('\n')
   except UnicodeDecodeError:
-    logging.warning("unicode decode error, origin str: %s", device_list_str)
+    logging.warning('unicode decode error, origin str: %s', device_list_str)
     raise
   results = []
   for line in clean_lines:
@@ -291,7 +300,8 @@ def get_instances_with_configs(configs):
       serials.append(c['serial'])
     except KeyError:
       raise Error(
-          'Required value "serial" is missing in AndroidDevice config %s.' % c)
+          'Required value "serial" is missing in AndroidDevice config %s.' % c
+      )
   _validate_device_existence(serials)
   results = []
   for c in configs:
@@ -373,8 +383,9 @@ def get_devices(ads, **kwargs):
 
   filtered = filter_devices(ads, _get_device_filter)
   if not filtered:
-    raise Error('Could not find a target device that matches condition: %s.' %
-                kwargs)
+    raise Error(
+        'Could not find a target device that matches condition: %s.' % kwargs
+    )
   else:
     return filtered
 
@@ -429,9 +440,9 @@ def take_bug_reports(ads, test_name=None, begin_time=None, destination=None):
     begin_time = mobly_logger.sanitize_filename(str(begin_time))
 
   def take_br(test_name, begin_time, ad, destination):
-    ad.take_bug_report(test_name=test_name,
-                       begin_time=begin_time,
-                       destination=destination)
+    ad.take_bug_report(
+        test_name=test_name, begin_time=begin_time, destination=destination
+    )
 
   args = [(test_name, begin_time, ad, destination) for ad in ads]
   utils.concurrent_exec(take_br, args)
@@ -450,7 +461,10 @@ class BuildInfoConstants(enum.Enum):
   BUILD_TYPE = 'build_type', 'ro.build.type'
   BUILD_FINGERPRINT = 'build_fingerprint', 'ro.build.fingerprint'
   BUILD_VERSION_CODENAME = 'build_version_codename', 'ro.build.version.codename'
-  BUILD_VERSION_INCREMENTAL = 'build_version_incremental', 'ro.build.version.incremental'
+  BUILD_VERSION_INCREMENTAL = (
+      'build_version_incremental',
+      'ro.build.version.incremental',
+  )
   BUILD_VERSION_SDK = 'build_version_sdk', 'ro.build.version.sdk'
   BUILD_PRODUCT = 'build_product', 'ro.build.product'
   BUILD_CHARACTERISTICS = 'build_characteristics', 'ro.build.characteristics'
@@ -494,11 +508,13 @@ class AndroidDevice:
     self._serial = str(serial)
     # logging.log_path only exists when this is used in an Mobly test run.
     _log_path_base = utils.abs_path(getattr(logging, 'log_path', '/tmp/logs'))
-    self._log_path = os.path.join(_log_path_base,
-                                  'AndroidDevice%s' % self._normalized_serial)
+    self._log_path = os.path.join(
+        _log_path_base, 'AndroidDevice%s' % self._normalized_serial
+    )
     self._debug_tag = self._serial
-    self.log = AndroidDeviceLoggerAdapter(logging.getLogger(),
-                                          {'tag': self.debug_tag})
+    self.log = AndroidDeviceLoggerAdapter(
+        logging.getLogger(), {'tag': self.debug_tag}
+    )
     self._build_info = None
     self._is_rebooting = False
     self.adb = adb.AdbProxy(serial)
@@ -506,11 +522,12 @@ class AndroidDevice:
     if self.is_rootable:
       self.root_adb()
     self.services = service_manager.ServiceManager(self)
-    self.services.register(SERVICE_NAME_LOGCAT,
-                           logcat.Logcat,
-                           start_service=False)
-    self.services.register('snippets',
-                           snippet_management_service.SnippetManagementService)
+    self.services.register(
+        SERVICE_NAME_LOGCAT, logcat.Logcat, start_service=False
+    )
+    self.services.register(
+        'snippets', snippet_management_service.SnippetManagementService
+    )
     # Device info cache.
     self._user_added_device_info = {}
 
@@ -544,7 +561,7 @@ class AndroidDevice:
         'serial': self.serial,
         'model': self.model,
         'build_info': self.build_info,
-        'user_added_info': self._user_added_device_info
+        'user_added_info': self._user_added_device_info,
     }
     return info
 
@@ -621,8 +638,7 @@ class AndroidDevice:
 
   @property
   def log_path(self):
-    """A string that is the path for all logs collected from this device.
-    """
+    """A string that is the path for all logs collected from this device."""
     if not os.path.exists(self._log_path):
       utils.create_dir(self._log_path)
     return self._log_path
@@ -632,13 +648,15 @@ class AndroidDevice:
     """Setter for `log_path`, use with caution."""
     if self.has_active_service:
       raise DeviceError(
-          self, 'Cannot change `log_path` when there is service running.')
+          self, 'Cannot change `log_path` when there is service running.'
+      )
     old_path = self._log_path
     if new_path == old_path:
       return
     if os.listdir(new_path):
-      raise DeviceError(self,
-                        'Logs already exist at %s, cannot override.' % new_path)
+      raise DeviceError(
+          self, 'Logs already exist at %s, cannot override.' % new_path
+      )
     if os.path.exists(old_path):
       # Remove new path so copytree doesn't complain.
       shutil.rmtree(new_path, ignore_errors=True)
@@ -682,7 +700,8 @@ class AndroidDevice:
     if self.has_active_service:
       raise DeviceError(
           self,
-          'Cannot change device serial number when there is service running.')
+          'Cannot change device serial number when there is service running.',
+      )
     if self._debug_tag == self.serial:
       self._debug_tag = new_serial
     self._serial = new_serial
@@ -802,21 +821,20 @@ class AndroidDevice:
       build_info = self.adb.getprops(CACHED_SYSTEM_PROPS)
       for build_info_constant in BuildInfoConstants:
         info[build_info_constant.build_info_key] = build_info.get(
-            build_info_constant.system_prop_key, '')
+            build_info_constant.system_prop_key, ''
+        )
       self._build_info = info
       return info
     return self._build_info
 
   @property
   def is_bootloader(self):
-    """True if the device is in bootloader mode.
-    """
+    """True if the device is in bootloader mode."""
     return self.serial in list_fastboot_devices()
 
   @property
   def is_adb_root(self):
-    """True if adb is running as root for this device.
-    """
+    """True if adb is running as root for this device."""
     try:
       return '0' == self.adb.shell('id -u').decode('utf-8').strip()
     except adb.AdbError:
@@ -828,10 +846,9 @@ class AndroidDevice:
   def is_rootable(self):
     return not self.is_bootloader and self.build_info['debuggable'] == '1'
 
-  @property
+  @functools.cached_property
   def model(self):
-    """The Android code name for the device.
-    """
+    """The Android code name for the device."""
     # If device is in bootloader mode, get mode name from fastboot.
     if self.is_bootloader:
       out = self.fastboot.getvar('product').strip()
@@ -886,8 +903,10 @@ class AndroidDevice:
     for k, v in config.items():
       if hasattr(self, k) and k not in _ANDROID_DEVICE_SETTABLE_PROPS:
         raise DeviceError(
-            self, ('Attribute %s already exists with value %s, cannot set '
-                   'again.') % (k, getattr(self, k)))
+            self,
+            'Attribute %s already exists with value %s, cannot set again.'
+            % (k, getattr(self, k)),
+        )
       setattr(self, k, v)
 
   def root_adb(self):
@@ -928,10 +947,9 @@ class AndroidDevice:
     if hasattr(self, name):
       raise SnippetError(
           self,
-          'Attribute "%s" already exists, please use a different name.' % name)
-    self.services.snippets.add_snippet_client(
-        name, package, config=config
-    )
+          'Attribute "%s" already exists, please use a different name.' % name,
+      )
+    self.services.snippets.add_snippet_client(name, package, config=config)
 
   def unload_snippet(self, name):
     """Stops a snippet apk.
@@ -944,10 +962,9 @@ class AndroidDevice:
     """
     self.services.snippets.remove_snippet_client(name)
 
-  def generate_filename(self,
-                        file_type,
-                        time_identifier=None,
-                        extension_name=None):
+  def generate_filename(
+      self, file_type, time_identifier=None, extension_name=None
+  ):
     """Generates a name for an output file related to this device.
 
     The name follows the pattern:
@@ -984,11 +1001,9 @@ class AndroidDevice:
     self.log.debug('Generated filename: %s', filename_str)
     return filename_str
 
-  def take_bug_report(self,
-                      test_name=None,
-                      begin_time=None,
-                      timeout=300,
-                      destination=None):
+  def take_bug_report(
+      self, test_name=None, begin_time=None, timeout=300, destination=None
+  ):
     """Takes a bug report on the device and stores it in a file.
 
     Args:
@@ -1056,8 +1071,9 @@ class AndroidDevice:
     """
     filename = self.generate_filename(prefix, extension_name='png')
     device_path = os.path.join('/storage/emulated/0/', filename)
-    self.adb.shell(['screencap', '-p', device_path],
-                   timeout=TAKE_SCREENSHOT_TIMEOUT_SECOND)
+    self.adb.shell(
+        ['screencap', '-p', device_path], timeout=TAKE_SCREENSHOT_TIMEOUT_SECOND
+    )
     utils.create_dir(destination)
     self.adb.pull([device_path, destination])
     pic_path = os.path.join(destination, filename)
@@ -1086,8 +1102,9 @@ class AndroidDevice:
       return False, clean_out
     return True, clean_out
 
-  def wait_for_boot_completion(self,
-                               timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND):
+  def wait_for_boot_completion(
+      self, timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND
+  ):
     """Waits for Android framework to broadcast ACTION_BOOT_COMPLETED.
 
     This function times out after 15 minutes.

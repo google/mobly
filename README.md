@@ -1,5 +1,8 @@
 # Welcome to Mobly
 
+[![Latest release](https://img.shields.io/github/release/google/mobly.svg)](https://github.com/google/mobly/releases/latest)
+[![Build Status](https://github.com/google/mobly/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/google/mobly/actions)
+
 **Mobly** is a Python-based test framework that specializes in supporting test
 cases that require multiple devices, complex environments, or custom hardware
 setups.
@@ -21,24 +24,17 @@ While developed by Googlers, Mobly is not an official Google product.
 
 ## Compatibility
 
-Mobly requires *python 3.6* or newer.
+Mobly requires *python 3.11* or newer.
 
 Mobly tests could run on the following platforms:
   - Ubuntu 14.04+
   - MacOS 10.6+
   - Windows 7+
 
-| Platform | Build Status |
-|----------|--------------|
-| Linux    | [![Linux Build Status](https://travis-ci.org/google/mobly.svg?branch=master)](https://travis-ci.org/google/mobly) |
-| Windows  | [![Windows Build Status](https://storage.googleapis.com/mobly-kokoro-build-badges/mobly-windows.svg)](https://fusion.corp.google.com/projectanalysis/current/KOKORO/prod%3Amobly%2Fgcp_windows%2Fcontinuous) |
-
 ## System dependencies
   - adb (1.0.40+ recommended)
-  - python3.7+
+  - python3.11+
   - python-setuptools
-
-*To use Python3, use `pip3` and `python3` (or python3.x) accordingly.*
 
 ## Installation
 You can install the released package from pip

@@ -31,19 +31,20 @@ class ErrorsTest(unittest.TestCase):
     device = mock.MagicMock()
     device.__repr__ = lambda _: '[MockDevice]'
     exception = errors.ServiceError(device, 'Some error message.')
-    self.assertEqual(str(exception),
-                     '[MockDevice]::Service<None> Some error message.')
+    self.assertEqual(
+        str(exception), '[MockDevice]::Service<None> Some error message.'
+    )
 
   def test_subclass_service_error(self):
-
     class Error(errors.ServiceError):
       SERVICE_TYPE = 'SomeType'
 
     device = mock.MagicMock()
     device.__repr__ = lambda _: '[MockDevice]'
     exception = Error(device, 'Some error message.')
-    self.assertEqual(str(exception),
-                     '[MockDevice]::Service<SomeType> Some error message.')
+    self.assertEqual(
+        str(exception), '[MockDevice]::Service<SomeType> Some error message.'
+    )
 
 
 if __name__ == '__main__':

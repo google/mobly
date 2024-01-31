@@ -28,12 +28,14 @@ class CallbackEventTest(unittest.TestCase):
 
   def test_basic(self):
     """Verifies that an event object can be created and logged properly."""
-    event = callback_event.CallbackEvent(MOCK_CALLBACK_ID, MOCK_EVENT_NAME,
-                                         MOCK_CREATION_TIME, MOCK_DATA)
+    event = callback_event.CallbackEvent(
+        MOCK_CALLBACK_ID, MOCK_EVENT_NAME, MOCK_CREATION_TIME, MOCK_DATA
+    )
     self.assertEqual(
         repr(event),
-        "CallbackEvent(callback_id: myCallbackId, name: onXyzEvent, "
-        "creation_time: 12345678, data: {'foo': 'bar'})")
+        'CallbackEvent(callback_id: myCallbackId, name: onXyzEvent, '
+        "creation_time: 12345678, data: {'foo': 'bar'})",
+    )
 
 
 if __name__ == '__main__':
