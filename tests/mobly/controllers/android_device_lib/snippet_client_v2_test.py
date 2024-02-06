@@ -1607,15 +1607,12 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaises(UnicodeError):
       self.client.make_connection()
 
-    self.client.log.error.assert_has_calls(
-        [
-            mock.call(
-                'Failed to decode socket response bytes using encoding'
-                ' utf8: %s',
-                socket_response,
-            )
-        ]
-    )
+    self.client.log.error.assert_has_calls([
+        mock.call(
+            'Failed to decode socket response bytes using encoding utf8: %s',
+            socket_response,
+        )
+    ])
 
   def test_rpc_sending_and_receiving(self):
     """Test RPC sending and receiving.
@@ -1681,15 +1678,12 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaises(UnicodeError):
       self.client.send_rpc_request(rpc_request)
 
-    self.client.log.error.assert_has_calls(
-        [
-            mock.call(
-                'Failed to decode socket response bytes using encoding'
-                ' utf8: %s',
-                socket_response,
-            )
-        ]
-    )
+    self.client.log.error.assert_has_calls([
+        mock.call(
+            'Failed to decode socket response bytes using encoding utf8: %s',
+            socket_response,
+        )
+    ])
 
   @mock.patch.object(
       snippet_client_v2.SnippetClientV2, 'send_handshake_request'

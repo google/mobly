@@ -20,26 +20,19 @@ import inspect
 import io
 import logging
 import os
-import pipes
 import platform
 import random
 import re
+import shlex
 import signal
 import string
 import subprocess
 import threading
 import time
 import traceback
-from typing import Tuple, overload
+from typing import Literal, Tuple, overload
 
 import portpicker
-
-# TODO(#851): Remove this try/except statement and typing_extensions from
-# install_requires when Python 3.8 is the minimum version we support.
-try:
-  from typing import Literal
-except ImportError:
-  from typing_extensions import Literal
 
 # File name length is limited to 255 chars on some OS, so we need to make sure
 # the file names we output fits within the limit.
@@ -297,7 +290,7 @@ def _collect_process_tree(starting_pid):
       # Ignore if there is not child process.
       continue
 
-    children_pid_list = list(map(int, ps_results.split('\n ')))
+    children_pid_list = [int(p.strip()) for p in ps_results.split('\n')]
     stack.extend(children_pid_list)
     ret.extend(children_pid_list)
 
@@ -671,7 +664,7 @@ def cli_cmd_to_string(args):
   if isinstance(args, str):
     # Return directly if it's already a string.
     return args
-  return ' '.join([pipes.quote(arg) for arg in args])
+  return ' '.join([shlex.quote(arg) for arg in args])
 
 
 def get_settable_properties(cls):

@@ -495,6 +495,30 @@ class AndroidDeviceTest(unittest.TestCase):
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device.list_fastboot_devices',
+      return_value=mock.MagicMock(),
+  )
+  def test_AndroidDevice_model_property_is_cached(
+      self, mock_list_fastboot_devices, _
+  ):
+    """Accessing `model` a second time shouldn't invoke all the fastboot/adb
+    calls again.
+    """
+    mock_serial = 1
+    # mock returns '2' so the device is not considered in bootloader mode.
+    mock_list_fastboot_devices.return_value = ['2']
+    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad.model
+    mock_count_first = mock_list_fastboot_devices.call_count
+    ad.model  # access `model` again.
+    mock_count_second = mock_list_fastboot_devices.call_count
+    self.assertEqual(mock_count_first, mock_count_second)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
       return_value=mock_android_device.MockAdbProxy(
           '1',
           mock_properties={
