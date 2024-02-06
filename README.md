@@ -34,7 +34,6 @@ Mobly tests could run on the following platforms:
 ## System dependencies
   - adb (1.0.40+ recommended)
   - python3.11+
-  - python-setuptools
 
 ## Installation
 You can install the released package from pip
@@ -43,12 +42,12 @@ You can install the released package from pip
 pip install mobly
 ```
 
-or download the source then run `setup.py` to use the bleeding edge:
+or install from the source to use the bleeding edge:
 
 ```sh
 git clone https://github.com/google/mobly.git
 cd mobly
-python setup.py install
+pip install -e .
 ```
 
 You may need `sudo` for the above commands if your system has certain permission
