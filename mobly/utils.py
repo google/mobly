@@ -603,8 +603,7 @@ def wait_for_standing_subprocess(proc, timeout=None):
 def get_available_host_port():
   """Gets a host port number available for adb forward.
 
-  DEPRECATED: This method is inherently racy, instead you should pass `tcp:0` to
-  adb and let adb take care of the port allocation.
+  DEPRECATED: This method is unreliable. Pass `tcp:0` to adb forward instead.
 
   Returns:
     An integer representing a port number on the host available for adb
@@ -615,8 +614,7 @@ def get_available_host_port():
   """
   logging.warning(
       'The method mobly.utils.get_available_host_port is deprecated because it '
-      'is inherently racy. Instead you should pass "tcp:0" to adb and let adb '
-      'take care of the port allocation.'
+      'is unreliable. Pass "tcp:0" to adb forward instead.'
   )
 
   # Only import adb module if needed.
