@@ -16,7 +16,7 @@ Removed legacy code and dependencies.
   in the next major release. Please rely on the OS to allocate ports.
 
 ### Fixes
-* Elinimated redundant `fastboot` calls.
+* Eliminated redundant `fastboot` calls.
 
 [Full list of changes](https://github.com/google/mobly/milestone/30?closed=1)
 
