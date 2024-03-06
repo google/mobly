@@ -1,6 +1,26 @@
 # Mobly Release History
 
 
+## Mobly Release 1.12.3: Proper Repeat and Retry Reporting
+Bumping min Python version requirement to 3.11.
+Modernized the repo's packaging mechanism.
+Removed legacy code and dependencies.
+
+### New
+* Support am instrument options in snippet client.
+* Support adb reverse in `AdbProxy`.
+* Improved mechaism for tracking repeat and retry records in test report.
+
+### Breaking Changes
+* `get_available_host_port` is deprecated and will be removed in the next major
+  release. Please rely on the OS to allocate ports.
+
+### Fixes
+* Elinimated redundant `fastboot` calls.
+
+[Full list of changes](https://github.com/google/mobly/milestone/30?closed=1)
+
+
 ## Mobly Release 1.12.2: Improve Support for Custom Suites
 
 Bug fixes and improvements to better support users who construct their own
