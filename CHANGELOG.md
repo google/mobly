@@ -12,8 +12,8 @@ Removed legacy code and dependencies.
 * Improved mechaism for tracking repeat and retry records in test report.
 
 ### Breaking Changes
-* `get_available_host_port` is deprecated and will be removed in the next major
-  release. Please rely on the OS to allocate ports.
+* [Deprecation] `get_available_host_port` is now deprecated and will be removed
+  in the next major release. Please rely on the OS to allocate ports.
 
 ### Fixes
 * Elinimated redundant `fastboot` calls.
