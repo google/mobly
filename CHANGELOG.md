@@ -9,14 +9,14 @@ Removed legacy code and dependencies.
 ### New
 * Support am instrument options in snippet client.
 * Support adb reverse in `AdbProxy`.
-* Improved mechaism for tracking repeat and retry records in test report.
+* Improved mechanism for tracking repeat and retry records in test report.
 
 ### Breaking Changes
 * [Deprecation] `get_available_host_port` is now deprecated and will be removed
   in the next major release. Please rely on the OS to allocate ports.
 
 ### Fixes
-* Elinimated redundant `fastboot` calls.
+* Eliminated redundant `fastboot` calls.
 
 [Full list of changes](https://github.com/google/mobly/milestone/30?closed=1)
 
