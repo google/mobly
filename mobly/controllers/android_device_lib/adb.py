@@ -198,13 +198,6 @@ class AdbProxy:
 
     if stderr:
       stderr.write(err)
-    logging.debug(
-        'cmd: %s, stdout: %s, stderr: %s, ret: %s',
-        utils.cli_cmd_to_string(args),
-        out,
-        err,
-        ret,
-    )
     if ret == 0:
       return out
     else:
