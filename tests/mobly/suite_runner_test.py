@@ -100,7 +100,8 @@ class SuiteRunnerTest(unittest.TestCase):
   def test_run_suite(self, mock_exit):
     tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
     with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write("""
+      f.write(
+          """
         TestBeds:
           # A test bed where adb will find Android devices.
           - Name: SampleTestBed
@@ -109,7 +110,8 @@ class SuiteRunnerTest(unittest.TestCase):
             TestParams:
               icecream: 42
               extra_param: 'haha'
-      """)
+      """
+      )
     suite_runner.run_suite(
         [integration_test.IntegrationTest], argv=['-c', tmp_file_path]
     )
@@ -119,13 +121,15 @@ class SuiteRunnerTest(unittest.TestCase):
   def test_run_suite_with_failures(self, mock_exit):
     tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
     with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write("""
+      f.write(
+          """
         TestBeds:
           # A test bed where adb will find Android devices.
           - Name: SampleTestBed
             Controllers:
               MagicDevice: '*'
-      """)
+      """
+      )
     suite_runner.run_suite(
         [integration_test.IntegrationTest], argv=['-c', tmp_file_path]
     )
@@ -151,13 +155,15 @@ class SuiteRunnerTest(unittest.TestCase):
 
     tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
     with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write("""
+      f.write(
+          """
         TestBeds:
           # A test bed where adb will find Android devices.
           - Name: SampleTestBed
             Controllers:
               MagicDevice: '*'
-      """)
+      """
+      )
 
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
 

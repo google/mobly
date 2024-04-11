@@ -29,6 +29,6 @@ jobs:
 
     - name: Check formatting
       run: |
-        python -m pip install pyink
+        python -m pip install pyink==24.3.0
         pyink --check .
 
