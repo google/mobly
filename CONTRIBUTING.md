@@ -48,7 +48,7 @@ Before pushing your changes, you need to lint the code style via `pyink`
 To install `pyink`:
 
 ```sh
-$ pip3 install pyink
+$ pip3 install pyink==24.3.0
 ```
 
 To lint the code:
