@@ -499,6 +499,13 @@ def run_command(
     raise subprocess.TimeoutExpired(
         cmd=cmd, timeout=timeout, output=out, stderr=err
     )
+  logging.debug(
+      'cmd: %s, stdout: %s, stderr: %s, ret: %s',
+      cli_cmd_to_string(cmd),
+      out,
+      err,
+      process.returncode,
+  )
   return process.returncode, out, err
 
 
