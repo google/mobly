@@ -404,13 +404,19 @@ class UtilsTest(unittest.TestCase):
     output = utils.run_command(['pgrep', '-P', str(subprocess_a.pid)])
     self.assertEqual(output[0], 0, msg='Process a should be running.')
     if output[0] == 0:
-      subprocess_ids = [subprocess_a.pid] + list(map(int, output[1].decode('utf-8').strip().split('\n')))
+      subprocess_ids = [subprocess_a.pid] + list(
+          map(int, output[1].decode('utf-8').strip().split('\n'))
+      )
 
     utils.stop_standing_subprocess(mock_subprocess_a_popen)
 
     for pid in subprocess_ids:
       output = utils.run_command(['pgrep', '-P', str(pid)])
-      self.assertEqual(output[0], 1, msg=f'Process pid={pid} is still alive after util.stop_standing_subprocess.')
+      self.assertEqual(
+          output[0],
+          1,
+          msg=f'Process pid={pid} is still alive after util.stop_standing_subprocess.',
+      )
 
     subprocess_a.join(timeout=1)
 
