@@ -274,33 +274,17 @@ def _collect_process_tree(starting_pid):
   while stack:
     pid = stack.pop()
     try:
-      if platform.system() == 'Darwin':
-        ps_results = (
-            subprocess.check_output(
-                [
-                    'pgrep',
-                    '-P',
-                    str(pid),
-                ]
-            )
-            .decode()
-            .strip()
-        )
-      else:
-        ps_results = (
-            subprocess.check_output(
-                [
-                    'ps',
-                    '-o',
-                    'pid',
-                    '--ppid',
-                    str(pid),
-                    '--noheaders',
-                ]
-            )
-            .decode()
-            .strip()
-        )
+      ps_results = (
+          subprocess.check_output(
+              [
+                  'pgrep',
+                  '-P',
+                  str(pid),
+              ]
+          )
+          .decode()
+          .strip()
+      )
     except subprocess.CalledProcessError:
       # Ignore if there is not child process.
       continue
@@ -332,7 +316,6 @@ def _kill_process_tree(proc):
   failed = []
   for child_pid in _collect_process_tree(proc.pid):
     try:
-      print('killing pid', child_pid)
       os.kill(child_pid, signal.SIGTERM)
     except Exception:  # pylint: disable=broad-except
       failed.append(child_pid)

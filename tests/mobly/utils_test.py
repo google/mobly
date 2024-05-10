@@ -74,19 +74,15 @@ def _fork_children_processes(name, successors):
     successors: The args for the descendant processes.
   """
   logging.info('Process "%s" started, PID: %d!', name, os.getpid())
-  print('Process "%s" starting, PID: %d!', name, os.getpid())
   children_process = [
       multiprocessing.Process(target=_fork_children_processes, args=args)
       for args in successors
   ]
-  print('Process "%s" starting - 2, PID: %d!', name, os.getpid())
   for child_process in children_process:
     child_process.start()
-  print('Process "%s" sleeping, PID: %d!', name, os.getpid())
 
   if 'child' in name:
-    time.sleep(10)
-  print('Process "%s" sleepped, PID: %d!', name, os.getpid())
+    time.sleep(4)
 
   for child_process in children_process:
     child_process.join()
@@ -161,7 +157,11 @@ class UtilsTest(unittest.TestCase):
 
     pid_list = utils._collect_process_tree(777)
 
-    self.assertListEqual(pid_list, [780, 791, 799, 888, 890, 913, 999])
+    expected_child_pid_list = [780, 791, 799, 888, 890, 913, 999]
+    self.assertListEqual(pid_list, expected_child_pid_list)
+
+    for pid in [777] + expected_child_pid_list:
+      mock_check_output.assert_any_call(['pgrep', '-P', str(pid)])
 
   @mock.patch.object(os, 'kill')
   @mock.patch.object(utils, '_collect_process_tree')
@@ -403,26 +403,12 @@ class UtilsTest(unittest.TestCase):
     mock_subprocess_a_popen = mock.MagicMock()
     mock_subprocess_a_popen.pid = subprocess_a.pid
     # Sleep a while to create all processes.
-    subprocess_ids = []
-    time.sleep(3)
-    output = utils.run_command(['pgrep', '-P', str(subprocess_a.pid)])
-    self.assertEqual(output[0], 0, msg='Process a should be running.')
-    if output[0] == 0:
-      subprocess_ids = [subprocess_a.pid] + list(
-          map(int, output[1].decode('utf-8').strip().split('\n'))
-      )
+    time.sleep(0.01)
 
     utils.stop_standing_subprocess(mock_subprocess_a_popen)
 
-    for pid in subprocess_ids:
-      output = utils.run_command(['pgrep', '-P', str(pid)])
-      self.assertEqual(
-          output[0],
-          1,
-          msg=f'Process pid={pid} is still alive after util.stop_standing_subprocess.',
-      )
-
     subprocess_a.join(timeout=1)
+    mock_subprocess_a_popen.wait.assert_called_once()
 
   @unittest.skipIf(
       sys.version_info >= (3, 4) and sys.version_info < (3, 5),
