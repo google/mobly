@@ -74,15 +74,19 @@ def _fork_children_processes(name, successors):
     successors: The args for the descendant processes.
   """
   logging.info('Process "%s" started, PID: %d!', name, os.getpid())
+  print('Process "%s" starting, PID: %d!', name, os.getpid())
   children_process = [
       multiprocessing.Process(target=_fork_children_processes, args=args)
       for args in successors
   ]
+  print('Process "%s" starting - 2, PID: %d!', name, os.getpid())
   for child_process in children_process:
     child_process.start()
+  print('Process "%s" sleeping, PID: %d!', name, os.getpid())
 
   if 'child' in name:
     time.sleep(10)
+  print('Process "%s" sleepped, PID: %d!', name, os.getpid())
 
   for child_process in children_process:
     child_process.join()
