@@ -332,6 +332,7 @@ def _kill_process_tree(proc):
   failed = []
   for child_pid in _collect_process_tree(proc.pid):
     try:
+      print('killing pid', child_pid)
       os.kill(child_pid, signal.SIGTERM)
     except Exception:  # pylint: disable=broad-except
       failed.append(child_pid)
