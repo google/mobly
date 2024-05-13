@@ -277,12 +277,9 @@ def _collect_process_tree(starting_pid):
       ps_results = (
           subprocess.check_output(
               [
-                  'ps',
-                  '-o',
-                  'pid',
-                  '--ppid',
+                  'pgrep',
+                  '-P',
                   str(pid),
-                  '--noheaders',
               ]
           )
           .decode()

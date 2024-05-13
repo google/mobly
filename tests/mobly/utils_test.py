@@ -157,7 +157,11 @@ class UtilsTest(unittest.TestCase):
 
     pid_list = utils._collect_process_tree(777)
 
-    self.assertListEqual(pid_list, [780, 791, 799, 888, 890, 913, 999])
+    expected_child_pid_list = [780, 791, 799, 888, 890, 913, 999]
+    self.assertListEqual(pid_list, expected_child_pid_list)
+
+    for pid in [777] + expected_child_pid_list:
+      mock_check_output.assert_any_call(['pgrep', '-P', str(pid)])
 
   @mock.patch.object(os, 'kill')
   @mock.patch.object(utils, '_collect_process_tree')
