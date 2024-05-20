@@ -122,11 +122,62 @@ class UtilsTest(unittest.TestCase):
     self.assertListEqual(pid_list, [])
 
   @unittest.skipIf(
-      os.name == 'nt',
+      platform.system() != 'Linux',
       'collect_process_tree only available on Unix like system.',
   )
   @mock.patch('subprocess.check_output')
-  def test_collect_process_tree_returns_list(self, mock_check_output):
+  def test_collect_process_tree_returns_list_on_linux(self, mock_check_output):
+    # Creates subprocess 777 with descendants looks like:
+    # subprocess 777
+    #   ├─ 780 (child)
+    #   │  ├─ 888 (grandchild)
+    #   │  │    ├─ 913 (great grandchild)
+    #   │  │    └─ 999 (great grandchild)
+    #   │  └─ 890 (grandchild)
+    #   ├─ 791 (child)
+    #   └─ 799 (child)
+    mock_check_output.side_effect = (
+        # ps -o pid --ppid 777 --noheaders
+        b'780\n 791\n 799\n',
+        # ps -o pid --ppid 780 --noheaders
+        b'888\n 890\n',
+        # ps -o pid --ppid 791 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+        # ps -o pid --ppid 799 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+        # ps -o pid --ppid 888 --noheaders
+        b'913\n 999\n',
+        # ps -o pid --ppid 890 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+        # ps -o pid --ppid 913 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+        # ps -o pid --ppid 999 --noheaders
+        subprocess.CalledProcessError(-1, 'fake_cmd'),
+    )
+
+    pid_list = utils._collect_process_tree(777)
+
+    expected_child_pid_list = [780, 791, 799, 888, 890, 913, 999]
+    self.assertListEqual(pid_list, expected_child_pid_list)
+
+    for pid in [777] + expected_child_pid_list:
+      mock_check_output.assert_any_call(
+          [
+              'ps',
+              '-o',
+              'pid',
+              '--ppid',
+              str(pid),
+              '--noheaders',
+          ]
+      )
+
+  @unittest.skipIf(
+      platform.system() != 'Darwin',
+      'collect_process_tree only available on Unix like system.',
+  )
+  @mock.patch('subprocess.check_output')
+  def test_collect_process_tree_returns_list_on_macos(self, mock_check_output):
     # Creates subprocess 777 with descendants looks like:
     # subprocess 777
     #   ├─ 780 (child)
