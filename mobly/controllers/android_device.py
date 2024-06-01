@@ -844,7 +844,7 @@ class AndroidDevice:
 
   @property
   def is_rootable(self):
-    return not self.is_bootloader and self.build_info['debuggable'] == '1'
+    return self.is_adb_detectable() and self.build_info['debuggable'] == '1'
 
   @functools.cached_property
   def model(self):

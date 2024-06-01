@@ -149,7 +149,7 @@ class LogcatTest(unittest.TestCase):
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
-      return_value=mock_android_device.MockAdbProxy('1'),
+      return_value=mock_android_device.MockAdbProxy('1', adb_detectable=False),
   )
   @mock.patch(
       'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
@@ -457,6 +457,7 @@ class LogcatTest(unittest.TestCase):
   def test__enable_logpersist_with_logpersist(self, MockFastboot, MockAdbProxy):
     mock_serial = '1'
     mock_adb_proxy = MockAdbProxy.return_value
+    mock_adb_proxy.devices.return_value = f'{mock_serial}\tdevice'.encode()
     mock_adb_proxy.getprops.return_value = {
         'ro.build.id': 'AB42',
         'ro.build.type': 'userdebug',
@@ -489,6 +490,7 @@ class LogcatTest(unittest.TestCase):
   ):
     mock_serial = '1'
     mock_adb_proxy = MockAdbProxy.return_value
+    mock_adb_proxy.devices.return_value = f'{mock_serial}\tdevice'.encode()
     mock_adb_proxy.getprops.return_value = {
         'ro.build.id': 'AB42',
         'ro.build.type': 'user',
@@ -524,6 +526,7 @@ class LogcatTest(unittest.TestCase):
 
     mock_serial = '1'
     mock_adb_proxy = MockAdbProxy.return_value
+    mock_adb_proxy.devices.return_value = f'{mock_serial}\tdevice'.encode()
     mock_adb_proxy.getprops.return_value = {
         'ro.build.id': 'AB42',
         'ro.build.type': 'userdebug',
@@ -558,6 +561,7 @@ class LogcatTest(unittest.TestCase):
 
     mock_serial = '1'
     mock_adb_proxy = MockAdbProxy.return_value
+    mock_adb_proxy.devices.return_value = f'{mock_serial}\tdevice'.encode()
     mock_adb_proxy.getprops.return_value = {
         'ro.build.id': 'AB42',
         'ro.build.type': 'userdebug',
@@ -596,6 +600,7 @@ class LogcatTest(unittest.TestCase):
 
     mock_serial = '1'
     mock_adb_proxy = MockAdbProxy.return_value
+    mock_adb_proxy.devices.return_value = f'{mock_serial}\tdevice'.encode()
     mock_adb_proxy.getprops.return_value = {
         'ro.build.id': 'AB42',
         'ro.build.type': 'userdebug',
@@ -611,7 +616,10 @@ class LogcatTest(unittest.TestCase):
     logcat_service._enable_logpersist()
     mock_adb_proxy.shell.assert_not_called()
 
-  @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
   @mock.patch(
       'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
       return_value=mock_android_device.MockFastbootProxy('1'),
