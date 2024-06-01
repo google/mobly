@@ -717,7 +717,7 @@ class AndroidDeviceTest(unittest.TestCase):
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
-      return_value=mock_android_device.MockAdbProxy('1'),
+      return_value=mock_android_device.MockAdbProxy('1', detectable=False),
   )
   @mock.patch(
       'mobly.controllers.android_device_lib.fastboot.FastbootProxy',

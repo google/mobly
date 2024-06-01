@@ -87,6 +87,7 @@ class MockAdbProxy:
       mock_properties=None,
       installed_packages=None,
       instrumented_packages=None,
+      detectable=True,
   ):
     self.serial = serial
     self.fail_br = fail_br
@@ -101,6 +102,7 @@ class MockAdbProxy:
     self.installed_packages = installed_packages
     if instrumented_packages is None:
       instrumented_packages = []
+    self.detectable = detectable
     self.installed_packages = installed_packages
     self.instrumented_packages = instrumented_packages
 
@@ -153,6 +155,12 @@ class MockAdbProxy:
     )
     if expected not in args:
       raise Error('"Expected "%s", got "%s"' % (expected, args))
+
+  def devices(self):
+    out = b'xxxx\tdevice\nyyyy\tdevice'
+    if self.detectable:
+      out += f'\n{self.serial}\tdevice'.encode()
+    return out
 
   def __getattr__(self, name):
     """All calls to the none-existent functions in adb proxy would
