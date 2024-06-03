@@ -182,7 +182,8 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertIs(self.client._proc, None)
     self.adb.mock_shell_func.assert_any_call(
         f'am instrument --user {MOCK_USER_ID} -w -e action stop '
-        f'{MOCK_SERVER_PATH}'
+        f'{MOCK_SERVER_PATH}',
+        timeout=mock.ANY,
     )
     mock_stop_standing_subprocess.assert_called_once_with(
         mock_start_subprocess.return_value
@@ -789,7 +790,8 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertIs(self.client._proc, None)
     self.adb.mock_shell_func.assert_called_once_with(
         f'am instrument --user {MOCK_USER_ID} -w -e action stop '
-        f'{MOCK_SERVER_PATH}'
+        f'{MOCK_SERVER_PATH}',
+        timeout=mock.ANY,
     )
     mock_stop_standing_subprocess.assert_called_once_with(mock_proc)
     self.assertFalse(self.client.is_alive)
@@ -875,7 +877,8 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_stop_standing_subprocess.assert_called_once_with(mock_proc)
     mock_adb_shell.assert_called_once_with(
         f'am instrument --user {MOCK_USER_ID} -w -e action stop '
-        f'{MOCK_SERVER_PATH}'
+        f'{MOCK_SERVER_PATH}',
+        timeout=mock.ANY,
     )
     self.assertFalse(self.client.is_alive)
     self.assertIs(self.client._conn, None)
