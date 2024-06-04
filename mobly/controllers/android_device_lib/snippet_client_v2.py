@@ -45,6 +45,9 @@ _STOP_CMD = (
     f'{_INSTRUMENTATION_RUNNER_PACKAGE}'
 )
 
+# The default timeout for running `_STOP_CMD`.
+_STOP_CMD_TIMEOUT_SEC = 30
+
 # Major version of the launch and communication protocol being used by this
 # client.
 # Incrementing this means that compatibility with clients using the older
@@ -703,7 +706,8 @@ class SnippetClientV2(client_base.ClientBase):
     out = self._adb.shell(
         _STOP_CMD.format(
             snippet_package=self.package, user=self._get_user_command_string()
-        )
+        ),
+        timeout=_STOP_CMD_TIMEOUT_SEC,
     ).decode('utf-8')
 
     if 'OK (0 tests)' not in out:
