@@ -815,7 +815,7 @@ class AndroidDevice:
     """
     if self.is_bootloader:
       self.log.error('Device is in fastboot mode, could not get build info.')
-      return
+      return dict()
     if self._build_info is None or self._is_rebooting:
       info = {}
       build_info = self.adb.getprops(CACHED_SYSTEM_PROPS)
