@@ -59,11 +59,13 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
   def test_check_app_installed_fail_target_not_installed(self):
     sc = self._make_client(
         mock_android_device.MockAdbProxy(
-            instrumented_packages=[(
-                MOCK_PACKAGE_NAME,
-                snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
-                MOCK_MISSING_PACKAGE_NAME,
-            )]
+            instrumented_packages=[
+                (
+                    MOCK_PACKAGE_NAME,
+                    snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
+                    MOCK_MISSING_PACKAGE_NAME,
+                )
+            ]
         )
     )
     expected_msg = (
@@ -545,11 +547,13 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
         MOCK_PACKAGE_NAME,
         snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
     )
-    mock_do_start_app.assert_has_calls([
-        mock.call(cmd_setsid),
-        mock.call(cmd_nohup),
-        mock.call(cmd_not_persist),
-    ])
+    mock_do_start_app.assert_has_calls(
+        [
+            mock.call(cmd_setsid),
+            mock.call(cmd_nohup),
+            mock.call(cmd_not_persist),
+        ]
+    )
 
   @mock.patch('socket.create_connection')
   @mock.patch(
@@ -687,11 +691,13 @@ class SnippetClientTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
 
   def _make_client(self, adb_proxy=None):
     adb_proxy = adb_proxy or mock_android_device.MockAdbProxy(
-        instrumented_packages=[(
-            MOCK_PACKAGE_NAME,
-            snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
-            MOCK_PACKAGE_NAME,
-        )]
+        instrumented_packages=[
+            (
+                MOCK_PACKAGE_NAME,
+                snippet_client._INSTRUMENTATION_RUNNER_PACKAGE,
+                MOCK_PACKAGE_NAME,
+            )
+        ]
     )
     ad = mock.Mock()
     ad.adb = adb_proxy

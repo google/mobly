@@ -108,10 +108,12 @@ class CallbackHandlerV2Test(unittest.TestCase):
 
     event = handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
     self.assert_event_correct(event, MOCK_RAW_EVENT)
-    mock_event_client.eventWaitAndGet.assert_has_calls([
-        mock.call(MOCK_CALLBACK_ID, 'AsyncTaskResult', mock.ANY),
-        mock.call(MOCK_CALLBACK_ID, 'AsyncTaskResult', mock.ANY),
-    ])
+    mock_event_client.eventWaitAndGet.assert_has_calls(
+        [
+            mock.call(MOCK_CALLBACK_ID, 'AsyncTaskResult', mock.ANY),
+            mock.call(MOCK_CALLBACK_ID, 'AsyncTaskResult', mock.ANY),
+        ]
+    )
 
   def test_get_all(self):
     mock_event_client = mock.Mock()

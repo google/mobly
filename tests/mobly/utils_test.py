@@ -47,11 +47,13 @@ def _is_process_running(pid):
   if os.name == 'nt':
     return (
         str(pid)
-        in subprocess.check_output([
-            'tasklist',
-            '/fi',
-            f'PID eq {pid}',
-        ]).decode()
+        in subprocess.check_output(
+            [
+                'tasklist',
+                '/fi',
+                f'PID eq {pid}',
+            ]
+        ).decode()
     )
 
   try:
@@ -159,14 +161,16 @@ class UtilsTest(unittest.TestCase):
     self.assertListEqual(pid_list, expected_child_pid_list)
 
     for pid in [777] + expected_child_pid_list:
-      mock_check_output.assert_any_call([
-          'ps',
-          '-o',
-          'pid',
-          '--ppid',
-          str(pid),
-          '--noheaders',
-      ])
+      mock_check_output.assert_any_call(
+          [
+              'ps',
+              '-o',
+              'pid',
+              '--ppid',
+              str(pid),
+              '--noheaders',
+          ]
+      )
 
   @unittest.skipIf(
       platform.system() != 'Darwin',
@@ -222,11 +226,13 @@ class UtilsTest(unittest.TestCase):
     with mock.patch.object(os, 'name', new='posix'):
       utils._kill_process_tree(mock_proc)
 
-    mock_os_kill.assert_has_calls([
-        mock.call(799, signal.SIGTERM),
-        mock.call(888, signal.SIGTERM),
-        mock.call(890, signal.SIGTERM),
-    ])
+    mock_os_kill.assert_has_calls(
+        [
+            mock.call(799, signal.SIGTERM),
+            mock.call(888, signal.SIGTERM),
+            mock.call(890, signal.SIGTERM),
+        ]
+    )
     mock_proc.kill.assert_called_once()
 
   @mock.patch.object(os, 'kill')
@@ -268,13 +274,15 @@ class UtilsTest(unittest.TestCase):
     with mock.patch.object(os, 'name', new='nt'):
       utils._kill_process_tree(mock_proc)
 
-    mock_check_output.assert_called_once_with([
-        'taskkill',
-        '/F',
-        '/T',
-        '/PID',
-        '123',
-    ])
+    mock_check_output.assert_called_once_with(
+        [
+            'taskkill',
+            '/F',
+            '/T',
+            '/PID',
+            '123',
+        ]
+    )
 
   def test_run_command(self):
     ret, _, _ = utils.run_command(self.sleep_cmd(0.01))

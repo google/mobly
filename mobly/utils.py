@@ -303,13 +303,15 @@ def _kill_process_tree(proc):
     # The taskkill command with "/T" option ends the specified process and any
     # child processes started by it:
     # https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/taskkill
-    subprocess.check_output([
-        'taskkill',
-        '/F',
-        '/T',
-        '/PID',
-        str(proc.pid),
-    ])
+    subprocess.check_output(
+        [
+            'taskkill',
+            '/F',
+            '/T',
+            '/PID',
+            str(proc.pid),
+        ]
+    )
     return
 
   failed = []

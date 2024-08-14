@@ -23,10 +23,12 @@ from mobly.controllers.android_device_lib import adb
 # Mock parameters for instrumentation.
 MOCK_INSTRUMENTATION_PACKAGE = 'com.my.instrumentation.tests'
 MOCK_INSTRUMENTATION_RUNNER = 'com.my.instrumentation.runner'
-MOCK_INSTRUMENTATION_OPTIONS = collections.OrderedDict([
-    ('option1', 'value1'),
-    ('option2', 'value2'),
-])
+MOCK_INSTRUMENTATION_OPTIONS = collections.OrderedDict(
+    [
+        ('option1', 'value1'),
+        ('option2', 'value2'),
+    ]
+)
 # Mock android instrumentation commands.
 MOCK_BASIC_INSTRUMENTATION_COMMAND = (
     'am instrument -r -w  com.my'
@@ -638,12 +640,14 @@ class AdbTest(unittest.TestCase):
           b'[sys.wifitracing.started]: [1]\n'
           b'[telephony.lteOnCdmaDevice]: [1]\n\n'
       )
-      actual_output = adb.AdbProxy().getprops([
-          'sys.wifitracing.started',  # "numeric" value
-          'sys.uidcpupower',  # empty value
-          'sendbug.preferred.domain',  # string value
-          'nonExistentProp',
-      ])
+      actual_output = adb.AdbProxy().getprops(
+          [
+              'sys.wifitracing.started',  # "numeric" value
+              'sys.uidcpupower',  # empty value
+              'sendbug.preferred.domain',  # string value
+              'nonExistentProp',
+          ]
+      )
       self.assertEqual(
           actual_output,
           {
