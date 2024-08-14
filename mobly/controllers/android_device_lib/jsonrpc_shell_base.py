@@ -61,7 +61,8 @@ class JsonRpcShellBase:
       else:
         raise Error(
             'Expected one phone, but %d found. Use the -s flag or '
-            'specify ANDROID_SERIAL.' % len(serials)
+            'specify ANDROID_SERIAL.'
+            % len(serials)
         )
     if serial not in serials:
       raise Error('Device "%s" is not found by adb.' % serial)

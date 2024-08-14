@@ -335,7 +335,8 @@ class LogcatTest(unittest.TestCase):
           '{test_name}-{test_begin_time}'.format(
               test_name=test_name, test_begin_time=test_begin_time
           ),
-          'logcat,{mock_serial},fakemodel,{test_name}-{test_begin_time}.txt'.format(
+          'logcat,{mock_serial},fakemodel,{test_name}-{test_begin_time}.txt'
+          .format(
               mock_serial=mock_serial,
               test_name=test_name,
               test_begin_time=test_begin_time,
@@ -470,12 +471,10 @@ class LogcatTest(unittest.TestCase):
     ad = android_device.AndroidDevice(serial=mock_serial)
     logcat_service = logcat.Logcat(ad)
     logcat_service._enable_logpersist()
-    mock_adb_proxy.shell.assert_has_calls(
-        [
-            mock.call('logpersist.stop --clear'),
-            mock.call('logpersist.start'),
-        ]
-    )
+    mock_adb_proxy.shell.assert_has_calls([
+        mock.call('logpersist.stop --clear'),
+        mock.call('logpersist.start'),
+    ])
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -575,11 +574,9 @@ class LogcatTest(unittest.TestCase):
     ad = android_device.AndroidDevice(serial=mock_serial)
     logcat_service = logcat.Logcat(ad)
     logcat_service._enable_logpersist()
-    mock_adb_proxy.shell.assert_has_calls(
-        [
-            mock.call('logpersist.stop --clear'),
-        ]
-    )
+    mock_adb_proxy.shell.assert_has_calls([
+        mock.call('logpersist.stop --clear'),
+    ])
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',

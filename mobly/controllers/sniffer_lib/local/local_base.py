@@ -81,14 +81,12 @@ class SnifferLocalBase(sniffer.Sniffer):
 
     if sniffer.Sniffer.CONFIG_KEY_CHANNEL in final_configs:
       try:
-        subprocess.check_call(
-            [
-                "iwconfig",
-                self._interface,
-                "channel",
-                str(final_configs[sniffer.Sniffer.CONFIG_KEY_CHANNEL]),
-            ]
-        )
+        subprocess.check_call([
+            "iwconfig",
+            self._interface,
+            "channel",
+            str(final_configs[sniffer.Sniffer.CONFIG_KEY_CHANNEL]),
+        ])
       except Exception as err:
         raise sniffer.ExecutionError(err)
 

@@ -112,13 +112,11 @@ class SnippetClientV2Test(unittest.TestCase):
 
   def _make_client(self, adb_proxy=None, mock_properties=None, config=None):
     adb_proxy = adb_proxy or _MockAdbProxy(
-        instrumented_packages=[
-            (
-                MOCK_PACKAGE_NAME,
-                snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
-                MOCK_PACKAGE_NAME,
-            )
-        ],
+        instrumented_packages=[(
+            MOCK_PACKAGE_NAME,
+            snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
+            MOCK_PACKAGE_NAME,
+        )],
         mock_properties=mock_properties,
     )
     self.adb = adb_proxy
@@ -427,13 +425,11 @@ class SnippetClientV2Test(unittest.TestCase):
     """Tests that app checker fails without installing instrumentation."""
     self._make_client(
         _MockAdbProxy(
-            instrumented_packages=[
-                (
-                    MOCK_PACKAGE_NAME,
-                    snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
-                    'not.installed',
-                )
-            ]
+            instrumented_packages=[(
+                MOCK_PACKAGE_NAME,
+                snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
+                'not.installed',
+            )]
         )
     )
     expected_msg = '.* Instrumentation target not.installed is not installed.'
@@ -442,12 +438,10 @@ class SnippetClientV2Test(unittest.TestCase):
 
   def test_disable_hidden_api_normally(self):
     """Tests the disabling hidden api process works normally."""
-    self._make_client_with_extra_adb_properties(
-        {
-            'ro.build.version.codename': 'S',
-            'ro.build.version.sdk': '31',
-        }
-    )
+    self._make_client_with_extra_adb_properties({
+        'ro.build.version.codename': 'S',
+        'ro.build.version.sdk': '31',
+    })
     self.device.is_rootable = True
     self.client._disable_hidden_api_blocklist()
     self.adb.mock_shell_func.assert_called_with(
@@ -456,24 +450,20 @@ class SnippetClientV2Test(unittest.TestCase):
 
   def test_disable_hidden_api_low_sdk(self):
     """Tests it doesn't disable hidden api with low SDK."""
-    self._make_client_with_extra_adb_properties(
-        {
-            'ro.build.version.codename': 'O',
-            'ro.build.version.sdk': '26',
-        }
-    )
+    self._make_client_with_extra_adb_properties({
+        'ro.build.version.codename': 'O',
+        'ro.build.version.sdk': '26',
+    })
     self.device.is_rootable = True
     self.client._disable_hidden_api_blocklist()
     self.adb.mock_shell_func.assert_not_called()
 
   def test_disable_hidden_api_non_rootable(self):
     """Tests it doesn't disable hidden api with non-rootable device."""
-    self._make_client_with_extra_adb_properties(
-        {
-            'ro.build.version.codename': 'S',
-            'ro.build.version.sdk': '31',
-        }
-    )
+    self._make_client_with_extra_adb_properties({
+        'ro.build.version.codename': 'S',
+        'ro.build.version.sdk': '31',
+    })
     self.device.is_rootable = False
     self.client._disable_hidden_api_blocklist()
     self.adb.mock_shell_func.assert_not_called()
@@ -1620,15 +1610,12 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaises(UnicodeError):
       self.client.make_connection()
 
-    self.client.log.error.assert_has_calls(
-        [
-            mock.call(
-                'Failed to decode socket response bytes using encoding'
-                ' utf8: %s',
-                socket_response,
-            )
-        ]
-    )
+    self.client.log.error.assert_has_calls([
+        mock.call(
+            'Failed to decode socket response bytes using encoding utf8: %s',
+            socket_response,
+        )
+    ])
 
   def test_rpc_sending_and_receiving(self):
     """Test RPC sending and receiving.
@@ -1694,15 +1681,12 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaises(UnicodeError):
       self.client.send_rpc_request(rpc_request)
 
-    self.client.log.error.assert_has_calls(
-        [
-            mock.call(
-                'Failed to decode socket response bytes using encoding'
-                ' utf8: %s',
-                socket_response,
-            )
-        ]
-    )
+    self.client.log.error.assert_has_calls([
+        mock.call(
+            'Failed to decode socket response bytes using encoding utf8: %s',
+            socket_response,
+        )
+    ])
 
   @mock.patch.object(
       snippet_client_v2.SnippetClientV2, 'send_handshake_request'
