@@ -1623,8 +1623,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.log.error.assert_has_calls(
         [
             mock.call(
-                'Failed to decode socket response bytes using encoding'
-                ' utf8: %s',
+                'Failed to decode socket response bytes using encoding utf8: %s',
                 socket_response,
             )
         ]
@@ -1697,8 +1696,7 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.log.error.assert_has_calls(
         [
             mock.call(
-                'Failed to decode socket response bytes using encoding'
-                ' utf8: %s',
+                'Failed to decode socket response bytes using encoding utf8: %s',
                 socket_response,
             )
         ]
