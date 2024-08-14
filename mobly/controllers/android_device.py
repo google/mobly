@@ -588,28 +588,6 @@ class AndroidDevice:
     self._user_added_device_info.update({name: info})
 
   @property
-  def sl4a(self):
-    """Attribute for direct access of sl4a client.
-
-    Not recommended. This is here for backward compatibility reasons.
-
-    Preferred: directly access `ad.services.sl4a`.
-    """
-    if self.services.has_service_by_name('sl4a'):
-      return self.services.sl4a
-
-  @property
-  def ed(self):
-    """Attribute for direct access of sl4a's event dispatcher.
-
-    Not recommended. This is here for backward compatibility reasons.
-
-    Preferred: directly access `ad.services.sl4a.ed`.
-    """
-    if self.services.has_service_by_name('sl4a'):
-      return self.services.sl4a.ed
-
-  @property
   def debug_tag(self):
     """A string that represents a device object in debug info. Default value
     is the device serial.
