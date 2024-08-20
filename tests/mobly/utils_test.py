@@ -406,6 +406,36 @@ class UtilsTest(unittest.TestCase):
         env=mock_env,
     )
 
+  @mock.patch('subprocess.Popen')
+  def test_start_standing_subproc_with_custom_stdout(self, mock_popen):
+    mock_stdout = mock.MagicMock(spec=io.TextIOWrapper)
+
+    utils.start_standing_subprocess(self.sleep_cmd(0.01), stdout=mock_stdout)
+
+    mock_popen.assert_called_with(
+        self.sleep_cmd(0.01),
+        stdin=subprocess.PIPE,
+        stdout=mock_stdout,
+        stderr=subprocess.PIPE,
+        shell=False,
+        env=None,
+    )
+
+  @mock.patch('subprocess.Popen')
+  def test_start_standing_subproc_with_custom_stderr(self, mock_popen):
+    mock_stderr  = mock.MagicMock(spec=io.TextIOWrapper)
+
+    utils.start_standing_subprocess(self.sleep_cmd(0.01), stderr=mock_stderr)
+
+    mock_popen.assert_called_with(
+        self.sleep_cmd(0.01),
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=mock_stderr,
+        shell=False,
+        env=None,
+    )
+
   def test_stop_standing_subproc(self):
     p = utils.start_standing_subprocess(self.sleep_cmd(4))
     utils.stop_standing_subprocess(p)

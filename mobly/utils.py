@@ -507,7 +507,13 @@ def run_command(
   return process.returncode, out, err
 
 
-def start_standing_subprocess(cmd, shell=False, env=None):
+def start_standing_subprocess(
+    cmd,
+    shell=False,
+    env=None,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+):
   """Starts a long-running subprocess.
 
   This is not a blocking call and the subprocess started by it should be
@@ -519,10 +525,14 @@ def start_standing_subprocess(cmd, shell=False, env=None):
   Args:
     cmd: string, the command to start the subprocess with.
     shell: bool, True to run this command through the system shell,
-      False to invoke it directly. See subprocess.Proc() docs.
+      False to invoke it directly. See subprocess.Popen() docs.
     env: dict, a custom environment to run the standing subprocess. If not
       specified, inherits the current environment. See subprocess.Popen()
       docs.
+    stdout: None, subprocess.PIPE, subprocess.DEVNULL, an existing file
+      descriptor, or an existing file object. See subprocess.Popen() docs.
+    stderr: None, subprocess.PIPE, subprocess.DEVNULL, an existing file
+      descriptor, or an existing file object. See subprocess.Popen() docs.
 
   Returns:
     The subprocess that was started.
@@ -531,8 +541,8 @@ def start_standing_subprocess(cmd, shell=False, env=None):
   proc = subprocess.Popen(
       cmd,
       stdin=subprocess.PIPE,
-      stdout=subprocess.PIPE,
-      stderr=subprocess.PIPE,
+      stdout=stdout,
+      stderr=stderr,
       shell=shell,
       env=env,
   )
