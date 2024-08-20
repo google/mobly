@@ -423,7 +423,7 @@ class UtilsTest(unittest.TestCase):
 
   @mock.patch('subprocess.Popen')
   def test_start_standing_subproc_with_custom_stderr(self, mock_popen):
-    mock_stderr  = mock.MagicMock(spec=io.TextIOWrapper)
+    mock_stderr = mock.MagicMock(spec=io.TextIOWrapper)
 
     utils.start_standing_subprocess(self.sleep_cmd(0.01), stderr=mock_stderr)
 
