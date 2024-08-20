@@ -393,6 +393,7 @@ class AndroidDeviceTest(unittest.TestCase):
     self.assertEqual(ad.space, 'the final frontier')
     self.assertEqual(ad.number, 1)
     self.assertEqual(ad.debug_tag, 'my_tag')
+    self.assertEqual(ad.device_info['user_added_info']['debug_tag'], 'my_tag')
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
