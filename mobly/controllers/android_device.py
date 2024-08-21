@@ -139,8 +139,19 @@ def get_info(ads):
 
   Returns:
     A list of dict, each representing info for an AndroidDevice objects.
+    Everything in this dict should be yaml serializable.
   """
-  return [ad.device_info for ad in ads]
+  infos = []
+  # The values of user_added_info can be arbitrary types, so we shall sanitize
+  # them here to ensure they are yaml serializable.
+  for ad in ads:
+    device_info = ad.device_info
+    user_added_info = {
+        k: str(v) for (k, v) in device_info['user_added_info'].items()
+    }
+    device_info['user_added_info'] = user_added_info
+    infos.append(device_info)
+  return infos
 
 
 def _validate_device_existence(serials):
