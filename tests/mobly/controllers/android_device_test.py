@@ -153,6 +153,29 @@ class AndroidDeviceTest(unittest.TestCase):
     with self.assertRaisesRegex(android_device.Error, expected_msg):
       android_device.create([1])
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy(1),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy(1),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  def test_get_info(self, create_dir_mock, FastbootProxy, MockAdbProxy):
+    mock_serial = '1'
+    ad = android_device.AndroidDevice(serial=mock_serial)
+    example_user_object = mock_android_device.MockAdbProxy('magic')
+    # Add an arbitrary object as a device info
+    ad.add_device_info('user_stuff', example_user_object)
+    info = android_device.get_info([ad])[0]
+    self.assertEqual(info['serial'], mock_serial)
+    self.assertTrue(info['build_info'])
+    # User added values should be normalized to strings.
+    self.assertEqual(
+        info['user_added_info']['user_stuff'], str(example_user_object)
+    )
+
   @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
@@ -393,6 +416,7 @@ class AndroidDeviceTest(unittest.TestCase):
     self.assertEqual(ad.space, 'the final frontier')
     self.assertEqual(ad.number, 1)
     self.assertEqual(ad.debug_tag, 'my_tag')
+    self.assertEqual(ad.device_info['user_added_info']['debug_tag'], 'my_tag')
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
