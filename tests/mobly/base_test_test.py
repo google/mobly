@@ -208,6 +208,15 @@ class BaseTestTest(unittest.TestCase):
         super().__init__(controllers)
         self.tests = ('test_never',)
 
+      def test_foo(self):
+        pass
+
+      def test_a(self):
+        pass
+
+      def test_b(self):
+        pass
+
       def test_something_1(self):
         pass
 
@@ -218,15 +227,18 @@ class BaseTestTest(unittest.TestCase):
         pass
 
       def test_never(self):
-        # This should not execute it's not selected by cmd line input.
+        # This should not execute since it's not selected by cmd line input.
         never_call()
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
-    bt_cls.run(test_names=['re:test_something*'])
-    self.assertEqual(len(bt_cls.results.passed), 3)
+    bt_cls.run(test_names=['re:test_something_.*', 'test_foo', 're:test_(a|b)'])
+    self.assertEqual(len(bt_cls.results.passed), 6)
     self.assertEqual(bt_cls.results.passed[0].test_name, 'test_something_1')
     self.assertEqual(bt_cls.results.passed[1].test_name, 'test_something_2')
     self.assertEqual(bt_cls.results.passed[2].test_name, 'test_something_3')
+    self.assertEqual(bt_cls.results.passed[3].test_name, 'test_foo')
+    self.assertEqual(bt_cls.results.passed[4].test_name, 'test_a')
+    self.assertEqual(bt_cls.results.passed[5].test_name, 'test_b')
 
   def test_cli_test_selection_with_regex_fail_by_convention(self):
     class MockBaseTest(base_test.BaseTestClass):

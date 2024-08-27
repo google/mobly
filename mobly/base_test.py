@@ -1044,10 +1044,10 @@ class BaseTestClass:
   ):
     matching_name_tuples = []
     for name in current_valid_names:
-      if re.match(test_name_regex, name):
+      if re.fullmatch(test_name_regex, name):
         matching_name_tuples.append((name, getattr(self, name)))
     for name in self._generated_test_table.keys():
-      if re.match(test_name_regex, name):
+      if re.fullmatch(test_name_regex, name):
         self._assert_valid_test_name(name)
         matching_name_tuples.append((name, self._generated_test_table[name]))
     if not matching_name_tuples:
