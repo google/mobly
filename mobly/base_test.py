@@ -19,6 +19,7 @@ import functools
 import inspect
 import logging
 import os
+import re
 import sys
 
 from mobly import controller_manager
@@ -31,6 +32,7 @@ from mobly import utils
 # Macro strings for test result reporting.
 TEST_CASE_TOKEN = '[Test]'
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + ' %s %s'
+TEST_SELECTOR_REGEX_PREFIX = 're:'
 
 TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{parent_token}]#{child_token} >>> BEGIN >>>'
 TEST_STAGE_END_LOG_TEMPLATE = '[{parent_token}]#{child_token} <<< END <<<'
@@ -1003,7 +1005,8 @@ class BaseTestClass:
     """Resolves test method names to bound test methods.
 
     Args:
-      test_names: A list of strings, each string is a test method name.
+      test_names: A list of strings, each string is a test method name or a
+        regex for matching test names.
 
     Returns:
       A list of tuples of (string, function). String is the test method
@@ -1014,20 +1017,52 @@ class BaseTestClass:
         This can only be caused by user input.
     """
     test_methods = []
+    # Call once and reuse the list through this function for efficiency.
+    current_valid_names = self.get_existing_test_names()
+    # Process the test name selector one by one.
     for test_name in test_names:
-      if not test_name.startswith('test_'):
-        raise Error(
-            'Test method name %s does not follow naming '
-            'convention test_*, abort.' % test_name
+      if test_name.startswith(TEST_SELECTOR_REGEX_PREFIX):
+        # process the selector as a regex.
+        regex_matching_methods = self._get_regex_matching_test_methods(
+            test_name[len(TEST_SELECTOR_REGEX_PREFIX) :], current_valid_names
         )
+        test_methods += regex_matching_methods
+        continue
+      # process the selector as a regular test name string.
+      self._assert_valid_test_name(test_name)
+      if test_name not in current_valid_names:
+        raise Error('%s does not have test method %s.' % (self.TAG, test_name))
       if hasattr(self, test_name):
         test_method = getattr(self, test_name)
       elif test_name in self._generated_test_table:
         test_method = self._generated_test_table[test_name]
-      else:
-        raise Error('%s does not have test method %s.' % (self.TAG, test_name))
       test_methods.append((test_name, test_method))
     return test_methods
+
+  def _get_regex_matching_test_methods(
+      self, test_name_regex, current_valid_names
+  ):
+    matching_name_tuples = []
+    for name in current_valid_names:
+      if re.match(test_name_regex, name):
+        matching_name_tuples.append((name, getattr(self, name)))
+    for name in self._generated_test_table.keys():
+      if re.match(test_name_regex, name):
+        self._assert_valid_test_name(name)
+        matching_name_tuples.append((name, self._generated_test_table[name]))
+    if not matching_name_tuples:
+      raise Error(
+          f'{test_name_regex} does not match with any valid test case '
+          f'in {self.TAG}, abort!'
+      )
+    return matching_name_tuples
+
+  def _assert_valid_test_name(self, test_name):
+    if not test_name.startswith('test_'):
+      raise Error(
+          'Test method name %s does not follow naming '
+          'convention test_*, abort.' % test_name
+      )
 
   def _skip_remaining_tests(self, exception):
     """Marks any requested test that has not been executed in a class as
