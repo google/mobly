@@ -3,10 +3,10 @@
 
 ## Mobly Release 1.12.4: Improvements
 
-Maintenance relase with small improvements and fixes.
+Maintenance release with small improvements and fixes.
 
 ### New
-* Introduced`apk_utils` module for Android apk install/uninstall.
+* Introduced `apk_utils` module for Android apk install/uninstall.
 
 ### Fixes
 * Bugs in snippet client.
