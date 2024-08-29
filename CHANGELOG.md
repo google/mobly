@@ -1,6 +1,20 @@
 # Mobly Release History
 
 
+## Mobly Release 1.12.4: Improvements
+
+Maintenance relase with small improvements and fixes.
+
+### New
+* Introduced`apk_utils` module for Android apk install/uninstall.
+
+### Fixes
+* Bugs in snippet client.
+* Noise in console output on Mac.
+
+[Full list of changes](https://github.com/google/mobly/milestone/31?closed=1)
+
+
 ## Mobly Release 1.12.3: Proper Repeat and Retry Reporting
 Bumping min Python version requirement to 3.11.
 Modernized the repo's packaging mechanism.
