@@ -1017,21 +1017,19 @@ class BaseTestClass:
         This can only be caused by user input.
     """
     test_methods = []
-    # Call once and reuse the list through this function for efficiency.
-    current_valid_names = self.get_existing_test_names()
     # Process the test name selector one by one.
     for test_name in test_names:
       if test_name.startswith(TEST_SELECTOR_REGEX_PREFIX):
         # process the selector as a regex.
         regex_matching_methods = self._get_regex_matching_test_methods(
-            test_name[len(TEST_SELECTOR_REGEX_PREFIX) :], current_valid_names
+            test_name.removeprefix(TEST_SELECTOR_REGEX_PREFIX)
         )
         test_methods += regex_matching_methods
         continue
       # process the selector as a regular test name string.
       self._assert_valid_test_name(test_name)
-      if test_name not in current_valid_names:
-        raise Error('%s does not have test method %s.' % (self.TAG, test_name))
+      if test_name not in self.get_existing_test_names():
+        raise Error(f'{self.TAG} does not have test method {test_name}.')
       if hasattr(self, test_name):
         test_method = getattr(self, test_name)
       elif test_name in self._generated_test_table:
@@ -1039,17 +1037,18 @@ class BaseTestClass:
       test_methods.append((test_name, test_method))
     return test_methods
 
-  def _get_regex_matching_test_methods(
-      self, test_name_regex, current_valid_names
-  ):
+  def _get_regex_matching_test_methods(self, test_name_regex):
     matching_name_tuples = []
-    for name in current_valid_names:
-      if re.fullmatch(test_name_regex, name):
-        matching_name_tuples.append((name, getattr(self, name)))
-    for name in self._generated_test_table.keys():
-      if re.fullmatch(test_name_regex, name):
+    for name, method in inspect.getmembers(self, callable):
+      if (
+          name.startswith('test_')
+          and re.fullmatch(test_name_regex, name) is not None
+      ):
+        matching_name_tuples.append((name, method))
+    for name, method in self._generated_test_table.items():
+      if re.fullmatch(test_name_regex, name) is not None:
         self._assert_valid_test_name(name)
-        matching_name_tuples.append((name, self._generated_test_table[name]))
+        matching_name_tuples.append((name, method))
     if not matching_name_tuples:
       raise Error(
           f'{test_name_regex} does not match with any valid test case '
