@@ -201,6 +201,96 @@ class BaseTestTest(unittest.TestCase):
     actual_record = bt_cls.results.passed[0]
     self.assertEqual(actual_record.test_name, 'test_something')
 
+  def test_cli_test_selection_with_regex(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = ('test_never',)
+
+      def test_foo(self):
+        pass
+
+      def test_a(self):
+        pass
+
+      def test_b(self):
+        pass
+
+      def test_something_1(self):
+        pass
+
+      def test_something_2(self):
+        pass
+
+      def test_something_3(self):
+        pass
+
+      def test_never(self):
+        # This should not execute since it's not selected by cmd line input.
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['re:test_something_.*', 'test_foo', 're:test_(a|b)'])
+    self.assertEqual(len(bt_cls.results.passed), 6)
+    self.assertEqual(bt_cls.results.passed[0].test_name, 'test_something_1')
+    self.assertEqual(bt_cls.results.passed[1].test_name, 'test_something_2')
+    self.assertEqual(bt_cls.results.passed[2].test_name, 'test_something_3')
+    self.assertEqual(bt_cls.results.passed[3].test_name, 'test_foo')
+    self.assertEqual(bt_cls.results.passed[4].test_name, 'test_a')
+    self.assertEqual(bt_cls.results.passed[5].test_name, 'test_b')
+
+  def test_cli_test_selection_with_regex_generated_tests(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = ('test_never',)
+
+      def pre_run(self):
+        self.generate_tests(
+            test_logic=self.logic,
+            name_func=lambda i: f'test_something_{i}',
+            arg_sets=[(i + 1,) for i in range(3)],
+        )
+
+      def test_foo(self):
+        pass
+
+      def logic(self, _):
+        pass
+
+      def test_never(self):
+        # This should not execute since it's not selected by cmd line input.
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['re:test_something_.*', 'test_foo'])
+    self.assertEqual(len(bt_cls.results.passed), 4)
+    self.assertEqual(bt_cls.results.passed[0].test_name, 'test_something_1')
+    self.assertEqual(bt_cls.results.passed[1].test_name, 'test_something_2')
+    self.assertEqual(bt_cls.results.passed[2].test_name, 'test_something_3')
+    self.assertEqual(bt_cls.results.passed[3].test_name, 'test_foo')
+
+  def test_cli_test_selection_with_regex_fail_by_convention(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def __init__(self, controllers):
+        super().__init__(controllers)
+        self.tests = ('test_never',)
+
+      def test_something(self):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    expected_msg = (
+        r'not_a_test_something does not match with any valid test case in '
+        r'MockBaseTest, abort!'
+    )
+    with self.assertRaisesRegex(base_test.Error, expected_msg):
+      bt_cls.run(test_names=['re:not_a_test_something'])
+    self.assertEqual(len(bt_cls.results.passed), 0)
+
   def test_cli_test_selection_fail_by_convention(self):
     class MockBaseTest(base_test.BaseTestClass):
 

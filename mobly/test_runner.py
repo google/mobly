@@ -126,8 +126,12 @@ def parse_mobly_cli_args(argv):
       '--test_case',
       nargs='+',
       type=str,
-      metavar='[test_a test_b...]',
-      help='A list of tests in the test class to execute.',
+      metavar='[test_a test_b re:test_(c|d)...]',
+      help=(
+          'A list of tests in the test class to execute. Each value can be a '
+          'test name string or a `re:` prefixed string for full regex match of'
+          ' test names.'
+      ),
   )
   parser.add_argument(
       '-tb',

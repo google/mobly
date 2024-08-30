@@ -47,8 +47,10 @@ class BaseSuite(abc.ABC):
       config: config_parser.TestRunConfig, the config to run the class with. If
         not specified, the default config passed from google3 infra is used.
       tests: list of strings, names of the tests to run in this test class, in
-        the execution order. If not specified, all tests in the class are
-        executed.
+        the execution order. Or a string with prefix `re:` for full regex match
+        of test cases; all matched test cases will be executed; an error is
+        raised if no match is found.
+        If not specified, all tests in the class are executed.
       name_suffix: string, suffix to append to the class name for reporting.
         This is used for differentiating the same class executed with different
         parameters in a suite.
