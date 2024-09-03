@@ -25,7 +25,7 @@ testing = [ "mock", "pytest", "pytz",]
 
 [tool.setuptools]
 include-package-data = false
-script-files = [ "tools/sl4a_shell.py", "tools/snippet_shell.py",]
+script-files = ["tools/snippet_shell.py"]
 
 [tool.pyink]
 line-length = 80
