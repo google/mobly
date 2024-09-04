@@ -39,8 +39,6 @@ TEST_STAGE_END_LOG_TEMPLATE = '[{parent_token}]#{child_token} <<< END <<<'
 
 # Names of execution stages, in the order they happen during test runs.
 STAGE_NAME_PRE_RUN = 'pre_run'
-# Deprecated, use `STAGE_NAME_PRE_RUN` instead.
-STAGE_NAME_SETUP_GENERATED_TESTS = 'setup_generated_tests'
 STAGE_NAME_SETUP_CLASS = 'setup_class'
 STAGE_NAME_SETUP_TEST = 'setup_test'
 STAGE_NAME_TEARDOWN_TEST = 'teardown_test'
@@ -372,10 +370,6 @@ class BaseTestClass:
     try:
       with self._log_test_stage(stage_name):
         self.pre_run()
-      # TODO(angli): Remove this context block after the full deprecation of
-      # `setup_generated_tests`.
-      with self._log_test_stage(stage_name):
-        self.setup_generated_tests()
       return True
     except Exception as e:
       logging.exception('%s failed for %s.', stage_name, self.TAG)
@@ -388,19 +382,6 @@ class BaseTestClass:
 
   def pre_run(self):
     """Preprocesses that need to be done before setup_class.
-
-    This phase is used to do pre-test processes like generating tests.
-    This is the only place `self.generate_tests` should be called.
-
-    If this function throws an error, the test class will be marked failure
-    and the "Requested" field will be 0 because the number of tests
-    requested is unknown at this point.
-    """
-
-  def setup_generated_tests(self):
-    """[DEPRECATED] Use `pre_run` instead.
-
-    Preprocesses that need to be done before setup_class.
 
     This phase is used to do pre-test processes like generating tests.
     This is the only place `self.generate_tests` should be called.
@@ -906,8 +887,7 @@ class BaseTestClass:
   def generate_tests(self, test_logic, name_func, arg_sets, uid_func=None):
     """Generates tests in the test class.
 
-    This function has to be called inside a test class's `self.pre_run` or
-    `self.setup_generated_tests`.
+    This function has to be called inside a test class's `self.pre_run`.
 
     Generated tests are not written down as methods, but as a list of
     parameter sets. This way we reduce code repetition and improve test
@@ -928,9 +908,7 @@ class BaseTestClass:
         arguments as the test logic function and returns a string that
         is the corresponding UID.
     """
-    self._assert_function_names_in_stack(
-        [STAGE_NAME_PRE_RUN, STAGE_NAME_SETUP_GENERATED_TESTS]
-    )
+    self._assert_function_names_in_stack([STAGE_NAME_PRE_RUN])
     root_msg = 'During test generation of "%s":' % test_logic.__name__
     for args in arg_sets:
       test_name = name_func(*args)
