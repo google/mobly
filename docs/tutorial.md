@@ -336,11 +336,11 @@ class ManyGreetingsTest(base_test.BaseTestClass):
     # When a test run starts, Mobly calls this function to figure out what
     # tests need to be generated. So you need to specify what tests to generate
     # in this function.
-    def setup_generated_tests(self):
+    def pre_run(self):
         messages = [('Hello', 'World'), ('Aloha', 'Obama'),
                     ('konichiwa', 'Satoshi')]
         # Call `generate_tests` function to specify the tests to generate. This
-        # function can only be called within `setup_generated_tests`. You could
+        # function can only be called within `pre_run`. You could
         # call this function multiple times to generate multiple groups of
         # tests.
         self.generate_tests(
