@@ -125,8 +125,9 @@ class ServiceManager:
   def get_service_alias_by_class(self, service_class):
     """Gets the aslias name of a registered service.
 
-    Note the same class can be registered multiple times with different alias
-    names. So this returnes a list.
+    The same service class can be registered multiple times with different
+    aliases. When not well managed, duplication and race conditions can arise.
+    One can use this API to de-duplicate as needed.
 
     Args:
       service_class: class, the class of a service type.
