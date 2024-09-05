@@ -469,6 +469,14 @@ class ServiceManagerTest(unittest.TestCase):
     with self.assertRaisesRegex(service_manager.Error, msg):
       manager.resume_services(['mock_service'])
 
+  def test_get_alias_by_class(self):
+    manager = service_manager.ServiceManager(mock.MagicMock())
+    manager.register('mock_service1', MockService, start_service=False)
+    manager.register('mock_service2', MockService, start_service=False)
+    manager.start_services(['mock_service2'])
+    aliases = manager.get_service_alias_by_class(MockService)
+    self.assertEqual(aliases, ['mock_service1', 'mock_service2'])
+
 
 if __name__ == '__main__':
   unittest.main()

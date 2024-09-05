@@ -122,6 +122,25 @@ class ServiceManager:
       ):
         func(self._service_objects[alias])
 
+  def get_service_alias_by_class(self, service_class):
+    """Gets the aslias name of a registered service.
+
+    The same service class can be registered multiple times with different
+    aliases. When not well managed, duplication and race conditions can arise.
+    One can use this API to de-duplicate as needed.
+
+    Args:
+      service_class: class, the class of a service type.
+
+    Returns:
+      list of strings, the aliases the service is registered with.
+    """
+    aliases = []
+    for alias, service_object in self._service_objects.items():
+      if isinstance(service_object, service_class):
+        aliases.append(alias)
+    return aliases
+
   def list_live_services(self):
     """Lists the aliases of all the services that are alive.
 
