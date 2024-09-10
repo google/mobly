@@ -897,7 +897,7 @@ class AndroidDevice:
             % (k, getattr(self, k)),
         )
       setattr(self, k, v)
-      self.add_device_info(k, v)
+      self.add_device_info(k, str(v)) # Force v to be serializable
 
   def root_adb(self):
     """Change adb to root mode for this device if allowed.
