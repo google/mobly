@@ -410,13 +410,16 @@ class AndroidDeviceTest(unittest.TestCase):
       self, create_dir_mock, FastbootProxy, MockAdbProxy
   ):
     mock_serial = '1'
-    config = {'space': 'the final frontier', 'number': 1, 'debug_tag': 'my_tag'}
+    config = {'space': 'the final frontier', 'number': 1, 'debug_tag': 'my_tag', "force_serialize": (1, (2, 3))}
     ad = android_device.AndroidDevice(serial=mock_serial)
     ad.load_config(config)
     self.assertEqual(ad.space, 'the final frontier')
-    self.assertEqual(ad.number, 1)
+    self.assertEqual(ad.number, '1')
     self.assertEqual(ad.debug_tag, 'my_tag')
     self.assertEqual(ad.device_info['user_added_info']['debug_tag'], 'my_tag')
+    self.assertEqual(
+        ad.device_info['user_added_info']['debug_tag'], '(1, (2, 3))'
+    )
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
