@@ -84,11 +84,11 @@ class FastbootTest(unittest.TestCase):
     )
     mock_popen.return_value.returncode = 123
 
-    fut = fastboot.FastbootProxy('ABC') 
+    fut = fastboot.FastbootProxy('ABC')
     fut.fake_command('extra', 'flags')
     fut.serial = 'XYZ'
     fut.fake_command('extra', 'flags')
-    
+
     mock_popen.assert_called_with("fastboot -s XYZ fake-command extra flags", stdout=mock.ANY, stderr=mock.ANY, shell=True)
 
 if __name__ == '__main__':
