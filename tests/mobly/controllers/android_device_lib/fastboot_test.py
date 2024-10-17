@@ -43,6 +43,63 @@ class FastbootTest(unittest.TestCase):
         123,
     )
 
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
+  def test_fastboot_without_serial(self, mock_popen):
+    expected_stdout = 'stdout'
+    expected_stderr = b'stderr'
+    mock_popen.return_value.communicate = mock.Mock(
+        return_value=(expected_stdout, expected_stderr)
+    )
+    mock_popen.return_value.returncode = 123
+
+    fastboot.FastbootProxy().fake_command('extra', 'flags')
+
+    mock_popen.assert_called_with(
+        'fastboot fake-command extra flags',
+        stdout=mock.ANY,
+        stderr=mock.ANY,
+        shell=True,
+    )
+
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
+  def test_fastboot_with_serial(self, mock_popen):
+    expected_stdout = 'stdout'
+    expected_stderr = b'stderr'
+    mock_popen.return_value.communicate = mock.Mock(
+        return_value=(expected_stdout, expected_stderr)
+    )
+    mock_popen.return_value.returncode = 123
+
+    fastboot.FastbootProxy('ABC').fake_command('extra', 'flags')
+
+    mock_popen.assert_called_with(
+        'fastboot -s ABC fake-command extra flags',
+        stdout=mock.ANY,
+        stderr=mock.ANY,
+        shell=True,
+    )
+
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
+  def test_fastboot_update_serial(self, mock_popen):
+    expected_stdout = 'stdout'
+    expected_stderr = b'stderr'
+    mock_popen.return_value.communicate = mock.Mock(
+        return_value=(expected_stdout, expected_stderr)
+    )
+    mock_popen.return_value.returncode = 123
+
+    fut = fastboot.FastbootProxy('ABC')
+    fut.fake_command('extra', 'flags')
+    fut.serial = 'XYZ'
+    fut.fake_command('extra', 'flags')
+
+    mock_popen.assert_called_with(
+        'fastboot -s XYZ fake-command extra flags',
+        stdout=mock.ANY,
+        stderr=mock.ANY,
+        shell=True,
+    )
+
 
 if __name__ == '__main__':
   unittest.main()
