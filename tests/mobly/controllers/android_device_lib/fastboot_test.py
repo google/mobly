@@ -44,9 +44,7 @@ class FastbootTest(unittest.TestCase):
     )
 
   @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
-  def test_fastboot_without_serial(
-      self, mock_popen
-  ):
+  def test_fastboot_without_serial(self, mock_popen):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
     mock_popen.return_value.communicate = mock.Mock(
@@ -56,12 +54,15 @@ class FastbootTest(unittest.TestCase):
 
     fastboot.FastbootProxy().fake_command('extra', 'flags')
 
-    mock_popen.assert_called_with("fastboot fake-command extra flags", stdout=mock.ANY, stderr=mock.ANY, shell=True)
+    mock_popen.assert_called_with(
+        'fastboot fake-command extra flags',
+        stdout=mock.ANY,
+        stderr=mock.ANY,
+        shell=True,
+    )
 
   @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
-  def test_fastboot_with_serial(
-      self, mock_popen
-  ):
+  def test_fastboot_with_serial(self, mock_popen):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
     mock_popen.return_value.communicate = mock.Mock(
@@ -71,12 +72,15 @@ class FastbootTest(unittest.TestCase):
 
     fastboot.FastbootProxy('ABC').fake_command('extra', 'flags')
 
-    mock_popen.assert_called_with("fastboot -s ABC fake-command extra flags", stdout=mock.ANY, stderr=mock.ANY, shell=True)
+    mock_popen.assert_called_with(
+        'fastboot -s ABC fake-command extra flags',
+        stdout=mock.ANY,
+        stderr=mock.ANY,
+        shell=True,
+    )
 
   @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
-  def test_fastboot_update_serial(
-      self, mock_popen
-  ):
+  def test_fastboot_update_serial(self, mock_popen):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
     mock_popen.return_value.communicate = mock.Mock(
@@ -89,7 +93,13 @@ class FastbootTest(unittest.TestCase):
     fut.serial = 'XYZ'
     fut.fake_command('extra', 'flags')
 
-    mock_popen.assert_called_with("fastboot -s XYZ fake-command extra flags", stdout=mock.ANY, stderr=mock.ANY, shell=True)
+    mock_popen.assert_called_with(
+        'fastboot -s XYZ fake-command extra flags',
+        stdout=mock.ANY,
+        stderr=mock.ANY,
+        shell=True,
+    )
+
 
 if __name__ == '__main__':
   unittest.main()
