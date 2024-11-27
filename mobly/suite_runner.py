@@ -389,4 +389,3 @@ def _parse_raw_test_selector(selected_tests):
       test_class_name_to_tests[test_name] = None
 
   return test_class_name_to_tests
-

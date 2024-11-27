@@ -93,13 +93,17 @@ class BaseSuiteTest(unittest.TestCase):
 
     self.mock_test_runner.add_test_class.assert_has_calls(
         [
-            mock.call(self.mock_config, FakeTest1, ['test_a', 'test_b'], mock.ANY),
+            mock.call(
+                self.mock_config, FakeTest1, ['test_a', 'test_b'], mock.ANY
+            ),
             mock.call(self.mock_config, FakeTest2, None, mock.ANY),
         ],
     )
 
   def test_setup_suite_test_selector_takes_precedence(self):
-    suite = FakeTestSuiteWithFilteredTests(self.mock_test_runner, self.mock_config)
+    suite = FakeTestSuiteWithFilteredTests(
+        self.mock_test_runner, self.mock_config
+    )
     test_selector = {
         'FakeTest1': ['test_a', 'test_c'],
         'FakeTest2': None,
@@ -110,7 +114,9 @@ class BaseSuiteTest(unittest.TestCase):
 
     self.mock_test_runner.add_test_class.assert_has_calls(
         [
-            mock.call(self.mock_config, FakeTest1, ['test_a', 'test_c'], mock.ANY),
+            mock.call(
+                self.mock_config, FakeTest1, ['test_a', 'test_c'], mock.ANY
+            ),
             mock.call(self.mock_config, FakeTest2, None, mock.ANY),
         ],
     )

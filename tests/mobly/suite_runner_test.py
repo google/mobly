@@ -256,7 +256,6 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_cls_instance._pre_run.side_effect = Exception('Something went wrong.')
     mock_cls_instance._clean_up.assert_called_once()
 
-
   def _gen_tmp_config_file(self):
     tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
     with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
