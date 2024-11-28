@@ -289,8 +289,8 @@ def compute_selected_tests(test_classes, selected_tests):
   that class are selected.
 
   Args:
-    test_classes: list of strings, names of all the classes that are part
-      of a suite.
+    test_classes: list of `type[base_test.BaseTestClass]`, all the test classes
+      that are part of a suite.
     selected_tests: list of strings, list of tests to execute. If empty,
       all classes `test_classes` are selected. E.g.
 
@@ -330,13 +330,13 @@ def compute_selected_tests(test_classes, selected_tests):
   # tests).
   test_class_name_to_tests = _parse_raw_test_selector(selected_tests)
 
-  # Now transform class names to class objects.
-  # Dict from test_name class name to instance.
+  # Now compute the tests to run for each test class.
+  # Dict from test class name to class instance.
   class_name_to_class = {cls.__name__: cls for cls in test_classes}
   for test_class_name, tests in test_class_name_to_tests.items():
     test_class = class_name_to_class.get(test_class_name)
     if not test_class:
-      raise Error('Unknown test_name class %s' % test_class_name)
+      raise Error('Unknown test_class name %s' % test_class_name)
     class_to_tests[test_class] = tests
 
   return class_to_tests
@@ -368,7 +368,7 @@ def _parse_raw_test_selector(selected_tests):
         'BazTest': ['test_method_a', 'test_method_b'],
       }
 
-    This returns None if `elected_tests` is None.
+    This returns None if `selected_tests` is None.
   """
   if selected_tests is None:
     return None
