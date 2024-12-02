@@ -191,10 +191,13 @@ def _print_test_names(test_classes):
 
 
 def _record_suite_info(log_path, suite_class_name):
+  """Adds the record for suite information in test summary file."""
   summary_path = os.path.join(log_path, records.OUTPUT_FILE_SUMMARY)
   summary_writer = records.TestSummaryWriter(summary_path)
   content = records.SuiteInfoRecord(suite_class_name=suite_class_name)
-  summary_writer.dump(content.to_dict(), records.TestSummaryEntryType.SUITE_INFO)
+  summary_writer.dump(
+      content.to_dict(), records.TestSummaryEntryType.SUITE_INFO
+  )
 
 
 def run_suite_class(argv=None):

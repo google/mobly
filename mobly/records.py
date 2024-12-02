@@ -94,7 +94,7 @@ class TestSummaryEntryType(enum.Enum):
   SUMMARY = 'Summary'
   # Information on the controllers used in a test class.
   CONTROLLER_INFO = 'ControllerInfo'
-  # Suite level information.
+  # Test suite level information.
   SUITE_INFO = 'SuiteInfo'
   # Additional data added by users during test.
   # This can be added at any point in the test, so do not assume the location
@@ -746,4 +746,3 @@ class SuiteInfoRecord:
 
   def __repr__(self):
     return str(self.to_dict())
-

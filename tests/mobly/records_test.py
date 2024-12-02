@@ -542,7 +542,7 @@ class RecordsTest(unittest.TestCase):
 
     self.assertEqual(test_uid_helper.uid, 'some-uuid')
 
-  def test_create_suite_info_record_and_convert_to_dict(self):
+  def test_convert_suite_info_record_to_dict(self):
     suite_class_name = 'FakeTestSuite'
     record = records.SuiteInfoRecord(suite_class_name=suite_class_name)
 
