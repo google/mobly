@@ -168,12 +168,11 @@ class SuiteRunnerTest(unittest.TestCase):
 
   @mock.patch('sys.exit')
   @mock.patch.object(test_runner, 'TestRunner')
-  @mock.patch.object(integration_test_suite.IntegrationTestSuite, 'setup_suite', autospec=True)
+  @mock.patch.object(
+      integration_test_suite.IntegrationTestSuite, 'setup_suite', autospec=True
+  )
   def test_run_suite_class_finds_suite_class_when_not_in_main_module(
-      self,
-      mock_setup_suite,
-      mock_test_runner_class,
-      mock_exit
+      self, mock_setup_suite, mock_test_runner_class, mock_exit
   ):
     mock_test_runner = mock_test_runner_class.return_value
     mock_test_runner.results.is_all_pass = True

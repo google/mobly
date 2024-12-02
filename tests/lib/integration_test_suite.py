@@ -26,6 +26,6 @@ class IntegrationTestSuite(base_suite.BaseSuite):
 def main():
   suite_runner.run_suite_class()
 
+
 if __name__ == "__main__":
   main()
-

@@ -183,7 +183,7 @@ def _find_suite_class():
     if len(stacks) < 2:
       logging.debug(
           f'Failed to get the caller stack of run_suite_class. Got stacks: %s',
-          stacks
+          stacks,
       )
     else:
       run_suite_class_caller_frame_info = inspect.stack()[2]
