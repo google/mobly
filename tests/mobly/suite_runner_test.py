@@ -13,18 +13,22 @@
 # limitations under the License.
 
 import io
+import logging
 import os
 import shutil
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
 from mobly import base_suite
 from mobly import base_test
+from mobly import records
 from mobly import suite_runner
 from tests.lib import integration2_test
 from tests.lib import integration_test
+import yaml
 
 
 class FakeTest1(base_test.BaseTestClass):
@@ -136,8 +140,9 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_exit.assert_called_once_with(1)
 
   @mock.patch('sys.exit')
-  @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
-  def test_run_suite_class(self, mock_find_suite_class, mock_exit):
+  def test_run_suite_class(self, mock_exit):
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
     mock_called = mock.MagicMock()
 
     class FakeTestSuite(base_suite.BaseSuite):
@@ -151,29 +156,52 @@ class SuiteRunnerTest(unittest.TestCase):
         mock_called.teardown_suite()
         super().teardown_suite()
 
-    mock_find_suite_class.return_value = FakeTestSuite
-
-    tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
-    with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write(
-          """
-        TestBeds:
-          # A test bed where adb will find Android devices.
-          - Name: SampleTestBed
-            Controllers:
-              MagicDevice: '*'
-      """
-      )
-
-    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
+    sys.modules['__main__'].__dict__[FakeTestSuite.__name__] = FakeTestSuite
 
     with mock.patch.object(sys, 'argv', new=mock_cli_args):
-      suite_runner.run_suite_class()
+      try:
+        suite_runner.run_suite_class()
+      finally:
+        del sys.modules['__main__'].__dict__[FakeTestSuite.__name__]
 
-    mock_find_suite_class.assert_called_once()
     mock_called.setup_suite.assert_called_once_with()
     mock_called.teardown_suite.assert_called_once_with()
     mock_exit.assert_not_called()
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(time, 'time', return_value=1733143236.278318)
+  def test_run_suite_class_records_suite_class_name(self, mock_time, _):
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
+    expected_summary_entry = records.SuiteInfoRecord(
+        suite_class_name='FakeTestSuite'
+    ).to_dict()
+    expected_summary_entry['Type'] = records.TestSummaryEntryType.SUITE_INFO.value
+
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def setup_suite(self, config):
+        super().setup_suite(config)
+        self.add_test_class(FakeTest1)
+
+    sys.modules['__main__'].__dict__[FakeTestSuite.__name__] = FakeTestSuite
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      try:
+        suite_runner.run_suite_class()
+      finally:
+        del sys.modules['__main__'].__dict__[FakeTestSuite.__name__]
+
+    summary_path = os.path.join(
+        logging.root_output_path, records.OUTPUT_FILE_SUMMARY
+    )
+    with io.open(summary_path, 'r', encoding='utf-8') as f:
+      summary_entries = list(yaml.safe_load_all(f))
+
+    self.assertIn(
+        expected_summary_entry,
+        summary_entries,
+    )
 
   def test_print_test_names(self):
     mock_test_class = mock.MagicMock()
@@ -190,6 +218,20 @@ class SuiteRunnerTest(unittest.TestCase):
     suite_runner._print_test_names([mock_test_class])
     mock_cls_instance._pre_run.side_effect = Exception('Something went wrong.')
     mock_cls_instance._clean_up.assert_called_once()
+
+  def _gen_tmp_config_file(self):
+    tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
+    with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+      f.write(
+          """
+        TestBeds:
+          # A test bed where adb will find Android devices.
+          - Name: SampleTestBed
+            Controllers:
+              MagicDevice: '*'
+      """
+      )
+    return tmp_file_path
 
 
 if __name__ == '__main__':

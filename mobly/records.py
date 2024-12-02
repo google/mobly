@@ -94,6 +94,8 @@ class TestSummaryEntryType(enum.Enum):
   SUMMARY = 'Summary'
   # Information on the controllers used in a test class.
   CONTROLLER_INFO = 'ControllerInfo'
+  # Suite level information.
+  SUITE_INFO = 'SuiteInfo'
   # Additional data added by users during test.
   # This can be added at any point in the test, so do not assume the location
   # of these entries in the summary file.
@@ -724,3 +726,24 @@ class TestResult:
     d['Skipped'] = len(self.skipped)
     d['Error'] = len(self.error)
     return d
+
+
+class SuiteInfoRecord:
+  """A record representing the suite info in test summary."""
+
+  KEY_SUITE_CLASS_NAME = 'Suite Class Name'
+  KEY_TIMESTAMP = 'Timestamp'
+
+  def __init__(self, suite_class_name):
+    self.suite_class_name = suite_class_name
+    self.timestamp = time.time()
+
+  def to_dict(self):
+    result = {}
+    result[self.KEY_SUITE_CLASS_NAME] = self.suite_class_name
+    result[self.KEY_TIMESTAMP] = self.timestamp
+    return result
+
+  def __repr__(self):
+    return str(self.to_dict())
+
