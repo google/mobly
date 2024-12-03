@@ -26,6 +26,7 @@ from mobly import base_suite
 from mobly import base_test
 from mobly import records
 from mobly import suite_runner
+from mobly import utils
 from tests.lib import integration2_test
 from tests.lib import integration_test
 import yaml
@@ -169,13 +170,16 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_exit.assert_not_called()
 
   @mock.patch('sys.exit')
-  @mock.patch.object(time, 'time', return_value=1733143236.278318)
+  @mock.patch.object(
+      utils, 'get_current_epoch_time', return_value=1733143236278
+  )
   def test_run_suite_class_records_suite_class_name(self, mock_time, _):
     tmp_file_path = self._gen_tmp_config_file()
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
-    expected_summary_entry = records.SuiteInfoRecord(
-        suite_class_name='FakeTestSuite'
-    ).to_dict()
+    expected_record = records.SuiteInfoRecord(suite_class='FakeTestSuite')
+    expected_record.suite_begin()
+    expected_record.suite_end()
+    expected_summary_entry = expected_record.to_dict()
     expected_summary_entry['Type'] = (
         records.TestSummaryEntryType.SUITE_INFO.value
     )

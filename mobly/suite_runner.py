@@ -190,13 +190,12 @@ def _print_test_names(test_classes):
       print(f'{cls.TAG}.{name}')
 
 
-def _record_suite_info(log_path, suite_class_name):
-  """Adds the record for suite information in test summary file."""
+def _record_suite_info(suite_record, log_path):
+  """Dumps the suite info record to test summary file."""
   summary_path = os.path.join(log_path, records.OUTPUT_FILE_SUMMARY)
   summary_writer = records.TestSummaryWriter(summary_path)
-  content = records.SuiteInfoRecord(suite_class_name=suite_class_name)
   summary_writer.dump(
-      content.to_dict(), records.TestSummaryEntryType.SUITE_INFO
+      suite_record.to_dict(), records.TestSummaryEntryType.SUITE_INFO
   )
 
 
@@ -224,11 +223,12 @@ def run_suite_class(argv=None):
   suite = suite_class(runner, config)
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
+  suite_record = records.SuiteInfoRecord(suite_class=suite_class.__name__)
   with runner.mobly_logger(console_level=console_level) as log_path:
-    _record_suite_info(log_path, suite_class_name=suite_class.__name__)
     try:
       suite.setup_suite(config.copy())
       try:
+        suite_record.suite_begin()
         runner.run()
         ok = runner.results.is_all_pass
         print(ok)
@@ -236,6 +236,8 @@ def run_suite_class(argv=None):
         pass
     finally:
       suite.teardown_suite()
+      suite_record.suite_end()
+      _record_suite_info(suite_record, log_path)
   if not ok:
     sys.exit(1)
 

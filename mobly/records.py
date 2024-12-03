@@ -729,19 +729,34 @@ class TestResult:
 
 
 class SuiteInfoRecord:
-  """A record representing the suite info in test summary."""
+  """A record representing the suite info in test summary.
 
-  KEY_SUITE_CLASS_NAME = 'Suite Class Name'
-  KEY_TIMESTAMP = 'Timestamp'
+  Attributes:
+    suite_class: str, the class name of the test suite class.
+    begin_time: int, epoch timestamp of when the suite started.
+    end_time: int, epoch timestamp of when the suite ended.
+  """
 
-  def __init__(self, suite_class_name):
-    self.suite_class_name = suite_class_name
-    self.timestamp = time.time()
+  KEY_SUITE_CLASS = 'Suite Class'
+  KEY_BEGIN_TIME = TestResultEnums.RECORD_BEGIN_TIME
+  KEY_END_TIME = TestResultEnums.RECORD_END_TIME
+
+  def __init__(self, suite_class):
+    self.suite_class = suite_class
+    self.begin_time = None
+    self.end_time = None
+
+  def suite_begin(self):
+    self.begin_time = utils.get_current_epoch_time()
+
+  def suite_end(self):
+    self.end_time = utils.get_current_epoch_time()
 
   def to_dict(self):
     result = {}
-    result[self.KEY_SUITE_CLASS_NAME] = self.suite_class_name
-    result[self.KEY_TIMESTAMP] = self.timestamp
+    result[self.KEY_SUITE_CLASS] = self.suite_class
+    result[self.KEY_BEGIN_TIME] = self.begin_time
+    result[self.KEY_END_TIME] = self.end_time
     return result
 
   def __repr__(self):

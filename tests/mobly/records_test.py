@@ -544,14 +544,18 @@ class RecordsTest(unittest.TestCase):
 
   def test_convert_suite_info_record_to_dict(self):
     suite_class_name = 'FakeTestSuite'
-    record = records.SuiteInfoRecord(suite_class_name=suite_class_name)
+    record = records.SuiteInfoRecord(suite_class=suite_class_name)
+    record.suite_begin()
+    record.suite_end()
 
     result = record.to_dict()
 
     self.assertIn(
-        (records.SuiteInfoRecord.KEY_SUITE_CLASS_NAME, suite_class_name),
+        (records.SuiteInfoRecord.KEY_SUITE_CLASS, suite_class_name),
         result.items(),
     )
+    self.assertIn(records.SuiteInfoRecord.KEY_BEGIN_TIME, result)
+    self.assertIn(records.SuiteInfoRecord.KEY_END_TIME, result)
 
 
 if __name__ == '__main__':
