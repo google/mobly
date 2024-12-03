@@ -729,32 +729,40 @@ class TestResult:
 
 
 class SuiteInfoRecord:
-  """A record representing the suite info in test summary.
+  """A record representing the test suite info in test summary.
 
   Attributes:
-    suite_class: str, the class name of the test suite class.
+    test_suite_class: str, the class name of the test suite class.
     begin_time: int, epoch timestamp of when the suite started.
     end_time: int, epoch timestamp of when the suite ended.
   """
 
-  KEY_SUITE_CLASS = 'Suite Class'
+  KEY_TEST_SUITE_CLASS = 'Test Suite Class'
   KEY_BEGIN_TIME = TestResultEnums.RECORD_BEGIN_TIME
   KEY_END_TIME = TestResultEnums.RECORD_END_TIME
 
-  def __init__(self, suite_class):
-    self.suite_class = suite_class
+  def __init__(self, test_suite_class):
+    self.test_suite_class = test_suite_class
     self.begin_time = None
     self.end_time = None
 
   def suite_begin(self):
+    """Call this when the suite begins execution.
+
+    Sets the begin_time of this record.
+    """
     self.begin_time = utils.get_current_epoch_time()
 
   def suite_end(self):
+    """Call this when the suite ends execution.
+
+    Sets the end_time of this record.
+    """
     self.end_time = utils.get_current_epoch_time()
 
   def to_dict(self):
     result = {}
-    result[self.KEY_SUITE_CLASS] = self.suite_class
+    result[self.KEY_TEST_SUITE_CLASS] = self.test_suite_class
     result[self.KEY_BEGIN_TIME] = self.begin_time
     result[self.KEY_END_TIME] = self.end_time
     return result

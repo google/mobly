@@ -223,7 +223,7 @@ def run_suite_class(argv=None):
   suite = suite_class(runner, config)
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
-  suite_record = records.SuiteInfoRecord(suite_class=suite_class.__name__)
+  suite_record = records.SuiteInfoRecord(test_suite_class=suite_class.__name__)
   with runner.mobly_logger(console_level=console_level) as log_path:
     try:
       suite.setup_suite(config.copy())

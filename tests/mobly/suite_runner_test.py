@@ -176,7 +176,7 @@ class SuiteRunnerTest(unittest.TestCase):
   def test_run_suite_class_records_suite_class_name(self, mock_time, _):
     tmp_file_path = self._gen_tmp_config_file()
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
-    expected_record = records.SuiteInfoRecord(suite_class='FakeTestSuite')
+    expected_record = records.SuiteInfoRecord(test_suite_class='FakeTestSuite')
     expected_record.suite_begin()
     expected_record.suite_end()
     expected_summary_entry = expected_record.to_dict()
