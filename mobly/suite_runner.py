@@ -85,46 +85,42 @@ class Error(Exception):
 
 
 class SuiteInfoRecord:
-  """A record representing the test suite info in test summary.
-
-  Attributes:
-    test_suite_class: str, the class name of the test suite class.
-    test_suite_version: str, the test suite version.
-    begin_time: int, epoch timestamp of when the suite started.
-    end_time: int, epoch timestamp of when the suite ended.
-  """
+  """A record representing the test suite info in test summary."""
 
   KEY_TEST_SUITE_CLASS = 'Test Suite Class'
-  KEY_TEST_SUITE_VERSION = 'Test Suite Version'
+  KEY_EXTRAS = records.TestResultEnums.RECORD_EXTRAS
   KEY_BEGIN_TIME = records.TestResultEnums.RECORD_BEGIN_TIME
   KEY_END_TIME = records.TestResultEnums.RECORD_END_TIME
 
-  def __init__(self, test_suite_class, test_suite_version=None):
-    self.test_suite_class = test_suite_class
-    self.test_suite_version = test_suite_version
-    self.begin_time = None
-    self.end_time = None
+  # The class name of the test suite class.
+  _test_suite_class: str
+  # Epoch timestamp of when the suite started.
+  _begin_time: int
+  # Epoch timestamp of when the suite ended.
+  _end_time: int
+  # User defined extra information of the test result. Must be serializable.
+  _extras: dict
+
+  def __init__(self, test_suite_class, extras=None):
+    self._test_suite_class = test_suite_class
+    self._extras = extras or dict()
+    self._begin_time = None
+    self._end_time = None
 
   def suite_begin(self):
-    """Call this when the suite begins execution.
-
-    Sets the begin_time of this record.
-    """
-    self.begin_time = utils.get_current_epoch_time()
+    """Call this when the suite begins execution."""
+    self._begin_time = utils.get_current_epoch_time()
 
   def suite_end(self):
-    """Call this when the suite ends execution.
-
-    Sets the end_time of this record.
-    """
-    self.end_time = utils.get_current_epoch_time()
+    """Call this when the suite ends execution."""
+    self._end_time = utils.get_current_epoch_time()
 
   def to_dict(self):
     result = {}
-    result[self.KEY_TEST_SUITE_CLASS] = self.test_suite_class
-    result[self.KEY_TEST_SUITE_VERSION] = self.test_suite_version
-    result[self.KEY_BEGIN_TIME] = self.begin_time
-    result[self.KEY_END_TIME] = self.end_time
+    result[self.KEY_TEST_SUITE_CLASS] = self._test_suite_class
+    result[self.KEY_EXTRAS] = self._extras
+    result[self.KEY_BEGIN_TIME] = self._begin_time
+    result[self.KEY_END_TIME] = self._end_time
     return result
 
   def __repr__(self):
@@ -270,9 +266,8 @@ def run_suite_class(argv=None):
   )
   suite = suite_class(runner, config)
 
-  suite_version = getattr(suite_class, 'VERSION', None)
   suite_record = SuiteInfoRecord(
-      test_suite_class=suite_class.__name__, test_suite_version=suite_version
+      test_suite_class=suite_class.__name__, extras=suite.suite_info
   )
 
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO

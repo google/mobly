@@ -29,17 +29,16 @@ class BaseSuite(abc.ABC):
   Users can use this class if they need to define their own setup and teardown
   steps on the suite level. Otherwise, just use suite_runner.run_suite on the
   list of test classes.
-
-  Attributes:
-    VERSION: str, the test suite version string. Default to None. Subclasses may
-      overwrite this attribute to record suite version in test summary.
   """
-
-  VERSION = None
 
   def __init__(self, runner, config):
     self._runner = runner
     self._config = config.copy()
+
+  @property
+  def suite_info(self):
+    """Returns user defined suite info that will be recorded to test summary."""
+    return {}
 
   @property
   def user_params(self):

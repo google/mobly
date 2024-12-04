@@ -231,7 +231,7 @@ class SuiteRunnerTest(unittest.TestCase):
     suite_class_name = 'FakeTestSuite'
     suite_version = '1.2.3'
     record = suite_runner.SuiteInfoRecord(
-        test_suite_class=suite_class_name, test_suite_version=suite_version
+        test_suite_class=suite_class_name, extras={'version': suite_version},
     )
     record.suite_begin()
     record.suite_end()
@@ -243,7 +243,7 @@ class SuiteRunnerTest(unittest.TestCase):
         result.items(),
     )
     self.assertIn(
-        (suite_runner.SuiteInfoRecord.KEY_TEST_SUITE_VERSION, suite_version),
+        (suite_runner.SuiteInfoRecord.KEY_EXTRAS, {'version': suite_version}),
         result.items(),
     )
     self.assertIn(suite_runner.SuiteInfoRecord.KEY_BEGIN_TIME, result)
