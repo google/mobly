@@ -77,10 +77,58 @@ from mobly import config_parser
 from mobly import records
 from mobly import signals
 from mobly import test_runner
+from mobly import utils
 
 
 class Error(Exception):
   pass
+
+
+class SuiteInfoRecord:
+  """A record representing the test suite info in test summary.
+
+  Attributes:
+    test_suite_class: str, the class name of the test suite class.
+    test_suite_version: str, the test suite version.
+    begin_time: int, epoch timestamp of when the suite started.
+    end_time: int, epoch timestamp of when the suite ended.
+  """
+
+  KEY_TEST_SUITE_CLASS = 'Test Suite Class'
+  KEY_TEST_SUITE_VERSION = 'Test Suite Version'
+  KEY_BEGIN_TIME = records.TestResultEnums.RECORD_BEGIN_TIME
+  KEY_END_TIME = records.TestResultEnums.RECORD_END_TIME
+
+  def __init__(self, test_suite_class, test_suite_version=None):
+    self.test_suite_class = test_suite_class
+    self.test_suite_version = test_suite_version
+    self.begin_time = None
+    self.end_time = None
+
+  def suite_begin(self):
+    """Call this when the suite begins execution.
+
+    Sets the begin_time of this record.
+    """
+    self.begin_time = utils.get_current_epoch_time()
+
+  def suite_end(self):
+    """Call this when the suite ends execution.
+
+    Sets the end_time of this record.
+    """
+    self.end_time = utils.get_current_epoch_time()
+
+  def to_dict(self):
+    result = {}
+    result[self.KEY_TEST_SUITE_CLASS] = self.test_suite_class
+    result[self.KEY_TEST_SUITE_VERSION] = self.test_suite_version
+    result[self.KEY_BEGIN_TIME] = self.begin_time
+    result[self.KEY_END_TIME] = self.end_time
+    return result
+
+  def __repr__(self):
+    return str(self.to_dict())
 
 
 def _parse_cli_args(argv):
@@ -190,12 +238,12 @@ def _print_test_names(test_classes):
       print(f'{cls.TAG}.{name}')
 
 
-def _record_suite_info(suite_record, log_path):
+def _dump_suite_info(suite_record, log_path):
   """Dumps the suite info record to test summary file."""
   summary_path = os.path.join(log_path, records.OUTPUT_FILE_SUMMARY)
   summary_writer = records.TestSummaryWriter(summary_path)
   summary_writer.dump(
-      suite_record.to_dict(), records.TestSummaryEntryType.SUITE_INFO
+      suite_record.to_dict(), records.TestSummaryEntryType.USER_DATA
   )
 
 
@@ -221,9 +269,14 @@ def run_suite_class(argv=None):
       log_dir=config.log_path, testbed_name=config.testbed_name
   )
   suite = suite_class(runner, config)
+
+  suite_version = getattr(suite_class, 'VERSION', None)
+  suite_record = SuiteInfoRecord(
+      test_suite_class=suite_class.__name__, test_suite_version=suite_version
+  )
+
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
-  suite_record = records.SuiteInfoRecord(test_suite_class=suite_class.__name__)
   with runner.mobly_logger(console_level=console_level) as log_path:
     try:
       suite.setup_suite(config.copy())
@@ -237,7 +290,7 @@ def run_suite_class(argv=None):
     finally:
       suite.teardown_suite()
       suite_record.suite_end()
-      _record_suite_info(suite_record, log_path)
+      _dump_suite_info(suite_record, log_path)
   if not ok:
     sys.exit(1)
 

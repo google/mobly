@@ -176,12 +176,14 @@ class SuiteRunnerTest(unittest.TestCase):
   def test_run_suite_class_records_suite_class_name(self, mock_time, _):
     tmp_file_path = self._gen_tmp_config_file()
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
-    expected_record = records.SuiteInfoRecord(test_suite_class='FakeTestSuite')
+    expected_record = suite_runner.SuiteInfoRecord(
+        test_suite_class='FakeTestSuite'
+    )
     expected_record.suite_begin()
     expected_record.suite_end()
     expected_summary_entry = expected_record.to_dict()
     expected_summary_entry['Type'] = (
-        records.TestSummaryEntryType.SUITE_INFO.value
+        records.TestSummaryEntryType.USER_DATA.value
     )
 
     class FakeTestSuite(base_suite.BaseSuite):
@@ -224,6 +226,28 @@ class SuiteRunnerTest(unittest.TestCase):
     suite_runner._print_test_names([mock_test_class])
     mock_cls_instance._pre_run.side_effect = Exception('Something went wrong.')
     mock_cls_instance._clean_up.assert_called_once()
+
+  def test_convert_suite_info_record_to_dict(self):
+    suite_class_name = 'FakeTestSuite'
+    suite_version = '1.2.3'
+    record = suite_runner.SuiteInfoRecord(
+        test_suite_class=suite_class_name, test_suite_version=suite_version
+    )
+    record.suite_begin()
+    record.suite_end()
+
+    result = record.to_dict()
+
+    self.assertIn(
+        (suite_runner.SuiteInfoRecord.KEY_TEST_SUITE_CLASS, suite_class_name),
+        result.items(),
+    )
+    self.assertIn(
+        (suite_runner.SuiteInfoRecord.KEY_TEST_SUITE_VERSION, suite_version),
+        result.items(),
+    )
+    self.assertIn(suite_runner.SuiteInfoRecord.KEY_BEGIN_TIME, result)
+    self.assertIn(suite_runner.SuiteInfoRecord.KEY_END_TIME, result)
 
   def _gen_tmp_config_file(self):
     tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
