@@ -245,9 +245,7 @@ def _dump_suite_info(suite_record, log_path):
   """Dumps the suite info record to test summary file."""
   summary_path = os.path.join(log_path, records.OUTPUT_FILE_SUMMARY)
   summary_writer = records.TestSummaryWriter(summary_path)
-  summary_writer.dump(
-      suite_record.to_dict(), TestSummaryEntryType.SUITE_INFO
-  )
+  summary_writer.dump(suite_record.to_dict(), TestSummaryEntryType.SUITE_INFO)
 
 
 def run_suite_class(argv=None):
