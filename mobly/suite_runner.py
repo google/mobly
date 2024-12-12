@@ -252,6 +252,8 @@ def run_suite_class(argv=None):
       log_dir=config.log_path, testbed_name=config.testbed_name
   )
   suite = suite_class(runner, config)
+  test_selector = _parse_raw_test_selector(cli_args.tests)
+  suite.set_test_selector(test_selector)
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
   with runner.mobly_logger(console_level=console_level):
@@ -329,8 +331,8 @@ def compute_selected_tests(test_classes, selected_tests):
   that class are selected.
 
   Args:
-    test_classes: list of strings, names of all the classes that are part
-      of a suite.
+    test_classes: list of `type[base_test.BaseTestClass]`, all the test classes
+      that are part of a suite.
     selected_tests: list of strings, list of tests to execute. If empty,
       all classes `test_classes` are selected. E.g.
 
@@ -368,6 +370,50 @@ def compute_selected_tests(test_classes, selected_tests):
   # The user is selecting some tests to run. Parse the selectors.
   # Dict from test_name class name to list of tests to execute (or None for all
   # tests).
+  test_class_name_to_tests = _parse_raw_test_selector(selected_tests)
+
+  # Now compute the tests to run for each test class.
+  # Dict from test class name to class instance.
+  class_name_to_class = {cls.__name__: cls for cls in test_classes}
+  for test_class_name, tests in test_class_name_to_tests.items():
+    test_class = class_name_to_class.get(test_class_name)
+    if not test_class:
+      raise Error('Unknown test_class name %s' % test_class_name)
+    class_to_tests[test_class] = tests
+
+  return class_to_tests
+
+
+def _parse_raw_test_selector(selected_tests):
+  """Parses test selector from CLI arguments.
+
+  This function transforms a list of selector strings (such as FooTest or
+  FooTest.test_method_a) to a dict where keys are test_name classes, and
+  values are lists of selected tests in those classes. None means all tests in
+  that class are selected.
+
+  Args:
+    selected_tests: list of strings, list of tests to execute. E.g.
+
+    .. code-block:: python
+
+      ['FooTest', 'BarTest', 'BazTest.test_method_a', 'BazTest.test_method_b']
+
+  Returns:
+    A dict. Keys are test class names, values are lists of test names within
+    class. E.g. the example in `selected_tests` would translate to:
+
+    .. code-block:: python
+      {
+        'FooTest': None,
+        'BarTest': None,
+        'BazTest': ['test_method_a', 'test_method_b'],
+      }
+
+    This returns None if `selected_tests` is None.
+  """
+  if selected_tests is None:
+    return None
   test_class_name_to_tests = collections.OrderedDict()
   for test_name in selected_tests:
     if '.' in test_name:  # Has a test method
@@ -384,13 +430,4 @@ def compute_selected_tests(test_classes, selected_tests):
     else:  # No test method; run all tests in this class.
       test_class_name_to_tests[test_name] = None
 
-  # Now transform class names to class objects.
-  # Dict from test_name class name to instance.
-  class_name_to_class = {cls.__name__: cls for cls in test_classes}
-  for test_class_name, tests in test_class_name_to_tests.items():
-    test_class = class_name_to_class.get(test_class_name)
-    if not test_class:
-      raise Error('Unknown test_name class %s' % test_class_name)
-    class_to_tests[test_class] = tests
-
-  return class_to_tests
+  return test_class_name_to_tests
