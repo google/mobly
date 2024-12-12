@@ -23,12 +23,16 @@ from unittest import mock
 from mobly import base_suite
 from mobly import base_test
 from mobly import suite_runner
+from mobly import test_runner
 from tests.lib import integration2_test
 from tests.lib import integration_test
 
 
 class FakeTest1(base_test.BaseTestClass):
   pass
+
+  def test_a(self):
+    pass
 
 
 class SuiteRunnerTest(unittest.TestCase):
@@ -138,9 +142,15 @@ class SuiteRunnerTest(unittest.TestCase):
   @mock.patch('sys.exit')
   @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
   def test_run_suite_class(self, mock_find_suite_class, mock_exit):
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
     mock_called = mock.MagicMock()
 
     class FakeTestSuite(base_suite.BaseSuite):
+
+      def set_test_selector(self, test_selector):
+        mock_called.set_test_selector(test_selector)
+        super().set_test_selector(test_selector)
 
       def setup_suite(self, config):
         mock_called.setup_suite()
@@ -153,20 +163,6 @@ class SuiteRunnerTest(unittest.TestCase):
 
     mock_find_suite_class.return_value = FakeTestSuite
 
-    tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
-    with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
-      f.write(
-          """
-        TestBeds:
-          # A test bed where adb will find Android devices.
-          - Name: SampleTestBed
-            Controllers:
-              MagicDevice: '*'
-      """
-      )
-
-    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
-
     with mock.patch.object(sys, 'argv', new=mock_cli_args):
       suite_runner.run_suite_class()
 
@@ -174,6 +170,75 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_called.setup_suite.assert_called_once_with()
     mock_called.teardown_suite.assert_called_once_with()
     mock_exit.assert_not_called()
+    mock_called.set_test_selector.assert_called_once_with(None)
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
+  @mock.patch.object(test_runner, 'TestRunner')
+  def test_run_suite_class_with_test_selection_by_class(
+      self, mock_test_runner_class, mock_find_suite_class, mock_exit
+  ):
+    mock_test_runner = mock_test_runner_class.return_value
+    mock_test_runner.results.is_all_pass = True
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = [
+        'test_binary',
+        f'--config={tmp_file_path}',
+        '--tests=FakeTest1',
+    ]
+    mock_called = mock.MagicMock()
+
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def set_test_selector(self, test_selector):
+        mock_called.set_test_selector(test_selector)
+        super().set_test_selector(test_selector)
+
+      def setup_suite(self, config):
+        self.add_test_class(FakeTest1)
+
+    mock_find_suite_class.return_value = FakeTestSuite
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      suite_runner.run_suite_class()
+
+    mock_called.set_test_selector.assert_called_once_with(
+        {'FakeTest1': None},
+    )
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
+  @mock.patch.object(test_runner, 'TestRunner')
+  def test_run_suite_class_with_test_selection_by_method(
+      self, mock_test_runner_class, mock_find_suite_class, mock_exit
+  ):
+    mock_test_runner = mock_test_runner_class.return_value
+    mock_test_runner.results.is_all_pass = True
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = [
+        'test_binary',
+        f'--config={tmp_file_path}',
+        '--tests=FakeTest1.test_a',
+    ]
+    mock_called = mock.MagicMock()
+
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def set_test_selector(self, test_selector):
+        mock_called.set_test_selector(test_selector)
+        super().set_test_selector(test_selector)
+
+      def setup_suite(self, config):
+        self.add_test_class(FakeTest1)
+
+    mock_find_suite_class.return_value = FakeTestSuite
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      suite_runner.run_suite_class()
+
+    mock_called.set_test_selector.assert_called_once_with(
+        {'FakeTest1': ['test_a']},
+    )
 
   def test_print_test_names(self):
     mock_test_class = mock.MagicMock()
@@ -190,6 +255,20 @@ class SuiteRunnerTest(unittest.TestCase):
     suite_runner._print_test_names([mock_test_class])
     mock_cls_instance._pre_run.side_effect = Exception('Something went wrong.')
     mock_cls_instance._clean_up.assert_called_once()
+
+  def _gen_tmp_config_file(self):
+    tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
+    with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+      f.write(
+          """
+        TestBeds:
+          # A test bed where adb will find Android devices.
+          - Name: SampleTestBed
+            Controllers:
+              MagicDevice: '*'
+      """
+      )
+    return tmp_file_path
 
 
 if __name__ == '__main__':
