@@ -66,6 +66,7 @@ class.
 """
 import argparse
 import collections
+import enum
 import inspect
 import logging
 import os
@@ -84,13 +85,19 @@ class Error(Exception):
   pass
 
 
+class TestSummaryEntryType(enum.Enum):
+  """Constants used to record suite level entries in test summary file."""
+
+  SUITE_INFO = 'SuiteInfo'
+
+
 class SuiteInfoRecord:
   """A record representing the test suite info in test summary."""
 
   KEY_TEST_SUITE_CLASS = 'Test Suite Class'
-  KEY_EXTRAS = records.TestResultEnums.RECORD_EXTRAS
-  KEY_BEGIN_TIME = records.TestResultEnums.RECORD_BEGIN_TIME
-  KEY_END_TIME = records.TestResultEnums.RECORD_END_TIME
+  KEY_EXTRAS = 'Extras'
+  KEY_BEGIN_TIME = 'Suite Begin Time'
+  KEY_END_TIME = 'Suite End Time'
 
   # The class name of the test suite class.
   _test_suite_class: str
@@ -239,7 +246,7 @@ def _dump_suite_info(suite_record, log_path):
   summary_path = os.path.join(log_path, records.OUTPUT_FILE_SUMMARY)
   summary_writer = records.TestSummaryWriter(summary_path)
   summary_writer.dump(
-      suite_record.to_dict(), records.TestSummaryEntryType.USER_DATA
+      suite_record.to_dict(), TestSummaryEntryType.SUITE_INFO
   )
 
 

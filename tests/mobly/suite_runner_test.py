@@ -183,7 +183,7 @@ class SuiteRunnerTest(unittest.TestCase):
     expected_record.suite_end()
     expected_summary_entry = expected_record.to_dict()
     expected_summary_entry['Type'] = (
-        records.TestSummaryEntryType.USER_DATA.value
+        suite_runner.TestSummaryEntryType.SUITE_INFO.value
     )
 
     class FakeTestSuite(base_suite.BaseSuite):
