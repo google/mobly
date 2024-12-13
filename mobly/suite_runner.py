@@ -137,21 +137,63 @@ def _parse_cli_args(argv):
   return parser.parse_known_args(argv)[0]
 
 
+def _find_suite_classes_in_module(module):
+  """Finds all test suite classes in the given module.
+
+  Walk through module members and find all classes that is a subclass of
+  BaseSuite.
+
+  Args:
+    module: types.ModuleType, the module object to find test suite classes.
+
+  Returns:
+    A list of test suite classes.
+  """
+  test_suites = []
+  for _, module_member in module.__dict__.items():
+    if inspect.isclass(module_member):
+      if issubclass(module_member, base_suite.BaseSuite):
+        test_suites.append(module_member)
+  return test_suites
+
+
 def _find_suite_class():
-  """Finds the test suite class in the current module.
+  """Finds the test suite class.
+
+  First search for test suite classes in the __main__ module. If no test suite
+  class is found, search in the module that is calling
+  `suite_runner.run_suite_class`.
 
   Walk through module members and find the subclass of BaseSuite. Only
-  one subclass is allowed in a module.
+  one subclass is allowed.
 
   Returns:
       The test suite class in the test module.
   """
-  test_suites = []
-  main_module_members = sys.modules['__main__']
-  for _, module_member in main_module_members.__dict__.items():
-    if inspect.isclass(module_member):
-      if issubclass(module_member, base_suite.BaseSuite):
-        test_suites.append(module_member)
+  # Try to find test suites in __main__ module first.
+  test_suites = _find_suite_classes_in_module(sys.modules['__main__'])
+
+  # Try to find test suites in the module of the caller of `run_suite_class`.
+  if len(test_suites) == 0:
+    logging.debug(
+        'No suite class found in the __main__ module, trying to find it in the '
+        'module of the caller of suite_runner.run_suite_class method.'
+    )
+    stacks = inspect.stack()
+    if len(stacks) < 2:
+      logging.debug(
+          'Failed to get the caller stack of run_suite_class. Got stacks: %s',
+          stacks,
+      )
+    else:
+      run_suite_class_caller_frame_info = inspect.stack()[2]
+      caller_frame = run_suite_class_caller_frame_info.frame
+      module = inspect.getmodule(caller_frame)
+      if module is None:
+        logging.debug('Failed to find module for frame %s', caller_frame)
+      else:
+        test_suites = _find_suite_classes_in_module(module)
+
   if len(test_suites) != 1:
     logging.error(
         'Expected 1 test class per file, found %s.',

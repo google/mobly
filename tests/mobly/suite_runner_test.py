@@ -26,6 +26,7 @@ from mobly import suite_runner
 from mobly import test_runner
 from tests.lib import integration2_test
 from tests.lib import integration_test
+from tests.lib import integration_test_suite
 
 
 class FakeTest1(base_test.BaseTestClass):
@@ -140,8 +141,7 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_exit.assert_called_once_with(1)
 
   @mock.patch('sys.exit')
-  @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
-  def test_run_suite_class(self, mock_find_suite_class, mock_exit):
+  def test_run_suite_class(self, mock_exit):
     tmp_file_path = self._gen_tmp_config_file()
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
     mock_called = mock.MagicMock()
@@ -161,12 +161,14 @@ class SuiteRunnerTest(unittest.TestCase):
         mock_called.teardown_suite()
         super().teardown_suite()
 
-    mock_find_suite_class.return_value = FakeTestSuite
+    sys.modules['__main__'].__dict__[FakeTestSuite.__name__] = FakeTestSuite
 
     with mock.patch.object(sys, 'argv', new=mock_cli_args):
-      suite_runner.run_suite_class()
+      try:
+        suite_runner.run_suite_class()
+      finally:
+        del sys.modules['__main__'].__dict__[FakeTestSuite.__name__]
 
-    mock_find_suite_class.assert_called_once()
     mock_called.setup_suite.assert_called_once_with()
     mock_called.teardown_suite.assert_called_once_with()
     mock_exit.assert_not_called()
@@ -239,6 +241,24 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_called.set_test_selector.assert_called_once_with(
         {'FakeTest1': ['test_a']},
     )
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(test_runner, 'TestRunner')
+  @mock.patch.object(
+      integration_test_suite.IntegrationTestSuite, 'setup_suite', autospec=True
+  )
+  def test_run_suite_class_finds_suite_class_when_not_in_main_module(
+      self, mock_setup_suite, mock_test_runner_class, mock_exit
+  ):
+    mock_test_runner = mock_test_runner_class.return_value
+    mock_test_runner.results.is_all_pass = True
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      integration_test_suite.main()
+
+    mock_setup_suite.assert_called_once()
 
   def test_print_test_names(self):
     mock_test_class = mock.MagicMock()
