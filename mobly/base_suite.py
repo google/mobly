@@ -36,13 +36,18 @@ class BaseSuite(abc.ABC):
     self._config = config.copy()
 
   @property
-  def suite_info(self):
-    """Returns user defined suite info that will be recorded to test summary."""
-    return {}
-
-  @property
   def user_params(self):
     return self._config.user_params
+
+  def get_suite_info(self):
+    """User defined extra suite information to be recorded in test summary.
+
+    This method will be called after all test classes are executed.
+
+    Returns:
+      A dict of suite information. Keys and values must be serializable.
+    """
+    return {}
 
   def add_test_class(self, clazz, config=None, tests=None, name_suffix=None):
     """Adds a test class to the suite.

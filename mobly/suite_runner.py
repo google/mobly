@@ -108,9 +108,9 @@ class SuiteInfoRecord:
   # User defined extra information of the test result. Must be serializable.
   _extras: dict
 
-  def __init__(self, test_suite_class, extras=None):
+  def __init__(self, test_suite_class):
     self._test_suite_class = test_suite_class
-    self._extras = extras or dict()
+    self._extras = dict()
     self._begin_time = None
     self._end_time = None
 
@@ -121,6 +121,9 @@ class SuiteInfoRecord:
   def suite_end(self):
     """Call this when the suite ends execution."""
     self._end_time = utils.get_current_epoch_time()
+
+  def set_extras(self, extras):
+    self._extras = extras
 
   def to_dict(self):
     result = {}
@@ -271,9 +274,7 @@ def run_suite_class(argv=None):
   )
   suite = suite_class(runner, config)
 
-  suite_record = SuiteInfoRecord(
-      test_suite_class=suite_class.__name__, extras=suite.suite_info
-  )
+  suite_record = SuiteInfoRecord(test_suite_class=suite_class.__name__)
 
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
@@ -290,6 +291,7 @@ def run_suite_class(argv=None):
     finally:
       suite.teardown_suite()
       suite_record.suite_end()
+      suite_record.set_extras(suite.get_suite_info())
       _dump_suite_info(suite_record, log_path)
   if not ok:
     sys.exit(1)
