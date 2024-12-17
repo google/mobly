@@ -123,6 +123,7 @@ class SuiteInfoRecord:
     self._end_time = utils.get_current_epoch_time()
 
   def set_extras(self, extras):
+    """Sets extra information. Must be serializable."""
     self._extras = extras
 
   def to_dict(self):
