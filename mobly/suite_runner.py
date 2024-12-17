@@ -94,22 +94,26 @@ class TestSummaryEntryType(enum.Enum):
 class SuiteInfoRecord:
   """A record representing the test suite info in test summary."""
 
+  KEY_SUITE_NAME = 'Suite Name'
   KEY_TEST_SUITE_CLASS = 'Test Suite Class'
   KEY_EXTRAS = 'Extras'
   KEY_BEGIN_TIME = 'Suite Begin Time'
   KEY_END_TIME = 'Suite End Time'
 
+  # The name of the test suite.
+  _suite_name: str
   # The class name of the test suite class.
   _test_suite_class: str
-  # Epoch timestamp of when the suite started.
-  _begin_time: int
-  # Epoch timestamp of when the suite ended.
-  _end_time: int
   # User defined extra information of the test result. Must be serializable.
   _extras: dict
+  # Epoch timestamp of when the suite started.
+  _begin_time: int | None
+  # Epoch timestamp of when the suite ended.
+  _end_time: int | None
 
   def __init__(self, test_suite_class):
     self._test_suite_class = test_suite_class
+    self._suite_name = ''
     self._extras = dict()
     self._begin_time = None
     self._end_time = None
@@ -122,12 +126,18 @@ class SuiteInfoRecord:
     """Call this when the suite ends execution."""
     self._end_time = utils.get_current_epoch_time()
 
+  def set_suite_name(self, suite_name):
+    """Sets the name of the test suite."""
+    self._suite_name = suite_name
+
   def set_extras(self, extras):
+    """Sets extra information. Must be serializable."""
     self._extras = extras
 
   def to_dict(self):
     result = {}
     result[self.KEY_TEST_SUITE_CLASS] = self._test_suite_class
+    result[self.KEY_SUITE_NAME] = self._suite_name
     result[self.KEY_EXTRAS] = self._extras
     result[self.KEY_BEGIN_TIME] = self._begin_time
     result[self.KEY_END_TIME] = self._end_time
@@ -334,6 +344,7 @@ def run_suite_class(argv=None):
     finally:
       suite.teardown_suite()
       suite_record.suite_end()
+      suite_record.set_suite_name(suite.get_suite_name())
       suite_record.set_extras(suite.get_suite_info())
       _dump_suite_info(suite_record, log_path)
   if not ok:

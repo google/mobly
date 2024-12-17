@@ -260,7 +260,6 @@ class SuiteRunnerTest(unittest.TestCase):
   ):
     mock_test_runner = mock_test_runner_class.return_value
     mock_test_runner.results.is_all_pass = True
-    mock_test_runner
     tmp_file_path = self._gen_tmp_config_file()
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
 
@@ -275,18 +274,35 @@ class SuiteRunnerTest(unittest.TestCase):
   )
   def test_run_suite_class_records_suite_info(self, mock_time, _):
     tmp_file_path = self._gen_tmp_config_file()
+    customized_suite_name = 'Customized Suite Name'
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
     expected_record = suite_runner.SuiteInfoRecord(
         test_suite_class='FakeTestSuite'
     )
     expected_record.suite_begin()
     expected_record.suite_end()
+    expected_record.set_suite_name(customized_suite_name)
+    expected_record.set_extras(
+        {
+            'extra-key-0': 'extra-value-0',
+            'extra-key-1': 'extra-value-1',
+        }
+    )
     expected_summary_entry = expected_record.to_dict()
     expected_summary_entry['Type'] = (
         suite_runner.TestSummaryEntryType.SUITE_INFO.value
     )
 
     class FakeTestSuite(base_suite.BaseSuite):
+
+      def get_suite_name(self):
+        return customized_suite_name
+
+      def get_suite_info(self):
+        return {
+            'extra-key-0': 'extra-value-0',
+            'extra-key-1': 'extra-value-1',
+        }
 
       def setup_suite(self, config):
         super().setup_suite(config)
