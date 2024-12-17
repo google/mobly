@@ -50,6 +50,16 @@ class BaseSuite(abc.ABC):
     """
     self._test_selector = test_selector
 
+  def get_suite_info(self):
+    """User defined extra suite information to be recorded in test summary.
+
+    This method will be called after all test classes are executed.
+
+    Returns:
+      A dict of suite information. Keys and values must be serializable.
+    """
+    return {}
+
   def add_test_class(self, clazz, config=None, tests=None, name_suffix=None):
     """Adds a test class to the suite.
 
