@@ -193,21 +193,63 @@ def _parse_cli_args(argv):
   return parser.parse_known_args(argv)[0]
 
 
+def _find_suite_classes_in_module(module):
+  """Finds all test suite classes in the given module.
+
+  Walk through module members and find all classes that is a subclass of
+  BaseSuite.
+
+  Args:
+    module: types.ModuleType, the module object to find test suite classes.
+
+  Returns:
+    A list of test suite classes.
+  """
+  test_suites = []
+  for _, module_member in module.__dict__.items():
+    if inspect.isclass(module_member):
+      if issubclass(module_member, base_suite.BaseSuite):
+        test_suites.append(module_member)
+  return test_suites
+
+
 def _find_suite_class():
-  """Finds the test suite class in the current module.
+  """Finds the test suite class.
+
+  First search for test suite classes in the __main__ module. If no test suite
+  class is found, search in the module that is calling
+  `suite_runner.run_suite_class`.
 
   Walk through module members and find the subclass of BaseSuite. Only
-  one subclass is allowed in a module.
+  one subclass is allowed.
 
   Returns:
       The test suite class in the test module.
   """
-  test_suites = []
-  main_module_members = sys.modules['__main__']
-  for _, module_member in main_module_members.__dict__.items():
-    if inspect.isclass(module_member):
-      if issubclass(module_member, base_suite.BaseSuite):
-        test_suites.append(module_member)
+  # Try to find test suites in __main__ module first.
+  test_suites = _find_suite_classes_in_module(sys.modules['__main__'])
+
+  # Try to find test suites in the module of the caller of `run_suite_class`.
+  if len(test_suites) == 0:
+    logging.debug(
+        'No suite class found in the __main__ module, trying to find it in the '
+        'module of the caller of suite_runner.run_suite_class method.'
+    )
+    stacks = inspect.stack()
+    if len(stacks) < 2:
+      logging.debug(
+          'Failed to get the caller stack of run_suite_class. Got stacks: %s',
+          stacks,
+      )
+    else:
+      run_suite_class_caller_frame_info = inspect.stack()[2]
+      caller_frame = run_suite_class_caller_frame_info.frame
+      module = inspect.getmodule(caller_frame)
+      if module is None:
+        logging.debug('Failed to find module for frame %s', caller_frame)
+      else:
+        test_suites = _find_suite_classes_in_module(module)
+
   if len(test_suites) != 1:
     logging.error(
         'Expected 1 test class per file, found %s.',
@@ -273,7 +315,8 @@ def run_suite_class(argv=None):
       log_dir=config.log_path, testbed_name=config.testbed_name
   )
   suite = suite_class(runner, config)
-
+  test_selector = _parse_raw_test_selector(cli_args.tests)
+  suite.set_test_selector(test_selector)
   suite_record = SuiteInfoRecord(test_suite_class=suite_class.__name__)
 
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
@@ -357,8 +400,8 @@ def compute_selected_tests(test_classes, selected_tests):
   that class are selected.
 
   Args:
-    test_classes: list of strings, names of all the classes that are part
-      of a suite.
+    test_classes: list of `type[base_test.BaseTestClass]`, all the test classes
+      that are part of a suite.
     selected_tests: list of strings, list of tests to execute. If empty,
       all classes `test_classes` are selected. E.g.
 
@@ -396,6 +439,50 @@ def compute_selected_tests(test_classes, selected_tests):
   # The user is selecting some tests to run. Parse the selectors.
   # Dict from test_name class name to list of tests to execute (or None for all
   # tests).
+  test_class_name_to_tests = _parse_raw_test_selector(selected_tests)
+
+  # Now compute the tests to run for each test class.
+  # Dict from test class name to class instance.
+  class_name_to_class = {cls.__name__: cls for cls in test_classes}
+  for test_class_name, tests in test_class_name_to_tests.items():
+    test_class = class_name_to_class.get(test_class_name)
+    if not test_class:
+      raise Error('Unknown test_class name %s' % test_class_name)
+    class_to_tests[test_class] = tests
+
+  return class_to_tests
+
+
+def _parse_raw_test_selector(selected_tests):
+  """Parses test selector from CLI arguments.
+
+  This function transforms a list of selector strings (such as FooTest or
+  FooTest.test_method_a) to a dict where keys are test_name classes, and
+  values are lists of selected tests in those classes. None means all tests in
+  that class are selected.
+
+  Args:
+    selected_tests: list of strings, list of tests to execute. E.g.
+
+    .. code-block:: python
+
+      ['FooTest', 'BarTest', 'BazTest.test_method_a', 'BazTest.test_method_b']
+
+  Returns:
+    A dict. Keys are test class names, values are lists of test names within
+    class. E.g. the example in `selected_tests` would translate to:
+
+    .. code-block:: python
+      {
+        'FooTest': None,
+        'BarTest': None,
+        'BazTest': ['test_method_a', 'test_method_b'],
+      }
+
+    This returns None if `selected_tests` is None.
+  """
+  if selected_tests is None:
+    return None
   test_class_name_to_tests = collections.OrderedDict()
   for test_name in selected_tests:
     if '.' in test_name:  # Has a test method
@@ -412,13 +499,4 @@ def compute_selected_tests(test_classes, selected_tests):
     else:  # No test method; run all tests in this class.
       test_class_name_to_tests[test_name] = None
 
-  # Now transform class names to class objects.
-  # Dict from test_name class name to instance.
-  class_name_to_class = {cls.__name__: cls for cls in test_classes}
-  for test_class_name, tests in test_class_name_to_tests.items():
-    test_class = class_name_to_class.get(test_class_name)
-    if not test_class:
-      raise Error('Unknown test_name class %s' % test_class_name)
-    class_to_tests[test_class] = tests
-
-  return class_to_tests
+  return test_class_name_to_tests

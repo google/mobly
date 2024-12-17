@@ -26,14 +26,19 @@ from mobly import base_suite
 from mobly import base_test
 from mobly import records
 from mobly import suite_runner
+from mobly import test_runner
 from mobly import utils
 from tests.lib import integration2_test
 from tests.lib import integration_test
+from tests.lib import integration_test_suite
 import yaml
 
 
 class FakeTest1(base_test.BaseTestClass):
   pass
+
+  def test_a(self):
+    pass
 
 
 class SuiteRunnerTest(unittest.TestCase):
@@ -148,6 +153,10 @@ class SuiteRunnerTest(unittest.TestCase):
 
     class FakeTestSuite(base_suite.BaseSuite):
 
+      def set_test_selector(self, test_selector):
+        mock_called.set_test_selector(test_selector)
+        super().set_test_selector(test_selector)
+
       def setup_suite(self, config):
         mock_called.setup_suite()
         super().setup_suite(config)
@@ -168,12 +177,103 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_called.setup_suite.assert_called_once_with()
     mock_called.teardown_suite.assert_called_once_with()
     mock_exit.assert_not_called()
+    mock_called.set_test_selector.assert_called_once_with(None)
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(records, 'TestSummaryWriter', autospec=True)
+  @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
+  @mock.patch.object(test_runner, 'TestRunner')
+  def test_run_suite_class_with_test_selection_by_class(
+      self, mock_test_runner_class, mock_find_suite_class, *_
+  ):
+    mock_test_runner = mock_test_runner_class.return_value
+    mock_test_runner.results.is_all_pass = True
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = [
+        'test_binary',
+        f'--config={tmp_file_path}',
+        '--tests=FakeTest1',
+    ]
+    mock_called = mock.MagicMock()
+
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def set_test_selector(self, test_selector):
+        mock_called.set_test_selector(test_selector)
+        super().set_test_selector(test_selector)
+
+      def setup_suite(self, config):
+        self.add_test_class(FakeTest1)
+
+    mock_find_suite_class.return_value = FakeTestSuite
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      suite_runner.run_suite_class()
+
+    mock_called.set_test_selector.assert_called_once_with(
+        {'FakeTest1': None},
+    )
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(records, 'TestSummaryWriter', autospec=True)
+  @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
+  @mock.patch.object(test_runner, 'TestRunner')
+  def test_run_suite_class_with_test_selection_by_method(
+      self, mock_test_runner_class, mock_find_suite_class, *_
+  ):
+    mock_test_runner = mock_test_runner_class.return_value
+    mock_test_runner.results.is_all_pass = True
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = [
+        'test_binary',
+        f'--config={tmp_file_path}',
+        '--tests=FakeTest1.test_a',
+    ]
+    mock_called = mock.MagicMock()
+
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def set_test_selector(self, test_selector):
+        mock_called.set_test_selector(test_selector)
+        super().set_test_selector(test_selector)
+
+      def setup_suite(self, config):
+        self.add_test_class(FakeTest1)
+
+    mock_find_suite_class.return_value = FakeTestSuite
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      suite_runner.run_suite_class()
+
+    mock_called.set_test_selector.assert_called_once_with(
+        {'FakeTest1': ['test_a']},
+    )
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(records, 'TestSummaryWriter', autospec=True)
+  @mock.patch.object(test_runner, 'TestRunner')
+  @mock.patch.object(
+      integration_test_suite.IntegrationTestSuite, 'setup_suite', autospec=True
+  )
+  def test_run_suite_class_finds_suite_class_when_not_in_main_module(
+      self, mock_setup_suite, mock_test_runner_class, *_
+  ):
+    mock_test_runner = mock_test_runner_class.return_value
+    mock_test_runner.results.is_all_pass = True
+    mock_test_runner
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      integration_test_suite.main()
+
+    mock_setup_suite.assert_called_once()
 
   @mock.patch('sys.exit')
   @mock.patch.object(
       utils, 'get_current_epoch_time', return_value=1733143236278
   )
-  def test_run_suite_class_records_suite_class_name(self, mock_time, _):
+  def test_run_suite_class_records_suite_info(self, mock_time, _):
     tmp_file_path = self._gen_tmp_config_file()
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
     expected_record = suite_runner.SuiteInfoRecord(
@@ -230,9 +330,8 @@ class SuiteRunnerTest(unittest.TestCase):
   def test_convert_suite_info_record_to_dict(self):
     suite_class_name = 'FakeTestSuite'
     suite_version = '1.2.3'
-    record = suite_runner.SuiteInfoRecord(
-        test_suite_class=suite_class_name, extras={'version': suite_version}
-    )
+    record = suite_runner.SuiteInfoRecord(test_suite_class=suite_class_name)
+    record.set_extras({'version': suite_version})
     record.suite_begin()
     record.suite_end()
 
