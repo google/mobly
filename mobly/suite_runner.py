@@ -92,10 +92,15 @@ class TestSummaryEntryType(enum.Enum):
 
 
 class SuiteInfoRecord:
-  """A record representing the test suite info in test summary."""
+  """A record representing the test suite info in test summary.
+
+  This record class is for suites defined by inheriting `base_suite.BaseSuite`.
+  This is not for suites directly assembled via `run_suite`.
+  """
 
   KEY_SUITE_NAME = 'Suite Name'
-  KEY_TEST_SUITE_CLASS = 'Test Suite Class'
+  KEY_SUITE_CLASS_NAME = 'Suite Class Name'
+  KEY_RUN_IDENTIFIER = 'Run Identifier'
   KEY_EXTRAS = 'Extras'
   KEY_BEGIN_TIME = 'Suite Begin Time'
   KEY_END_TIME = 'Suite End Time'
@@ -103,20 +108,20 @@ class SuiteInfoRecord:
   # The name of the test suite.
   _suite_name: str
   # The class name of the test suite class.
-  _test_suite_class: str
+  _suite_class_name: str
+  # The run identifier that describes key test run context.
+  _run_identifier: str | None = None
   # User defined extra information of the test result. Must be serializable.
   _extras: dict
   # Epoch timestamp of when the suite started.
-  _begin_time: int | None
+  _begin_time: int | None = None
   # Epoch timestamp of when the suite ended.
-  _end_time: int | None
+  _end_time: int | None = None
 
-  def __init__(self, test_suite_class):
-    self._test_suite_class = test_suite_class
+  def __init__(self, suite_class_name):
+    self._suite_class_name = suite_class_name
     self._suite_name = ''
     self._extras = dict()
-    self._begin_time = None
-    self._end_time = None
 
   def suite_begin(self):
     """Call this when the suite begins execution."""
@@ -130,14 +135,18 @@ class SuiteInfoRecord:
     """Sets the name of the test suite."""
     self._suite_name = suite_name
 
+  def set_run_identifier(self, run_identifier):
+    self._run_identifier = run_identifier
+
   def set_extras(self, extras):
     """Sets extra information. Must be serializable."""
     self._extras = extras
 
   def to_dict(self):
     result = {}
-    result[self.KEY_TEST_SUITE_CLASS] = self._test_suite_class
+    result[self.KEY_SUITE_CLASS_NAME] = self._suite_class_name
     result[self.KEY_SUITE_NAME] = self._suite_name
+    result[self.KEY_RUN_IDENTIFIER] = self._run_identifier
     result[self.KEY_EXTRAS] = self._extras
     result[self.KEY_BEGIN_TIME] = self._begin_time
     result[self.KEY_END_TIME] = self._end_time
@@ -327,7 +336,8 @@ def run_suite_class(argv=None):
   suite = suite_class(runner, config)
   test_selector = _parse_raw_test_selector(cli_args.tests)
   suite.set_test_selector(test_selector)
-  suite_record = SuiteInfoRecord(test_suite_class=suite_class.__name__)
+  suite_record = SuiteInfoRecord(suite_class_name=suite_class.__name__)
+  suite_record.set_suite_name(suite.get_suite_name())
 
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
@@ -344,7 +354,7 @@ def run_suite_class(argv=None):
     finally:
       suite.teardown_suite()
       suite_record.suite_end()
-      suite_record.set_suite_name(suite.get_suite_name())
+      suite_record.set_run_identifier(suite.get_run_identifier())
       suite_record.set_extras(suite.get_suite_info())
       _dump_suite_info(suite_record, log_path)
   if not ok:

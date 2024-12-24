@@ -275,13 +275,15 @@ class SuiteRunnerTest(unittest.TestCase):
   def test_run_suite_class_records_suite_info(self, mock_time, _):
     tmp_file_path = self._gen_tmp_config_file()
     customized_suite_name = 'Customized Suite Name'
+    run_identifier = '123456'
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
     expected_record = suite_runner.SuiteInfoRecord(
-        test_suite_class='FakeTestSuite'
+        suite_class_name='FakeTestSuite'
     )
+    expected_record.set_suite_name(customized_suite_name)
     expected_record.suite_begin()
     expected_record.suite_end()
-    expected_record.set_suite_name(customized_suite_name)
+    expected_record.set_run_identifier(run_identifier)
     expected_record.set_extras(
         {
             'extra-key-0': 'extra-value-0',
@@ -297,6 +299,9 @@ class SuiteRunnerTest(unittest.TestCase):
 
       def get_suite_name(self):
         return customized_suite_name
+
+      def get_run_identifier(self):
+        return run_identifier
 
       def get_suite_info(self):
         return {
@@ -345,20 +350,32 @@ class SuiteRunnerTest(unittest.TestCase):
 
   def test_convert_suite_info_record_to_dict(self):
     suite_class_name = 'FakeTestSuite'
+    suite_name = 'Customized Suite Name'
+    run_identifier = '123456'
     suite_version = '1.2.3'
-    record = suite_runner.SuiteInfoRecord(test_suite_class=suite_class_name)
+    record = suite_runner.SuiteInfoRecord(suite_class_name=suite_class_name)
     record.set_extras({'version': suite_version})
+    record.set_suite_name(suite_name)
     record.suite_begin()
     record.suite_end()
+    record.set_run_identifier(run_identifier)
 
     result = record.to_dict()
 
     self.assertIn(
-        (suite_runner.SuiteInfoRecord.KEY_TEST_SUITE_CLASS, suite_class_name),
+        (suite_runner.SuiteInfoRecord.KEY_SUITE_CLASS_NAME, suite_class_name),
         result.items(),
     )
     self.assertIn(
         (suite_runner.SuiteInfoRecord.KEY_EXTRAS, {'version': suite_version}),
+        result.items(),
+    )
+    self.assertIn(
+        (suite_runner.SuiteInfoRecord.KEY_SUITE_NAME, suite_name),
+        result.items(),
+    )
+    self.assertIn(
+        (suite_runner.SuiteInfoRecord.KEY_RUN_IDENTIFIER, run_identifier),
         result.items(),
     )
     self.assertIn(suite_runner.SuiteInfoRecord.KEY_BEGIN_TIME, result)

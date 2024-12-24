@@ -50,28 +50,6 @@ class BaseSuite(abc.ABC):
     """
     self._test_selector = test_selector
 
-  def get_suite_name(self):
-    """The name of this suite.
-
-    By default, use the name of the test class. User can overwrite to return
-    a customized suite name. User can include test runtime info as this will be
-    collected after all test classes are executed.
-
-    Returns:
-      A string of suite name.
-    """
-    return self.__class__.__name__
-
-  def get_suite_info(self):
-    """User defined extra suite information to be recorded in test summary.
-
-    This method will be called after all test classes are executed.
-
-    Returns:
-      A dict of suite information. Keys and values must be serializable.
-    """
-    return {}
-
   def add_test_class(self, clazz, config=None, tests=None, name_suffix=None):
     """Adds a test class to the suite.
 
@@ -117,3 +95,37 @@ class BaseSuite(abc.ABC):
   def teardown_suite(self):
     """Function used to add post tests cleanup tasks (optional)."""
     pass
+
+  # Optional interfaces to record user defined suite information to test summary
+
+  def get_suite_name(self):
+    """Override to return a customized suite name (optional).
+
+    Use suite class name by default.
+
+    Returns:
+      A string that indicates the suite name.
+    """
+    return self.__class__.__name__
+
+  def get_run_identifier(self):
+    """Override to record identifier describing the key run context (optional).
+
+    Users can include test runtime info as this method will be called after all
+    test classes are executed.
+
+    Returns:
+      A string that indicates key run context information.
+    """
+    return None
+
+  def get_suite_info(self):
+    """Override to record user defined extra info to test summary (optional).
+
+    Users can include test runtime info as this method will be called after all
+    test classes are executed.
+
+    Returns:
+      A dict of suite information. Keys and values must be serializable.
+    """
+    return {}
