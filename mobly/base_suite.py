@@ -96,7 +96,8 @@ class BaseSuite(abc.ABC):
     """Function used to add post tests cleanup tasks (optional)."""
     pass
 
-  # Optional interfaces to record user defined suite information to test summary
+  # Optional interfaces that users can override to record customized suite
+  # information to test summary.
 
   def get_suite_name(self):
     """Override to return a customized suite name (optional).

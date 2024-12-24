@@ -136,6 +136,7 @@ class SuiteInfoRecord:
     self._suite_name = suite_name
 
   def set_run_identifier(self, run_identifier):
+    """Sets the run identifier."""
     self._run_identifier = run_identifier
 
   def set_extras(self, extras):
