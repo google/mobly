@@ -95,3 +95,38 @@ class BaseSuite(abc.ABC):
   def teardown_suite(self):
     """Function used to add post tests cleanup tasks (optional)."""
     pass
+
+  # Optional interfaces that users can override to record customized suite
+  # information to test summary.
+
+  def get_suite_name(self):
+    """Override to return a customized suite name (optional).
+
+    Use suite class name by default.
+
+    Returns:
+      A string that indicates the suite name.
+    """
+    return self.__class__.__name__
+
+  def get_run_identifier(self):
+    """Override to record identifier describing the key run context (optional).
+
+    Users can include test runtime info as this method will be called after all
+    test classes are executed.
+
+    Returns:
+      A string that indicates key run context information.
+    """
+    return None
+
+  def get_suite_info(self):
+    """Override to record user defined extra info to test summary (optional).
+
+    Users can include test runtime info as this method will be called after all
+    test classes are executed.
+
+    Returns:
+      A dict of suite information. Keys and values must be serializable.
+    """
+    return {}
