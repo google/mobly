@@ -260,6 +260,22 @@ class SuiteRunnerTest(unittest.TestCase):
 
     mock_setup_suite.assert_called_once()
 
+  def _test_print_test_names_for_suites(self):
+    mock_test_class1 = mock.MagicMock()
+    mock_test_class2 = mock.MagicMock()
+
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def setup_suite(self, config):
+        self.add_test_class(mock_test_class1, name_suffix='A')
+        self.add_test_class(mock_test_class2, name_suffix='B')
+
+    suite_runner._print_test_names_for_suites([FakeTestSuite])
+    mock_test_class1.return_value._pre_run.assert_called_once()
+    mock_test_class1.return_value._clean_up.assert_called_once()
+    mock_test_class2.return_value._pre_run.assert_called_once()
+    mock_test_class2.return_value._clean_up.assert_called_once()
+
   def test_print_test_names(self):
     mock_test_class = mock.MagicMock()
     mock_cls_instance = mock.MagicMock()
