@@ -203,6 +203,33 @@ def _find_suite_class():
   return test_suites[0]
 
 
+def _print_test_names_for_suite(suite_class):
+  """Prints the names of all the tests in a suite classes.
+
+  Args:
+    suite_class: a test suite_class to be run.
+  """
+  config = config_parser.TestRunConfig()
+  runner = test_runner.TestRunner(
+      log_dir=config.log_path, testbed_name=config.testbed_name
+  )
+  cls = suite_class(runner, config)
+  try:
+    cls.setup_suite(config)
+  finally:
+    cls.teardown_suite()
+
+  last = ''
+  for name in runner.get_full_test_names():
+    tag = name.split('.')[0]
+    # Print tags when we encounter a new one. Prefer this to grouping by
+    # tag first since we should print any duplicate entries.
+    if tag != last:
+      last = tag
+      print('==========> %s <==========' % tag)
+    print(name)
+
+
 def _print_test_names(test_classes):
   """Prints the names of all the tests in all test classes.
   Args:
@@ -239,7 +266,7 @@ def run_suite_class(argv=None):
   cli_args = _parse_cli_args(argv)
   suite_class = _find_suite_class()
   if cli_args.list_tests:
-    _print_test_names([suite_class])
+    _print_test_names_for_suite(suite_class)
     sys.exit(0)
   test_configs = config_parser.load_test_config_file(
       cli_args.config, cli_args.test_bed
