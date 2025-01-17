@@ -260,6 +260,27 @@ class SuiteRunnerTest(unittest.TestCase):
 
     mock_setup_suite.assert_called_once()
 
+  @mock.patch('builtins.print')
+  def test_print_test_names_for_suites(self, mock_print):
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def setup_suite(self, config):
+        self.add_test_class(FakeTest1, name_suffix='A')
+        self.add_test_class(FakeTest1, name_suffix='B')
+        self.add_test_class(FakeTest1, name_suffix='C', tests=['test_a'])
+        self.add_test_class(FakeTest1, name_suffix='D', tests=[])
+
+    suite_runner._print_test_names_for_suite(FakeTestSuite)
+    calls = [
+        mock.call('==========> FakeTest1_A <=========='),
+        mock.call('FakeTest1_A.test_a'),
+        mock.call('==========> FakeTest1_B <=========='),
+        mock.call('FakeTest1_B.test_a'),
+        mock.call('==========> FakeTest1_C <=========='),
+        mock.call('FakeTest1_C.test_a'),
+    ]
+    mock_print.assert_has_calls(calls)
+
   def test_print_test_names(self):
     mock_test_class = mock.MagicMock()
     mock_cls_instance = mock.MagicMock()

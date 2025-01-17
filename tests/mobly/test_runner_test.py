@@ -393,6 +393,54 @@ class TestRunnerTest(unittest.TestCase):
       with mock.patch.dict('sys.modules', __main__=multiple_subclasses_module):
         test_class = test_runner._find_test_class()
 
+  def test_get_full_test_names(self):
+    """Verifies that calling get_test_names works properly."""
+    config = self.base_mock_test_config.copy()
+    tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
+    with tr.mobly_logger():
+      tr.add_test_class(
+          config, integration_test.IntegrationTest, name_suffix='A'
+      )
+      tr.add_test_class(
+          config, integration_test.IntegrationTest, name_suffix='B'
+      )
+      tr.add_test_class(
+          config, integration2_test.Integration2Test, name_suffix='A'
+      )
+      tr.add_test_class(
+          config, integration2_test.Integration2Test, name_suffix='B'
+      )
+
+    results = tr.get_full_test_names()
+    self.assertIn('IntegrationTest_A.test_hello_world', results)
+    self.assertIn('IntegrationTest_B.test_hello_world', results)
+    self.assertIn('Integration2Test_A.test_hello_world', results)
+    self.assertIn('Integration2Test_B.test_hello_world', results)
+    self.assertEqual(len(results), 4)
+
+  def test_get_full_test_names_test_list(self):
+    """Verifies that calling get_test_names with test list works properly."""
+    config = self.base_mock_test_config.copy()
+    tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
+    with tr.mobly_logger():
+      tr.add_test_class(
+          config, integration_test.IntegrationTest, tests=['test_hello_world']
+      )
+
+    results = tr.get_full_test_names()
+    self.assertIn('IntegrationTest.test_hello_world', results)
+    self.assertEqual(len(results), 1)
+
+  def test_get_full_test_names_test_list_empty(self):
+    """Verifies that calling get_test_names with empty test list works properly."""
+    config = self.base_mock_test_config.copy()
+    tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
+    with tr.mobly_logger():
+      tr.add_test_class(config, integration_test.IntegrationTest, tests=[])
+
+    results = tr.get_full_test_names()
+    self.assertEqual(len(results), 0)
+
   def test_print_test_names(self):
     mock_test_class = mock.MagicMock()
     mock_cls_instance = mock.MagicMock()
