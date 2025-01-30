@@ -13,25 +13,23 @@
 # limitations under the License.
 
 import unittest
+from subprocess import PIPE
 from unittest import mock
 
 from mobly.controllers.android_device_lib import fastboot
 
 
 class FastbootTest(unittest.TestCase):
-  """Unit tests for mobly.controllers.android_device_lib.adb."""
+  """Unit tests for mobly.controllers.android_device_lib.fastboot."""
 
-  @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
+  @mock.patch('mobly.utils.run_command')
   @mock.patch('logging.debug')
   def test_fastboot_commands_and_results_are_logged_to_debug_log(
-      self, mock_debug_logger, mock_popen
+      self, mock_debug_logger, mock_run_command
   ):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
-    mock_popen.return_value.communicate = mock.Mock(
-        return_value=(expected_stdout, expected_stderr)
-    )
-    mock_popen.return_value.returncode = 123
+    mock_run_command.return_value = (123, expected_stdout, expected_stderr)
 
     fastboot.FastbootProxy().fake_command('extra', 'flags')
 
@@ -43,61 +41,71 @@ class FastbootTest(unittest.TestCase):
         123,
     )
 
-  @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
-  def test_fastboot_without_serial(self, mock_popen):
+  @mock.patch('mobly.utils.run_command')
+  def test_fastboot_without_serial(self, mock_run_command):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
-    mock_popen.return_value.communicate = mock.Mock(
-        return_value=(expected_stdout, expected_stderr)
-    )
-    mock_popen.return_value.returncode = 123
+    mock_run_command.return_value = (123, expected_stdout, expected_stderr)
 
     fastboot.FastbootProxy().fake_command('extra', 'flags')
 
-    mock_popen.assert_called_with(
-        'fastboot fake-command extra flags',
-        stdout=mock.ANY,
-        stderr=mock.ANY,
+    mock_run_command.assert_called_with(
+        cmd='fastboot fake-command extra flags',
+        stdout=PIPE,
+        stderr=PIPE,
         shell=True,
+        timeout=1200,
     )
 
-  @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
-  def test_fastboot_with_serial(self, mock_popen):
+  @mock.patch('mobly.utils.run_command')
+  def test_fastboot_with_serial(self, mock_run_command):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
-    mock_popen.return_value.communicate = mock.Mock(
-        return_value=(expected_stdout, expected_stderr)
-    )
-    mock_popen.return_value.returncode = 123
+    mock_run_command.return_value = (123, expected_stdout, expected_stderr)
 
     fastboot.FastbootProxy('ABC').fake_command('extra', 'flags')
 
-    mock_popen.assert_called_with(
-        'fastboot -s ABC fake-command extra flags',
-        stdout=mock.ANY,
-        stderr=mock.ANY,
+    mock_run_command.assert_called_with(
+        cmd='fastboot -s ABC fake-command extra flags',
+        stdout=PIPE,
+        stderr=PIPE,
         shell=True,
+        timeout=1200,
     )
 
-  @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
-  def test_fastboot_update_serial(self, mock_popen):
+  @mock.patch('mobly.utils.run_command')
+  def test_fastboot_update_serial(self, mock_run_command):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
-    mock_popen.return_value.communicate = mock.Mock(
-        return_value=(expected_stdout, expected_stderr)
-    )
-    mock_popen.return_value.returncode = 123
+    mock_run_command.return_value = (123, expected_stdout, expected_stderr)
 
     fut = fastboot.FastbootProxy('ABC')
     fut.fake_command('extra', 'flags')
     fut.serial = 'XYZ'
     fut.fake_command('extra', 'flags')
 
-    mock_popen.assert_called_with(
-        'fastboot -s XYZ fake-command extra flags',
-        stdout=mock.ANY,
-        stderr=mock.ANY,
+    mock_run_command.assert_called_with(
+        cmd='fastboot -s XYZ fake-command extra flags',
+        stdout=PIPE,
+        stderr=PIPE,
         shell=True,
+        timeout=1200,
+    )
+
+  @mock.patch('mobly.utils.run_command')
+  def test_fastboot_with_custom_timeout(self, mock_run_command):
+    expected_stdout = 'stdout'
+    expected_stderr = b'stderr'
+    mock_run_command.return_value = (123, expected_stdout, expected_stderr)
+
+    fastboot.FastbootProxy(timeout=120).fake_command('extra', 'flags')
+
+    mock_run_command.assert_called_with(
+        cmd='fastboot fake-command extra flags',
+        stdout=PIPE,
+        stderr=PIPE,
+        shell=True,
+        timeout=120,
     )
 
 
