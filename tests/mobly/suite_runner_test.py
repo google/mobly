@@ -186,7 +186,9 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_cli_args = [
         'test_binary',
         f'--config={tmp_file_path}',
-        '--tests=FakeTest1',
+        '--tests',
+        'FakeTest1',
+        'FakeTest1_A',
     ]
     mock_called = mock.MagicMock()
 
@@ -198,6 +200,8 @@ class SuiteRunnerTest(unittest.TestCase):
 
       def setup_suite(self, config):
         self.add_test_class(FakeTest1)
+        self.add_test_class(FakeTest1, name_suffix='A')
+        self.add_test_class(FakeTest1, name_suffix='B')
 
     mock_find_suite_class.return_value = FakeTestSuite
 
@@ -205,7 +209,7 @@ class SuiteRunnerTest(unittest.TestCase):
       suite_runner.run_suite_class()
 
     mock_called.set_test_selector.assert_called_once_with(
-        {'FakeTest1': None},
+        {('FakeTest1', None): None, ('FakeTest1', 'A'): None},
     )
 
   @mock.patch('sys.exit')
@@ -220,7 +224,9 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_cli_args = [
         'test_binary',
         f'--config={tmp_file_path}',
-        '--tests=FakeTest1.test_a',
+        '--tests',
+        'FakeTest1.test_a',
+        'FakeTest1_B.test_a',
     ]
     mock_called = mock.MagicMock()
 
@@ -232,6 +238,8 @@ class SuiteRunnerTest(unittest.TestCase):
 
       def setup_suite(self, config):
         self.add_test_class(FakeTest1)
+        self.add_test_class(FakeTest1, name_suffix='B')
+        self.add_test_class(FakeTest1, name_suffix='C')
 
     mock_find_suite_class.return_value = FakeTestSuite
 
@@ -239,8 +247,68 @@ class SuiteRunnerTest(unittest.TestCase):
       suite_runner.run_suite_class()
 
     mock_called.set_test_selector.assert_called_once_with(
-        {'FakeTest1': ['test_a']},
+        {('FakeTest1', None): ['test_a'], ('FakeTest1', 'B'): ['test_a']},
     )
+
+  @mock.patch.object(sys, 'exit')
+  @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
+  def test_run_suite_class_with_combined_test_selection(
+      self, mock_find_suite_class, mock_exit
+  ):
+    mock_called = mock.MagicMock()
+
+    class FakeTest2(base_test.BaseTestClass):
+
+      def __init__(self, config):
+        mock_called.suffix(config.test_class_name_suffix)
+        super().__init__(config)
+
+      def run(self, tests):
+        mock_called.run(tests)
+        return super().run(tests)
+
+      def test_a(self):
+        pass
+
+      def test_b(self):
+        pass
+
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def setup_suite(self, config):
+        self.add_test_class(FakeTest2, name_suffix='A')
+        self.add_test_class(FakeTest2, name_suffix='B')
+        self.add_test_class(FakeTest2, name_suffix='C', tests=['test_a'])
+        self.add_test_class(FakeTest2, name_suffix='D')
+        self.add_test_class(FakeTest2)
+
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = [
+        'test_binary',
+        f'--config={tmp_file_path}',
+        '--tests',
+        'FakeTest2_A',
+        'FakeTest2_B',
+        'FakeTest2_C.test_a',
+        'FakeTest2',
+    ]
+
+    mock_find_suite_class.return_value = FakeTestSuite
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      suite_runner.run_suite_class()
+
+    mock_called.suffix.assert_has_calls(
+        [mock.call('A'), mock.call('B'), mock.call('C'), mock.call(None)]
+    )
+    mock_called.run.assert_has_calls(
+        [
+            mock.call(None),
+            mock.call(None),
+            mock.call(['test_a']),
+            mock.call(None),
+        ]
+    )
+    mock_exit.assert_not_called()
 
   @mock.patch('sys.exit')
   @mock.patch.object(test_runner, 'TestRunner')
