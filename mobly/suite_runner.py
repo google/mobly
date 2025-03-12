@@ -18,9 +18,9 @@ classes. Users can use it as is or customize it based on their requirements.
 
 There are two ways to use this runner.
 
-1. Call suite_runner.run_suite() with one or more individual test classes. This
-is for users who just need to execute a collection of test classes without any
-additional steps.
+1. Call suite_runner.run_suite() with a list of one or more individual test
+classes. This is for users who just need to execute a collection of test
+classes without any additional steps.
 
 .. code-block:: python
 
@@ -30,7 +30,7 @@ additional steps.
   from my.test.lib import bar_test
   ...
   if __name__ == '__main__':
-    suite_runner.run_suite(foo_test.FooTest, bar_test.BarTest)
+    suite_runner.run_suite([foo_test.FooTest, bar_test.BarTest])
 
 2. Create a subclass of base_suite.BaseSuite and add the individual test
 classes. Using the BaseSuite class allows users to define their own setup
