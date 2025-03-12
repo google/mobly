@@ -23,9 +23,14 @@ class FastbootTest(unittest.TestCase):
   """Unit tests for mobly.controllers.android_device_lib.fastboot."""
 
   @mock.patch('mobly.utils.run_command')
+  def setUp(self):
+    fastboot.FASTBOOT = 'fastboot'
+
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
+  @mock.patch('mobly.utils.run_command')
   @mock.patch('logging.debug')
   def test_fastboot_commands_and_results_are_logged_to_debug_log(
-      self, mock_debug_logger, mock_run_command
+      self, mock_debug_logger, mock_run_command, mock_popen
   ):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
@@ -106,6 +111,25 @@ class FastbootTest(unittest.TestCase):
         stderr=PIPE,
         shell=True,
         timeout=120,
+    )
+
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.Popen')
+  def test_fastboot_use_customized_fastboot(self, mock_popen):
+    expected_stdout = 'stdout'
+    expected_stderr = b'stderr'
+    mock_popen.return_value.communicate = mock.Mock(
+        return_value=(expected_stdout, expected_stderr)
+    )
+    mock_popen.return_value.returncode = 123
+    fastboot.FASTBOOT = 'my_fastboot'
+
+    fastboot.FastbootProxy('ABC').fake_command('extra', 'flags')
+
+    mock_popen.assert_called_with(
+        'my_fastboot -s ABC fake-command extra flags',
+        stdout=mock.ANY,
+        stderr=mock.ANY,
+        shell=True,
     )
 
 

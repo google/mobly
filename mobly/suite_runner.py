@@ -114,8 +114,10 @@ def _parse_cli_args(argv):
       '--test_case',
       nargs='+',
       type=str,
-      metavar='[ClassA[.test_a] ClassB[.test_b] ...]',
-      help='A list of test classes and optional tests to execute.',
+      metavar='[ClassA[_test_suffix][.test_a] '
+      'ClassB[_test_suffix][.test_b] ...]',
+      help='A list of test classes and optional tests to execute. '
+      'Note: test_suffix based names are only supported when running by suite class',
   )
   parser.add_argument(
       '-tb',
@@ -203,6 +205,33 @@ def _find_suite_class():
   return test_suites[0]
 
 
+def _print_test_names_for_suite(suite_class):
+  """Prints the names of all the tests in a suite classes.
+
+  Args:
+    suite_class: a test suite_class to be run.
+  """
+  config = config_parser.TestRunConfig()
+  runner = test_runner.TestRunner(
+      log_dir=config.log_path, testbed_name=config.testbed_name
+  )
+  cls = suite_class(runner, config)
+  try:
+    cls.setup_suite(config)
+  finally:
+    cls.teardown_suite()
+
+  last = ''
+  for name in runner.get_full_test_names():
+    tag = name.split('.')[0]
+    # Print tags when we encounter a new one. Prefer this to grouping by
+    # tag first since we should print any duplicate entries.
+    if tag != last:
+      last = tag
+      print('==========> %s <==========' % tag)
+    print(name)
+
+
 def _print_test_names(test_classes):
   """Prints the names of all the tests in all test classes.
   Args:
@@ -239,7 +268,7 @@ def run_suite_class(argv=None):
   cli_args = _parse_cli_args(argv)
   suite_class = _find_suite_class()
   if cli_args.list_tests:
-    _print_test_names([suite_class])
+    _print_test_names_for_suite(suite_class)
     sys.exit(0)
   test_configs = config_parser.load_test_config_file(
       cli_args.config, cli_args.test_bed
@@ -368,14 +397,15 @@ def compute_selected_tests(test_classes, selected_tests):
     return class_to_tests
 
   # The user is selecting some tests to run. Parse the selectors.
-  # Dict from test_name class name to list of tests to execute (or None for all
-  # tests).
   test_class_name_to_tests = _parse_raw_test_selector(selected_tests)
 
   # Now compute the tests to run for each test class.
   # Dict from test class name to class instance.
   class_name_to_class = {cls.__name__: cls for cls in test_classes}
-  for test_class_name, tests in test_class_name_to_tests.items():
+  for test_tuple, tests in test_class_name_to_tests.items():
+    (test_class_name, test_suffix) = test_tuple
+    if test_suffix != None:
+      raise Error('Suffixed tests only compatible with suite class runs')
     test_class = class_name_to_class.get(test_class_name)
     if not test_class:
       raise Error('Unknown test_class name %s' % test_class_name)
@@ -388,46 +418,60 @@ def _parse_raw_test_selector(selected_tests):
   """Parses test selector from CLI arguments.
 
   This function transforms a list of selector strings (such as FooTest or
-  FooTest.test_method_a) to a dict where keys are test_name classes, and
-  values are lists of selected tests in those classes. None means all tests in
-  that class are selected.
+  FooTest.test_method_a) to a dict where keys are a tuple containing
+  (test_class_name, test_suffix) and values are lists of selected tests in
+  those classes. None means all tests in that class are selected.
 
   Args:
-    selected_tests: list of strings, list of tests to execute. E.g.
+    selected_tests: list of strings, list of tests to execute of the form:
+      <test_class_name>[_<test_suffix>][.<test_name>].
 
     .. code-block:: python
-
-      ['FooTest', 'BarTest', 'BazTest.test_method_a', 'BazTest.test_method_b']
+      [
+        'BarTest',
+        'FooTest_A',
+        'FooTest_B'
+        'FooTest_C.test_method_a'
+        'FooTest_C.test_method_b'
+        'BazTest.test_method_a',
+        'BazTest.test_method_b'
+      ]
 
   Returns:
-    A dict. Keys are test class names, values are lists of test names within
-    class. E.g. the example in `selected_tests` would translate to:
+    dict: Keys are a tuple of (test_class_name, test_suffix), and values are
+    lists of test names within class.
+      E.g. the example in
+      `tests` would translate to:
 
-    .. code-block:: python
-      {
-        'FooTest': None,
-        'BarTest': None,
-        'BazTest': ['test_method_a', 'test_method_b'],
-      }
-
-    This returns None if `selected_tests` is None.
+      .. code-block:: python
+        {
+          (BarTest, None): None,
+          (FooTest, 'A'): None,
+          (FooTest, 'B'): None,
+          (FooTest,)'C'): ['test_method_a', 'test_method_b'],
+          (BazTest, None): ['test_method_a', 'test_method_b']
+        }
   """
   if selected_tests is None:
     return None
-  test_class_name_to_tests = collections.OrderedDict()
-  for test_name in selected_tests:
-    if '.' in test_name:  # Has a test method
-      (test_class_name, test_name) = test_name.split('.', maxsplit=1)
-      if test_class_name not in test_class_name_to_tests:
-        # Never seen this class before
-        test_class_name_to_tests[test_class_name] = [test_name]
-      elif test_class_name_to_tests[test_class_name] is None:
-        # Already running all tests in this class, so ignore this extra
-        # test.
-        pass
-      else:
-        test_class_name_to_tests[test_class_name].append(test_name)
-    else:  # No test method; run all tests in this class.
-      test_class_name_to_tests[test_name] = None
+  test_class_to_tests = collections.OrderedDict()
+  for test in selected_tests:
+    test_class_name = test
+    test_name = None
+    test_suffix = None
+    if '.' in test_class_name:
+      (test_class_name, test_name) = test_class_name.split('.', maxsplit=1)
+    if '_' in test_class_name:
+      (test_class_name, test_suffix) = test_class_name.split('_', maxsplit=1)
 
-  return test_class_name_to_tests
+    key = (test_class_name, test_suffix)
+    if key not in test_class_to_tests:
+      test_class_to_tests[key] = []
+
+    # If the test name is None, it means all tests in the class are selected.
+    if test_name is None:
+      test_class_to_tests[key] = None
+    # Only add the test if we're not already running all tests in the class.
+    elif test_class_to_tests[key] is not None:
+      test_class_to_tests[key].append(test_name)
+  return test_class_to_tests
