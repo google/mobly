@@ -22,6 +22,9 @@ from mobly.controllers.android_device_lib import fastboot
 class FastbootTest(unittest.TestCase):
   """Unit tests for mobly.controllers.android_device_lib.fastboot."""
 
+  def setUp(self):
+    fastboot.FASTBOOT = 'fastboot'
+
   @mock.patch('mobly.utils.run_command')
   @mock.patch('logging.debug')
   def test_fastboot_commands_and_results_are_logged_to_debug_log(
@@ -90,6 +93,23 @@ class FastbootTest(unittest.TestCase):
         stderr=PIPE,
         shell=True,
         timeout=1200,
+    )
+
+  @mock.patch('mobly.utils.run_command')
+  def test_fastboot_use_customized_fastboot(self, mock_run_command):
+    expected_stdout = 'stdout'
+    expected_stderr = b'stderr'
+    mock_run_command.return_value = (123, expected_stdout, expected_stderr)
+    fastboot.FASTBOOT = 'my_fastboot'
+
+    fastboot.FastbootProxy('ABC').fake_command('extra', 'flags')
+
+    mock_run_command.assert_called_with(
+        cmd='my_fastboot -s ABC fake-command extra flags',
+        stdout=PIPE,
+        stderr=PIPE,
+        shell=True,
+        timeout=1200
     )
 
   @mock.patch('mobly.utils.run_command')
