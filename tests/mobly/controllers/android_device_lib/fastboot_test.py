@@ -100,6 +100,7 @@ class FastbootTest(unittest.TestCase):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
     mock_run_command.return_value = (123, expected_stdout, expected_stderr)
+
     fastboot.FASTBOOT = 'my_fastboot'
 
     fastboot.FastbootProxy('ABC').fake_command('extra', 'flags')
@@ -109,7 +110,7 @@ class FastbootTest(unittest.TestCase):
         stdout=PIPE,
         stderr=PIPE,
         shell=True,
-        timeout=180
+        timeout=180,
     )
 
   @mock.patch('mobly.utils.run_command')
@@ -143,7 +144,6 @@ class FastbootTest(unittest.TestCase):
         shell=True,
         timeout=180,
     )
-
 
   @mock.patch('mobly.utils.run_command')
   def test_fastboot_args_with_custom_timeout(self, mock_run_command):
