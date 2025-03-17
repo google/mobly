@@ -1472,7 +1472,9 @@ class SnippetClientV2Test(unittest.TestCase):
       self, mock_socket_create_conn, mock_run_cmd, _
   ):
     """Tests IOError occurred trying to create a socket connection."""
-    mock_socket_create_conn.side_effect = ConnectionRefusedError(f'[Errno 111] Connection refused.')
+    mock_socket_create_conn.side_effect = ConnectionRefusedError(
+        f'[Errno 111] Connection refused.'
+    )
     mock_run_cmd.return_value = (1, b'', b'')
     with self.assertRaises(errors.Error):
       self._make_client()

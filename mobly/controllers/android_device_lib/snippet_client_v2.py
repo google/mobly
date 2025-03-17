@@ -459,7 +459,7 @@ class SnippetClientV2(client_base.ClientBase):
               self._device,
               'The Adb forward command execution does not take effect. Please'
               ' check if there are other processes occupying adb forward on the'
-              ' host.'
+              ' host.',
           ) from err2
 
     self._conn.settimeout(_SOCKET_READ_TIMEOUT)
