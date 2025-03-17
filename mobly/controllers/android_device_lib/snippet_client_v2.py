@@ -446,9 +446,21 @@ class SnippetClientV2(client_base.ClientBase):
       self.log.debug(
           'Failed to connect to localhost, trying 127.0.0.1: %s', str(err)
       )
-      self._conn = socket.create_connection(
-          ('127.0.0.1', self.host_port), _SOCKET_CONNECTION_TIMEOUT
-      )
+      try:
+        self._conn = socket.create_connection(
+            ('127.0.0.1', self.host_port), _SOCKET_CONNECTION_TIMEOUT
+        )
+      except ConnectionRefusedError as err2:
+        _, stdout, _ = utils.run_command(
+            f'netstat tulpn | grep ":{self.host_port}"', shell=True
+        )
+        if not stdout:
+          raise errors.Error(
+              self._device,
+              'The Adb forward command execution does not take effect. Please'
+              ' check if there are other processes occupying adb forward on the'
+              ' host.'
+          ) from err2
 
     self._conn.settimeout(_SOCKET_READ_TIMEOUT)
     self._client = self._conn.makefile(mode='brw')
