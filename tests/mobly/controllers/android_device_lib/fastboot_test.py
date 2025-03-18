@@ -178,7 +178,9 @@ class FastbootTest(unittest.TestCase):
     )
 
   @mock.patch('mobly.utils.run_command')
-  def test_fastboot_exec_fastboot_cmd_without_timeout_arg(self, mock_run_command):
+  def test_fastboot_exec_fastboot_cmd_without_timeout_arg(
+      self, mock_run_command
+  ):
     expected_stdout = 'stdout'
     expected_stderr = b'stderr'
     mock_run_command.return_value = (123, expected_stdout, expected_stderr)
