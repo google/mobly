@@ -465,7 +465,7 @@ class SnippetClientV2(client_base.ClientBase):
         raise errors.Error(
             self._device,
             'Failed to establish socket connection from host to snippet server'
-            ' running on Android device.'
+            ' running on Android device.',
         ) from err2
 
     self._conn.settimeout(_SOCKET_READ_TIMEOUT)

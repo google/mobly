@@ -1499,9 +1499,7 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_socket_create_conn.side_effect = ConnectionRefusedError(
         f'[Errno 111] Connection refused.'
     )
-    mock_run_cmd.return_value = (
-        1, f'127.0.0.1:{MOCK_HOST_PORT}'.encode(), b''
-    )
+    mock_run_cmd.return_value = (1, f'127.0.0.1:{MOCK_HOST_PORT}'.encode(), b'')
     error_msg = (
         'Failed to establish socket connection from host to snippet server'
         ' running on Android device.'
