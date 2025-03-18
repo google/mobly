@@ -161,6 +161,38 @@ class FastbootTest(unittest.TestCase):
         timeout=20,
     )
 
+  @mock.patch('mobly.utils.run_command')
+  def test_fastboot_exe_cmd_without_timeout_arg(self, mock_run_command):
+    expected_stdout = 'stdout'
+    expected_stderr = b'stderr'
+    mock_run_command.return_value = (123, expected_stdout, expected_stderr)
+
+    fastboot.exe_cmd('fastboot -w')
+
+    mock_run_command.assert_called_with(
+        cmd='fastboot -w',
+        stdout=PIPE,
+        stderr=PIPE,
+        shell=True,
+        timeout=180,
+    )
+
+  @mock.patch('mobly.utils.run_command')
+  def test_fastboot_exec_fastboot_cmd_without_timeout_arg(self, mock_run_command):
+    expected_stdout = 'stdout'
+    expected_stderr = b'stderr'
+    mock_run_command.return_value = (123, expected_stdout, expected_stderr)
+
+    fastboot.FastbootProxy()._exec_fastboot_cmd(name='', arg_str='-w')
+
+    mock_run_command.assert_called_with(
+        cmd='fastboot  -w',
+        stdout=PIPE,
+        stderr=PIPE,
+        shell=True,
+        timeout=180,
+    )
+
 
 if __name__ == '__main__':
   unittest.main()
