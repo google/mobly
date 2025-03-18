@@ -457,10 +457,16 @@ class SnippetClientV2(client_base.ClientBase):
         if not stdout:
           raise errors.Error(
               self._device,
-              'The Adb forward command execution does not take effect. Please'
-              ' check if there are other processes occupying adb forward on the'
+              'The Adb forward command execution did not take effect. Please'
+              ' check if there are other processes affecting adb forward on the'
               ' host.',
           ) from err2
+
+        raise errors.Error(
+            self._device,
+            'Failed to establish socket connection from host to snippet server'
+            ' running on Android device.'
+        ) from err2
 
     self._conn.settimeout(_SOCKET_READ_TIMEOUT)
     self._client = self._conn.makefile(mode='brw')
