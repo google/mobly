@@ -451,10 +451,10 @@ class SnippetClientV2(client_base.ClientBase):
             ('127.0.0.1', self.host_port), _SOCKET_CONNECTION_TIMEOUT
         )
       except ConnectionRefusedError as err2:
-        _, stdout, _ = utils.run_command(
+        ret, _, _ = utils.run_command(
             f'netstat -tulpn | grep ":{self.host_port}"', shell=True
         )
-        if not stdout:
+        if ret != 0:
           raise errors.Error(
               self._device,
               'The Adb forward command execution did not take effect. Please'
