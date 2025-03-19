@@ -452,7 +452,7 @@ class SnippetClientV2(client_base.ClientBase):
         )
       except ConnectionRefusedError as err2:
         _, stdout, _ = utils.run_command(
-            f'netstat tulpn | grep ":{self.host_port}"', shell=True
+            f'netstat -tulpn | grep ":{self.host_port}"', shell=True
         )
         if not stdout:
           raise errors.Error(

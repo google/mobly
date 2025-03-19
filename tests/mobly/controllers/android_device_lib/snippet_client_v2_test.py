@@ -1482,6 +1482,10 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client.device_port = 123
       self.client.make_connection()
 
+    mock_run_cmd.assert_any_call(
+        f'netstat -tulpn | grep ":{MOCK_HOST_PORT}"', shell=True
+    )
+
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'adb.list_occupied_adb_ports',
@@ -1508,6 +1512,10 @@ class SnippetClientV2Test(unittest.TestCase):
       self._make_client()
       self.client.device_port = 123
       self.client.make_connection()
+
+    mock_run_cmd.assert_any_call(
+        f'netstat -tulpn | grep ":{MOCK_HOST_PORT}"', shell=True
+    )
 
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
