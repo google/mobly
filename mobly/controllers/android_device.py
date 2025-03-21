@@ -94,8 +94,12 @@ def create(configs):
   """Creates AndroidDevice controller objects.
 
   Args:
-    configs: A list of dicts, each representing a configuration for an
-      Android device.
+    configs: Represents configurations for Android devices, this can take one of
+      the following forms:
+      * str, only asterisk symbol is accepted, indicating that all connected
+        Android devices will be used
+      * A list of dict, each representing a configuration for an Android device.
+      * A list of str, each representing the serial number of Android device.
 
   Returns:
     A list of AndroidDevice objects.

@@ -24,7 +24,7 @@ DEFAULT_TIMEOUT_SEC = 180
 FASTBOOT = 'fastboot'
 
 
-def exe_cmd(*cmds, timeout):
+def exe_cmd(*cmds, timeout=DEFAULT_TIMEOUT_SEC):
   """Executes commands in a new shell. Directing stderr to PIPE, with timeout.
 
   This is fastboot's own exe_cmd because of its peculiar way of writing
@@ -78,7 +78,7 @@ class FastbootProxy:
       return '{} -s {}'.format(FASTBOOT, self.serial)
     return FASTBOOT
 
-  def _exec_fastboot_cmd(self, name, arg_str, timeout):
+  def _exec_fastboot_cmd(self, name, arg_str, timeout=DEFAULT_TIMEOUT_SEC):
     return exe_cmd(
         ' '.join((self.fastboot_str(), name, arg_str)), timeout=timeout
     )
