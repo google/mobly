@@ -1,10 +1,8 @@
 # Mobly Release History
 
 # Mobly Release 1.13: SL4A Deprecation and Test Suite Improvements
-
-Removed SL4A related code. 
-
-Improvements for defining test suites through the `BaseSuite` class.
+Removed SL4A related code. Improvements for defining test suites through the
+`BaseSuite` class.
 
 ### New
 * Enabled test selection and listing with test suite class.
