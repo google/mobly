@@ -788,7 +788,7 @@ class BaseTestClass:
         test_name, self.log_path, tr_record
     )
     expects.recorder.reset_internal_states(tr_record)
-    logging.info('%s %s', TEST_CASE_TOKEN, test_name)
+    logging.info('%s %s#%s', TEST_CASE_TOKEN, self.TAG, test_name)
     # Did teardown_test throw an error.
     teardown_test_failed = False
     try:
