@@ -37,6 +37,8 @@ class BaseSuite(abc.ABC):
     self._runner = runner
     self._config = config.copy()
     self._test_selector = None
+    self._suite_run_display_name = self.__class__.__name__
+    self._suite_info = None
 
   @property
   def user_params(self):
@@ -96,37 +98,32 @@ class BaseSuite(abc.ABC):
     """Function used to add post tests cleanup tasks (optional)."""
     pass
 
-  # Optional interfaces that users can override to record customized suite
-  # information to test summary.
+  # Methods for sub-classes to record customized suite information to
+  # test summary.
 
-  def get_suite_name(self):
-    """Override to return a customized suite name (optional).
+  def set_suite_run_display_name(self, suite_run_display_name):
+    """Interface for sub-classes to set a customized display name.
 
-    Use suite class name by default.
+    If not set, suite class name will be used by default.
 
-    Returns:
-      A string that indicates the suite name.
+    Args:
+      suite_run_display_name: str, the display name to set.
     """
-    return self.__class__.__name__
+    self._suite_run_display_name = suite_run_display_name
 
-  def get_run_identifier(self):
-    """Override to record identifier describing the key run context (optional).
+  def get_suite_run_display_name(self):
+    """Returns the suite run display name."""
+    return self._suite_run_display_name
 
-    Users can include test runtime info as this method will be called after all
-    test classes are executed.
+  def set_suite_info(self, suite_info=None):
+    """Interface for sub-classes to set user defined extra info to test summary.
 
-    Returns:
-      A string that indicates key run context information.
+    Args:
+      suite_info: dict, A dict of suite information. Keys and values must be
+        serializable.
     """
-    return None
+    self._suite_info = suite_info or {}
 
   def get_suite_info(self):
-    """Override to record user defined extra info to test summary (optional).
-
-    Users can include test runtime info as this method will be called after all
-    test classes are executed.
-
-    Returns:
-      A dict of suite information. Keys and values must be serializable.
-    """
-    return {}
+    """Returns suite information."""
+    return self._suite_info

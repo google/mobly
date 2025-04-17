@@ -98,19 +98,16 @@ class SuiteInfoRecord:
   This is not for suites directly assembled via `run_suite`.
   """
 
-  KEY_SUITE_NAME = 'Suite Name'
   KEY_SUITE_CLASS_NAME = 'Suite Class Name'
-  KEY_RUN_IDENTIFIER = 'Run Identifier'
+  KEY_SUITE_RUN_DISPLAY_NAME = 'Suite Run Display Name'
   KEY_EXTRAS = 'Extras'
   KEY_BEGIN_TIME = 'Suite Begin Time'
   KEY_END_TIME = 'Suite End Time'
 
-  # The name of the test suite.
-  _suite_name: str
   # The class name of the test suite class.
   _suite_class_name: str
   # The run identifier that describes key test run context.
-  _run_identifier: str | None = None
+  _suite_run_display_name: str | None = None
   # User defined extra information of the test result. Must be serializable.
   _extras: dict
   # Epoch timestamp of when the suite started.
@@ -120,7 +117,7 @@ class SuiteInfoRecord:
 
   def __init__(self, suite_class_name):
     self._suite_class_name = suite_class_name
-    self._suite_name = ''
+    self._suite_run_display_name = None
     self._extras = dict()
 
   def suite_begin(self):
@@ -131,13 +128,9 @@ class SuiteInfoRecord:
     """Call this when the suite ends execution."""
     self._end_time = utils.get_current_epoch_time()
 
-  def set_suite_name(self, suite_name):
-    """Sets the name of the test suite."""
-    self._suite_name = suite_name
-
-  def set_run_identifier(self, run_identifier):
+  def set_suite_run_display_name(self, suite_run_display_name):
     """Sets the run identifier."""
-    self._run_identifier = run_identifier
+    self._suite_run_display_name = suite_run_display_name
 
   def set_extras(self, extras):
     """Sets extra information. Must be serializable."""
@@ -146,8 +139,7 @@ class SuiteInfoRecord:
   def to_dict(self):
     result = {}
     result[self.KEY_SUITE_CLASS_NAME] = self._suite_class_name
-    result[self.KEY_SUITE_NAME] = self._suite_name
-    result[self.KEY_RUN_IDENTIFIER] = self._run_identifier
+    result[self.KEY_SUITE_RUN_DISPLAY_NAME] = self._suite_run_display_name
     result[self.KEY_EXTRAS] = self._extras
     result[self.KEY_BEGIN_TIME] = self._begin_time
     result[self.KEY_END_TIME] = self._end_time
@@ -338,7 +330,6 @@ def run_suite_class(argv=None):
   test_selector = _parse_raw_test_selector(cli_args.tests)
   suite.set_test_selector(test_selector)
   suite_record = SuiteInfoRecord(suite_class_name=suite_class.__name__)
-  suite_record.set_suite_name(suite.get_suite_name())
 
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
@@ -355,7 +346,9 @@ def run_suite_class(argv=None):
     finally:
       suite.teardown_suite()
       suite_record.suite_end()
-      suite_record.set_run_identifier(suite.get_run_identifier())
+      suite_record.set_suite_run_display_name(
+          suite.get_suite_run_display_name()
+      )
       suite_record.set_extras(suite.get_suite_info())
       _dump_suite_info(suite_record, log_path)
   if not ok:
