@@ -5,7 +5,8 @@ Removed all SL4A related code. Improved test suite mechanism.
 
 ### New
 * Support test case selection and listing for test suites.
-* Support regex-based selection of test cases for test classes.
+* Support selecting test cases within single test class using regular
+  expressions.
 * Support `fastboot` command execution with updated serial and customized binary
   path.
 * Support getting the service alias by service class.
