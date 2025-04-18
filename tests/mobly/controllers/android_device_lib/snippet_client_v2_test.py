@@ -1463,6 +1463,65 @@ class SnippetClientV2Test(unittest.TestCase):
       'adb.list_occupied_adb_ports',
       return_value=[],
   )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.run_command'
+  )
+  @mock.patch('socket.create_connection')
+  def test_make_connection_when_host_port_is_not_in_listening_state_(
+      self, mock_socket_create_conn, mock_run_cmd, _
+  ):
+    """Tests IOError occurred trying to create a socket connection."""
+    mock_socket_create_conn.side_effect = ConnectionRefusedError(
+        f'[Errno 111] Connection refused.'
+    )
+    mock_run_cmd.return_value = (1, b'', b'')
+    error_msg = 'The Adb forward command execution did not take effect'
+    with self.assertRaisesRegex(errors.Error, error_msg):
+      self._make_client()
+      self.client.device_port = 123
+      self.client.make_connection()
+
+    mock_run_cmd.assert_any_call(
+        f'netstat -tulpn | grep ":{MOCK_HOST_PORT}"', shell=True
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.run_command'
+  )
+  @mock.patch('socket.create_connection')
+  def test_make_connection_raise_when_host_port_is_in_listening_state_(
+      self, mock_socket_create_conn, mock_run_cmd, _
+  ):
+    """Tests IOError occurred trying to create a socket connection."""
+    mock_socket_create_conn.side_effect = ConnectionRefusedError(
+        f'[Errno 111] Connection refused.'
+    )
+    mock_run_cmd.return_value = (0, f'127.0.0.1:{MOCK_HOST_PORT}'.encode(), b'')
+    error_msg = (
+        'Failed to establish socket connection from host to snippet server'
+        ' running on Android device.'
+    )
+    with self.assertRaisesRegex(errors.Error, error_msg):
+      self._make_client()
+      self.client.device_port = 123
+      self.client.make_connection()
+
+    mock_run_cmd.assert_any_call(
+        f'netstat -tulpn | grep ":{MOCK_HOST_PORT}"', shell=True
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
   @mock.patch('socket.create_connection')
   def test_make_connection_io_error(self, mock_socket_create_conn, _):
     """Tests IOError occurred trying to create a socket connection."""

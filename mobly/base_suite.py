@@ -71,12 +71,15 @@ class BaseSuite(abc.ABC):
     """
     if self._test_selector:
       cls_name = clazz.__name__
-      if cls_name not in self._test_selector:
+      if (cls_name, name_suffix) in self._test_selector:
+        tests = self._test_selector[(cls_name, name_suffix)]
+      elif cls_name in self._test_selector:
+        tests = self._test_selector[cls_name]
+      else:
         logging.info(
             'Skipping test class %s due to CLI argument `tests`.', cls_name
         )
         return
-      tests = self._test_selector[cls_name]
 
     if not config:
       config = self._config
