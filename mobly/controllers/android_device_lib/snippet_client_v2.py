@@ -39,6 +39,18 @@ _LAUNCH_CMD = (
     f' {{snippet_package}}/{_INSTRUMENTATION_RUNNER_PACKAGE}'
 )
 
+_SNIPPET_SERVER_START_ERROR_DEBUG_TIP = """
+Got invalid snippet sever start instrumentation result: {instrumentation_result}
+
+Please check following logs for debugging:
+1. Check the server process stdout attached below.
+2. Check the snippet server logs on device in the logcat file. Search for
+   "SNIPPET START" to find the snippet server process ID.
+
+Server process stdout:
+{server_start_stdout}
+"""
+
 # The command template to stop the snippet server
 _STOP_CMD = (
     'am instrument {user} -w -e action stop {snippet_package}/'
@@ -161,6 +173,7 @@ class SnippetClientV2(client_base.ClientBase):
     self._conn = None
     self._event_client = None
     self._config = config or Config()
+    self._server_start_stdout = []
 
   @property
   def user_id(self):
@@ -285,6 +298,7 @@ class SnippetClientV2(client_base.ClientBase):
     self._proc = self._run_adb_cmd(cmd)
 
     # Check protocol version and get the device port
+    self._server_start_stdout = []
     line = self._read_protocol_line()
     match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$', line)
     if not match or int(match.group(1)) != _PROTOCOL_MAJOR_VERSION:
@@ -293,7 +307,13 @@ class SnippetClientV2(client_base.ClientBase):
     line = self._read_protocol_line()
     match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
     if not match:
-      raise errors.ServerStartProtocolError(self._device, line)
+      message = _SNIPPET_SERVER_START_ERROR_DEBUG_TIP.format(
+          instrumentation_result=line,
+          server_start_stdout='\n'.join(
+              self._server_start_stdout
+          ),
+      )
+      raise errors.ServerStartProtocolError(self._device, message)
     self.device_port = int(match.group(1))
 
   def _run_adb_cmd(self, cmd):
@@ -365,6 +385,7 @@ class SnippetClientV2(client_base.ClientBase):
       errors.ServerStartError: If EOF is reached without any protocol lines
         being read.
     """
+    self._server_start_stdout = []
     while True:
       line = self._proc.stdout.readline().decode('utf-8')
       if not line:
@@ -383,6 +404,7 @@ class SnippetClientV2(client_base.ClientBase):
         self.log.debug('Accepted line from instrumentation output: "%s"', line)
         return line
 
+      self._server_start_stdout.append(line)
       self.log.debug('Discarded line from instrumentation output: "%s"', line)
 
   def make_connection(self):
