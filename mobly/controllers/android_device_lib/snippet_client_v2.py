@@ -40,12 +40,13 @@ _LAUNCH_CMD = (
 )
 
 _SNIPPET_SERVER_START_ERROR_DEBUG_TIP = """
-Got invalid snippet sever start instrumentation result: {instrumentation_result}
+Invalid instrumentation result log received during snippet server start:
+{instrumentation_result}
 
-Please check following logs for debugging:
+For debugging, please check the following:
 1. Check the server process stdout attached below.
-2. Check the snippet server logs on device in the logcat file. Search for
-   "SNIPPET START" to find the snippet server process ID.
+2. The snippet server logs within the device's logcat file. Search for
+   "SNIPPET START" to locate the relevant process ID.
 
 Server process stdout:
 {server_start_stdout}
