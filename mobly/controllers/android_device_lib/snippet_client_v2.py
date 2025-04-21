@@ -310,9 +310,7 @@ class SnippetClientV2(client_base.ClientBase):
     if not match:
       message = _SNIPPET_SERVER_START_ERROR_DEBUG_TIP.format(
           instrumentation_result=line,
-          server_start_stdout='\n'.join(
-              self._server_start_stdout
-          ),
+          server_start_stdout='\n'.join(self._server_start_stdout),
       )
       raise errors.ServerStartProtocolError(self._device, message)
     self.device_port = int(match.group(1))

@@ -758,7 +758,9 @@ class SnippetClientV2Test(unittest.TestCase):
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
-  def test_start_server_error_message_include_discarded_output(self, mock_start_standing_subprocess):
+  def test_start_server_error_message_include_discarded_output(
+      self, mock_start_standing_subprocess
+  ):
     """Tests that starting server process reports known protocol with junk."""
     self._make_client()
     discarded_output = 'java.lang.RuntimeException: Failed to start server'
@@ -767,11 +769,12 @@ class SnippetClientV2Test(unittest.TestCase):
         resp_lines=[
             b'SNIPPET START, PROTOCOL 1 0\n',
             discarded_output.encode('utf-8'),
-            b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.'
+            b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.',
         ],
     )
     with self.assertRaisesRegex(
-        errors.ServerStartProtocolError, discarded_output,
+        errors.ServerStartProtocolError,
+        discarded_output,
     ):
       self.client.start_server()
 
