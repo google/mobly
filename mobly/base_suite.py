@@ -38,7 +38,7 @@ class BaseSuite(abc.ABC):
     self._config = config.copy()
     self._test_selector = None
     self._suite_run_display_name = self.__class__.__name__
-    self._suite_info = None
+    self._suite_info = {}
 
   @property
   def user_params(self):
@@ -107,7 +107,8 @@ class BaseSuite(abc.ABC):
   def set_suite_run_display_name(self, suite_run_display_name):
     """Interface for sub-classes to set a customized display name.
 
-    If not set, suite class name will be used by default.
+    This name provides run-specific context intended for display. Default to
+    suite class name. Set this in sub-classes to include run-specific context.
 
     Args:
       suite_run_display_name: str, the display name to set.

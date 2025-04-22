@@ -342,19 +342,14 @@ class SuiteRunnerTest(unittest.TestCase):
   )
   def test_run_suite_class_records_suite_info(self, mock_time, _):
     tmp_file_path = self._gen_tmp_config_file()
-    suite_run_display_name = 'FakeTestSuite - Pixel'
-    suite_info = {
-        'extra-key-0': 'extra-value-0',
-        'extra-key-1': 'extra-value-1',
-    }
     mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
     expected_record = suite_runner.SuiteInfoRecord(
         suite_class_name='FakeTestSuite'
     )
     expected_record.suite_begin()
     expected_record.suite_end()
-    expected_record.set_suite_run_display_name(suite_run_display_name)
-    expected_record.set_extras(suite_info.copy())
+    expected_record.suite_run_display_name = 'FakeTestSuite - Pixel'
+    expected_record.extras = {'version': '1.0.0'}
     expected_summary_entry = expected_record.to_dict()
     expected_summary_entry['Type'] = (
         suite_runner.TestSummaryEntryType.SUITE_INFO.value
@@ -367,9 +362,8 @@ class SuiteRunnerTest(unittest.TestCase):
         self.add_test_class(FakeTest1)
 
       def teardown_suite(self):
-        nonlocal suite_run_display_name, suite_info
-        self.set_suite_run_display_name(suite_run_display_name)
-        self.set_suite_info(suite_info.copy())
+        self.set_suite_run_display_name('FakeTestSuite - Pixel')
+        self.set_suite_info({'version': '1.0.0'})
 
     sys.modules['__main__'].__dict__[FakeTestSuite.__name__] = FakeTestSuite
 
@@ -432,10 +426,10 @@ class SuiteRunnerTest(unittest.TestCase):
     suite_run_display_name = 'FakeTestSuite - Pixel'
     suite_version = '1.2.3'
     record = suite_runner.SuiteInfoRecord(suite_class_name=suite_class_name)
-    record.set_extras({'version': suite_version})
+    record.extras = {'version': suite_version}
     record.suite_begin()
     record.suite_end()
-    record.set_suite_run_display_name(suite_run_display_name)
+    record.suite_run_display_name = suite_run_display_name
 
     result = record.to_dict()
 
