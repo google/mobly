@@ -1605,6 +1605,15 @@ class AndroidDeviceTest(unittest.TestCase):
     ):
       raise Exception(ad, 'Something')
 
+  def test_AndroidDevice_debug_tag_of_ipv6_serial(self):
+    ad = android_device.AndroidDevice(serial='[fe80::1234%42]:5555')
+    self.assertEqual(ad.debug_tag, '[fe80::1234%%42]:5555')
+    try:
+      msg = '{} and %s'.format(ad.debug_tag)
+      ad.log.error(msg % 'happened')
+    except ValueError as e:
+      raise Exception(f'Error occurred: {e}')
+
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
       return_value=mock_android_device.MockAdbProxy('1'),
