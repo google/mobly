@@ -13,20 +13,25 @@
 # limitations under the License.
 
 import io
+import logging
 import os
 import shutil
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
 from mobly import base_suite
 from mobly import base_test
+from mobly import records
 from mobly import suite_runner
 from mobly import test_runner
+from mobly import utils
 from tests.lib import integration2_test
 from tests.lib import integration_test
 from tests.lib import integration_test_suite
+import yaml
 
 
 class FakeTest1(base_test.BaseTestClass):
@@ -175,10 +180,11 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_called.set_test_selector.assert_called_once_with(None)
 
   @mock.patch('sys.exit')
+  @mock.patch.object(records, 'TestSummaryWriter', autospec=True)
   @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
   @mock.patch.object(test_runner, 'TestRunner')
   def test_run_suite_class_with_test_selection_by_class(
-      self, mock_test_runner_class, mock_find_suite_class, mock_exit
+      self, mock_test_runner_class, mock_find_suite_class, *_
   ):
     mock_test_runner = mock_test_runner_class.return_value
     mock_test_runner.results.is_all_pass = True
@@ -213,10 +219,11 @@ class SuiteRunnerTest(unittest.TestCase):
     )
 
   @mock.patch('sys.exit')
+  @mock.patch.object(records, 'TestSummaryWriter', autospec=True)
   @mock.patch.object(suite_runner, '_find_suite_class', autospec=True)
   @mock.patch.object(test_runner, 'TestRunner')
   def test_run_suite_class_with_test_selection_by_method(
-      self, mock_test_runner_class, mock_find_suite_class, mock_exit
+      self, mock_test_runner_class, mock_find_suite_class, *_
   ):
     mock_test_runner = mock_test_runner_class.return_value
     mock_test_runner.results.is_all_pass = True
@@ -311,12 +318,13 @@ class SuiteRunnerTest(unittest.TestCase):
     mock_exit.assert_not_called()
 
   @mock.patch('sys.exit')
+  @mock.patch.object(records, 'TestSummaryWriter', autospec=True)
   @mock.patch.object(test_runner, 'TestRunner')
   @mock.patch.object(
       integration_test_suite.IntegrationTestSuite, 'setup_suite', autospec=True
   )
   def test_run_suite_class_finds_suite_class_when_not_in_main_module(
-      self, mock_setup_suite, mock_test_runner_class, mock_exit
+      self, mock_setup_suite, mock_test_runner_class, *_
   ):
     mock_test_runner = mock_test_runner_class.return_value
     mock_test_runner.results.is_all_pass = True
@@ -327,6 +335,54 @@ class SuiteRunnerTest(unittest.TestCase):
       integration_test_suite.main()
 
     mock_setup_suite.assert_called_once()
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(
+      utils, 'get_current_epoch_time', return_value=1733143236278
+  )
+  def test_run_suite_class_records_suite_info(self, mock_time, _):
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
+    expected_record = suite_runner.SuiteInfoRecord(
+        suite_class_name='FakeTestSuite'
+    )
+    expected_record.suite_begin()
+    expected_record.suite_end()
+    expected_record.suite_run_display_name = 'FakeTestSuite - Pixel'
+    expected_record.extras = {'version': '1.0.0'}
+    expected_summary_entry = expected_record.to_dict()
+    expected_summary_entry['Type'] = (
+        suite_runner.TestSummaryEntryType.SUITE_INFO.value
+    )
+
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def setup_suite(self, config):
+        super().setup_suite(config)
+        self.add_test_class(FakeTest1)
+
+      def teardown_suite(self):
+        self.set_suite_run_display_name('FakeTestSuite - Pixel')
+        self.set_suite_info({'version': '1.0.0'})
+
+    sys.modules['__main__'].__dict__[FakeTestSuite.__name__] = FakeTestSuite
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      try:
+        suite_runner.run_suite_class()
+      finally:
+        del sys.modules['__main__'].__dict__[FakeTestSuite.__name__]
+
+    summary_path = os.path.join(
+        logging.root_output_path, records.OUTPUT_FILE_SUMMARY
+    )
+    with io.open(summary_path, 'r', encoding='utf-8') as f:
+      summary_entries = list(yaml.safe_load_all(f))
+
+    self.assertIn(
+        expected_summary_entry,
+        summary_entries,
+    )
 
   @mock.patch('builtins.print')
   def test_print_test_names_for_suites(self, mock_print):
@@ -364,6 +420,36 @@ class SuiteRunnerTest(unittest.TestCase):
     suite_runner._print_test_names([mock_test_class])
     mock_cls_instance._pre_run.side_effect = Exception('Something went wrong.')
     mock_cls_instance._clean_up.assert_called_once()
+
+  def test_convert_suite_info_record_to_dict(self):
+    suite_class_name = 'FakeTestSuite'
+    suite_run_display_name = 'FakeTestSuite - Pixel'
+    suite_version = '1.2.3'
+    record = suite_runner.SuiteInfoRecord(suite_class_name=suite_class_name)
+    record.extras = {'version': suite_version}
+    record.suite_begin()
+    record.suite_end()
+    record.suite_run_display_name = suite_run_display_name
+
+    result = record.to_dict()
+
+    self.assertIn(
+        (suite_runner.SuiteInfoRecord.KEY_SUITE_CLASS_NAME, suite_class_name),
+        result.items(),
+    )
+    self.assertIn(
+        (suite_runner.SuiteInfoRecord.KEY_EXTRAS, {'version': suite_version}),
+        result.items(),
+    )
+    self.assertIn(
+        (
+            suite_runner.SuiteInfoRecord.KEY_SUITE_RUN_DISPLAY_NAME,
+            suite_run_display_name,
+        ),
+        result.items(),
+    )
+    self.assertIn(suite_runner.SuiteInfoRecord.KEY_BEGIN_TIME, result)
+    self.assertIn(suite_runner.SuiteInfoRecord.KEY_END_TIME, result)
 
   def _gen_tmp_config_file(self):
     tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')

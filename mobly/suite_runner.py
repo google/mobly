@@ -66,19 +66,84 @@ class.
 """
 import argparse
 import collections
+import enum
 import inspect
 import logging
+import os
 import sys
 
 from mobly import base_test
 from mobly import base_suite
 from mobly import config_parser
+from mobly import records
 from mobly import signals
 from mobly import test_runner
+from mobly import utils
 
 
 class Error(Exception):
   pass
+
+
+class TestSummaryEntryType(enum.Enum):
+  """Constants used to record suite level entries in test summary file."""
+
+  SUITE_INFO = 'SuiteInfo'
+
+
+class SuiteInfoRecord:
+  """A record representing the test suite info in test summary.
+
+  This record class is for suites defined by inheriting `base_suite.BaseSuite`.
+  This is not for suites directly assembled via `run_suite`.
+
+  Attributes:
+    suite_class_name: The class name of the test suite class.
+    suite_run_display_name: The name that provides run-specific context intended
+      for display. Default to suite class name. Set this in the suite class to
+      include run-specific context.
+    extras: User defined extra information of the test result. Must be
+      serializable.
+    begin_time: Epoch timestamp of when the suite started.
+    end_time: Epoch timestamp of when the suite ended.
+  """
+
+  KEY_SUITE_CLASS_NAME = 'Suite Class Name'
+  KEY_SUITE_RUN_DISPLAY_NAME = 'Suite Run Display Name'
+  KEY_EXTRAS = 'Extras'
+  KEY_BEGIN_TIME = 'Suite Begin Time'
+  KEY_END_TIME = 'Suite End Time'
+
+  suite_class_name: str
+  suite_run_display_name: str
+  extras: dict
+  begin_time: int | None = None
+  end_time: int | None = None
+
+  def __init__(self, suite_class_name):
+    self.suite_class_name = suite_class_name
+    self.suite_run_display_name = suite_class_name
+    self.extras = dict()
+
+  def suite_begin(self):
+    """Call this when the suite begins execution."""
+    self.begin_time = utils.get_current_epoch_time()
+
+  def suite_end(self):
+    """Call this when the suite ends execution."""
+    self.end_time = utils.get_current_epoch_time()
+
+  def to_dict(self):
+    result = {}
+    result[self.KEY_SUITE_CLASS_NAME] = self.suite_class_name
+    result[self.KEY_SUITE_RUN_DISPLAY_NAME] = self.suite_run_display_name
+    result[self.KEY_EXTRAS] = self.extras
+    result[self.KEY_BEGIN_TIME] = self.begin_time
+    result[self.KEY_END_TIME] = self.end_time
+    return result
+
+  def __repr__(self):
+    return str(self.to_dict())
 
 
 def _parse_cli_args(argv):
@@ -259,6 +324,13 @@ def _print_test_names(test_classes):
       print(f'{cls.TAG}.{name}')
 
 
+def _dump_suite_info(suite_record, log_path):
+  """Dumps the suite info record to test summary file."""
+  summary_path = os.path.join(log_path, records.OUTPUT_FILE_SUMMARY)
+  summary_writer = records.TestSummaryWriter(summary_path)
+  summary_writer.dump(suite_record.to_dict(), TestSummaryEntryType.SUITE_INFO)
+
+
 def run_suite_class(argv=None):
   """Executes tests in the test suite.
 
@@ -283,12 +355,15 @@ def run_suite_class(argv=None):
   suite = suite_class(runner, config)
   test_selector = _parse_raw_test_selector(cli_args.tests)
   suite.set_test_selector(test_selector)
+  suite_record = SuiteInfoRecord(suite_class_name=suite_class.__name__)
+
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
-  with runner.mobly_logger(console_level=console_level):
+  with runner.mobly_logger(console_level=console_level) as log_path:
     try:
       suite.setup_suite(config.copy())
       try:
+        suite_record.suite_begin()
         runner.run()
         ok = runner.results.is_all_pass
         print(ok)
@@ -296,6 +371,10 @@ def run_suite_class(argv=None):
         pass
     finally:
       suite.teardown_suite()
+      suite_record.suite_end()
+      suite_record.suite_run_display_name = suite.get_suite_run_display_name()
+      suite_record.extras = suite.get_suite_info().copy()
+      _dump_suite_info(suite_record, log_path)
   if not ok:
     sys.exit(1)
 

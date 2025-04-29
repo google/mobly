@@ -37,6 +37,8 @@ class BaseSuite(abc.ABC):
     self._runner = runner
     self._config = config.copy()
     self._test_selector = None
+    self._suite_run_display_name = self.__class__.__name__
+    self._suite_info = {}
 
   @property
   def user_params(self):
@@ -98,3 +100,34 @@ class BaseSuite(abc.ABC):
   def teardown_suite(self):
     """Function used to add post tests cleanup tasks (optional)."""
     pass
+
+  # Methods for sub-classes to record customized suite information to
+  # test summary.
+
+  def set_suite_run_display_name(self, suite_run_display_name):
+    """Interface for sub-classes to set a customized display name.
+
+    This name provides run-specific context intended for display. Default to
+    suite class name. Set this in sub-classes to include run-specific context.
+
+    Args:
+      suite_run_display_name: str, the display name to set.
+    """
+    self._suite_run_display_name = suite_run_display_name
+
+  def get_suite_run_display_name(self):
+    """Returns the suite run display name."""
+    return self._suite_run_display_name
+
+  def set_suite_info(self, suite_info=None):
+    """Interface for sub-classes to set user defined extra info to test summary.
+
+    Args:
+      suite_info: dict, A dict of suite information. Keys and values must be
+        serializable.
+    """
+    self._suite_info = suite_info or {}
+
+  def get_suite_info(self):
+    """Returns suite information."""
+    return self._suite_info
