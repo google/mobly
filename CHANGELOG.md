@@ -1,5 +1,29 @@
 # Mobly Release History
 
+# Mobly Release 1.13: SL4A Removal and Test Suite Improvements
+Removed all SL4A related code. Improved test suite mechanism.
+
+### New
+* Support test case selection and listing for test suites.
+* Support selecting test cases within single test class using regular
+  expressions.
+* Record suite meta information in the test summary file.
+* Support `fastboot` command execution with customized binary path.
+* Support `fastboot` command execution using the latest serial when the device
+  changes its serial during a test.
+* Support getting the service alias by service class.
+
+### Breaking Changes
+* Removal of all SL4A related code.
+* Removal of the `generate_setup_tests` stage, which was deprecated in version
+  1.12.
+
+### Fixes
+* Improved the error message for snippet loading errors.
+* Updated documents and docstrings.
+
+[Full list of changes](https://github.com/google/mobly/milestone/32?closed=1)
+
 
 ## Mobly Release 1.12.4: Improvements
 
