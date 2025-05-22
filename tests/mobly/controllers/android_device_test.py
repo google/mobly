@@ -1169,6 +1169,104 @@ class AndroidDeviceTest(unittest.TestCase):
   )
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.logger.get_log_file_timestamp')
+  def test_AndroidDevice_take_screenshot_all_displays(
+      self,
+      get_log_file_timestamp_mock,
+      create_dir_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    test_adb_proxy = MockAdbProxy.return_value
+    original_mock_adb_instance_shell = MockAdbProxy.shell
+
+    def custom_shell_for_screenshot(params, timeout=None):
+      if f'ls /storage/emulated/0/*.png' in params:
+        return (
+            b'/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_0.png\n'
+            + b'/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_1.png\n'
+        )
+      return original_mock_adb_instance_shell(params, timeout)
+
+    test_adb_proxy.shell = custom_shell_for_screenshot
+
+    get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+    mock_serial = '1'
+    ad = android_device.AndroidDevice(serial=mock_serial)
+    full_pic_paths = ad.take_screenshot(self.tmp_dir, all_displays=True)
+    self.assertEqual(
+        full_pic_paths,
+        [
+            os.path.join(
+                self.tmp_dir,
+                'screenshot,1,fakemodel,07-22-2019_17-53-34-450_0.png',
+            ),
+            os.path.join(
+                self.tmp_dir,
+                'screenshot,1,fakemodel,07-22-2019_17-53-34-450_1.png',
+            ),
+        ],
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.logger.get_log_file_timestamp')
+  def test_AndroidDevice_take_screenshot_all_displays_with_additional_files(
+      self,
+      get_log_file_timestamp_mock,
+      create_dir_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    test_adb_proxy = MockAdbProxy.return_value
+    original_mock_adb_instance_shell = MockAdbProxy.shell
+
+    def custom_shell_for_screenshot(params, timeout=None):
+      if f'ls /storage/emulated/0/*.png' in params:
+        return (
+            b'/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_0.png\n'
+            + b'/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_1.png\n'
+            b'/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_16-53-34-450_0.png\n'
+            + b'/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_16-53-34-450_1.png\n'
+        )
+      return original_mock_adb_instance_shell(params, timeout)
+
+    test_adb_proxy.shell = custom_shell_for_screenshot
+
+    get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+    mock_serial = '1'
+    ad = android_device.AndroidDevice(serial=mock_serial)
+    full_pic_paths = ad.take_screenshot(self.tmp_dir, all_displays=True)
+    self.assertEqual(
+        full_pic_paths,
+        [
+            os.path.join(
+                self.tmp_dir,
+                'screenshot,1,fakemodel,07-22-2019_17-53-34-450_0.png',
+            ),
+            os.path.join(
+                self.tmp_dir,
+                'screenshot,1,fakemodel,07-22-2019_17-53-34-450_1.png',
+            ),
+        ],
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.logger.get_log_file_timestamp')
   def test_AndroidDevice_take_screenshot_with_prefix(
       self,
       get_log_file_timestamp_mock,
