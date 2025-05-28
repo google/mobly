@@ -176,7 +176,11 @@ class SnippetClientV2Test(unittest.TestCase):
       self.client._counter = self.client._id_counter()
 
   def _assert_client_resources_released(
-      self, mock_start_subprocess, mock_stop_standing_subprocess, host_port
+      self,
+      mock_start_subprocess,
+      mock_stop_standing_subprocess,
+      host_port,
+      occupied_adb_ports_mock,
   ):
     """Asserts the resources had been released before the client stopped."""
     self.assertIs(self.client._proc, None)
@@ -192,7 +196,12 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertIs(self.client._conn, None)
     self.socket_conn.close.assert_called()
     self.assertIs(self.client.host_port, None)
-    self.adb.mock_forward_func.assert_any_call(['--remove', f'tcp:{host_port}'])
+    if self.client.host_port in occupied_adb_ports_mock.return_value:
+      # If the host port is not None, it means the client has been initialized
+      # and the port should be removed.
+      self.adb.mock_forward_func.assert_any_call(
+          ['--remove', f'tcp:{host_port}']
+      )
     self.assertIsNone(self.client._event_client)
 
   @mock.patch(
@@ -211,7 +220,7 @@ class SnippetClientV2Test(unittest.TestCase):
       mock_start_subprocess,
       mock_stop_standing_subprocess,
       mock_socket_create_conn,
-      _,
+      occupied_adb_ports_mock,
   ):
     """Tests the whole lifecycle of the client with sending a sync RPC."""
     socket_resp = [
@@ -234,7 +243,10 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.stop()
 
     self._assert_client_resources_released(
-        mock_start_subprocess, mock_stop_standing_subprocess, MOCK_HOST_PORT
+        mock_start_subprocess,
+        mock_stop_standing_subprocess,
+        MOCK_HOST_PORT,
+        occupied_adb_ports_mock,
     )
 
     self.assertListEqual(
@@ -263,7 +275,7 @@ class SnippetClientV2Test(unittest.TestCase):
       mock_start_subprocess,
       mock_stop_standing_subprocess,
       mock_socket_create_conn,
-      _,
+      ab_occupied_adb_ports_mock,
   ):
     """Tests the whole lifecycle of the client with sending an async RPC."""
     mock_socket_resp = [
@@ -290,7 +302,10 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client.stop()
 
     self._assert_client_resources_released(
-        mock_start_subprocess, mock_stop_standing_subprocess, MOCK_HOST_PORT
+        mock_start_subprocess,
+        mock_stop_standing_subprocess,
+        MOCK_HOST_PORT,
+        ab_occupied_adb_ports_mock,
     )
 
     self.assertListEqual(
@@ -330,7 +345,7 @@ class SnippetClientV2Test(unittest.TestCase):
       mock_start_subprocess,
       mock_stop_standing_subprocess,
       mock_socket_create_conn,
-      _,
+      ab_occupied_adb_ports_mock,
   ):
     """Tests the whole lifecycle of the client with sending multiple RPCs."""
     # Prepare the test
@@ -397,7 +412,10 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertListEqual(rpc_results, rpc_results_expected)
     mock_callback_class.assert_has_calls(mock_callback_class_calls_expected)
     self._assert_client_resources_released(
-        mock_start_subprocess, mock_stop_standing_subprocess, MOCK_HOST_PORT
+        mock_start_subprocess,
+        mock_stop_standing_subprocess,
+        MOCK_HOST_PORT,
+        ab_occupied_adb_ports_mock,
     )
     self.assertIsNone(event_client.host_port, None)
     self.assertIsNone(event_client.device_port, None)
@@ -799,8 +817,12 @@ class SnippetClientV2Test(unittest.TestCase):
     ):
       self.client.start_server()
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
+      return_value=[12345],
+  )
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  def test_stop_normally(self, mock_stop_standing_subprocess):
+  def test_stop_normally(self, mock_stop_standing_subprocess, _):
     """Tests that stopping server process works normally."""
     self._make_client()
     mock_proc = mock.Mock()
@@ -827,9 +849,13 @@ class SnippetClientV2Test(unittest.TestCase):
     )
     self.assertIsNone(self.client._event_client)
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
+      return_value=[12345],
+  )
   @mock.patch('mobly.utils.stop_standing_subprocess')
   def test_stop_when_server_is_already_cleaned(
-      self, mock_stop_standing_subprocess
+      self, mock_stop_standing_subprocess, _
   ):
     """Tests that stop server process when subprocess is already cleaned."""
     self._make_client()
@@ -854,9 +880,13 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345']
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
+      return_value=[12345],
+  )
   @mock.patch('mobly.utils.stop_standing_subprocess')
   def test_stop_when_conn_is_already_cleaned(
-      self, mock_stop_standing_subprocess
+      self, mock_stop_standing_subprocess, _
   ):
     """Tests that stop server process when the connection is already closed."""
     self._make_client()
@@ -880,10 +910,17 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345']
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
+      return_value=[12345],
+  )
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch.object(_MockAdbProxy, 'shell', return_value=b'Closed with error.')
   def test_stop_with_device_side_error(
-      self, mock_adb_shell, mock_stop_standing_subprocess
+      self,
+      mock_adb_shell,
+      mock_stop_standing_subprocess,
+      _,
   ):
     """Tests all resources will be cleaned when server stop throws an error."""
     self._make_client()
@@ -912,8 +949,12 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345']
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
+      return_value=[12345],
+  )
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  def test_stop_with_conn_close_error(self, mock_stop_standing_subprocess):
+  def test_stop_with_conn_close_error(self, mock_stop_standing_subprocess, _):
     """Tests port resource will be cleaned when socket close throws an error."""
     del mock_stop_standing_subprocess
     self._make_client()
@@ -932,6 +973,10 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345']
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
+      return_value=[12345],
+  )
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch.object(
       snippet_client_v2.SnippetClientV2, 'create_socket_connection'
@@ -944,6 +989,7 @@ class SnippetClientV2Test(unittest.TestCase):
       mock_send_handshake_func,
       mock_create_socket_conn_func,
       mock_stop_standing_subprocess,
+      _,
   ):
     """Tests that stopping with an event client works normally."""
     del mock_send_handshake_func
@@ -974,6 +1020,10 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345']
     )
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
+      return_value=[12345],
+  )
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch.object(
       snippet_client_v2.SnippetClientV2, 'create_socket_connection'
@@ -986,6 +1036,7 @@ class SnippetClientV2Test(unittest.TestCase):
       mock_send_handshake_func,
       mock_create_socket_conn_func,
       mock_stop_standing_subprocess,
+      _,
   ):
     """Tests that client with an event client stops port forwarding once."""
     del mock_send_handshake_func
@@ -1006,7 +1057,12 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:12345']
     )
 
-  def test_close_connection_normally(self):
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[123],
+  )
+  def test_close_connection_normally(self, _):
     """Tests that closing connection works normally."""
     self._make_client()
     mock_conn = mock.Mock()
@@ -1022,7 +1078,12 @@ class SnippetClientV2Test(unittest.TestCase):
         ['--remove', 'tcp:123']
     )
 
-  def test_close_connection_when_host_port_has_been_released(self):
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
+  def test_close_connection_when_host_port_has_been_released(self, _):
     """Tests that close connection when the host port has been released."""
     self._make_client()
     mock_conn = mock.Mock()
@@ -1036,7 +1097,12 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_conn.close.assert_called_once_with()
     self.device.adb.mock_forward_func.assert_not_called()
 
-  def test_close_connection_when_conn_have_been_closed(self):
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[123],
+  )
+  def test_close_connection_when_conn_have_been_closed(self, _):
     """Tests that close connection when the connection has been closed."""
     self._make_client()
     self.client._conn = None
