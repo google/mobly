@@ -83,12 +83,12 @@ class LogcatTest(unittest.TestCase):
     shutil.rmtree(self.tmp_dir)
 
   def AssertFileContains(self, content, file_path):
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', newline='') as f:
       output = f.read()
     self.assertIn(content, output)
 
   def AssertFileDoesNotContain(self, content, file_path):
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', newline='') as f:
       output = f.read()
     self.assertNotIn(content, output)
 
@@ -320,7 +320,7 @@ class LogcatTest(unittest.TestCase):
     def _write_logcat_file_and_assert_excerpts_exists(
         logcat_file_content, test_begin_time, test_name
     ):
-      with open(logcat_service.adb_logcat_file_path, 'a') as f:
+      with open(logcat_service.adb_logcat_file_path, 'a', newline='') as f:
         f.write(logcat_file_content)
       test_output_dir = os.path.join(self.tmp_dir, test_name)
       mock_record = records.TestResultRecord(test_name)
@@ -348,11 +348,12 @@ class LogcatTest(unittest.TestCase):
     # Generate logs before the file pointer is created.
     # This message will not be captured in the excerpt.
     NOT_IN_EXCERPT = 'Not in excerpt.\n'
-    with open(logcat_service.adb_logcat_file_path, 'a') as f:
+    with open(logcat_service.adb_logcat_file_path, 'a', newline='') as f:
       f.write(NOT_IN_EXCERPT)
     # With the file pointer created, generate logs and make an excerpt.
     logcat_service._open_logcat_file()
-    FILE_CONTENT = 'Some log.\n'
+    # Both CR and LF should be preserved no matter the operating system.
+    FILE_CONTENT = 'Some log.\r\n'
     expected_path1 = _write_logcat_file_and_assert_excerpts_exists(
         logcat_file_content=FILE_CONTENT,
         test_begin_time=123,
