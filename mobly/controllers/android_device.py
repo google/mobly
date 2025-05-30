@@ -1053,27 +1053,50 @@ class AndroidDevice:
     self.log.debug('Bugreport taken at %s.', full_out_path)
     return full_out_path
 
-  def take_screenshot(self, destination, prefix='screenshot'):
+  def take_screenshot(
+      self, destination, prefix='screenshot', all_displays=False
+  ):
     """Takes a screenshot of the device.
 
     Args:
       destination: string, full path to the directory to save in.
       prefix: string, prefix file name of the screenshot.
+      all_displays: bool, if true will take a screenshot on all connnected
+        displays, if false will take a screenshot on the default display.
 
     Returns:
-      string, full path to the screenshot file on the host.
+      string, full path to the screenshot file on the host, or list of full
+        paths to the screenshot files on the host if all_displays is True.
     """
     filename = self.generate_filename(prefix, extension_name='png')
+    filename_no_extension, _ = os.path.splitext(filename)
     device_path = os.path.join('/storage/emulated/0/', filename)
     self.adb.shell(
-        ['screencap', '-p', device_path], timeout=TAKE_SCREENSHOT_TIMEOUT_SECOND
+        ['screencap', '-p', '-a' if all_displays else '', device_path],
+        timeout=TAKE_SCREENSHOT_TIMEOUT_SECOND,
     )
     utils.create_dir(destination)
-    self.adb.pull([device_path, destination])
-    pic_path = os.path.join(destination, filename)
-    self.log.debug('Screenshot taken, saved on the host: %s', pic_path)
-    self.adb.shell(['rm', device_path])
-    return pic_path
+    pic_paths = []
+    png_files = [device_path]
+    # iterate over all files that match the filename, if all_displays is true
+    # then filename will get a suffix of display number eg filenmame.png ->
+    # filename_0.png, filename_1.png
+    if all_displays:
+      png_files = (
+          self.adb.shell('ls /storage/emulated/0/*.png')
+          .decode('utf-8')
+          .split('\n')
+      )
+    for device_path in png_files:
+      if device_path.find(filename_no_extension) < 0:
+        continue
+      self.adb.pull([device_path, destination])
+      pic_paths.append(os.path.join(destination, os.path.basename(device_path)))
+      self.log.debug('Screenshot taken, saved on the host: %s', pic_paths[-1])
+      self.adb.shell(['rm', device_path])
+    if all_displays:
+      return pic_paths
+    return pic_paths[0]
 
   def run_iperf_client(self, server_host, extra_args=''):
     """Start iperf client on the device.

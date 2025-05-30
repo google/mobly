@@ -37,6 +37,26 @@ MockSnippetClient = mock.MagicMock()
 MockSnippetClient.package = MOCK_SNIPPET_PACKAGE_NAME
 
 
+class _MockAdbProxy(mock_android_device.MockAdbProxy):
+  """Mock class of adb proxy which covers take screenshot on multiple displays"""
+
+  def __init__(self, *args, **kwargs):
+    """Initializes the instance of _MockAdbProxy."""
+    super().__init__(*args, **kwargs)
+
+  def shell(self, *args, **kwargs):
+    """Mock `shell` of mobly.controllers.android_device_lib.adb.AdbProxy."""
+    # Record all the call args
+    self.mock_shell_func(*args, **kwargs)
+
+    # Handle the server stop command properly
+    if f'ls /storage/emulated/0/*.png' in args:
+      return b'/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_0.png\n/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_1.png'
+
+    # For other commands, hand it over to the base class.
+    return super().shell(*args, **kwargs)
+
+
 class AndroidDeviceTest(unittest.TestCase):
   """This test class has unit tests for the implementation of everything
   under mobly.controllers.android_device.
@@ -1157,6 +1177,41 @@ class AndroidDeviceTest(unittest.TestCase):
         os.path.join(
             self.tmp_dir, 'screenshot,1,fakemodel,07-22-2019_17-53-34-450.png'
         ),
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=_MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.logger.get_log_file_timestamp')
+  def test_AndroidDevice_take_screenshot_all_displays(
+      self,
+      get_log_file_timestamp_mock,
+      create_dir_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+    mock_serial = '1'
+    ad = android_device.AndroidDevice(serial=mock_serial)
+    full_pic_paths = ad.take_screenshot(self.tmp_dir, all_displays=True)
+    self.assertEqual(
+        full_pic_paths,
+        [
+            os.path.join(
+                self.tmp_dir,
+                'screenshot,1,fakemodel,07-22-2019_17-53-34-450_0.png',
+            ),
+            os.path.join(
+                self.tmp_dir,
+                'screenshot,1,fakemodel,07-22-2019_17-53-34-450_1.png',
+            ),
+        ],
     )
 
   @mock.patch(
