@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import io
 import logging
 import os
 import time
@@ -121,8 +120,13 @@ class Logcat(base_service.BaseService):
         self.OUTPUT_FILE_TYPE, test_info, 'txt'
     )
     excerpt_file_path = os.path.join(dest_path, filename)
-    with io.open(
-        excerpt_file_path, 'w', encoding='utf-8', errors='replace'
+    with open(
+        excerpt_file_path,
+        'w',
+        encoding='utf-8',
+        errors='replace',
+        # When newline is '', line endings are written without conversion.
+        newline='',
     ) as out:
       # Devices may accidentally go offline during test,
       # check not None before readline().
@@ -195,8 +199,13 @@ class Logcat(base_service.BaseService):
               self._ad, 'Timeout while waiting for logcat file to be created.'
           )
         time.sleep(1)
-      self._adb_logcat_file_obj = io.open(
-          self.adb_logcat_file_path, 'r', encoding='utf-8', errors='replace'
+      self._adb_logcat_file_obj = open(
+          self.adb_logcat_file_path,
+          'r',
+          encoding='utf-8',
+          errors='replace',
+          # When newline is '', line endings are read without conversion.
+          newline='',
       )
       self._adb_logcat_file_obj.seek(0, os.SEEK_END)
 
