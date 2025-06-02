@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import base64
 import concurrent.futures
 import datetime
@@ -505,6 +506,62 @@ def run_command(
       process.returncode,
   )
   return process.returncode, out, err
+
+
+async def run_command_async(
+    cmd: str,
+    stdout=None,
+    stderr=None,
+    shell=False,
+    cwd=None,
+    env=None,
+    universal_newlines=False,
+) -> asyncio.subprocess.Process:
+  """Runs a command in a subprocess.
+
+  This function is very similar to subprocess.check_output. The main
+  difference is that it returns the return code and std error output as well
+  as supporting a timeout parameter.
+
+  Args:
+    cmd: string or list of strings, the command to run. See subprocess.Popen()
+      documentation.
+    stdout: file handle, the file handle to write std out to. If None is given,
+      then subprocess.PIPE is used. See subprocess.Popen() documentation.
+    stderr: file handle, the file handle to write std err to. If None is given,
+      then subprocess.PIPE is used. See subprocess.Popen() documentation.
+    shell: bool, True to run this command through the system shell, False to
+      invoke it directly. See subprocess.Popen() docs.
+    cwd: string, the path to change the child's current directory to before it
+      is executed. Note that this directory is not considered when searching the
+      executable, so you can't specify the program's path relative to cwd.
+    env: dict, a mapping that defines the environment variables for the new
+      process. Default behavior is inheriting the current process' environment.
+    universal_newlines: bool, True to open file objects in text mode, False in
+      binary mode.
+
+  Returns:
+    A 3-tuple of the consisting of the return code, the std output, and the
+      std error.
+  """
+  if stdout is None:
+    stdout = asyncio.subprocess.PIPE
+  if stderr is None:
+    stderr = asyncio.subprocess.PIPE
+
+  try:
+    return await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=stdout,
+        stderr=stderr,
+        shell=shell,
+        cwd=cwd,
+        env=env,
+        universal_newlines=universal_newlines,
+    )
+  except FileNotFoundError as err:
+    logging.error('Failed to create subprocess: %s', err)
+    raise
 
 
 def start_standing_subprocess(

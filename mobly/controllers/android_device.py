@@ -513,6 +513,8 @@ class AndroidDevice:
     adb_logcat_file_path: A string that's the full path to the adb logcat
       file collected, if any.
     adb: An AdbProxy object used for interacting with the device via adb.
+    adb_async: An AdbAsyncProxy object used for interacting with the device via
+      adb asynchronously.
     fastboot: A FastbootProxy object used for interacting with the device
       via fastboot.
     services: ServiceManager, the manager of long-running services on the
@@ -533,6 +535,7 @@ class AndroidDevice:
     self._build_info = None
     self._is_rebooting = False
     self.adb = adb.AdbProxy(serial)
+    self.adb_async = adb.AdbAsyncProxy(serial)
     self.fastboot = fastboot.FastbootProxy(serial)
     if self.is_rootable:
       self.root_adb()

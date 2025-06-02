@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import logging
 import re
 import subprocess
 import threading
 import time
-
+from typing import AsyncIterator
 from mobly import utils
 
 # Command to use for running ADB commands.
@@ -579,5 +580,125 @@ class AdbProxy:
       return self._exec_adb_cmd(
           name, args, shell=shell, timeout=timeout, stderr=stderr
       )
+
+    return adb_call
+
+
+class AdbAsyncProxy(AdbProxy):
+  """Async proxy for ADB commands.
+
+  This class provides a wrapper around the AdbProxy class that provides
+  asynchronous versions of the ADB commands.
+  """
+
+  async def _exec_cmd_async(
+      self, args, shell, stderr
+  ) -> asyncio.subprocess.Process:
+    """Executes commands asynchronously.
+
+    Args:
+      args: string or list of strings, arguments to the adb command. See
+        subprocess.Proc() documentation.
+      shell: bool, True to run this command through the system shell, False to
+        invoke it directly. See subprocess.Proc() docs.
+      stderr: a Byte stream, like io.BytesIO, stderr of the command will be
+        written to this object if provided.
+
+    Raises:
+      AdbError: If the command fails to execute.
+
+    Returns:
+      The process object of the adb command.
+    """
+    try:
+      process = await utils.run_command_async(args, shell=shell, stderr=stderr)
+    except FileNotFoundError as err:
+      logging.error(
+          'Failed to create subprocess for command "%s": %s',
+          utils.cli_cmd_to_string(args),
+          err,
+      )
+      # Use the errno from the FileNotFoundError for ret_code.
+      # Use the string representation of the error for stderr.
+      error_code = getattr(
+          err, 'errno', -1
+      )  # Default to -1 if errno is not present
+      error_message = str(err).encode('utf-8', 'replace')
+      raise AdbError(
+          cmd=args,
+          stdout=b'',
+          stderr=error_message,
+          ret_code=error_code,
+      ) from err
+    return process
+
+  async def _exec_adb_cmd_async(
+      self, name, args, shell, stderr
+  ) -> asyncio.subprocess.Process:
+    """Executes adb commands asynchronously.
+
+    Args:
+      name: string, the name of the adb command to execute.
+      args: string or list of strings, arguments to the adb command. See
+        subprocess.Proc() documentation.
+      shell: bool, True to run this command through the system shell, False to
+        invoke it directly. See subprocess.Proc() docs.
+      stderr: a Byte stream, like io.BytesIO, stderr of the command will be
+        written to this object if provided.
+
+    Returns:
+      The process object of the adb command.
+    """
+    adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
+    return await self._exec_cmd_async(adb_cmd, shell=shell, stderr=stderr)
+
+  def __getattr__(self, name):
+    async def adb_call(
+        args=None, shell=False, stderr=None
+    ) -> AsyncIterator[bytes]:
+      """Wrapper for an ADB command.
+
+      This function first executes the ADB command asynchronously and then
+      iterates over the output of the command, yielding each line in bytes as it
+      is received.
+
+      Args:
+        args: string or list of strings, arguments to the adb command. See
+          subprocess.Proc() documentation.
+        shell: bool, True to run this command through the system shell, False to
+          invoke it directly. See subprocess.Proc() docs.
+        stderr: a Byte stream, like io.BytesIO, stderr of the command will be
+          written to this object if provided.
+
+      Yields:
+        The output of the adb command run if exit code is 0.
+      """
+      process = await self._exec_adb_cmd_async(
+          name, args, shell=shell, stderr=stderr
+      )
+      try:
+        while True:
+          if process.stdout is None:
+            logging.debug('Process stdout is None, stopping event iteration.')
+            break
+          output = await process.stdout.readline()
+          if not output:
+            stderr_output = (
+                await process.stderr.read() if process.stderr else b''
+            )
+            if stderr_output:
+              logging.debug(
+                  'Stderr: %s', stderr_output.decode(errors='ignore').strip()
+              )
+            break
+          yield output
+      except asyncio.CancelledError:
+        logging.debug('Task for executing ADB command cancelled.')
+      finally:
+        try:
+          process.terminate()
+          await process.wait()
+        except ProcessLookupError:
+          logging.debug('Process already terminated.')
 
     return adb_call
