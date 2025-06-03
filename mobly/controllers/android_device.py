@@ -89,6 +89,11 @@ SnippetError = snippet_management_service.Error
 # Regex to heuristically determine if the device is an emulator.
 EMULATOR_SERIAL_REGEX = re.compile(r'emulator-\d+')
 
+# Regex to parse the mainline module version.
+MAINLINE_MODULE_VERSION_REGEX = re.compile(
+    r'package:(?P<package>[\S]+) versionCode:(?P<version>\d+)'
+)
+
 
 def create(configs):
   """Creates AndroidDevice controller objects.
@@ -532,6 +537,7 @@ class AndroidDevice:
     )
     self._build_info = None
     self._is_rebooting = False
+    self._mainline_info = None
     self.adb = adb.AdbProxy(serial)
     self.fastboot = fastboot.FastbootProxy(serial)
     if self.is_rootable:
@@ -576,6 +582,7 @@ class AndroidDevice:
         'serial': self.serial,
         'model': self.model,
         'build_info': self.build_info,
+        'mainline_info': self.mainline_info,
         'user_added_info': self._user_added_device_info,
     }
     return info
@@ -819,6 +826,29 @@ class AndroidDevice:
       self._build_info = info
       return info
     return self._build_info
+
+  @property
+  def mainline_info(self):
+    """Gets the mainline info of this Android device."""
+    if self._mainline_info is not None:
+      return self._mainline_info
+
+    info = {}
+    try:
+      mainline_info = self.adb.shell(
+          'pm list packages --apex-only --show-versioncode'
+      )
+    except adb.AdbError:
+      self.log.debug('No mainline modules found')
+    else:
+      for line in mainline_info.decode().strip().splitlines():
+        match = MAINLINE_MODULE_VERSION_REGEX.match(line)
+        if match is None:
+          continue
+        info[match.group('package')] = match.group('version')
+
+    self._mainline_info = info
+    return self._mainline_info
 
   @property
   def is_bootloader(self):
