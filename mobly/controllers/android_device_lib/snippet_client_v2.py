@@ -718,8 +718,22 @@ class SnippetClientV2(client_base.ClientBase):
       self._stop_port_forwarding()
 
   def _stop_port_forwarding(self):
-    """Stops the adb port forwarding used by this client."""
+    """Stops the adb port forwarding used by this client.
+
+    Although we explicitly forward and track the host port, it can be unforwarded
+    unexpectedly due to flaky USB connections, adb restarts, or external tools
+    (e.g., `adb forward --remove-all`). To prevent unnecessary errors, this method
+    checks if the host port is still forwarded before attempting to remove it.
+    """
     if self.host_port:
+      occupied_ports = adb.list_occupied_adb_ports()
+      if self.host_port not in occupied_ports:
+        self.log.debug(
+            'Host port %s is not currently forwarded by adb, skipping removal.',
+            self.host_port,
+        )
+        self.host_port = None
+        return
       self._device.adb.forward(['--remove', f'tcp:{self.host_port}'])
       self.host_port = None
 
