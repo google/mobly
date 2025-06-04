@@ -199,10 +199,8 @@ class Logcat(base_service.BaseService):
               self._ad, 'Timeout while waiting for logcat file to be created.'
           )
         time.sleep(1)
-      if self.adb_logcat_file_path is None:
-        raise Error(self._ad, 'Logcat file path is not initialized.')
       self._adb_logcat_file_obj = open(
-          self.adb_logcat_file_path,
+          self.adb_logcat_file_path,  # pytype: disable=wrong-arg-types
           'r',
           encoding='utf-8',
           errors='replace',
