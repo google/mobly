@@ -526,7 +526,7 @@ class AndroidDevice:
     self._log_path = os.path.join(
         _log_path_base, 'AndroidDevice%s' % self._normalized_serial
     )
-    self._debug_tag = self._serial
+    self._debug_tag = self._serial.replace('%', '%%')
     self.log = AndroidDeviceLoggerAdapter(
         logging.getLogger(), {'tag': self.debug_tag}
     )
