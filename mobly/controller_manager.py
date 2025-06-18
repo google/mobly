@@ -141,7 +141,8 @@ class ControllerManager:
     if actual_number < min_number:
       module.destroy(objects)
       raise signals.ControllerError(
-          'Expected to get at least %d controller objects, got %d.'
+          'Expected to get at least %d controller objects, got %d. '
+          'Verify that the DUT is connected via ADB'
           % (min_number, actual_number)
       )
     # Save a shallow copy of the list for internal usage, so tests can't
