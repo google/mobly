@@ -34,14 +34,16 @@ class RuntimeTestInfo:
       as the test's execution progresses.
     output_path: string, path to the test's output directory. It's created
       upon accessing.
+    iteration: int, the current iteration of the test.
   """
 
-  def __init__(self, test_name, log_path, record):
+  def __init__(self, test_name, log_path, record, iteration=1):
     self._name = test_name
     self._record = record
     self._output_dir_path = utils.abs_path(
         os.path.join(log_path, self._record.signature)
     )
+    self._iteration = iteration
 
   @property
   def name(self):
@@ -59,3 +61,7 @@ class RuntimeTestInfo:
   def output_path(self):
     utils.create_dir(self._output_dir_path)
     return self._output_dir_path
+
+  @property
+  def iteration(self):
+    return self._iteration
