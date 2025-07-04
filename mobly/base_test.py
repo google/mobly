@@ -209,6 +209,7 @@ class BaseTestClass:
     self.testbed_name = configs.testbed_name
     self.user_params = configs.user_params
     self.results = records.TestResult()
+    self._iteration = 0
     self.summary_writer = configs.summary_writer
     self._generated_test_table = collections.OrderedDict()
     self._controller_manager = controller_manager.ControllerManager(
@@ -403,7 +404,7 @@ class BaseTestClass:
     class_record = records.TestResultRecord(STAGE_NAME_SETUP_CLASS, self.TAG)
     class_record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
-        STAGE_NAME_SETUP_CLASS, self.log_path, class_record
+        STAGE_NAME_SETUP_CLASS, self.log_path, class_record, self._iteration
     )
     expects.recorder.reset_internal_states(class_record)
     try:
@@ -455,7 +456,7 @@ class BaseTestClass:
     record = records.TestResultRecord(stage_name, self.TAG)
     record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
-        stage_name, self.log_path, record
+        stage_name, self.log_path, record, self._iteration
     )
     expects.recorder.reset_internal_states(record)
     try:
@@ -784,8 +785,9 @@ class BaseTestClass:
     tr_record = record or records.TestResultRecord(test_name, self.TAG)
     tr_record.uid = getattr(test_method, 'uid', None)
     tr_record.test_begin()
+    self._iteration = self._iteration + 1
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
-        test_name, self.log_path, tr_record
+        test_name, self.log_path, tr_record, self._iteration
     )
     expects.recorder.reset_internal_states(tr_record)
     logging.info('%s %s', TEST_CASE_TOKEN, test_name)
@@ -1081,6 +1083,7 @@ class BaseTestClass:
       The test results object of this class.
     """
     logging.log_path = self.log_path
+    self._iteration = 0
     # Executes pre-setup procedures, like generating test methods.
     if not self._pre_run():
       return self.results
@@ -1118,6 +1121,7 @@ class BaseTestClass:
           )
         else:
           self.exec_one_test(test_name, test_method)
+        self._iteration = 0
       return self.results
     except signals.TestAbortClass as e:
       e.details = 'Test class aborted due to: %s' % e.details
@@ -1142,7 +1146,7 @@ class BaseTestClass:
     record = records.TestResultRecord(stage_name, self.TAG)
     record.test_begin()
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
-        stage_name, self.log_path, record
+        stage_name, self.log_path, record, self._iteration
     )
     expects.recorder.reset_internal_states(record)
     with self._log_test_stage(stage_name):
@@ -1156,3 +1160,4 @@ class BaseTestClass:
         self.summary_writer.dump(
             record.to_dict(), records.TestSummaryEntryType.RECORD
         )
+
