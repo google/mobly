@@ -2823,6 +2823,93 @@ class BaseTestTest(unittest.TestCase):
 
     logging_patch.debug.assert_called_with('[TestClass]#stage <<< END <<<')
 
+  def test_iteration_counter_on_repeat(self):
+    repeat_count = 5
+    mock_action = mock.MagicMock()
+    mock_action.side_effect = [
+        None,
+        Exception('Fail 1'),
+        Exception('Fail 2'),
+        None,
+        Exception('Fail 3'),
+    ]
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      test_count = 0
+
+      @base_test.repeat(count=repeat_count)
+      def test_something(self):
+        self.test_count += 1
+        asserts.assert_equal(self.current_test_info.iteration, self.test_count)
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(2, len(bt_cls.results.passed))
+    self.assertEqual(3, len(bt_cls.results.error))
+
+  def test_iteration_counter_on_retry_with_failures(self):
+    retry_count = 2
+    mock_action = mock.MagicMock()
+    mock_action.side_effect = [
+        Exception('Fail 1'),
+        Exception('Fail 2'),
+    ]
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      test_count = 0
+
+      @base_test.retry(max_count=retry_count)
+      def test_something(self):
+        self.test_count += 1
+        asserts.assert_equal(self.current_test_info.iteration, self.test_count)
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(2, len(bt_cls.results.error))
+
+  def test_iteration_counter_on_retry_with_success(self):
+    retry_count = 2
+    mock_action = mock.MagicMock()
+    mock_action.side_effect = [
+        Exception('Fail 1'),
+        None,
+    ]
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      test_count = 0
+
+      @base_test.retry(max_count=retry_count)
+      def test_something(self):
+        self.test_count += 1
+        asserts.assert_equal(self.current_test_info.iteration, self.test_count)
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(1, len(bt_cls.results.passed))
+    self.assertEqual(1, len(bt_cls.results.error))
+
+  def test_iteration_counter_on_individual_tests(self):
+    mock_action = mock.MagicMock(side_effect=[Exception('Fail 1')])
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_something_pass(self):
+        asserts.assert_equal(self.current_test_info.iteration, 1)
+
+      def test_something_fail(self):
+        asserts.assert_equal(self.current_test_info.iteration, 1)
+        mock_action()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['test_something_pass', 'test_something_fail'])
+    self.assertEqual(1, len(bt_cls.results.passed))
+    self.assertEqual(1, len(bt_cls.results.error))
 
 if __name__ == '__main__':
   unittest.main()
