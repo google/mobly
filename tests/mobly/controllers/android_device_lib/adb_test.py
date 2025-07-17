@@ -887,9 +887,7 @@ class AdbTest(unittest.TestCase):
       self, mock_exec_cmd, mock_sleep
   ):
     mock_exec_cmd.side_effect = adb.AdbTimeoutError('adb root', 5, 'S3RIAL')
-    expected_msg = (
-        'Timed out executing command "adb root" after 5s'
-    )
+    expected_msg = 'Timed out executing command "adb root" after 5s'
     with self.assertRaisesRegex(adb.AdbTimeoutError, expected_msg):
       adb.AdbProxy().root()
       mock_exec_cmd.assert_called_with(
