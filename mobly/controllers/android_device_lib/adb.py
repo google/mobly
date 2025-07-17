@@ -31,7 +31,7 @@ ADB_PORT_LOCK = threading.Lock()
 # the timeout of this command.
 ADB_ROOT_RETRY_ATTEMPTS = 3
 ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC = 10
-ADB_ROOT_ATTEMPT_TIMEOUT_SEC = 10
+ADB_ROOT_ATTEMPT_TIMEOUT_SEC = 5
 
 # Qualified class name of the default instrumentation test runner.
 DEFAULT_INSTRUMENTATION_RUNNER = (

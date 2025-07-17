@@ -842,7 +842,7 @@ class AdbTest(unittest.TestCase):
     mock_exec_cmd.return_value = MOCK_ROOT_SUCCESS_OUTPUT
     output = adb.AdbProxy().root()
     mock_exec_cmd.assert_called_once_with(
-        ['adb', 'root'], shell=False, timeout=10, stderr=None
+        ['adb', 'root'], shell=False, timeout=5, stderr=None
     )
     self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
 
@@ -855,7 +855,7 @@ class AdbTest(unittest.TestCase):
     ]
     output = adb.AdbProxy().root()
     mock_exec_cmd.assert_called_with(
-        ['adb', 'root'], shell=False, timeout=10, stderr=None
+        ['adb', 'root'], shell=False, timeout=5, stderr=None
     )
     self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
     self.assertEqual(mock_sleep.call_count, 1)
@@ -876,7 +876,7 @@ class AdbTest(unittest.TestCase):
     with self.assertRaisesRegex(adb.AdbError, expected_msg):
       adb.AdbProxy().root()
       mock_exec_cmd.assert_called_with(
-          ['adb', 'root'], shell=False, timeout=10, stderr=None
+          ['adb', 'root'], shell=False, timeout=5, stderr=None
       )
     self.assertEqual(mock_sleep.call_count, adb.ADB_ROOT_RETRY_ATTEMPTS - 1)
     mock_sleep.assert_has_calls([mock.call(10), mock.call(20)])
@@ -892,7 +892,7 @@ class AdbTest(unittest.TestCase):
     ]
     output = adb.AdbProxy().root()
     mock_exec_cmd.assert_called_with(
-        ['adb', 'root'], shell=False, timeout=10, stderr=None
+        ['adb', 'root'], shell=False, timeout=5, stderr=None
     )
     self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
     self.assertEqual(mock_sleep.call_count, 1)
