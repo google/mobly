@@ -27,10 +27,11 @@ ADB = 'adb'
 # do with port forwarding must happen under this lock.
 ADB_PORT_LOCK = threading.Lock()
 
-# Number of attempts to execute "adb root", and seconds for interval time of
-# this commands.
+# Number of attempts to execute "adb root", and seconds for interval time and
+# the timeout of this command.
 ADB_ROOT_RETRY_ATTEMPTS = 3
 ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC = 10
+ADB_ROOT_ATTEMPT_TIMEOUT_SEC = 5
 
 # Qualified class name of the default instrumentation test runner.
 DEFAULT_INSTRUMENTATION_RUNNER = (
@@ -537,12 +538,17 @@ class AdbProxy:
 
     Raises:
       AdbError: If the command exit code is not 0.
+      AdbTimeoutError: If the command timed out.
     """
     retry_interval = ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC
     for attempt in range(ADB_ROOT_RETRY_ATTEMPTS):
       try:
         return self._exec_adb_cmd(
-            'root', args=None, shell=False, timeout=None, stderr=None
+            'root',
+            args=None,
+            shell=False,
+            timeout=ADB_ROOT_ATTEMPT_TIMEOUT_SEC,
+            stderr=None,
         )
       except AdbError as e:
         if attempt + 1 < ADB_ROOT_RETRY_ATTEMPTS:
@@ -553,11 +559,17 @@ class AdbProxy:
                   e.stderr.decode('utf-8').strip(),
               )
           )
-          # Buffer between "adb root" commands.
-          time.sleep(retry_interval)
-          retry_interval *= 2
         else:
           raise e
+      except AdbTimeoutError as e:
+        if attempt + 1 < ADB_ROOT_RETRY_ATTEMPTS:
+          logging.debug('Retry root() since Error "%s" occurred.', e)
+        else:
+          raise e
+
+      # Buffer between "adb root" commands.
+      time.sleep(retry_interval)
+      retry_interval *= 2
 
   def __getattr__(self, name):
     def adb_call(args=None, shell=False, timeout=None, stderr=None) -> bytes:
