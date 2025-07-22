@@ -552,7 +552,16 @@ class AdbProxy:
         )
       except (AdbError, AdbTimeoutError) as e:
         if attempt + 1 < ADB_ROOT_RETRY_ATTEMPTS:
-          logging.debug('Retry root() since Error "%s" occurred.', e)
+          logging.debug(
+              'Retry the command "%s" since %s.'
+              % (
+                  utils.cli_cmd_to_string(e.cmd),
+                  ('Error %s occurred' % e.stderr.decode('utf-8').strip())
+                  if isinstance(e, AdbError)
+                  else ('it timed out after %d seconds' % e.timeout),
+              )
+          )
+
           # Buffer between "adb root" commands.
           time.sleep(retry_interval)
           retry_interval *= 2
