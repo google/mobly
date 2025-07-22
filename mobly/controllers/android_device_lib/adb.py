@@ -550,26 +550,14 @@ class AdbProxy:
             timeout=ADB_ROOT_ATTEMPT_TIMEOUT_SEC,
             stderr=None,
         )
-      except AdbError as e:
-        if attempt + 1 < ADB_ROOT_RETRY_ATTEMPTS:
-          logging.debug(
-              'Retry the command "%s" since Error "%s" occurred.'
-              % (
-                  utils.cli_cmd_to_string(e.cmd),
-                  e.stderr.decode('utf-8').strip(),
-              )
-          )
-        else:
-          raise e
-      except AdbTimeoutError as e:
+      except (AdbError, AdbTimeoutError) as e:
         if attempt + 1 < ADB_ROOT_RETRY_ATTEMPTS:
           logging.debug('Retry root() since Error "%s" occurred.', e)
+          # Buffer between "adb root" commands.
+          time.sleep(retry_interval)
+          retry_interval *= 2
         else:
           raise e
-
-      # Buffer between "adb root" commands.
-      time.sleep(retry_interval)
-      retry_interval *= 2
 
   def __getattr__(self, name):
     def adb_call(args=None, shell=False, timeout=None, stderr=None) -> bytes:
