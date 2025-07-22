@@ -556,7 +556,7 @@ class AdbProxy:
               'Retry the command "%s" since %s.'
               % (
                   utils.cli_cmd_to_string(e.cmd),
-                  ('Error %s occurred' % e.stderr.decode('utf-8').strip())
+                  ('Error "%s" occurred' % e.stderr.decode('utf-8').strip())
                   if isinstance(e, AdbError)
                   else ('it timed out after %d seconds' % e.timeout),
               )
