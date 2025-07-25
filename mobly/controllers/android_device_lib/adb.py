@@ -552,13 +552,15 @@ class AdbProxy:
         )
       except (AdbError, AdbTimeoutError) as e:
         if attempt + 1 < ADB_ROOT_RETRY_ATTEMPTS:
+          retry_reason = (
+              f'Error "{e.stderr.decode("utf-8").strip()}" occurred'
+              if isinstance(e, AdbError)
+              else f'it timed out after {e.timeout} seconds'
+          )
           logging.debug(
-              f'Retry the command "{utils.cli_cmd_to_string(e.cmd)}" since '
-              + (
-                  f'Error "{e.stderr.decode("utf-8").strip()}" occurred.'
-                  if isinstance(e, AdbError)
-                  else f'it timed out after {e.timeout} seconds.'
-              )
+              'Retry the command "%s" since %s.',
+              utils.cli_cmd_to_string(e.cmd),
+              retry_reason,
           )
 
           # Buffer between "adb root" commands.
