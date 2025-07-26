@@ -76,6 +76,10 @@ SERVICE_NAME_LOGCAT = 'logcat'
 # Default name for bug reports taken without a specified test name.
 DEFAULT_BUG_REPORT_NAME = 'bugreport'
 
+# Default timeout to wait for device to go offline upon reboot.
+# This number is from max_clean_shutdown_timeout system/core/init/reboot.cpp
+DEFAULT_TIMEOUT_DISCONNECT_SECOND = 10
+
 # Default Timeout to wait for boot completion
 DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND = 15 * 60
 
@@ -728,6 +732,13 @@ class AndroidDevice:
     try:
       yield
     finally:
+      # If we execute `wait-for-device` right after `reboot`, adbd in the device
+      # may still be running, which would cause `wait-for-device` to return
+      # immediately, even if the device hasn't finished rebooting.
+      # To avoid this situation, wait until the adb connection is actually
+      # lost, and then wait for the boot complete signal.
+      self.adb.wait_for_disconnect(timeout=DEFAULT_TIMEOUT_DISCONNECT_SECOND)
+
       self.wait_for_boot_completion()
       # On boot completion, invalidate the `build_info` cache since any
       # value it had from before boot completion is potentially invalid.
