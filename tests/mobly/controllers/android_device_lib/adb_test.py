@@ -853,7 +853,15 @@ class AdbTest(unittest.TestCase):
         adb.AdbError('adb root', '', MOCK_ROOT_ERROR_OUTPUT, 1),
         MOCK_ROOT_SUCCESS_OUTPUT,
     ]
-    output = adb.AdbProxy().root()
+    with self.assertLogs(level='DEBUG') as logs:
+      output = adb.AdbProxy().root()
+    self.assertEqual(
+        logs.output,
+        [
+            'DEBUG:root:Retry the command "adb root" since Error "adb: unable to connect for root: closed" occurred.'
+        ],
+    )
+
     mock_exec_cmd.assert_called_with(
         ['adb', 'root'], shell=False, timeout=5, stderr=None
     )
@@ -905,7 +913,15 @@ class AdbTest(unittest.TestCase):
         adb.AdbTimeoutError('adb root', 5, 'S3RIAL'),
         MOCK_ROOT_SUCCESS_OUTPUT,
     ]
-    output = adb.AdbProxy().root()
+    with self.assertLogs(level='DEBUG') as logs:
+      output = adb.AdbProxy().root()
+    self.assertEqual(
+        logs.output,
+        [
+            'DEBUG:root:Retry the command "adb root" since it timed out after 5 seconds.'
+        ],
+    )
+
     mock_exec_cmd.assert_called_with(
         ['adb', 'root'], shell=False, timeout=5, stderr=None
     )
