@@ -858,7 +858,8 @@ class AdbTest(unittest.TestCase):
     self.assertEqual(
         logs.output,
         [
-            'DEBUG:root:Retry the command "adb root" since Error "adb: unable to connect for root: closed" occurred.'
+            'DEBUG:root:Retry the command "adb root" since Error "%s" occurred.'
+            % MOCK_ROOT_ERROR_OUTPUT.decode()
         ],
     )
 
