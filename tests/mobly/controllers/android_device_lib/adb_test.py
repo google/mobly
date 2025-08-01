@@ -842,7 +842,7 @@ class AdbTest(unittest.TestCase):
     mock_exec_cmd.return_value = MOCK_ROOT_SUCCESS_OUTPUT
     output = adb.AdbProxy().root()
     mock_exec_cmd.assert_called_once_with(
-        ['adb', 'root'], shell=False, timeout=None, stderr=None
+        ['adb', 'root'], shell=False, timeout=5, stderr=None
     )
     self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
 
@@ -853,9 +853,18 @@ class AdbTest(unittest.TestCase):
         adb.AdbError('adb root', '', MOCK_ROOT_ERROR_OUTPUT, 1),
         MOCK_ROOT_SUCCESS_OUTPUT,
     ]
-    output = adb.AdbProxy().root()
+    with self.assertLogs(level='DEBUG') as logs:
+      output = adb.AdbProxy().root()
+    self.assertEqual(
+        logs.output,
+        [
+            'DEBUG:root:Retry the command "adb root" since Error "%s" occurred.'
+            % MOCK_ROOT_ERROR_OUTPUT.decode()
+        ],
+    )
+
     mock_exec_cmd.assert_called_with(
-        ['adb', 'root'], shell=False, timeout=None, stderr=None
+        ['adb', 'root'], shell=False, timeout=5, stderr=None
     )
     self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
     self.assertEqual(mock_sleep.call_count, 1)
@@ -863,7 +872,7 @@ class AdbTest(unittest.TestCase):
 
   @mock.patch('time.sleep', return_value=mock.MagicMock())
   @mock.patch.object(adb.AdbProxy, '_exec_cmd')
-  def test_root_raises_adb_error_when_all_retries_failed(
+  def test_root_raises_adb_error_when_all_retries_failed_with_adb_error(
       self, mock_exec_cmd, mock_sleep
   ):
     mock_exec_cmd.side_effect = adb.AdbError(
@@ -876,10 +885,50 @@ class AdbTest(unittest.TestCase):
     with self.assertRaisesRegex(adb.AdbError, expected_msg):
       adb.AdbProxy().root()
       mock_exec_cmd.assert_called_with(
-          ['adb', 'root'], shell=False, timeout=None, stderr=None
+          ['adb', 'root'], shell=False, timeout=5, stderr=None
       )
     self.assertEqual(mock_sleep.call_count, adb.ADB_ROOT_RETRY_ATTEMPTS - 1)
     mock_sleep.assert_has_calls([mock.call(10), mock.call(20)])
+
+  @mock.patch('time.sleep', return_value=mock.MagicMock())
+  @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+  def test_root_raises_adb_timeout_error_when_all_retries_failed_with_adb_timeout_error(
+      self, mock_exec_cmd, mock_sleep
+  ):
+    mock_exec_cmd.side_effect = adb.AdbTimeoutError('adb root', 5, 'S3RIAL')
+    expected_msg = 'Timed out executing command "adb root" after 5s'
+    with self.assertRaisesRegex(adb.AdbTimeoutError, expected_msg):
+      adb.AdbProxy().root()
+      mock_exec_cmd.assert_called_with(
+          ['adb', 'root'], shell=False, timeout=5, stderr=None
+      )
+    self.assertEqual(mock_sleep.call_count, adb.ADB_ROOT_RETRY_ATTEMPTS - 1)
+    mock_sleep.assert_has_calls([mock.call(10), mock.call(20)])
+
+  @mock.patch('time.sleep', return_value=mock.MagicMock())
+  @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+  def test_root_success_with_retry_after_timeout(
+      self, mock_exec_cmd, mock_sleep
+  ):
+    mock_exec_cmd.side_effect = [
+        adb.AdbTimeoutError('adb root', 5, 'S3RIAL'),
+        MOCK_ROOT_SUCCESS_OUTPUT,
+    ]
+    with self.assertLogs(level='DEBUG') as logs:
+      output = adb.AdbProxy().root()
+    self.assertEqual(
+        logs.output,
+        [
+            'DEBUG:root:Retry the command "adb root" since it timed out after 5 seconds.'
+        ],
+    )
+
+    mock_exec_cmd.assert_called_with(
+        ['adb', 'root'], shell=False, timeout=5, stderr=None
+    )
+    self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
+    self.assertEqual(mock_sleep.call_count, 1)
+    mock_sleep.assert_called_with(10)
 
   def test_has_shell_command_called_correctly(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
