@@ -1191,14 +1191,20 @@ class AndroidDeviceTest(unittest.TestCase):
     ad = android_device.AndroidDevice(serial=mock_serial)
     full_pic_path = ad.take_screenshot(self.tmp_dir)
 
-    shell_call_recorder.assert_any_call([
-        'screencap', '-p', '',
-        '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450.png"'
-    ])
-    shell_call_recorder.assert_any_call([
-        'rm',
-        '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450.png"'
-    ])
+    shell_call_recorder.assert_any_call(
+        [
+            'screencap',
+            '-p',
+            '',
+            '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450.png"',
+        ]
+    )
+    shell_call_recorder.assert_any_call(
+        [
+            'rm',
+            '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450.png"',
+        ]
+    )
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -1379,18 +1385,26 @@ class AndroidDeviceTest(unittest.TestCase):
     ad = android_device.AndroidDevice(serial=mock_serial)
     full_pic_paths = ad.take_screenshot(self.tmp_dir, all_displays=True)
 
-    shell_call_recorder.assert_any_call([
-        'screencap', '-p', '-a',
-        '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450.png"'
-    ])
-    shell_call_recorder.assert_any_call([
-        'rm',
-        '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_0.png"'
-    ])
-    shell_call_recorder.assert_any_call([
-        'rm',
-        '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_1.png"'
-    ])
+    shell_call_recorder.assert_any_call(
+        [
+            'screencap',
+            '-p',
+            '-a',
+            '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450.png"',
+        ]
+    )
+    shell_call_recorder.assert_any_call(
+        [
+            'rm',
+            '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_0.png"',
+        ]
+    )
+    shell_call_recorder.assert_any_call(
+        [
+            'rm',
+            '"/storage/emulated/0/screenshot,1,fakemodel,07-22-2019_17-53-34-450_1.png"',
+        ]
+    )
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
