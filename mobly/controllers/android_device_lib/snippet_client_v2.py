@@ -238,7 +238,7 @@ class SnippetClientV2(client_base.ClientBase):
       )
 
     # Validate that the app is instrumented.
-    out = self._adb.shell(f'pm list instrumentation {self.package}')
+    out = self._adb.shell('pm list instrumentation')
     matched_out = utils.grep(
         f'^instrumentation:{self.package}/{_INSTRUMENTATION_RUNNER_PACKAGE}',
         out,
