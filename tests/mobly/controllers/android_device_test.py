@@ -1169,7 +1169,7 @@ class AndroidDeviceTest(unittest.TestCase):
   )
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.logger.get_log_file_timestamp')
-  def test_AndroidDevice_take_screenshot_when_debug_tag_has_special_tag(
+  def test_AndroidDevice_take_screenshot_when_debug_tag_has_special_characters(
       self,
       get_log_file_timestamp_mock,
       create_dir_mock,
