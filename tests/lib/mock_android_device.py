@@ -35,9 +35,7 @@ DEFAULT_MOCK_PROPERTIES = {
 }
 
 _ESCAPE_CHARACTER = '\\'
-_SPECIAL_CHARS_IN_FILE_PATH = (
-    '(', ')'
-)
+_SPECIAL_CHARS_IN_FILE_PATH = ('(', ')')
 
 
 class Error(Exception):
@@ -95,10 +93,12 @@ def _assert_valid_path_in_adb_shell_cmd(path: str):
     return
   if not any(ch in path for ch in _SPECIAL_CHARS_IN_FILE_PATH):
     return
-  if any([
-      path[0] == '"' and path[-1] == '"',
-      path[0] == "'" and path[-1] == "'",
-  ]):
+  if any(
+      [
+          path[0] == '"' and path[-1] == '"',
+          path[0] == "'" and path[-1] == "'",
+      ]
+  ):
     return
   for idx, ch in enumerate(path):
     if ch not in _SPECIAL_CHARS_IN_FILE_PATH:
