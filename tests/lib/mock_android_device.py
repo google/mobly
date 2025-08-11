@@ -34,8 +34,17 @@ DEFAULT_MOCK_PROPERTIES = {
     'ro.hardware': 'marlin',
 }
 
+_ESCAPE_CHARACTER = '\\'
+_SPECIAL_CHARS_IN_FILE_PATH = (
+    '(', ')'
+)
+
 
 class Error(Exception):
+  pass
+
+
+class AdbShellCmdInvalidPathError(Error):
   pass
 
 
@@ -74,6 +83,33 @@ def get_instances_with_configs(dicts):
 
 def list_adb_devices():
   return [ad.serial for ad in get_mock_ads(5)]
+
+
+def _assert_valid_path_in_adb_shell_cmd(path: str):
+  """Asserts that file path passed to adb shell commands are valid.
+
+  File paths that contain special characters should be quoted, or the special
+  characters should be escaped.
+  """
+  if not path:
+    return
+  if not any(ch in path for ch in _SPECIAL_CHARS_IN_FILE_PATH):
+    return
+  if any([
+      path[0] == '"' and path[-1] == '"',
+      path[0] == "'" and path[-1] == "'",
+  ]):
+    return
+  for idx, ch in enumerate(path):
+    if ch not in _SPECIAL_CHARS_IN_FILE_PATH:
+      continue
+    if idx > 0 and path[idx - 1] == _ESCAPE_CHARACTER:
+      continue
+    raise AdbShellCmdInvalidPathError(
+        'Got invalid file path in adb shell command. The path is not quoted '
+        f'and special character, character "{ch}" at index {idx}, is not'
+        f'escaped. Full path: {path}'
+    )
 
 
 class MockAdbProxy:
@@ -137,6 +173,14 @@ class MockAdbProxy:
       )
     elif 'which' in params:
       return b''
+    elif isinstance(params, list) and params and params[0] == 'rm':
+      for arg in params[1:]:
+        if arg and not arg.startswith('-'):
+          _assert_valid_path_in_adb_shell_cmd(arg)
+    elif isinstance(params, list) and params and params[0] == 'screencap':
+      for arg in params[1:]:
+        if arg and not arg.startswith('-'):
+          _assert_valid_path_in_adb_shell_cmd(arg)
 
   def getprop(self, params):
     if params in self.mock_properties:
