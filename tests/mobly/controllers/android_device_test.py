@@ -1169,6 +1169,33 @@ class AndroidDeviceTest(unittest.TestCase):
   )
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.logger.get_log_file_timestamp')
+  def test_AndroidDevice_take_screenshot_when_debug_tag_has_special_characters(
+      self,
+      get_log_file_timestamp_mock,
+      create_dir_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+    mock_serial = '1'
+    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad.debug_tag = '1(Tester)'
+
+    try:
+      ad.take_screenshot(self.tmp_dir)
+    except Exception:
+      self.fail('take_screenshot method should not raise an exception.')
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.logger.get_log_file_timestamp')
   def test_AndroidDevice_take_screenshot_all_displays(
       self,
       get_log_file_timestamp_mock,
@@ -1300,6 +1327,46 @@ class AndroidDeviceTest(unittest.TestCase):
             ),
         ],
     )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.logger.get_log_file_timestamp')
+  def test_AndroidDevice_take_screenshot_all_displays_when_debug_tag_has_special_char(
+      self,
+      get_log_file_timestamp_mock,
+      create_dir_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    test_adb_proxy = MockAdbProxy.return_value
+    original_mock_adb_instance_shell = test_adb_proxy.shell
+
+    def custom_shell_for_screenshot(params, timeout=None):
+      if f'ls /storage/emulated/0/*.png' in params:
+        return (
+            b'/storage/emulated/0/screenshot,1(Tester),1,fakemodel,07-22-2019_17-53-34-450_0.png\n'
+            b'/storage/emulated/0/screenshot,1(Tester),1,fakemodel,07-22-2019_17-53-34-450_1.png\n'
+        )
+      return original_mock_adb_instance_shell(params, timeout)
+
+    test_adb_proxy.shell = custom_shell_for_screenshot
+
+    get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
+    mock_serial = '1'
+    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad.debug_tag = '1(Tester)'
+
+    try:
+      ad.take_screenshot(self.tmp_dir, all_displays=True)
+    except Exception:
+      self.fail('take_screenshot method should not raise an exception.')
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',

@@ -1076,7 +1076,7 @@ class AndroidDevice:
     filename_no_extension, _ = os.path.splitext(filename)
     device_path = os.path.join('/storage/emulated/0/', filename)
     self.adb.shell(
-        ['screencap', '-p', '-a' if all_displays else '', device_path],
+        ['screencap', '-p', '-a' if all_displays else '', f'"{device_path}"'],
         timeout=TAKE_SCREENSHOT_TIMEOUT_SECOND,
     )
     utils.create_dir(destination)
@@ -1099,13 +1099,13 @@ class AndroidDevice:
             os.path.join(destination, os.path.basename(device_path))
         )
         self.log.debug('Screenshot taken, saved on the host: %s', pic_paths[-1])
-        self.adb.shell(['rm', device_path])
+        self.adb.shell(['rm', f'"{device_path}"'])
       return pic_paths
     # handle single screenshot when all_displays=False
     self.adb.pull([device_path, destination])
     pic_path = os.path.join(destination, filename)
     self.log.debug('Screenshot taken, saved on the host: %s', pic_path)
-    self.adb.shell(['rm', device_path])
+    self.adb.shell(['rm', f'"{device_path}"'])
     return pic_path
 
   def run_iperf_client(self, server_host, extra_args=''):
