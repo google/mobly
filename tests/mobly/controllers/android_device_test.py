@@ -1352,7 +1352,7 @@ class AndroidDeviceTest(unittest.TestCase):
       if f'ls /storage/emulated/0/*.png' in params:
         return (
             b'/storage/emulated/0/screenshot,1(Tester),1,fakemodel,07-22-2019_17-53-34-450_0.png\n'
-            + b'/storage/emulated/0/screenshot,1(Tester),1,fakemodel,07-22-2019_17-53-34-450_1.png\n'
+            b'/storage/emulated/0/screenshot,1(Tester),1,fakemodel,07-22-2019_17-53-34-450_1.png\n'
         )
       return original_mock_adb_instance_shell(params, timeout)
 

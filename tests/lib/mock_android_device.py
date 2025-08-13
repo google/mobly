@@ -84,7 +84,7 @@ def list_adb_devices():
 
 
 def _assert_valid_path_in_adb_shell_cmd(path: str):
-  """Asserts that file path passed to adb shell commands are valid.
+  """Asserts that file paths passed to adb shell commands are valid.
 
   File paths that contain special characters should be quoted, or the special
   characters should be escaped.
