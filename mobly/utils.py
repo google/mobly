@@ -474,36 +474,23 @@ def run_command(
       shell=shell,
       cwd=cwd,
       env=env,
-      universal_newlines=universal_newlines,
+      text=universal_newlines,  # "text" is introdcued in Python 3.7.
   )
-  timer = None
-  timer_triggered = threading.Event()
-  if timeout and timeout > 0:
-    # The wait method on process will hang when used with PIPEs with large
-    # outputs, so use a timer thread instead.
-
-    def timeout_expired():
-      timer_triggered.set()
-      process.terminate()
-
-    timer = threading.Timer(timeout, timeout_expired)
-    timer.start()
-  # If the command takes longer than the timeout, then the timer thread
-  # will kill the subprocess, which will make it terminate.
-  out, err = process.communicate()
-  if timer is not None:
-    timer.cancel()
-  if timer_triggered.is_set():
-    raise subprocess.TimeoutExpired(
-        cmd=cmd, timeout=timeout, output=out, stderr=err
+  out, err = None, None
+  try:
+    out, err = process.communicate(timeout=timeout)
+  except subprocess.TimeoutExpired:
+    process.kill()
+    out, err = process.communicate()
+    raise
+  finally:
+    logging.debug(
+        'cmd: %s, stdout: %s, stderr: %s, ret: %s',
+        cli_cmd_to_string(cmd),
+        out,
+        err,
+        process.returncode,
     )
-  logging.debug(
-      'cmd: %s, stdout: %s, stderr: %s, ret: %s',
-      cli_cmd_to_string(cmd),
-      out,
-      err,
-      process.returncode,
-  )
   return process.returncode, out, err
 
 
