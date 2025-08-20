@@ -298,9 +298,8 @@ class UtilsTest(unittest.TestCase):
     with self.assertRaisesRegex(subprocess.TimeoutExpired, 'sleep'):
       _ = utils.run_command(self.sleep_cmd(4), timeout=0.01)
 
-  @mock.patch('threading.Timer')
   @mock.patch('subprocess.Popen')
-  def test_run_command_with_default_params(self, mock_popen, mock_timer):
+  def test_run_command_with_default_params(self, mock_popen):
     mock_command = mock.MagicMock(spec=dict)
     mock_proc = mock_popen.return_value
     mock_proc.communicate.return_value = ('fake_out', 'fake_err')
@@ -316,13 +315,11 @@ class UtilsTest(unittest.TestCase):
         shell=False,
         cwd=None,
         env=None,
-        universal_newlines=False,
+        text=False,
     )
-    mock_timer.assert_not_called()
 
-  @mock.patch('threading.Timer')
   @mock.patch('subprocess.Popen')
-  def test_run_command_with_custom_params(self, mock_popen, mock_timer):
+  def test_run_command_with_custom_params(self, mock_popen):
     mock_command = mock.MagicMock(spec=dict)
     mock_stdout = mock.MagicMock(spec=int)
     mock_stderr = mock.MagicMock(spec=int)
@@ -352,9 +349,8 @@ class UtilsTest(unittest.TestCase):
         shell=mock_shell,
         cwd=None,
         env=mock_env,
-        universal_newlines=mock_universal_newlines,
+        text=mock_universal_newlines,
     )
-    mock_timer.assert_called_with(1234, mock.ANY)
 
   def test_run_command_with_universal_newlines_false(self):
     _, out, _ = utils.run_command(
