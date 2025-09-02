@@ -153,6 +153,22 @@ class CallbackHandlerBaseTest(unittest.TestCase):
     event = handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
     self.assert_event_correct(event, MOCK_RAW_EVENT)
 
+  def test_wait_for_event_negative_with_custom_message(self):
+    handler = FakeCallbackHandler()
+    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
+        return_value=MOCK_RAW_EVENT
+    )
+
+    expected_msg = (
+        'Timed out after 0.01s waiting for an "AsyncTaskResult" event that'
+        ' satisfies the predicate "<lambda>". Details: Failed for test.'
+    )
+
+    with self.assertRaisesRegex(
+        errors.CallbackHandlerTimeoutError, expected_msg
+    ):
+      handler.waitForEvent('AsyncTaskResult', lambda _: False, 0.01, "Failed for test")
+
   def test_wait_for_event_negative(self):
     handler = FakeCallbackHandler()
     handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
