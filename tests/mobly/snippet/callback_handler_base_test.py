@@ -167,7 +167,9 @@ class CallbackHandlerBaseTest(unittest.TestCase):
     with self.assertRaisesRegex(
         errors.CallbackHandlerTimeoutError, expected_msg
     ):
-      handler.waitForEvent('AsyncTaskResult', lambda _: False, 0.01, "Failed for test")
+      handler.waitForEvent(
+          'AsyncTaskResult', lambda _: False, 0.01, 'Failed for test'
+      )
 
   def test_wait_for_event_negative(self):
     handler = FakeCallbackHandler()
