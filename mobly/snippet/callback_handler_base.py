@@ -14,6 +14,7 @@
 """Module for the base class to handle Mobly Snippet Lib's callback events."""
 import abc
 import time
+from typing import Callable
 
 from mobly.snippet import callback_event
 from mobly.snippet import errors
@@ -178,7 +179,13 @@ class CallbackHandlerBase(abc.ABC):
     raw_event = self.callEventWaitAndGetRpc(self._id, event_name, timeout)
     return callback_event.from_dict(raw_event)
 
-  def waitForEvent(self, event_name, predicate, timeout=None):
+  def waitForEvent(
+      self,
+      event_name: str,
+      predicate: Callable[[callback_event.CallbackEvent], bool],
+      timeout: float | None = None,
+      message: str | None = None,
+  ) -> callback_event.CallbackEvent:
     """Waits for an event of the specific name that satisfies the predicate.
 
     This call will block until the expected event has been received or time
@@ -194,13 +201,13 @@ class CallbackHandlerBase(abc.ABC):
 
     Args:
       event_name: str, the name of the event to wait for.
-      predicate: function, a function that takes an event (dictionary) and
-        returns a bool.
+      predicate: function, the predicate used to test events.
       timeout: float, the number of seconds to wait before giving up. If None,
         it will be set to self.default_timeout_sec.
+      message: str, an optional error message to include if there is a timeout.
 
     Returns:
-      dictionary, the event that satisfies the predicate if received.
+      CallbackEvent, the event that satisfies the predicate if received.
 
     Raises:
       errors.CallbackHandlerTimeoutError: raised if no event that satisfies the
@@ -225,10 +232,11 @@ class CallbackHandlerBase(abc.ABC):
       if predicate(event):
         return event
 
+    custom_error = '' if message is None else f' Details: {message}.'
     raise errors.CallbackHandlerTimeoutError(
         self._device,
         f'Timed out after {timeout}s waiting for an "{event_name}" event that '
-        f'satisfies the predicate "{predicate.__name__}".',
+        f'satisfies the predicate "{predicate.__name__}".{custom_error}',
     )
 
   def getAll(self, event_name):
