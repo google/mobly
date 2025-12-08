@@ -121,6 +121,28 @@ class SnippetManagementServiceTest(unittest.TestCase):
       manager.add_snippet_client('bar', MOCK_PACKAGE)
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_add_snippet_client_dup_package(self, mock_class):
+    mock_client = mock_class.return_value
+    mock_client.package = MOCK_PACKAGE
+    manager = snippet_management_service.SnippetManagementService(
+        mock.MagicMock()
+    )
+    config1 = snippet_client_v2.Config(user_id = 2)
+    config2 = snippet_client_v2.Config(user_id = 3)
+    manager.add_snippet_client('foo', MOCK_PACKAGE, config1)
+    msg = (
+        'Snippet package "com.mock.package" has already been loaded '
+        'under name "foo".'
+    )
+    try:
+      manager.add_snippet_client('bar', MOCK_PACKAGE, config2)
+    except snippet_management_service.Error as e:
+      self.fail(
+          'Should not fail when loading snippets with the same package but'
+          ' different user ID.'
+      )
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_remove_snippet_client(self, mock_class):
     mock_client = mock.MagicMock()
     mock_class.return_value = mock_client

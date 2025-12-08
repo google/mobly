@@ -69,7 +69,7 @@ class SnippetManagementService(base_service.BaseService):
         class for supported configurations.
 
     Raises:
-      Error, if a duplicated name or package is passed in.
+      Error: if a duplicated name or package is passed in.
     """
     # Should not load snippet with the same name more than once.
     if name in self._snippet_clients:
@@ -78,13 +78,17 @@ class SnippetManagementService(base_service.BaseService):
           'Name "%s" is already registered with package "%s", it cannot '
           'be used again.' % (name, self._snippet_clients[name].client.package),
       )
-    # Should not load the same snippet package more than once.
+    # Should not load the same snippet package with same user ID more than once.
+    new_snippet_user_id = config.user_id if config is not None else None
+    if new_snippet_user_id is None:
+      new_snippet_user_id = self._device.adb.current_user_id
+
     for snippet_name, client in self._snippet_clients.items():
-      if package == client.package:
+      if package == client.package and new_snippet_user_id == client.user_id:
         raise Error(
             self,
-            'Snippet package "%s" has already been loaded under name "%s".'
-            % (package, snippet_name),
+            f'Snippet package "{package}" (user id {client.user_id}) has'
+            f' already been loaded under name "{snippet_name}".',
         )
 
     client = snippet_client_v2.SnippetClientV2(
