@@ -107,35 +107,82 @@ class SnippetManagementServiceTest(unittest.TestCase):
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_add_snippet_client_dup_package(self, mock_class):
+    user_id = 2
     mock_client = mock_class.return_value
     mock_client.package = MOCK_PACKAGE
-    manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock()
-    )
+    mock_client.user_id = user_id
+    mock_adb = mock.MagicMock(current_user_id=user_id)
+    mock_device = mock.MagicMock(adb=mock_adb)
+    manager = snippet_management_service.SnippetManagementService(mock_device)
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = (
-        'Snippet package "com.mock.package" has already been loaded '
-        'under name "foo".'
+        f'Snippet package "com.mock.package" \(under user ID {user_id}\) has'
+        ' already been loaded under name "foo".'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.add_snippet_client('bar', MOCK_PACKAGE)
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
-  def test_add_snippet_client_dup_package(self, mock_class):
+  def test_add_snippet_client_dup_package_with_different_user_id(
+      self, mock_class
+  ):
+    old_user_id = 2
+    new_user_id = 3
+    old_config = snippet_client_v2.Config(user_id=old_user_id)
+    new_config = snippet_client_v2.Config(user_id=new_user_id)
     mock_client = mock_class.return_value
     mock_client.package = MOCK_PACKAGE
-    manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock()
-    )
-    config1 = snippet_client_v2.Config(user_id = 2)
-    config2 = snippet_client_v2.Config(user_id = 3)
-    manager.add_snippet_client('foo', MOCK_PACKAGE, config1)
-    msg = (
-        'Snippet package "com.mock.package" has already been loaded '
-        'under name "foo".'
-    )
+    mock_client.user_id = old_user_id
+    mock_adb = mock.MagicMock(current_user_id=new_user_id)
+    mock_device = mock.MagicMock(adb=mock_adb)
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE, old_config)
     try:
-      manager.add_snippet_client('bar', MOCK_PACKAGE, config2)
+      manager.add_snippet_client('bar', MOCK_PACKAGE, new_config)
+    except snippet_management_service.Error as e:
+      self.fail(
+          'Should not fail when loading snippets with the same package but'
+          ' different user ID.'
+      )
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_add_snippet_client_dup_package_different_uid_previous_load_no_config(
+      self, mock_class
+  ):
+    old_user_id = 2
+    new_user_id = 3
+    new_config = snippet_client_v2.Config(user_id=new_user_id)
+    mock_client = mock_class.return_value
+    mock_client.package = MOCK_PACKAGE
+    mock_client.user_id = old_user_id
+    mock_adb = mock.MagicMock(current_user_id=new_user_id)
+    mock_device = mock.MagicMock(adb=mock_adb)
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE, config=None)
+    try:
+      manager.add_snippet_client('bar', MOCK_PACKAGE, new_config)
+    except snippet_management_service.Error as e:
+      self.fail(
+          'Should not fail when loading snippets with the same package but'
+          ' different user ID.'
+      )
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_add_snippet_client_dup_package_different_uid_latter_load_no_config(
+      self, mock_class
+  ):
+    old_user_id = 2
+    new_user_id = 3
+    old_config = snippet_client_v2.Config(user_id=old_user_id)
+    mock_client = mock_class.return_value
+    mock_client.package = MOCK_PACKAGE
+    mock_client.user_id = old_user_id
+    mock_adb = mock.MagicMock(current_user_id=new_user_id)
+    mock_device = mock.MagicMock(adb=mock_adb)
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE, old_config)
+    try:
+      manager.add_snippet_client('bar', MOCK_PACKAGE, config=None)
     except snippet_management_service.Error as e:
       self.fail(
           'Should not fail when loading snippets with the same package but'

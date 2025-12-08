@@ -1556,9 +1556,12 @@ class AndroidDeviceTest(unittest.TestCase):
       self, MockGetPort, MockSnippetClient, MockFastboot, MockAdbProxy
   ):
     ad = android_device.AndroidDevice(serial='1')
+    ad.adb.current_user_id = 1
+    MockSnippetClient.return_value.user_id = 1
     ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
     expected_msg = (
-        'Snippet package "%s" has already been loaded under name "snippet".'
+        'Snippet package "%s" \(under user ID 1\) has already been loaded under'
+        ' name "snippet".'
     ) % MOCK_SNIPPET_PACKAGE_NAME
     with self.assertRaisesRegex(android_device.Error, expected_msg):
       ad.load_snippet('snippet2', MOCK_SNIPPET_PACKAGE_NAME)

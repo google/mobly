@@ -87,7 +87,7 @@ class SnippetManagementService(base_service.BaseService):
       if package == client.package and new_snippet_user_id == client.user_id:
         raise Error(
             self,
-            f'Snippet package "{package}" (user id {client.user_id}) has'
+            f'Snippet package "{package}" (under user ID {client.user_id}) has'
             f' already been loaded under name "{snippet_name}".',
         )
 
