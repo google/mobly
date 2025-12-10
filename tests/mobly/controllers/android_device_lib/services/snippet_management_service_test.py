@@ -12,16 +12,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import unittest
 from unittest import mock
 
+from mobly.snippet import client_base
 from mobly.controllers.android_device_lib import snippet_client_v2
 from mobly.controllers.android_device_lib.services import snippet_management_service
 
 MOCK_PACKAGE = 'com.mock.package'
+MOCK_PACKAGE2 = 'com.mock.package2'
 SNIPPET_CLIENT_V2_CLASS_PATH = (
     'mobly.controllers.android_device_lib.snippet_client_v2.SnippetClientV2'
 )
+
+
+class MockSnippetClientV2(client_base.ClientBase):
+
+  def __init__(self, package, ad, config=None):
+    self.user_id = (
+        config.user_id
+        if config is not None and config.user_id is not None
+        else ad.adb.current_user_id
+    )
+    self.package = package
+    self.identifier = f'{self.package}:user_{self.user_id}'
+    self.log = logging
+
+  # Override abstract methods so this class can be instantiated.
+  def before_starting_server(self):
+    pass
+
+  def start_server(self):
+    pass
+
+  def make_connection(self):
+    pass
+
+  def restore_server_connection(self, port=None):
+    pass
+
+  def check_server_proc_running(self):
+    pass
+
+  def send_rpc_request(self, request):
+    pass
+
+  def handle_callback(self, callback_id, ret_value, rpc_func_name):
+    pass
+
+  def stop(self):
+    pass
+
+  def close_connection(self):
+    pass
 
 
 class SnippetManagementServiceTest(unittest.TestCase):
@@ -99,26 +143,71 @@ class SnippetManagementServiceTest(unittest.TestCase):
     )
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = (
-        '.* Name "foo" is already registered with package ".*", it '
+        '.* Name "foo" is already registered with snippet ".*", it '
         'cannot be used again.'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.add_snippet_client('foo', MOCK_PACKAGE + 'ha')
 
-  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
-  def test_add_snippet_client_dup_package(self, mock_class):
-    mock_client = mock_class.return_value
-    mock_client.package = MOCK_PACKAGE
-    manager = snippet_management_service.SnippetManagementService(
-        mock.MagicMock()
-    )
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH, new=MockSnippetClientV2)
+  def test_add_snippet_client_different_pacakge(self):
+    mock_device = mock.MagicMock()
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE)
+
+    try:
+      manager.add_snippet_client('bar', MOCK_PACKAGE2)
+    except snippet_management_service.Error as e:
+      self.fail(
+          'Should not fail when loading snippets with the different package'
+      )
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH, new=MockSnippetClientV2)
+  def test_add_snippet_client_dup_package_and_none_as_snippet_config(self):
+    user_id = 2
+    mock_adb = mock.MagicMock(current_user_id=user_id)
+    mock_device = mock.MagicMock(adb=mock_adb)
+    manager = snippet_management_service.SnippetManagementService(mock_device)
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = (
-        'Snippet package "com.mock.package" has already been loaded '
-        'under name "foo".'
+        f'Snippet "com.mock.package:user_{user_id}" has already been loaded'
+        ' under name "foo".'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.add_snippet_client('bar', MOCK_PACKAGE)
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH, new=MockSnippetClientV2)
+  def test_add_snippet_client_dup_package_and_user_id(self):
+    user_id = 2
+    config = snippet_client_v2.Config(user_id=user_id)
+    mock_adb = mock.MagicMock(current_user_id=user_id)
+    mock_device = mock.MagicMock(adb=mock_adb)
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE, config=config)
+    msg = (
+        f'Snippet "com.mock.package:user_{user_id}" has already been loaded'
+        ' under name "foo".'
+    )
+    with self.assertRaisesRegex(snippet_management_service.Error, msg):
+      manager.add_snippet_client('bar', MOCK_PACKAGE, config=config)
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH, new=MockSnippetClientV2)
+  def test_add_snippet_client_dup_package_with_different_user_id(self):
+    old_user_id = 2
+    new_user_id = 3
+    old_config = snippet_client_v2.Config(user_id=old_user_id)
+    new_config = snippet_client_v2.Config(user_id=new_user_id)
+    mock_adb = mock.MagicMock(current_user_id=new_user_id)
+    mock_device = mock.MagicMock(adb=mock_adb)
+    manager = snippet_management_service.SnippetManagementService(mock_device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE, old_config)
+    try:
+      manager.add_snippet_client('bar', MOCK_PACKAGE, new_config)
+    except snippet_management_service.Error as e:
+      self.fail(
+          'Should not fail when loading snippets with the same package but'
+          ' different user ID.'
+      )
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_remove_snippet_client(self, mock_class):

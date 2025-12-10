@@ -69,31 +69,33 @@ class SnippetManagementService(base_service.BaseService):
         class for supported configurations.
 
     Raises:
-      Error, if a duplicated name or package is passed in.
+      Error: if a duplicated name is passed in, or the same snippet has been
+        registered.
     """
     # Should not load snippet with the same name more than once.
     if name in self._snippet_clients:
       raise Error(
           self,
-          'Name "%s" is already registered with package "%s", it cannot '
-          'be used again.' % (name, self._snippet_clients[name].client.package),
+          'Name "%s" is already registered with snippet "%s", it cannot '
+          'be used again.' % (name, self._snippet_clients[name].identifier),
       )
-    # Should not load the same snippet package more than once.
-    for snippet_name, client in self._snippet_clients.items():
-      if package == client.package:
-        raise Error(
-            self,
-            'Snippet package "%s" has already been loaded under name "%s".'
-            % (package, snippet_name),
-        )
-
-    client = snippet_client_v2.SnippetClientV2(
+    # Should not load snippets with the same identifier more than once.
+    new_client = snippet_client_v2.SnippetClientV2(
         package=package,
         ad=self._device,
         config=config,
     )
-    client.initialize()
-    self._snippet_clients[name] = client
+    for snippet_name, client in self._snippet_clients.items():
+      if new_client.identifier == client.identifier:
+        del new_client
+        raise Error(
+            self,
+            'Snippet "%s" has already been loaded under name "%s".'
+            % (client.identifier, snippet_name),
+        )
+
+    new_client.initialize()
+    self._snippet_clients[name] = new_client
 
   def remove_snippet_client(self, name):
     """Removes a snippet client from management.
@@ -113,24 +115,24 @@ class SnippetManagementService(base_service.BaseService):
     """Starts all the snippet clients under management."""
     for client in self._snippet_clients.values():
       if not client.is_alive:
-        self._device.log.debug('Starting SnippetClient<%s>.', client.package)
+        self._device.log.debug('Starting SnippetClient<%s>.', client.identifier)
         client.initialize()
       else:
         self._device.log.debug(
             'Not startng SnippetClient<%s> because it is already alive.',
-            client.package,
+            client.identifier,
         )
 
   def stop(self):
     """Stops all the snippet clients under management."""
     for client in self._snippet_clients.values():
       if client.is_alive:
-        self._device.log.debug('Stopping SnippetClient<%s>.', client.package)
+        self._device.log.debug('Stopping SnippetClient<%s>.', client.identifier)
         client.stop()
       else:
         self._device.log.debug(
             'Not stopping SnippetClient<%s> because it is not alive.',
-            client.package,
+            client.identifier,
         )
 
   def pause(self):
@@ -140,18 +142,18 @@ class SnippetManagementService(base_service.BaseService):
     allocated in `resume`.
     """
     for client in self._snippet_clients.values():
-      self._device.log.debug('Pausing SnippetClient<%s>.', client.package)
+      self._device.log.debug('Pausing SnippetClient<%s>.', client.identifier)
       client.close_connection()
 
   def resume(self):
     """Resumes all paused snippet clients."""
     for client in self._snippet_clients.values():
       if not client.is_alive:
-        self._device.log.debug('Resuming SnippetClient<%s>.', client.package)
+        self._device.log.debug('Resuming SnippetClient<%s>.', client.identifier)
         client.restore_server_connection()
       else:
         self._device.log.debug(
-            'Not resuming SnippetClient<%s>.', client.package
+            'Not resuming SnippetClient<%s>.', client.identifier
         )
 
   def __getattr__(self, name):
