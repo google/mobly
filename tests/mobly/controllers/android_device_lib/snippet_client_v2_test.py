@@ -1344,7 +1344,7 @@ class SnippetClientV2Test(unittest.TestCase):
         errors.ServerRestoreConnectionError,
         (
             'Failed to restore server connection for snippet'
-            f' {MOCK_PACKAGE_NAME}:user_{MOCK_USER_ID} at host port'
+            f' {MOCK_PACKAGE_NAME}@user_id\[{MOCK_USER_ID}\] at host port'
             f' {host_port_3}, device port {MOCK_DEVICE_PORT}'
         ),
     ):

@@ -209,7 +209,7 @@ class SnippetClientV2(client_base.ClientBase):
     with the user ID. The user ID is needed since it's allowed to load snippets
     with the same package for different Android users.
     """
-    return f'{self.package}:user_{self.user_id}'
+    return f'{self.package}@user_id[{self.user_id}]'
 
   @property
   def is_alive(self):
