@@ -200,7 +200,15 @@ class SnippetClientV2(client_base.ClientBase):
 
   @property
   def identifier(self):
-    """The identifier of this snippet client."""
+    """The unique identifier of this snippet client.
+
+    This property serves as the singular key for the snippet client, ensuring
+    that every loaded snippet client possesses a distinct identifier.
+
+    This identifier is constructed by combining the client's package name
+    with the user ID. The user ID is needed since it's allowed to load snippets
+    with the same package for different Android users.
+    """
     return f'{self.package}:user_{self.user_id}'
 
   @property
