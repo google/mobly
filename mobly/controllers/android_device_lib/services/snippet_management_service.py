@@ -69,8 +69,8 @@ class SnippetManagementService(base_service.BaseService):
         class for supported configurations.
 
     Raises:
-      Error: if a duplicated name is passed in, or a snippet instance with the
-        same identifier has already been registered.
+      Error: if a duplicated name is passed in, or the same package has
+        already been registered under the same Android user ID.
     """
     # Should not load snippet with the same name more than once.
     if name in self._snippet_clients:
