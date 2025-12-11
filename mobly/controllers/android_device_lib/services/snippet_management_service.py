@@ -76,8 +76,9 @@ class SnippetManagementService(base_service.BaseService):
     if name in self._snippet_clients:
       raise Error(
           self,
-          'Name "%s" is already registered with snippet "%s", it cannot '
-          'be used again.' % (name, self._snippet_clients[name].identifier),
+          f'Name "{name}" is already registered with snippet'
+          f' "{self._snippet_clients[name].identifier}", the same name'
+          ' cannot be used again.',
       )
     # Should not load snippets with the same identifier more than once.
     new_client = snippet_client_v2.SnippetClientV2(
@@ -90,8 +91,9 @@ class SnippetManagementService(base_service.BaseService):
         del new_client
         raise Error(
             self,
-            'Snippet "%s" has already been loaded under name "%s".'
-            % (client.identifier, snippet_name),
+            f'Snippet "{client.package}" has already been registered for user'
+            f' id {client.user_id} under name "{name}". The same pacakge cannot'
+            ' be loaded again for the same user.',
         )
 
     new_client.initialize()

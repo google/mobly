@@ -36,7 +36,7 @@ class MockSnippetClientV2(client_base.ClientBase):
         else ad.adb.current_user_id
     )
     self.package = package
-    self.identifier = f'{self.package}:user_{self.user_id}'
+    self.identifier = f'{self.package}@user_id[{self.user_id}]'
     self.log = logging
 
   # Override abstract methods so this class can be instantiated.
@@ -143,7 +143,7 @@ class SnippetManagementServiceTest(unittest.TestCase):
     )
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = (
-        '.* Name "foo" is already registered with snippet ".*", it '
+        '.* Name "foo" is already registered with snippet ".*", the same name '
         'cannot be used again.'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
@@ -170,8 +170,8 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager = snippet_management_service.SnippetManagementService(mock_device)
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = (
-        f'Snippet "com.mock.package:user_{user_id}" has already been loaded'
-        ' under name "foo".'
+        f'Snippet "com.mock.package" has already been registered for user id'
+        f' {user_id} under name "foo"'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.add_snippet_client('bar', MOCK_PACKAGE)
@@ -185,8 +185,8 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager = snippet_management_service.SnippetManagementService(mock_device)
     manager.add_snippet_client('foo', MOCK_PACKAGE, config=config)
     msg = (
-        f'Snippet "com.mock.package:user_{user_id}" has already been loaded'
-        ' under name "foo".'
+        f'Snippet "com.mock.package" has already been registered for user id'
+        f' {user_id} under name "foo"'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.add_snippet_client('bar', MOCK_PACKAGE, config=config)

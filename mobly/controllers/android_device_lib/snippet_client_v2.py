@@ -823,9 +823,9 @@ class SnippetClientV2(client_base.ClientBase):
       raise errors.ServerRestoreConnectionError(
           self._device,
           (
-              'Failed to restore server connection for snippet'
-              f' {self.identifier} at host port {self.host_port}, device port'
-              f' {self.device_port}.'
+              'Failed to restore server connection of the snippet package'
+              f' {self.package} for user id {self.user_id} at host port'
+              f' {self.host_port}, device port {self.device_port}.'
           ),
       ) from e
 
