@@ -92,8 +92,8 @@ class SnippetManagementService(base_service.BaseService):
         raise Error(
             self,
             f'Snippet "{client.package}" has already been registered for user'
-            f' id {client.user_id} under name "{name}". The same pacakge cannot'
-            ' be loaded again for the same user.',
+            f' id {client.user_id} under name "{snippet_name}". The same'
+            ' pacakge cannot be registered again for the same user.',
         )
 
     new_client.initialize()

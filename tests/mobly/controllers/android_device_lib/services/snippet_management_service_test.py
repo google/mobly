@@ -171,7 +171,8 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = (
         f'Snippet "com.mock.package" has already been registered for user id'
-        f' {user_id} under name "foo"'
+        f' {user_id} under name "foo". The same pacakge cannot be registered'
+        ' again for the same user.'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.add_snippet_client('bar', MOCK_PACKAGE)
@@ -186,7 +187,8 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager.add_snippet_client('foo', MOCK_PACKAGE, config=config)
     msg = (
         f'Snippet "com.mock.package" has already been registered for user id'
-        f' {user_id} under name "foo"'
+        f' {user_id} under name "foo". The same pacakge cannot be registered'
+        ' again for the same user.'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.add_snippet_client('bar', MOCK_PACKAGE, config=config)
