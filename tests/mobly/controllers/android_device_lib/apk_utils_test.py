@@ -86,6 +86,16 @@ class ApkUtilsTest(unittest.TestCase):
         stderr=mock.ANY,
     )
 
+  def test_install_no_enable_perms(self):
+    self.mock_device.build_info = {'build_version_sdk': 23}
+    self.mock_device.adb.getprop.return_value = 'none'
+    apk_utils.install(self.mock_device, APK_PATH, enable_runtime_perms=False)
+    self.mock_device.adb.install.assert_called_with(
+        ['-r', '-t', '-d', APK_PATH],
+        timeout=DEFAULT_INSTALL_TIMEOUT_SEC,
+        stderr=mock.ANY,
+    )
+
   def test_install_with_user_id_sdk_too_low(self):
     self.mock_device.build_info = {'build_version_sdk': 21}
     with self.assertRaisesRegex(
