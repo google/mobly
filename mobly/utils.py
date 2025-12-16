@@ -27,7 +27,6 @@ import shlex
 import signal
 import string
 import subprocess
-import threading
 import time
 import traceback
 from typing import Literal, Tuple, overload
