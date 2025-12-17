@@ -143,14 +143,14 @@ class SnippetManagementServiceTest(unittest.TestCase):
     )
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = (
-        '.* Name "foo" is already registered with snippet ".*", the same name '
-        'cannot be used again.'
+        '.* Name "foo" is already registered with package ".*" for user ID .*,'
+        ' the same name cannot be used again.'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
       manager.add_snippet_client('foo', MOCK_PACKAGE + 'ha')
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH, new=MockSnippetClientV2)
-  def test_add_snippet_client_different_pacakge(self):
+  def test_add_snippet_client_different_package(self):
     mock_device = mock.MagicMock()
     manager = snippet_management_service.SnippetManagementService(mock_device)
     manager.add_snippet_client('foo', MOCK_PACKAGE)
@@ -171,7 +171,7 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager.add_snippet_client('foo', MOCK_PACKAGE)
     msg = (
         f'Snippet "com.mock.package" has already been registered for user id'
-        f' {user_id} under name "foo". The same pacakge cannot be registered'
+        f' {user_id} under name "foo". The same package cannot be registered'
         ' again for the same user.'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):
@@ -187,7 +187,7 @@ class SnippetManagementServiceTest(unittest.TestCase):
     manager.add_snippet_client('foo', MOCK_PACKAGE, config=config)
     msg = (
         f'Snippet "com.mock.package" has already been registered for user id'
-        f' {user_id} under name "foo". The same pacakge cannot be registered'
+        f' {user_id} under name "foo". The same package cannot be registered'
         ' again for the same user.'
     )
     with self.assertRaisesRegex(snippet_management_service.Error, msg):

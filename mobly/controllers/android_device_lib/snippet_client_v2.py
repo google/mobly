@@ -216,6 +216,10 @@ class SnippetClientV2(client_base.ClientBase):
     """Does the client have an active connection to the snippet server."""
     return self._conn is not None
 
+  def __repr__(self):
+    return self.identifier
+
+
   def before_starting_server(self):
     """Performs the preparation steps before starting the remote server.
 
@@ -299,8 +303,8 @@ class SnippetClientV2(client_base.ClientBase):
     """
     persists_shell_cmd = self._get_persisting_command()
     self.log.debug(
-        'Snippet server for identifier %s is using protocol %d.%d',
-        self.identifier,
+        'Snippet server for %s is using protocol %d.%d',
+        str(self),
         _PROTOCOL_MAJOR_VERSION,
         _PROTOCOL_MINOR_VERSION,
     )
@@ -359,7 +363,7 @@ class SnippetClientV2(client_base.ClientBase):
   def _get_instrument_options_str(self):
     self.log.debug(
         'Got am instrument options in snippet client "%s": %s',
-        self.identifier,
+        str(self),
         self._config.am_instrument_options,
     )
     if not self._config.am_instrument_options:
@@ -470,7 +474,7 @@ class SnippetClientV2(client_base.ClientBase):
       self.log.debug(
           'Snippet client is creating socket connection to the snippet server '
           'of %s through host port %d.',
-          self.identifier,
+          str(self),
           self.host_port,
       )
       self._conn = socket.create_connection(
@@ -712,11 +716,11 @@ class SnippetClientV2(client_base.ClientBase):
       android_device_lib_errors.DeviceError: if the server exited with errors on
         the device side.
     """
-    self.log.debug('Stopping snippet client %s.', self.identifier)
+    self.log.debug('Stopping snippet client %s.', str(self))
     self.close_connection()
     self._stop_server()
     self._destroy_event_client()
-    self.log.debug('Snippet client %s stopped.', self.identifier)
+    self.log.debug('Snippet client %s stopped.', str(self))
 
   def close_connection(self):
     """Closes the connection to the snippet server on the device.
