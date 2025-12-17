@@ -78,7 +78,7 @@ class SnippetManagementService(base_service.BaseService):
           self,
           f'Name "{name}" is already registered with package'
           f' "{self._snippet_clients[name].package}" for user ID'
-          f' "{self._snippet_clients[name].user_id}", the same name'
+          f' {self._snippet_clients[name].user_id}, the same name'
           ' cannot be used again.',
       )
     # Should not load snippets with the same identifier more than once.
@@ -155,9 +155,7 @@ class SnippetManagementService(base_service.BaseService):
         self._device.log.debug('Resuming SnippetClient<%s>.', str(client))
         client.restore_server_connection()
       else:
-        self._device.log.debug(
-            'Not resuming SnippetClient<%s>.', str(client)
-        )
+        self._device.log.debug('Not resuming SnippetClient<%s>.', str(client))
 
   def __getattr__(self, name):
     client = self.get_snippet_client(name)

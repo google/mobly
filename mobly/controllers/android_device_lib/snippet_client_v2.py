@@ -219,7 +219,6 @@ class SnippetClientV2(client_base.ClientBase):
   def __repr__(self):
     return self.identifier
 
-
   def before_starting_server(self):
     """Performs the preparation steps before starting the remote server.
 
