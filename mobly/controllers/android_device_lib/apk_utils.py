@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import io
-from typing import Iterable, Optional
+from typing import Iterable
 
 from mobly import utils
 from mobly.controllers.android_device import AndroidDevice
@@ -80,8 +80,9 @@ def install(
     device: AndroidDevice,
     apk_path: str,
     timeout: int = DEFAULT_TIMEOUT_INSTALL_APK_SEC,
-    user_id: Optional[int] = None,
-    params: Optional[Iterable[str]] = None,
+    user_id: int | None = None,
+    params: Iterable[str] | None = None,
+    enable_runtime_perms: bool = True,
 ) -> None:
   """Install an apk on an Android device.
 
@@ -97,6 +98,7 @@ def install(
         install for the current user by default. Android's multi-user support
         did not realistically work until SDK 24.
     params: string list, additional parameters included in the adb install cmd.
+    enable_runtime_perms: bool, Set the `-g` flag, which allows all runtime permissions.
 
   Raises:
     AdbError: Installation failed.
@@ -111,7 +113,7 @@ def install(
     if user_id is None:
       user_id = device.adb.current_user_id
     args = ['--user', str(user_id)] + args
-  if android_api_version >= 23:
+  if android_api_version >= 23 and enable_runtime_perms:
     args.append('-g')
   if android_api_version >= 17:
     args.append('-d')
