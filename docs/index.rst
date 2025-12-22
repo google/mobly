@@ -11,7 +11,7 @@ Welcome to Mobly's documentation!
    :caption: Contents:
 
    mobly
-
+   tutorial_custom_controller
 
 Indices and tables
 ==================
