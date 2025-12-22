@@ -4,11 +4,16 @@ Mobly enables users to control custom hardware devices (e.g., smart lights, swit
 
 ## Controller Module Interface
 
-A Mobly controller module must implement the following top-level functions:
+A Mobly controller module needs to implement specific top-level functions to manage the device lifecycle.
+
+**Required functions:**
 
 * **`create(configs)`**: Instantiates controller objects from the configuration.
 * **`destroy(objects)`**: Cleans up resources when the test ends.
-* **`get_info(objects)`**: Returns device information for the test report.
+
+**Optional functions:**
+
+* **`get_info(objects)`**: Returns device information for the test report. If not implemented, no controller information will be included in the result.
 
 ## Implementation Example
 
@@ -31,8 +36,9 @@ class SmartLight:
     """A class representing a smart light device.
     
     Attributes:
-        name: String, the name of the device.
-        ip: String, the IP address of the device.
+        name: the name of the device.
+        ip: the IP address of the device.
+        is_on: True if the light is currently on, False otherwise.
     """
 
     def __init__(self, name: str, ip: str):
