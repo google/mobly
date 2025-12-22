@@ -199,9 +199,25 @@ class SnippetClientV2(client_base.ClientBase):
     return self._user_id
 
   @property
+  def identifier(self):
+    """The unique identifier of this snippet client.
+
+    This property serves as the singular key for the snippet client, ensuring
+    that every loaded snippet client possesses a distinct identifier.
+
+    This identifier is constructed by combining the client's package name
+    with the user ID. The user ID is needed since it's allowed to load snippets
+    with the same package for different Android users.
+    """
+    return f'{self.package}@user_id[{self.user_id}]'
+
+  @property
   def is_alive(self):
     """Does the client have an active connection to the snippet server."""
     return self._conn is not None
+
+  def __repr__(self):
+    return self.identifier
 
   def before_starting_server(self):
     """Performs the preparation steps before starting the remote server.
@@ -286,8 +302,8 @@ class SnippetClientV2(client_base.ClientBase):
     """
     persists_shell_cmd = self._get_persisting_command()
     self.log.debug(
-        'Snippet server for package %s is using protocol %d.%d',
-        self.package,
+        'Snippet server for %s is using protocol %d.%d',
+        str(self),
         _PROTOCOL_MAJOR_VERSION,
         _PROTOCOL_MINOR_VERSION,
     )
@@ -345,8 +361,8 @@ class SnippetClientV2(client_base.ClientBase):
 
   def _get_instrument_options_str(self):
     self.log.debug(
-        'Got am instrument options in snippet client for package %s: %s',
-        self.package,
+        'Got am instrument options in snippet client "%s": %s',
+        str(self),
         self._config.am_instrument_options,
     )
     if not self._config.am_instrument_options:
@@ -457,7 +473,7 @@ class SnippetClientV2(client_base.ClientBase):
       self.log.debug(
           'Snippet client is creating socket connection to the snippet server '
           'of %s through host port %d.',
-          self.package,
+          str(self),
           self.host_port,
       )
       self._conn = socket.create_connection(
@@ -699,11 +715,11 @@ class SnippetClientV2(client_base.ClientBase):
       android_device_lib_errors.DeviceError: if the server exited with errors on
         the device side.
     """
-    self.log.debug('Stopping snippet package %s.', self.package)
+    self.log.debug('Stopping snippet client %s.', str(self))
     self.close_connection()
     self._stop_server()
     self._destroy_event_client()
-    self.log.debug('Snippet package %s stopped.', self.package)
+    self.log.debug('Snippet client %s stopped.', str(self))
 
   def close_connection(self):
     """Closes the connection to the snippet server on the device.
@@ -810,8 +826,9 @@ class SnippetClientV2(client_base.ClientBase):
       raise errors.ServerRestoreConnectionError(
           self._device,
           (
-              f'Failed to restore server connection for {self.package} at '
-              f'host port {self.host_port}, device port {self.device_port}.'
+              'Failed to restore server connection of the snippet package'
+              f' {self.package} for user id {self.user_id} at host port'
+              f' {self.host_port}, device port {self.device_port}.'
           ),
       ) from e
 

@@ -1343,8 +1343,9 @@ class SnippetClientV2Test(unittest.TestCase):
     with self.assertRaisesRegex(
         errors.ServerRestoreConnectionError,
         (
-            f'Failed to restore server connection for {MOCK_PACKAGE_NAME} at '
-            f'host port {host_port_3}, device port {MOCK_DEVICE_PORT}'
+            'Failed to restore server connection of the snippet package'
+            f' {MOCK_PACKAGE_NAME} for user id {MOCK_USER_ID} at host port'
+            f' {host_port_3}, device port {MOCK_DEVICE_PORT}'
         ),
     ):
       self.client.restore_server_connection()
