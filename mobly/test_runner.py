@@ -79,9 +79,10 @@ def main(argv=None):
         runner.run()
         ok = runner.results.is_all_pass and ok
       except signals.TestAbortAll:
-        pass
+        ok = False
+        logging.error('Test run aborted by TestAbortAll.')
       except Exception:
-        logging.exception('Exception when executing %s.', config.testbed_name)
+        logging.exception('Exception when executing %s.', config.test_bed_name)
         ok = False
   if not ok:
     sys.exit(1)
