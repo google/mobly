@@ -125,12 +125,15 @@ class ControllerManager:
       original_config = self.controller_configs[module_config_name]
       controller_config = copy.deepcopy(original_config)
       objects = module.create(controller_config)
-    except Exception:
-      logging.exception(
-          'Failed to initialize objects for controller %s, abort!',
-          module_config_name,
+    except Exception as e:
+      msg = (
+          f'Failed to initialize objects for controller "{module_config_name}". '
+          'Check if the device is connected and the config is correct.'
       )
-      raise
+      if module_config_name == 'AndroidDevice':
+        msg += ' Hint: Ensure "adb devices" shows your device.'
+      logging.error(msg)
+      raise signals.ControllerError(msg) from e
     if not isinstance(objects, list):
       raise signals.ControllerError(
           'Controller module %s did not return a list of objects, abort.'
