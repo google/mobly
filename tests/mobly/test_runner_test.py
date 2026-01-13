@@ -65,6 +65,17 @@ class TestRunnerTest(unittest.TestCase):
         expected_info_dict['Controller Info'], info.controller_info
     )
 
+  def test_main_exits_with_error_on_test_abort_all(self):
+    """Verifies that main exits with 1 when TestAbortAll is raised."""
+    with mock.patch('mobly.test_runner.TestRunner') as mock_test_runner:
+      mock_test_runner.return_value.run.side_effect = signals.TestAbortAll('Abort!')
+
+      with self.assertRaises(SystemExit) as cm:
+        # Using a dummy config path as the runner is mocked
+        test_runner.main(['-c', '/tmp/nonexistent_config.yaml'])
+
+      self.assertEqual(cm.exception.code, 1)
+
   def test_run_twice(self):
     """Verifies that:
     1. Repeated run works properly.
