@@ -289,7 +289,6 @@ class ClientBase(abc.ABC):
 
       self.log.debug('Sending RPC request %s.', request)
       response = self.send_rpc_request(request)
-      self.log.debug('RPC request sent.')
 
       if self.verbose_logging or _MAX_RPC_RESP_LOGGING_LENGTH >= len(response):
         self.log.debug('Snippet received: %s', response)

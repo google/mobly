@@ -588,6 +588,7 @@ class SnippetClientV2(client_base.ClientBase):
     try:
       self._client.write(f'{message}\n'.encode('utf8'))
       self._client.flush()
+      self.log.debug('RPC request sent.')
     except socket.error as e:
       raise errors.Error(
           self._device,
