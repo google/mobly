@@ -67,6 +67,8 @@ MOCK_LOGPERSIST_START_MISSING_ADB_ERROR = adb.AdbError(
     0,
 )
 
+_DATE_COMMAND = ['date', '-Is', r'+%Y-%m-%d\ %H:%M:%S.%N']
+
 
 class LogcatTest(unittest.TestCase):
   """Tests for Logcat service and its integration with AndroidDevice."""
@@ -132,7 +134,7 @@ class LogcatTest(unittest.TestCase):
         'logcat,%s,fakemodel,123.txt' % ad.serial,
     )
     create_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-    adb_cmd = ' "adb" -s %s logcat -v threadtime -T 1  >> %s'
+    adb_cmd = ' "adb" -s %s logcat -v threadtime -T "1"  >> %s'
     start_proc_mock.assert_called_with(
         adb_cmd % (ad.serial, '"%s" ' % expected_log_path), shell=True
     )
@@ -206,7 +208,8 @@ class LogcatTest(unittest.TestCase):
     self.assertTrue(logcat_service._adb_logcat_process)
     create_dir_mock.assert_has_calls([mock.call('some/path')])
     expected_adb_cmd = (
-        ' "adb" -s 1 logcat -v threadtime -T 1 -a -b -c >> "some/path/log.txt" '
+        ' "adb" -s 1 logcat -v threadtime -T "1" -a -b -c >>'
+        ' "some/path/log.txt" '
     )
     start_proc_mock.assert_called_with(expected_adb_cmd, shell=True)
     self.assertEqual(logcat_service.adb_logcat_file_path, 'some/path/log.txt')
@@ -248,6 +251,43 @@ class LogcatTest(unittest.TestCase):
     self.assertTrue(logcat_service.is_alive)
     logcat_service.stop()
 
+  def _adb_shell_logic(self, cmd, date_result=None, raise_error=False):
+    if cmd == _DATE_COMMAND:
+      if raise_error:
+        raise adb.AdbError(cmd, b'', b'Device is disconnected', 1)
+      return date_result.encode('utf-8')
+    return b''
+
+  def _pause_and_resume_logcat_service(
+      self,
+      logcat_service,
+      date,
+      state,
+      expected_log_path,
+      ad_serial,
+      stop_proc_mock,
+      start_proc_mock,
+      clear_adb_mock,
+  ):
+    """Pauses and resumes the log collection and verifies the operations."""
+    # Pause the logcat collection at time stamp `date`.
+    state['date_result'] = date
+    logcat_service.pause()
+    self.assertFalse(logcat_service.is_alive)
+    stop_proc_mock.assert_called_with('process')
+    self.assertIsNone(logcat_service._adb_logcat_process)
+    clear_adb_mock.reset_mock()
+
+    # Resume the logcat collection, which should look back to time
+    # stamp `date`.
+    logcat_service.resume()
+    self.assertTrue(logcat_service.is_alive)
+    clear_adb_mock.assert_not_called()
+    adb_cmd = ' "adb" -s %s logcat -v threadtime -T "' + date + '"  >> %s'
+    start_proc_mock.assert_called_with(
+        adb_cmd % (ad_serial, '"%s" ' % expected_log_path), shell=True
+    )
+
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
       return_value=mock_android_device.MockAdbProxy('1'),
@@ -264,8 +304,10 @@ class LogcatTest(unittest.TestCase):
       'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
       return_value=mock_android_device.MockAdbProxy('1'),
   )
+  @mock.patch('mobly.logger.get_log_file_timestamp')
   def test_pause_and_resume(
       self,
+      get_timestamp_mock,
       clear_adb_mock,
       open_logcat_mock,
       stop_proc_mock,
@@ -274,20 +316,155 @@ class LogcatTest(unittest.TestCase):
       FastbootProxy,
       MockAdbProxy,
   ):
+    # The test will pause and resume the log collection twice. The
+    # resume operation is supposed to request the log messages since the
+    # log collection got paused.
+
+    state = {'date_result': ''}
+    date_result_first_pause = '2026-01-14 17:01:02.342'
+    date_result_second_pause = '2026-01-14 17:03:04.789'
+
+    adb_instance = MockAdbProxy.return_value
+    adb_instance.shell = mock.MagicMock()
+    adb_instance.has_shell_command = mock.MagicMock(return_value=True)
+
+    adb_instance.shell.side_effect = (
+        lambda cmd, *args, **kwargs: self._adb_shell_logic(
+            cmd, state['date_result']
+        )
+    )
+
+    # Set up the logcat instance.
     mock_serial = '1'
     ad = android_device.AndroidDevice(serial=mock_serial)
-    logcat_service = logcat.Logcat(ad, logcat.Config(clear_log=True))
+    get_timestamp_mock.return_value = '123'
+    configs = logcat.Config(clear_log=True)
+    logcat_service = logcat.Logcat(ad, configs)
     logcat_service.start()
+    expected_log_path = os.path.join(
+        logging.log_path,
+        'AndroidDevice%s' % ad.serial,
+        'logcat,%s,fakemodel,123.txt' % ad.serial,
+    )
+
+    # We expect that the first logcat invocation happens with time "1"
+    # to include all previously generated log messages.
+    adb_cmd = ' "adb" -s %s logcat -v threadtime -T "1"  >> %s'
+    start_proc_mock.assert_called_with(
+        adb_cmd % (ad.serial, '"%s" ' % expected_log_path), shell=True
+    )
+
     clear_adb_mock.assert_called_once_with()
     self.assertTrue(logcat_service.is_alive)
+
+    # First pause / resume iteration
+    self._pause_and_resume_logcat_service(
+        logcat_service,
+        date_result_first_pause,
+        state,
+        expected_log_path,
+        ad.serial,
+        stop_proc_mock,
+        start_proc_mock,
+        clear_adb_mock,
+    )
+
+    # Second pause / resume iteration
+    self._pause_and_resume_logcat_service(
+        logcat_service,
+        date_result_second_pause,
+        state,
+        expected_log_path,
+        ad.serial,
+        stop_proc_mock,
+        start_proc_mock,
+        clear_adb_mock,
+    )
+
+    logcat_service.stop()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch('mobly.logger.get_log_file_timestamp')
+  def test_pause_and_resume_while_raising_exception_when_getting_pause_time(
+      self,
+      get_timestamp_mock,
+      clear_adb_mock,
+      open_logcat_mock,
+      stop_proc_mock,
+      start_proc_mock,
+      create_dir_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    # The test will pause and resume the log collection, but it will
+    # fail to retrieve a date while pausing the log collection. The log
+    # collection is expected to resume back from the earliest time stamp
+    # "1".
+
+    adb_instance = MockAdbProxy.return_value
+    adb_instance.shell = mock.MagicMock()
+    adb_instance.has_shell_command = mock.MagicMock(return_value=True)
+
+    adb_instance.shell.side_effect = (
+        lambda cmd, *args, **kwargs: self._adb_shell_logic(
+            cmd, raise_error=True
+        )
+    )
+
+    # Set up the logcat instance.
+    mock_serial = '1'
+    ad = android_device.AndroidDevice(serial=mock_serial)
+    get_timestamp_mock.return_value = '123'
+    configs = logcat.Config(clear_log=True)
+    logcat_service = logcat.Logcat(ad, configs)
+    logcat_service.start()
+    expected_log_path = os.path.join(
+        logging.log_path,
+        'AndroidDevice%s' % ad.serial,
+        'logcat,%s,fakemodel,123.txt' % ad.serial,
+    )
+
+    # We expect that the first logcat invocation happens with time "1"
+    # to include all previously generated log messages.
+    adb_cmd = ' "adb" -s %s logcat -v threadtime -T "1"  >> %s'
+    start_proc_mock.assert_called_with(
+        adb_cmd % (ad.serial, '"%s" ' % expected_log_path), shell=True
+    )
+
+    clear_adb_mock.assert_called_once_with()
+    self.assertTrue(logcat_service.is_alive)
+
+    # Pause should fail to retrieve a valid date
     logcat_service.pause()
     self.assertFalse(logcat_service.is_alive)
     stop_proc_mock.assert_called_with('process')
     self.assertIsNone(logcat_service._adb_logcat_process)
     clear_adb_mock.reset_mock()
+
+    # Resume should start with the first logcat message again
     logcat_service.resume()
     self.assertTrue(logcat_service.is_alive)
     clear_adb_mock.assert_not_called()
+    adb_cmd = ' "adb" -s %s logcat -v threadtime -T "1"  >> %s'
+    start_proc_mock.assert_called_with(
+        adb_cmd % (ad.serial, '"%s" ' % expected_log_path), shell=True
+    )
+
     logcat_service.stop()
 
   @mock.patch(
@@ -422,7 +599,7 @@ class LogcatTest(unittest.TestCase):
         'logcat,%s,fakemodel,123.txt' % ad.serial,
     )
     create_dir_mock.assert_called_with(os.path.dirname(expected_log_path))
-    adb_cmd = ' "adb" -s %s logcat -v threadtime -T 1 -b radio >> %s'
+    adb_cmd = ' "adb" -s %s logcat -v threadtime -T "1" -b radio >> %s'
     start_proc_mock.assert_called_with(
         adb_cmd % (ad.serial, '"%s" ' % expected_log_path), shell=True
     )

@@ -63,6 +63,7 @@ class Logcat(base_service.BaseService):
     self._adb_logcat_process = None
     self._adb_logcat_file_obj = None
     self.adb_logcat_file_path = None
+    self._last_connection_time = None
     # Logcat service uses a single config obj, using singular internal
     # name: `_config`.
     self._config = configs if configs else Config()
@@ -247,9 +248,14 @@ class Logcat(base_service.BaseService):
     # In debugging mode of IntelijIDEA, "patch_args" remove
     # double quotes in args if starting and ending with it.
     # Add spaces at beginning and at last to fix this issue.
-    cmd = ' "%s" -s %s logcat -v threadtime -T 1 %s >> "%s" ' % (
+    if self._last_connection_time is not None:
+      t_argument_value = self._last_connection_time
+    else:
+      t_argument_value = '1'
+    cmd = ' "%s" -s %s logcat -v threadtime -T "%s" %s >> "%s" ' % (
         adb.ADB,
         self._ad.serial,
+        t_argument_value,
         self._config.logcat_params,
         self.adb_logcat_file_path,
     )
@@ -270,6 +276,7 @@ class Logcat(base_service.BaseService):
     except Exception:
       self._ad.log.exception('Failed to stop adb logcat.')
     self._adb_logcat_process = None
+    self._last_connection_time = None
 
   def pause(self):
     """Pauses logcat.
@@ -279,6 +286,12 @@ class Logcat(base_service.BaseService):
     some logs would be lost.
     """
     self._stop()
+    try:
+      response = self._ad.adb.shell(['date', '-Is', r'+%Y-%m-%d\ %H:%M:%S.%N'])
+      if response:
+        self._last_connection_time = response.decode('utf-8').strip()
+    except adb.AdbError as e:
+      self._ad.log.exception('Failed to get host time.')
 
   def resume(self):
     """Resumes a paused logcat service."""
