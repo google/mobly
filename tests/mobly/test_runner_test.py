@@ -65,6 +65,22 @@ class TestRunnerTest(unittest.TestCase):
         expected_info_dict['Controller Info'], info.controller_info
     )
 
+  def test_main_exits_with_error_on_test_abort_all(self):
+    """Verifies that main exits with 1 when TestAbortAll is raised."""
+    tmp_config_path = os.path.join(tempfile.gettempdir(), 'dummy_config.yaml')
+    with open(tmp_config_path, 'w') as f:
+      f.write('TestBeds: [{Name: "dummy"}]')
+
+    try:
+      with mock.patch('mobly.test_runner.TestRunner', autospec=True) as mock_tr:
+        mock_tr.return_value.run.side_effect = signals.TestAbortAll('Abort!')
+        with self.assertRaises(SystemExit) as cm:
+          test_runner.main(['-c', tmp_config_path])
+        self.assertEqual(cm.exception.code, 1)
+    finally:
+      if os.path.exists(tmp_config_path):
+        os.remove(tmp_config_path)
+
   def test_run_twice(self):
     """Verifies that:
     1. Repeated run works properly.
