@@ -34,7 +34,7 @@ _INSTRUMENTATION_RUNNER_PACKAGE = (
 
 # The command template to start the snippet server
 _LAUNCH_CMD = (
-    '{shell_cmd} am instrument {user} -w -e action start'
+    '{shell_cmd} {env_str} am instrument {user} -w -e action start'
     ' {instrument_options}'
     f' {{snippet_package}}/{_INSTRUMENTATION_RUNNER_PACKAGE}'
 )
@@ -111,12 +111,15 @@ class Config:
       other purposes may not take effect and you should use snippet RPCs. This
       is because Mobly snippet runner changes the subsequent instrumentation
       process.
+    env: A string of prefix options (e.g., environment variables or command
+      wrappers) prepended before the `am instrument` command.
     user_id: The user id under which to launch the snippet process.
   """
 
   am_instrument_options: Dict[str, str] = dataclasses.field(
       default_factory=dict
   )
+  env: str = ''
   user_id: Union[int, None] = None
 
 
@@ -308,8 +311,10 @@ class SnippetClientV2(client_base.ClientBase):
         _PROTOCOL_MINOR_VERSION,
     )
     option_str = self._get_instrument_options_str()
+    env_str = self._config.env.strip()
     cmd = _LAUNCH_CMD.format(
         shell_cmd=persists_shell_cmd,
+        env_str=env_str,
         user=self._get_user_command_string(),
         snippet_package=self.package,
         instrument_options=option_str,
