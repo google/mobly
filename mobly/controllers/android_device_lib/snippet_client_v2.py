@@ -34,7 +34,7 @@ _INSTRUMENTATION_RUNNER_PACKAGE = (
 
 # The command template to start the snippet server
 _LAUNCH_CMD = (
-    '{shell_cmd} am instrument {user} -w -e action start'
+    '{shell_cmd} {env_str}am instrument {user} -w -e action start'
     ' {instrument_options}'
     f' {{snippet_package}}/{_INSTRUMENTATION_RUNNER_PACKAGE}'
 )
@@ -112,12 +112,16 @@ class Config:
       is because Mobly snippet runner changes the subsequent instrumentation
       process.
     user_id: The user id under which to launch the snippet process.
+    env_str: An optional string of environment variables or command wrappers
+      to prepend to the `am instrument` command. E.g. `'ENV_VAR=value'` or
+      `'wrapper_cmd'`. Defaults to an empty string.
   """
 
   am_instrument_options: Dict[str, str] = dataclasses.field(
       default_factory=dict
   )
   user_id: Union[int, None] = None
+  env_str: str = ''
 
 
 class ConnectionHandshakeCommand(enum.Enum):
@@ -310,6 +314,7 @@ class SnippetClientV2(client_base.ClientBase):
     option_str = self._get_instrument_options_str()
     cmd = _LAUNCH_CMD.format(
         shell_cmd=persists_shell_cmd,
+        env_str=self._config.env_str + ' ' if self._config.env_str else '',
         user=self._get_user_command_string(),
         snippet_package=self.package,
         instrument_options=option_str,
