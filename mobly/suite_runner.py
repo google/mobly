@@ -366,7 +366,6 @@ def run_suite_class(argv=None):
         suite_record.suite_begin()
         runner.run()
         ok = runner.results.is_all_pass
-        print(ok)
       except signals.TestAbortAll:
         pass
     finally:
