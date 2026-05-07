@@ -1901,3 +1901,97 @@ class SnippetClientV2Test(unittest.TestCase):
 
 if __name__ == '__main__':
   unittest.main()
+
+  # ---------------------------------------------------------------------------
+  # Tests for Config.env_str (PR #1008)
+  # ---------------------------------------------------------------------------
+
+  def test_config_env_str_default_is_empty_string(self):
+    """Checks that Config.env_str defaults to an empty string."""
+    config = snippet_client_v2.Config()
+    self.assertEqual(config.env_str, '')
+
+  def test_config_env_str_can_be_set(self):
+    """Checks that Config.env_str can be assigned an arbitrary string."""
+    config = snippet_client_v2.Config(env_str='MY_VAR=value')
+    self.assertEqual(config.env_str, 'MY_VAR=value')
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
+  def test_start_server_with_env_str(self, mock_start_subprocess):
+    """Checks that a non-empty env_str is prepended before am instrument."""
+    self._make_client()
+    self.client._config = snippet_client_v2.Config(env_str='MY_VAR=my_value')
+    self._mock_server_process_starting_response(mock_start_subprocess)
+
+    self.client.start_server()
+
+    start_cmd_list = [
+        'adb',
+        'shell',
+        (
+            f'MY_VAR=my_value am instrument --user {MOCK_USER_ID} -w -e action start  '
+            f'{MOCK_SERVER_PATH}'
+        ),
+    ]
+    self.assertListEqual(
+        mock_start_subprocess.call_args_list,
+        [mock.call(start_cmd_list, shell=False)],
+    )
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
+  def test_start_server_without_env_str_no_extra_space(
+      self, mock_start_subprocess
+  ):
+    """Checks that an empty env_str adds no extra space before am instrument."""
+    self._make_client()
+    self._mock_server_process_starting_response(mock_start_subprocess)
+
+    self.client.start_server()
+
+    # When env_str is empty the shell command must not have a leading space
+    start_cmd = mock_start_subprocess.call_args_list[0][0][0][2]
+    self.assertNotIn('  am instrument', start_cmd)
+    self.assertIn('am instrument', start_cmd)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
+  def test_start_server_with_env_str_has_trailing_space(
+      self, mock_start_subprocess
+  ):
+    """Checks env_str is separated from am instrument by exactly one space."""
+    self._make_client()
+    self.client._config = snippet_client_v2.Config(env_str='WRAPPER_CMD')
+    self._mock_server_process_starting_response(mock_start_subprocess)
+
+    self.client.start_server()
+
+    start_cmd = mock_start_subprocess.call_args_list[0][0][0][2]
+    self.assertIn('WRAPPER_CMD am instrument', start_cmd)
+    self.assertNotIn('WRAPPER_CMD  am instrument', start_cmd)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
+  def test_start_server_with_multiple_env_vars(self, mock_start_subprocess):
+    """Checks that multiple space-separated env vars in env_str are kept."""
+    self._make_client()
+    self.client._config = snippet_client_v2.Config(env_str='VAR_A=1 VAR_B=2')
+    self._mock_server_process_starting_response(mock_start_subprocess)
+
+    self.client.start_server()
+
+    start_cmd = mock_start_subprocess.call_args_list[0][0][0][2]
+    self.assertIn('VAR_A=1 VAR_B=2 am instrument', start_cmd)
+    self.assertEqual(self.client.device_port, MOCK_DEVICE_PORT)
