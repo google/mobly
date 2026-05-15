@@ -111,16 +111,16 @@ class Config:
       other purposes may not take effect and you should use snippet RPCs. This
       is because Mobly snippet runner changes the subsequent instrumentation
       process.
+    user_id: The user id under which to launch the snippet process.
     env: A string of prefix options (e.g., environment variables or command
       wrappers) prepended before the `am instrument` command.
-    user_id: The user id under which to launch the snippet process.
   """
 
   am_instrument_options: Dict[str, str] = dataclasses.field(
       default_factory=dict
   )
-  env: str = ''
   user_id: Union[int, None] = None
+  env: str = ''
 
 
 class ConnectionHandshakeCommand(enum.Enum):

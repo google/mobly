@@ -697,8 +697,8 @@ class SnippetClientV2Test(unittest.TestCase):
     self.assertEqual(self.client.device_port, 1234)
 
   @mock.patch(
-    'mobly.controllers.android_device_lib.snippet_client_v2.'
-    'utils.start_standing_subprocess'
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
   )
   def test_start_server_with_env(self, mock_start_subprocess):
     """Checks the starting server command with env options."""
