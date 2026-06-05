@@ -16,6 +16,7 @@ import collections
 import io
 import subprocess
 import unittest
+import copy
 from unittest import mock
 
 from mobly.controllers.android_device_lib import adb
@@ -189,6 +190,22 @@ class AdbTest(unittest.TestCase):
       adb.AdbProxy()._exec_cmd(
           ['fake_cmd'], shell=False, timeout=-1, stderr=None
       )
+
+  def test_adb_error_is_deep_copyable(self):
+    err = adb.AdbError(['my_cmd'], b'my_stdout', b'my_stderr', 1, 'xyz')
+    err_copy = copy.deepcopy(err)
+    self.assertEqual(err_copy.cmd, err.cmd)
+    self.assertEqual(err_copy.stdout, err.stdout)
+    self.assertEqual(err_copy.stderr, err.stderr)
+    self.assertEqual(err_copy.ret_code, err.ret_code)
+    self.assertEqual(err_copy.serial, err.serial)
+
+  def test_adb_timeout_error_is_deep_copyable(self):
+    err = adb.AdbTimeoutError(['my_cmd'], 5.0, 'xyz')
+    err_copy = copy.deepcopy(err)
+    self.assertEqual(err_copy.cmd, err.cmd)
+    self.assertEqual(err_copy.timeout, err.timeout)
+    self.assertEqual(err_copy.serial, err.serial)
 
   @mock.patch('mobly.controllers.android_device_lib.adb.subprocess.Popen')
   def test_execute_and_process_stdout_reads_stdout(self, mock_popen):
@@ -1001,3 +1018,4 @@ class AdbTest(unittest.TestCase):
 
 if __name__ == '__main__':
   unittest.main()
+
