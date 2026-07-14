@@ -27,6 +27,7 @@ _pyunit_proxy.maxDiff = None
 def _add_key_frame(extras, action, details):
   """Helper to inject key frame data into assertion extras."""
   key_frame_data = {
+      'event_type': 'key_frame',
       'action': action,
       'timestamp': logger.get_log_line_timestamp(),
       'details': details,
