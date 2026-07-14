@@ -15,12 +15,27 @@
 import re
 import unittest
 
+from mobly import logger
 from mobly import signals
 
 # Have an instance of unittest.TestCase so we could reuse some logic
 # from python's own unittest.
 _pyunit_proxy = unittest.TestCase()
 _pyunit_proxy.maxDiff = None
+
+
+def _add_key_frame(extras, action, details):
+  """Helper to inject key frame data into assertion extras."""
+  key_frame_data = {
+      'action': action,
+      'timestamp': logger.get_log_line_timestamp(),
+      'details': details,
+  }
+  if extras is None:
+    extras = {}
+  if isinstance(extras, dict):
+    extras['key_frame'] = key_frame_data
+  return extras
 
 
 def _call_unittest_assertion(
@@ -47,6 +62,7 @@ def _call_unittest_assertion(
   # This raise statement is outside of the above except statement to
   # prevent Python3's exception message from having two tracebacks.
   if my_msg is not None:
+    extras = _add_key_frame(extras, assertion_method.__name__, msg)
     raise signals.TestFailure(my_msg, extras=extras)
 
 
@@ -438,6 +454,7 @@ def fail(msg, extras=None):
   Raises:
     signals.TestFailure: Mark a test as failed.
   """
+  extras = _add_key_frame(extras, 'fail', msg)
   raise signals.TestFailure(msg, extras)
 
 

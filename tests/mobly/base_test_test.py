@@ -585,7 +585,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(actual_record.test_name, self.mock_test_name)
     self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
     self.assertTrue(actual_record.end_time)
-    self.assertIsNone(actual_record.extras)
+    self.assertIn('key_frame', actual_record.extras)
     expected_summary = (
         'Error 1, Executed 1, Failed 0, Passed 0, Requested 1, Skipped 0'
     )
@@ -626,7 +626,7 @@ class BaseTestTest(unittest.TestCase):
     actual_record = bt_cls.results.error[0]
     self.assertEqual(actual_record.test_name, self.mock_test_name)
     self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
-    self.assertIsNone(actual_record.extras)
+    self.assertIn('key_frame', actual_record.extras)
     self.assertFalse(actual_record.extra_errors)
     self.assertTrue(actual_record.end_time)
     expected_summary = (
@@ -761,7 +761,7 @@ class BaseTestTest(unittest.TestCase):
     actual_record = bt_cls.results.failed[0]
     self.assertEqual(actual_record.test_name, self.mock_test_name)
     self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
-    self.assertIsNone(actual_record.extras)
+    self.assertIn('key_frame', actual_record.extras)
     expected_summary = (
         'Error 0, Executed 1, Failed 1, Passed 0, Requested 1, Skipped 0'
     )
@@ -935,7 +935,7 @@ class BaseTestTest(unittest.TestCase):
     self.assertIn('on_fail', actual_record.extra_errors)
     self.assertEqual(actual_record.test_name, self.mock_test_name)
     self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
-    self.assertIsNone(actual_record.extras)
+    self.assertIn('key_frame', actual_record.extras)
     expected_summary = (
         'Error 0, Executed 1, Failed 1, Passed 0, Requested 1, Skipped 0'
     )
@@ -985,7 +985,7 @@ class BaseTestTest(unittest.TestCase):
         actual_record.extra_errors['teardown_test'].details,
         MSG_EXPECTED_EXCEPTION,
     )
-    self.assertIsNone(actual_record.extra_errors['teardown_test'].extras)
+    self.assertIn('key_frame', actual_record.extra_errors['teardown_test'].extras)
     expected_summary = (
         'Error 1, Executed 1, Failed 0, Passed 0, Requested 1, Skipped 0'
     )
@@ -1059,7 +1059,7 @@ class BaseTestTest(unittest.TestCase):
         actual_record.extra_errors['teardown_test'].details,
         MSG_EXPECTED_EXCEPTION,
     )
-    self.assertIsNone(actual_record.extra_errors['teardown_test'].extras)
+    self.assertIn('key_frame', actual_record.extra_errors['teardown_test'].extras)
     expected_summary = (
         'Error 1, Executed 1, Failed 0, Passed 0, Requested 1, Skipped 0'
     )
@@ -2006,7 +2006,7 @@ class BaseTestTest(unittest.TestCase):
     actual_record = bt_cls.results.failed[0]
     self.assertEqual(actual_record.test_name, 'test_func')
     self.assertEqual(actual_record.details, 'failed from assert_true')
-    self.assertIsNone(actual_record.extras)
+    self.assertIn('key_frame', actual_record.extras)
 
   def test_unpack_userparams_required(self):
     """Missing a required param should raise an error."""
