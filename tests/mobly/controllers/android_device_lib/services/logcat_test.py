@@ -67,7 +67,7 @@ MOCK_LOGPERSIST_START_MISSING_ADB_ERROR = adb.AdbError(
     0,
 )
 
-_DATE_COMMAND = ['date', '-Is', r'+%Y-%m-%d\ %H:%M:%S.%N']
+_DATE_COMMAND = ['date', r'+%Y-%m-%d\ %H:%M:%S.%3N']
 
 
 class LogcatTest(unittest.TestCase):
@@ -287,6 +287,7 @@ class LogcatTest(unittest.TestCase):
     start_proc_mock.assert_called_with(
         adb_cmd % (ad_serial, '"%s" ' % expected_log_path), shell=True
     )
+    self.assertIsNone(logcat_service._last_connection_time)
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
