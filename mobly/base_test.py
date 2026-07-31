@@ -640,7 +640,7 @@ class BaseTestClass:
         executed.
     """
     func_name = func.__name__
-    procedure_name = func_name[1:] if func_name[0] == '_' else func_name
+    procedure_name = func_name.removeprefix('_')
     with self._log_test_stage(procedure_name):
       try:
         # Pass a copy of the record instead of the actual object so that it
