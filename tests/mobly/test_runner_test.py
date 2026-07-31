@@ -337,6 +337,25 @@ class TestRunnerTest(unittest.TestCase):
 
   @mock.patch(
       'mobly.test_runner._find_test_class',
+      return_value=type('SampleTest', (), {}),
+  )
+  @mock.patch(
+      'mobly.test_runner.config_parser.load_test_config_file',
+      return_value=[config_parser.TestRunConfig()],
+  )
+  @mock.patch('mobly.test_runner.TestRunner')
+  @mock.patch('sys.exit')
+  def test_main_with_abort_all(
+      self, mock_exit, mock_test_runner_class, mock_config, mock_find_test
+  ):
+    mock_runner = mock.MagicMock()
+    mock_runner.run.side_effect = signals.TestAbortAll('Aborting all tests.')
+    mock_test_runner_class.return_value = mock_runner
+    test_runner.main(['-c', 'some/path/foo.yaml'])
+    mock_exit.assert_called_once_with(1)
+
+  @mock.patch(
+      'mobly.test_runner._find_test_class',
       return_value=integration_test.IntegrationTest,
   )
   @mock.patch('sys.exit')
