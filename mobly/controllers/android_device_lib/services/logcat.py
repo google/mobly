@@ -250,6 +250,7 @@ class Logcat(base_service.BaseService):
     # Add spaces at beginning and at last to fix this issue.
     if self._last_connection_time is not None:
       t_argument_value = self._last_connection_time
+      self._last_connection_time = None
     else:
       t_argument_value = '1'
     cmd = ' "%s" -s %s logcat -v threadtime -T "%s" %s >> "%s" ' % (
@@ -287,11 +288,11 @@ class Logcat(base_service.BaseService):
     """
     self._stop()
     try:
-      response = self._ad.adb.shell(['date', '-Is', r'+%Y-%m-%d\ %H:%M:%S.%N'])
+      response = self._ad.adb.shell(['date', r'+%Y-%m-%d\ %H:%M:%S.%3N'])
       if response:
         self._last_connection_time = response.decode('utf-8').strip()
-    except adb.AdbError as e:
-      self._ad.log.exception('Failed to get host time.')
+    except adb.AdbError:
+      self._ad.log.exception('Failed to get device time.')
 
   def resume(self):
     """Resumes a paused logcat service."""
