@@ -169,7 +169,7 @@ class MockAdbProxy:
 
     def adb_call(*args, **kwargs):
       arg_str = ' '.join(str(elem) for elem in args)
-      return arg_str
+      return bytes(arg_str, 'utf-8')
 
     return adb_call
 

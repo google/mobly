@@ -333,8 +333,7 @@ class AdbProxy:
         continue
       name = name.strip()[1:-1]
       # Remove any square bracket from either end of the value string.
-      if value and value[0] == '[':
-        value = value[1:]
+      value = value.removeprefix('[')
       results[name] = value
     return results
 
