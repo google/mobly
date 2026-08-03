@@ -17,7 +17,7 @@ import logging
 import os
 import re
 import sys
-from typing import Any, MutableMapping, Tuple
+from typing import Any, MutableMapping
 
 from mobly import records
 from mobly import utils
@@ -393,7 +393,7 @@ class PrefixLoggerAdapter(logging.LoggerAdapter):
   """
 
   _KWARGS_TYPE = MutableMapping[str, Any]
-  _PROCESS_RETURN_TYPE = Tuple[str, _KWARGS_TYPE]
+  _PROCESS_RETURN_TYPE = tuple[str, _KWARGS_TYPE]
 
   # The key of log_preifx item in the dict self.extra
   EXTRA_KEY_LOG_PREFIX: str = 'log_prefix'

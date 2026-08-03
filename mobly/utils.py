@@ -29,7 +29,7 @@ import string
 import subprocess
 import time
 import traceback
-from typing import Literal, Tuple, overload
+from typing import Literal, overload
 
 import portpicker
 
@@ -398,7 +398,7 @@ def run_command(
     cwd=...,
     env=...,
     universal_newlines: Literal[False] = ...,
-) -> Tuple[int, bytes, bytes]:
+) -> tuple[int, bytes, bytes]:
   ...
 
 
@@ -412,7 +412,7 @@ def run_command(
     cwd=...,
     env=...,
     universal_newlines: Literal[True] = ...,
-) -> Tuple[int, str, str]:
+) -> tuple[int, str, str]:
   ...
 
 

@@ -18,7 +18,6 @@ import enum
 import json
 import re
 import socket
-from typing import Dict, Union
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
@@ -114,10 +113,10 @@ class Config:
     user_id: The user id under which to launch the snippet process.
   """
 
-  am_instrument_options: Dict[str, str] = dataclasses.field(
+  am_instrument_options: dict[str, str] = dataclasses.field(
       default_factory=dict
   )
-  user_id: Union[int, None] = None
+  user_id: int | None = None
 
 
 class ConnectionHandshakeCommand(enum.Enum):
