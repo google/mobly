@@ -28,6 +28,7 @@ from mobly import records
 from mobly import suite_runner
 from mobly import test_runner
 from mobly import utils
+from tests.lib import dynamic_repeat_retry_test
 from tests.lib import integration2_test
 from tests.lib import integration_test
 from tests.lib import integration_test_suite
@@ -126,6 +127,28 @@ class SuiteRunnerTest(unittest.TestCase):
         [integration_test.IntegrationTest], argv=['-c', tmp_file_path]
     )
     mock_exit.assert_not_called()
+
+  @mock.patch('sys.exit')
+  def test_run_suite_with_dynamic_repeat_and_retry(self, mock_exit):
+    tmp_file_path = os.path.join(self.tmp_dir, 'config.yml')
+    with io.open(tmp_file_path, 'w', encoding='utf-8') as f:
+      f.write(
+          """
+        TestBeds:
+          - Name: SampleTestBed
+            Controllers:
+              MagicDevice: '*'
+            TestParams:
+              repeat_key: 4
+              retry_key: 3
+      """
+      )
+    suite_runner.run_suite(
+        [dynamic_repeat_retry_test.DynamicTest], argv=['-c', tmp_file_path]
+    )
+    mock_exit.assert_not_called()
+    self.assertEqual(dynamic_repeat_retry_test.DynamicTest.repeat_counter, 4)
+    self.assertEqual(dynamic_repeat_retry_test.DynamicTest.retry_counter, 3)
 
   @mock.patch('sys.exit')
   def test_run_suite_with_failures(self, mock_exit):
