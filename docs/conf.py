@@ -72,11 +72,11 @@ copyright = 'Copyright 2016 Google Inc.'
 author = 'Ang Li'
 
 try:
-    release: str = get_version('mobly')
-    version: str = '.'.join(release.split('.')[:2])
+  release: str = get_version('mobly')
+  version: str = '.'.join(release.split('.')[:2])
 except PackageNotFoundError:
-    version = '1.13'
-    release = '1.13.1'
+  version = '1.13'
+  release = '1.13.1'
 
 # Napoleon settings for Google-style docstrings
 napoleon_google_docstring = True
