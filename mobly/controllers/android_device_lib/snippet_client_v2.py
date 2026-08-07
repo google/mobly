@@ -111,12 +111,15 @@ class Config:
       is because Mobly snippet runner changes the subsequent instrumentation
       process.
     user_id: The user id under which to launch the snippet process.
+    am_cmd_prefix: An optional prefix string prepended directly before the `am`
+      command (e.g. `'CLASSPATH=/data/local/tmp/app.apk'` or `'env ...'`).
   """
 
   am_instrument_options: dict[str, str] = dataclasses.field(
       default_factory=dict
   )
   user_id: int | None = None
+  am_cmd_prefix: str | None = None
 
 
 class ConnectionHandshakeCommand(enum.Enum):
@@ -313,6 +316,8 @@ class SnippetClientV2(client_base.ClientBase):
         snippet_package=self.package,
         instrument_options=option_str,
     )
+    if self._config.am_cmd_prefix:
+      cmd = f'{self._config.am_cmd_prefix.strip()} {cmd}'
     self._proc = self._run_adb_cmd(cmd)
 
     # Check protocol version and get the device port
