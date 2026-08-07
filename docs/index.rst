@@ -7,11 +7,19 @@ Welcome to Mobly's documentation!
 =================================
 
 .. toctree::
+   :maxdepth: 2
+   :caption: User Guides & Tutorials:
+
+   tutorial
+   instrumentation_tutorial
+   android_device_service
+   tutorial_custom_controller
+
+.. toctree::
    :maxdepth: 4
-   :caption: Contents:
+   :caption: API Reference:
 
    mobly
-   tutorial_custom_controller
 
 Indices and tables
 ==================
