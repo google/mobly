@@ -32,10 +32,25 @@ sys.path.insert(0, os.path.abspath(os.path.pardir))
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
+    'sphinx_autodoc_typehints',
     'myst_parser',
+]
+
+# Intersphinx mapping to standard libraries
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+}
+
+# MyST Parser configuration
+myst_enable_extensions = [
+    'colon_fence',
+    'deflist',
+    'fieldlist',
+    'tasklist',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -92,7 +107,7 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'furo'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
