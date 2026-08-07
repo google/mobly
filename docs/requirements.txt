@@ -1,3 +1,5 @@
-recommonmark
+furo
+myst-parser
 sphinx
+sphinx-autodoc-typehints
 mobly
