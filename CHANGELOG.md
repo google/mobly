@@ -1,6 +1,26 @@
 # Mobly Release History
 
-# Mobly Release 1.13: SL4A Removal and Test Suite Improvements
+## Mobly Release 1.13.1: Minor Improvements and Bug Fixes
+
+Maintenance release with improvements to Android device controllers and snippets, and various bug fixes.
+
+### New
+* Support multi-display screenshot capture in `AndroidDevice`.
+* Add `enable_runtime_perms` flag to APK installation helper.
+* Support loading multiple snippet instances with the same package across different user IDs.
+* Support custom timeout for `adb root` in `AndroidDevice`.
+* Support custom error messages in snippet `waitForEvent`.
+
+### Fixes
+* Fix logcat pause/resume to reliably capture logs across suspended periods.
+* Maintain consistent newline formatting in logcat excerpts.
+* Avoid redundant adb port forwarding teardown when port is not forwarded in snippet client.
+* Fix logging timing of snippet RPC requests.
+
+[Full list of changes](https://github.com/google/mobly/milestone/33?closed=1)
+
+
+## Mobly Release 1.13: SL4A Removal and Test Suite Improvements
 Removed all SL4A related code. Improved test suite mechanism.
 
 ### New
