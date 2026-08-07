@@ -700,6 +700,35 @@ class SnippetClientV2Test(unittest.TestCase):
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
+  def test_start_server_with_am_cmd_prefix(self, mock_start_subprocess):
+    """Checks the starting server command with custom am command prefix."""
+    config = snippet_client_v2.Config(
+        am_cmd_prefix='CLASSPATH=/data/local/tmp/app.apk',
+    )
+    self._make_client(config=config)
+    self._mock_server_process_starting_response(mock_start_subprocess)
+
+    self.client.start_server()
+
+    start_cmd_list = [
+        'adb',
+        'shell',
+        (
+            'CLASSPATH=/data/local/tmp/app.apk'
+            f'  am instrument --user {MOCK_USER_ID} -w -e action start  '
+            f'{MOCK_SERVER_PATH}'
+        ),
+    ]
+    self.assertListEqual(
+        mock_start_subprocess.call_args_list,
+        [mock.call(start_cmd_list, shell=False)],
+    )
+    self.assertEqual(self.client.device_port, 1234)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
   def test_start_server_server_crash(self, mock_start_standing_subprocess):
     """Tests that starting server process crashes."""
     self._make_client()
