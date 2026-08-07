@@ -22,6 +22,7 @@ import time
 import unittest
 from unittest import mock
 
+from mobly import asserts
 from mobly import base_suite
 from mobly import base_test
 from mobly import records
@@ -464,6 +465,23 @@ class SuiteRunnerTest(unittest.TestCase):
       """
       )
     return tmp_file_path
+
+  @mock.patch('sys.exit')
+  def test_run_suite_with_abort_all_clean_run(self, mock_sys_exit):
+    class CleanAbortSuiteTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        asserts.abort_all('Intentional clean abort in suite.')
+
+      def test_1(self):
+        pass
+
+    tmp_file_path = self._gen_tmp_config_file()
+    suite_runner.run_suite(
+        [CleanAbortSuiteTest],
+        argv=['-c', tmp_file_path, '-tb', 'SampleTestBed'],
+    )
+    mock_sys_exit.assert_not_called()
 
 
 if __name__ == '__main__':
