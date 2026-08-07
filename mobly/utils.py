@@ -601,7 +601,8 @@ def wait_for_standing_subprocess(proc, timeout=None):
 def get_available_host_port():
   """Gets a host port number available for adb forward.
 
-  DEPRECATED: This method is unreliable. Pass `tcp:0` to adb forward instead.
+  .. deprecated:: 1.12
+     This method is unreliable. Pass ``tcp:0`` to adb forward instead.
 
   Returns:
     An integer representing a port number on the host available for adb
