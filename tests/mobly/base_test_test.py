@@ -2423,7 +2423,7 @@ class BaseTestTest(unittest.TestCase):
         ValueError,
         re.escape(
             'The `max_consecutive_error` (4) for `repeat` must be '
-            'smaller than `count` (3).'
+            '<= `count` (3).'
         ),
     ):
 
@@ -2781,6 +2781,38 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(5, len(bt_cls.results.passed))
     self.assertEqual(4, mock_action_repeat.call_count)
     self.assertEqual(3, mock_action_retry.call_count)
+
+  def test_repeat_with_user_param_count_less_than_two(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=2, count_key='custom_repeat')
+      def test_something(self):
+        pass
+
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['custom_repeat'] = 1
+    bt_cls = MockBaseTest(configs)
+    with self.assertRaisesRegex(
+        ValueError,
+        'The `count` for `repeat` must be larger than 1, got "1" for test "test_something".',
+    ):
+      bt_cls.run()
+
+  def test_retry_with_user_param_count_less_than_two(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.retry(max_count=2, max_count_key='custom_retry')
+      def test_something(self):
+        pass
+
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['custom_retry'] = 0
+    bt_cls = MockBaseTest(configs)
+    with self.assertRaisesRegex(
+        ValueError,
+        'The `max_count` for `retry` must be larger than 1, got "0" for test "test_something".',
+    ):
+      bt_cls.run()
 
   def test_retry_with_user_param_invalid_integer(self):
     class MockBaseTest(base_test.BaseTestClass):

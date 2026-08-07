@@ -89,7 +89,7 @@ def repeat(
   if max_consecutive_error is not None and max_consecutive_error > count:
     raise ValueError(
         f'The `max_consecutive_error` ({max_consecutive_error}) for `repeat` '
-        f'must be smaller than `count` ({count}).'
+        f'must be <= `count` ({count}).'
     )
 
   def _outer_decorator(func):
@@ -1123,33 +1123,51 @@ class BaseTestClass:
       # Run tests in order.
       for test_name, test_method in tests:
         # 1. Resolve repeat count and max_consecutive_error
-        repeat_arg = getattr(test_method, ATTR_REPEAT_CNT, 0)
+        repeat_arg = getattr(test_method, ATTR_REPEAT_CNT, None)
         repeat_key = getattr(test_method, ATTR_REPEAT_CNT_KEY, None)
-        repeat_cnt = self._resolve_user_param(repeat_arg, repeat_key) or 0
+        repeat_cnt = self._resolve_user_param(repeat_arg, repeat_key)
+
+        if repeat_cnt is not None and repeat_cnt <= 1:
+          raise ValueError(
+              f'The `count` for `repeat` must be larger than 1, got "{repeat_cnt}" '
+              f'for test "{test_name}".'
+          )
 
         consec_arg = getattr(test_method, ATTR_MAX_CONSEC_ERROR, None)
         consec_key = getattr(test_method, ATTR_MAX_CONSEC_ERROR_KEY, None)
         max_consec_err = self._resolve_user_param(consec_arg, consec_key)
 
-        if max_consec_err is not None and max_consec_err > repeat_cnt:
-          raise ValueError(
-              f'The `max_consecutive_error` ({max_consec_err}) for `repeat` '
-              f'must be <= `count` ({repeat_cnt}) for test "{test_name}".'
-          )
+        if max_consec_err is not None:
+          if repeat_cnt is None:
+            raise ValueError(
+                f'The `max_consecutive_error` for `repeat` was set for test '
+                f'"{test_name}", but repeat count is not configured.'
+            )
+          if max_consec_err > repeat_cnt:
+            raise ValueError(
+                f'The `max_consecutive_error` ({max_consec_err}) for `repeat` '
+                f'must be <= `count` ({repeat_cnt}) for test "{test_name}".'
+            )
 
         # 2. Resolve max retry count
-        retry_arg = getattr(test_method, ATTR_MAX_RETRY_CNT, 0)
+        retry_arg = getattr(test_method, ATTR_MAX_RETRY_CNT, None)
         retry_key = getattr(test_method, ATTR_MAX_RETRY_CNT_KEY, None)
-        max_retry_cnt = self._resolve_user_param(retry_arg, retry_key) or 0
+        max_retry_cnt = self._resolve_user_param(retry_arg, retry_key)
+
+        if max_retry_cnt is not None and max_retry_cnt <= 1:
+          raise ValueError(
+              f'The `max_count` for `retry` must be larger than 1, got '
+              f'"{max_retry_cnt}" for test "{test_name}".'
+          )
 
         # 3. Execute the test method based on resolved parameters
-        if max_retry_cnt:
+        if max_retry_cnt is not None:
           # Execute test with retry policy
           self._exec_one_test_with_retry(test_name, test_method, max_retry_cnt)
-        elif repeat_cnt:
+        elif repeat_cnt is not None:
           # Execute test with repeat policy
           self._exec_one_test_with_repeat(
-              test_name, test_method, repeat_cnt, max_consec_err
+              test_name, test_method, repeat_cnt, max_consec_err or 0
           )
         else:
           # Execute test as a regular single test
