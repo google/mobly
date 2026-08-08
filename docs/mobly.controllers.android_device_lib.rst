@@ -83,14 +83,6 @@ mobly.controllers.android\_device\_lib.sl4a\_client module
    :undoc-members:
    :show-inheritance:
 
-mobly.controllers.android\_device\_lib.snippet\_client module
--------------------------------------------------------------
-
-.. automodule:: mobly.controllers.android_device_lib.snippet_client
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 mobly.controllers.android\_device\_lib.snippet\_event module
 ------------------------------------------------------------
 
