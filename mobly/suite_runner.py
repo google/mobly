@@ -367,7 +367,7 @@ def run_suite_class(argv=None):
         runner.run()
         ok = runner.results.is_all_pass
       except signals.TestAbortAll:
-        pass
+        ok = runner.results.is_all_pass
     finally:
       suite.teardown_suite()
       suite_record.suite_end()
@@ -421,7 +421,7 @@ def run_suite(test_classes, argv=None):
         runner.run()
         ok = runner.results.is_all_pass and ok
       except signals.TestAbortAll:
-        pass
+        ok = runner.results.is_all_pass and ok
       except Exception:
         logging.exception('Exception when executing %s.', config.testbed_name)
         ok = False
