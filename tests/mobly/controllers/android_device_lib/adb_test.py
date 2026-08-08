@@ -998,6 +998,216 @@ class AdbTest(unittest.TestCase):
     )
     self.assertEqual(user_id, 123)
 
+  def test_adb_process_properties(self):
+    mock_proc = mock.Mock(
+        pid=12345,
+        returncode=None,
+        stdout=mock.Mock(),
+        stderr=mock.Mock(),
+    )
+    mock_proc.poll.return_value = None
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'], serial='12345')
+
+    self.assertEqual(adb_proc.pid, 12345)
+    self.assertEqual(adb_proc.cmd, ['adb', 'shell', 'ls'])
+    self.assertEqual(adb_proc.serial, '12345')
+    self.assertIsNone(adb_proc.returncode)
+    self.assertTrue(adb_proc.is_alive)
+    self.assertIs(adb_proc.stdout, mock_proc.stdout)
+    self.assertIs(adb_proc.stderr, mock_proc.stderr)
+
+  def test_adb_process_poll(self):
+    mock_proc = mock.Mock(returncode=0)
+    mock_proc.poll.return_value = 0
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'])
+
+    self.assertEqual(adb_proc.poll(), 0)
+    self.assertFalse(adb_proc.is_alive)
+    self.assertEqual(mock_proc.poll.call_count, 2)
+
+  def test_adb_process_wait_success(self):
+    mock_proc = mock.Mock()
+    mock_proc.wait.return_value = 0
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'])
+
+    ret = adb_proc.wait(timeout=5)
+    self.assertEqual(ret, 0)
+    mock_proc.wait.assert_called_once_with(timeout=5)
+
+  def test_adb_process_wait_timeout(self):
+    mock_proc = mock.Mock()
+    mock_proc.wait.side_effect = subprocess.TimeoutExpired(
+        cmd='mock_cmd', timeout=2
+    )
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'], serial='S123')
+
+    with self.assertRaisesRegex(
+        adb.AdbTimeoutError,
+        'Timed out executing command "adb shell ls" after 2s.',
+    ) as ctx:
+      adb_proc.wait(timeout=2)
+    self.assertEqual(ctx.exception.serial, 'S123')
+    self.assertEqual(ctx.exception.timeout, 2)
+
+  def test_adb_process_wait_invalid_timeout(self):
+    mock_proc = mock.Mock()
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'])
+
+    with self.assertRaisesRegex(
+        ValueError, 'Timeout is not a positive value: -1'
+    ):
+      adb_proc.wait(timeout=-1)
+
+    with self.assertRaisesRegex(
+        ValueError, 'Timeout is not a positive value: 0'
+    ):
+      adb_proc.wait(timeout=0)
+
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  def test_adb_process_stop_running(self, mock_stop):
+    mock_proc = mock.Mock(returncode=0)
+    mock_proc.poll.return_value = None
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'])
+
+    ret = adb_proc.stop()
+    mock_stop.assert_called_once_with(mock_proc)
+    self.assertEqual(ret, 0)
+
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  def test_adb_process_stop_already_stopped(self, mock_stop):
+    mock_proc = mock.Mock(returncode=0)
+    mock_proc.poll.return_value = 0
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'])
+
+    ret = adb_proc.stop()
+    mock_stop.assert_not_called()
+    self.assertEqual(ret, 0)
+
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  def test_adb_process_context_manager(self, mock_stop):
+    mock_proc = mock.Mock(returncode=0)
+    mock_proc.poll.return_value = None
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'])
+
+    with adb_proc as p:
+      self.assertIs(p, adb_proc)
+    mock_stop.assert_called_once_with(mock_proc)
+
+  def test_adb_process_iter_lines(self):
+    mock_proc = mock.Mock()
+    mock_stdout = mock.Mock()
+    mock_stdout.readline.side_effect = [b'line 1\n', b'line 2\n', b'']
+    mock_proc.stdout = mock_stdout
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'])
+
+    lines = list(adb_proc.iter_lines())
+    self.assertEqual(lines, ['line 1\n', 'line 2\n'])
+
+  def test_adb_process_iter_lines_no_stdout(self):
+    mock_proc = mock.Mock(stdout=None)
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'])
+
+    with self.assertRaisesRegex(
+        ValueError, 'Process stdout is not a readable pipe.'
+    ):
+      list(adb_proc.iter_lines())
+
+  def test_adb_process_iter_lines_invalid_timeout(self):
+    mock_proc = mock.Mock()
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'])
+
+    with self.assertRaisesRegex(
+        ValueError, 'Timeout is not a positive value: -1'
+    ):
+      list(adb_proc.iter_lines(timeout=-1))
+
+  def test_adb_process_iter_lines_timeout(self):
+    mock_proc = mock.Mock()
+    mock_stdout = mock.Mock()
+    mock_stdout.readline.side_effect = [b'line 1\n', b'line 2\n']
+    mock_proc.stdout = mock_stdout
+    adb_proc = adb.AdbProcess(mock_proc, ['adb', 'shell', 'ls'], serial='S123')
+
+    with mock.patch('time.time', side_effect=[0.0, 0.1, 5.0, 6.0]):
+      with self.assertRaisesRegex(
+          adb.AdbTimeoutError,
+          'Timed out executing command "adb shell ls" after 1.0s.',
+      ):
+        list(adb_proc.iter_lines(timeout=1.0))
+
+  @mock.patch('mobly.utils.start_standing_subprocess')
+  def test_adb_proxy_shell_spawn(self, mock_start):
+    mock_proc = mock.Mock(pid=123, returncode=None)
+    mock_start.return_value = mock_proc
+    proxy = adb.AdbProxy('12345')
+
+    proc = proxy.shell(['ls', '-l'], spawn=True)
+    self.assertIsInstance(proc, adb.AdbProcess)
+    self.assertEqual(proc.pid, 123)
+    self.assertEqual(proc.serial, '12345')
+    mock_start.assert_called_once_with(
+        ['adb', '-s', '12345', 'shell', 'ls', '-l'],
+        shell=False,
+        env=None,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+  def test_adb_proxy_shell_spawn_with_timeout_raises_value_error(self):
+    proxy = adb.AdbProxy()
+    with self.assertRaisesRegex(
+        ValueError,
+        r'Timeout cannot be specified when spawn=True\. '
+        r'Use AdbProcess\.wait\(timeout=\.\.\.\) instead\.',
+    ):
+      proxy.shell(['ls'], spawn=True, timeout=5)
+
+  def test_adb_proxy_shell_spawn_and_stream_raises_value_error(self):
+    proxy = adb.AdbProxy()
+    with self.assertRaisesRegex(
+        ValueError, 'Cannot specify both spawn=True and stream=True.'
+    ):
+      proxy.shell(['ls'], spawn=True, stream=True)
+
+  @mock.patch('mobly.utils.start_standing_subprocess')
+  def test_adb_proxy_logcat_stream(self, mock_start):
+    mock_proc = mock.Mock(pid=123)
+    mock_stdout = mock.Mock()
+    mock_stdout.readline.side_effect = [b'log line 1\n', b'log line 2\n', b'']
+    mock_proc.stdout = mock_stdout
+    mock_start.return_value = mock_proc
+    proxy = adb.AdbProxy('12345')
+
+    line_gen = proxy.logcat(['-v', 'time'], stream=True)
+    lines = list(line_gen)
+    self.assertEqual(lines, ['log line 1\n', 'log line 2\n'])
+    mock_start.assert_called_once_with(
+        ['adb', '-s', '12345', 'logcat', '-v', 'time'],
+        shell=False,
+        env=None,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+  @mock.patch('mobly.utils.start_standing_subprocess')
+  def test_adb_proxy_logcat_stream_with_timeout(self, mock_start):
+    mock_proc = mock.Mock(pid=123)
+    mock_stdout = mock.Mock()
+    mock_stdout.readline.side_effect = [b'log line 1\n', b'']
+    mock_proc.stdout = mock_stdout
+    mock_start.return_value = mock_proc
+    proxy = adb.AdbProxy()
+
+    lines = list(proxy.logcat(stream=True, timeout=10))
+    self.assertEqual(lines, ['log line 1\n'])
+    mock_start.assert_called_once_with(
+        ['adb', 'logcat'],
+        shell=False,
+        env=None,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
 
 if __name__ == '__main__':
   unittest.main()

@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 import logging
 import re
+import selectors
 import subprocess
 import threading
 import time
+from typing import Generator, List, Optional, Union
 
 from mobly import utils
 
@@ -106,6 +109,181 @@ class AdbTimeoutError(Error):
         utils.cli_cmd_to_string(self.cmd),
         self.timeout,
     )
+
+
+class AdbProcess:
+  """A wrapper for an asynchronous ADB subprocess.
+
+  Attributes:
+    pid: int, the process ID.
+    cmd: string or list of strings, the command executed.
+    serial: string, the device serial number.
+    returncode: int or None, the exit code of the process.
+    is_alive: bool, True if the process is currently running.
+    stdout: stream or None, stdout of the process.
+    stderr: stream or None, stderr of the process.
+  """
+
+  def __init__(
+      self,
+      proc: subprocess.Popen,
+      cmd: Union[str, List[str]],
+      serial: str = '',
+  ):
+    self._proc = proc
+    self._cmd = cmd
+    self._serial = serial
+
+  @property
+  def pid(self) -> int:
+    """The process ID."""
+    return self._proc.pid
+
+  @property
+  def cmd(self) -> Union[str, List[str]]:
+    """The command executed."""
+    return self._cmd
+
+  @property
+  def serial(self) -> str:
+    """The serial of the device the command is executed on."""
+    return self._serial
+
+  @property
+  def returncode(self) -> Optional[int]:
+    """The return code of the process if terminated, None otherwise."""
+    return self._proc.returncode
+
+  @property
+  def is_alive(self) -> bool:
+    """Whether the process is currently running."""
+    return self.poll() is None
+
+  @property
+  def stdout(self):
+    """The stdout stream of the process."""
+    return self._proc.stdout
+
+  @property
+  def stderr(self):
+    """The stderr stream of the process."""
+    return self._proc.stderr
+
+  def poll(self) -> Optional[int]:
+    """Polls the process to check if it has terminated.
+
+    Returns:
+      The returncode if terminated, None otherwise.
+    """
+    return self._proc.poll()
+
+  def wait(self, timeout: Optional[float] = None) -> int:
+    """Waits for the process to complete and returns its return code.
+
+    Args:
+      timeout: float, the number of seconds to wait before timing out.
+
+    Returns:
+      int, the return code of the process.
+
+    Raises:
+      ValueError: If timeout is not a positive value.
+      AdbTimeoutError: If the process timed out.
+    """
+    if timeout is not None and timeout <= 0:
+      raise ValueError('Timeout is not a positive value: %s' % timeout)
+    try:
+      return self._proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+      raise AdbTimeoutError(
+          cmd=self._cmd, timeout=timeout, serial=self._serial
+      )
+
+  def stop(self) -> int:
+    """Cleanly stops the process and returns the exit code.
+
+    Returns:
+      int, the return code of the process.
+    """
+    if self.poll() is None:
+      try:
+        utils.stop_standing_subprocess(self._proc)
+      except utils.Error:
+        if self.poll() is None:
+          raise
+    elif self._proc.returncode is None:
+      self._proc.wait()
+    return self._proc.returncode if self._proc.returncode is not None else 0
+
+  def iter_lines(
+      self,
+      timeout: Optional[float] = None,
+      decode_errors: str = 'replace',
+  ) -> Generator[str, None, None]:
+    """Yields lines of stdout as strings.
+
+    Args:
+      timeout: float, maximum time in seconds to wait before timing out.
+      decode_errors: str, error handling scheme for decoding bytes.
+
+    Yields:
+      Decoded stdout lines as strings.
+
+    Raises:
+      ValueError: If stdout is not available or timeout is not positive.
+      AdbTimeoutError: If waiting for output times out.
+    """
+    if self._proc.stdout is None:
+      raise ValueError('Process stdout is not a readable pipe.')
+
+    if timeout is not None:
+      if timeout <= 0:
+        raise ValueError('Timeout is not a positive value: %s' % timeout)
+      deadline = time.time() + timeout
+    else:
+      deadline = None
+
+    while True:
+      if deadline is not None:
+        remaining = deadline - time.time()
+        if remaining <= 0:
+          raise AdbTimeoutError(
+              cmd=self._cmd, timeout=timeout, serial=self._serial
+          )
+        if hasattr(self._proc.stdout, 'fileno'):
+          try:
+            sel = selectors.DefaultSelector()
+            sel.register(self._proc.stdout, selectors.EVENT_READ)
+            try:
+              events = sel.select(timeout=max(0.0, remaining))
+              if not events:
+                raise AdbTimeoutError(
+                    cmd=self._cmd, timeout=timeout, serial=self._serial
+                )
+            finally:
+              sel.close()
+          except (io.UnsupportedOperation, AttributeError, ValueError, OSError):
+            pass
+
+      line = self._proc.stdout.readline()
+      if not line:
+        break
+
+      if deadline is not None and time.time() > deadline:
+        raise AdbTimeoutError(
+            cmd=self._cmd, timeout=timeout, serial=self._serial
+        )
+
+      if isinstance(line, bytes):
+        yield line.decode('utf-8', errors=decode_errors)
+      else:
+        yield line
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    self.stop()
 
 
 def is_adb_available():
@@ -302,6 +480,39 @@ class AdbProxy:
     adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
     out = self._exec_cmd(adb_cmd, shell=shell, timeout=timeout, stderr=stderr)
     return out
+
+  def _spawn_cmd(
+      self,
+      name: str,
+      args=None,
+      shell: bool = False,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
+      env=None,
+  ) -> AdbProcess:
+    """Spawns an adb command asynchronously.
+
+    Args:
+      name: string, the adb command name.
+      args: string or list of strings, arguments to the adb command.
+      shell: bool, True to run this command through the system shell,
+        False to invoke it directly.
+      stdout: file handle or subprocess pipe for stdout.
+      stderr: file handle or subprocess pipe for stderr.
+      env: dict, custom environment variables.
+
+    Returns:
+      An AdbProcess instance wrapping the spawned subprocess.
+    """
+    adb_cmd = self._construct_adb_cmd(name, args, shell=shell)
+    proc = utils.start_standing_subprocess(
+        adb_cmd,
+        shell=shell,
+        env=env,
+        stdout=stdout,
+        stderr=stderr,
+    )
+    return AdbProcess(proc, cmd=adb_cmd, serial=self.serial)
 
   def _execute_adb_and_process_stdout(
       self, name, args, shell, handler
@@ -569,22 +780,73 @@ class AdbProxy:
           raise e
 
   def __getattr__(self, name):
-    def adb_call(args=None, shell=False, timeout=None, stderr=None) -> bytes:
+    def adb_call(
+        args=None,
+        shell=False,
+        timeout=None,
+        stderr=None,
+        spawn=False,
+        stream=False,
+        stdout=subprocess.PIPE,
+        env=None,
+    ):
       """Wrapper for an ADB command.
 
       Args:
         args: string or list of strings, arguments to the adb command.
-          See subprocess.Proc() documentation.
+          See subprocess.Popen() documentation.
         shell: bool, True to run this command through the system shell,
-          False to invoke it directly. See subprocess.Proc() docs.
+          False to invoke it directly. See subprocess.Popen() docs.
         timeout: float, the number of seconds to wait before timing out.
           If not specified, no timeout takes effect.
-        stderr: a Byte stream, like io.BytesIO, stderr of the command
-          will be written to this object if provided.
+        stderr: a Byte stream, like io.BytesIO, or subprocess pipe.
+        spawn: bool, True to spawn the process asynchronously and return
+          an AdbProcess object.
+        stream: bool, True to spawn the process and return a line generator.
+        stdout: subprocess pipe or file handle for stdout when spawn=True
+          or stream=True.
+        env: dict, optional environment variables.
 
       Returns:
-        The output of the adb command run if exit code is 0.
+        bytes if spawn=False and stream=False.
+        AdbProcess if spawn=True.
+        Generator[str, None, None] if stream=True.
+
+      Raises:
+        ValueError: If timeout is specified when spawn=True, or if both
+          spawn=True and stream=True are specified.
+        AdbError: The adb command exit code is not 0 (sync mode).
+        AdbTimeoutError: The adb command timed out.
       """
+      if spawn and stream:
+        raise ValueError('Cannot specify both spawn=True and stream=True.')
+
+      if spawn:
+        if timeout is not None:
+          raise ValueError(
+              'Timeout cannot be specified when spawn=True. '
+              'Use AdbProcess.wait(timeout=...) instead.'
+          )
+        return self._spawn_cmd(
+            name,
+            args=args,
+            shell=shell,
+            stdout=stdout,
+            stderr=stderr if stderr is not None else subprocess.PIPE,
+            env=env,
+        )
+
+      if stream:
+        proc = self._spawn_cmd(
+            name,
+            args=args,
+            shell=shell,
+            stdout=stdout,
+            stderr=stderr if stderr is not None else subprocess.PIPE,
+            env=env,
+        )
+        return proc.iter_lines(timeout=timeout)
+
       return self._exec_adb_cmd(
           name, args, shell=shell, timeout=timeout, stderr=stderr
       )
