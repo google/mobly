@@ -11,14 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import logging
 import os
 import time
+from typing import Any, Callable, Optional, Pattern, Sequence, Set, Union
 
-from mobly import logger as mobly_logger
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors
+from mobly.controllers.android_device_lib import logcat_processor
 from mobly.controllers.android_device_lib.services import base_service
 
 CREATE_LOGCAT_FILE_TIMEOUT_SEC = 5
@@ -30,15 +32,19 @@ class Error(errors.ServiceError):
   SERVICE_TYPE = 'Logcat'
 
 
+class LogcatTimeoutError(Error):
+  """Raised when a logcat wait operation times out."""
+
+
 class Config:
   """Config object for logcat service.
 
   Attributes:
     clear_log: bool, clears the logcat before collection if True.
     logcat_params: string, extra params to be added to logcat command.
-    output_file_path: string, the path on the host to write the log file
-      to, including the actual filename. The service will automatically
-      generate one if not specified.
+    output_file_path: string, the path on the host to write the log file to,
+      including the actual filename. The service will automatically generate one
+      if not specified.
   """
 
   def __init__(self, logcat_params=None, clear_log=True, output_file_path=None):
@@ -51,8 +57,8 @@ class Logcat(base_service.BaseService):
   """Android logcat service for Mobly's AndroidDevice controller.
 
   Attributes:
-    adb_logcat_file_path: string, path to the file that the service writes
-      adb logcat to by default.
+    adb_logcat_file_path: string, path to the file that the service writes adb
+      logcat to by default.
   """
 
   OUTPUT_FILE_TYPE = 'logcat'
@@ -63,10 +69,21 @@ class Logcat(base_service.BaseService):
     self._adb_logcat_process = None
     self._adb_logcat_file_obj = None
     self.adb_logcat_file_path = None
+    self._processor = None
     self._last_connection_time = None
     # Logcat service uses a single config obj, using singular internal
     # name: `_config`.
     self._config = configs if configs else Config()
+
+  def _get_processor(self) -> logcat_processor.LogcatProcessor:
+    if self._processor is None:
+      if not self.adb_logcat_file_path:
+        raise Error(self._ad, 'Logcat service has not been started.')
+      self._processor = logcat_processor.LogcatProcessor(
+          self.adb_logcat_file_path,
+          timeout_error_cls=lambda msg: LogcatTimeoutError(self._ad, msg),
+      )
+    return self._processor
 
   def _enable_logpersist(self):
     """Attempts to enable logpersist daemon to persist logs."""
@@ -76,8 +93,8 @@ class Logcat(base_service.BaseService):
       return
 
     logpersist_warning = (
-        '%s encountered an error enabling persistent'
-        ' logs, logs may not get saved.'
+        '%s encountered an error enabling persistent logs, logs may not get'
+        ' saved.'
     )
     # Android L and older versions do not have logpersist installed,
     # so check that the logpersist scripts exists before trying to use
@@ -95,13 +112,212 @@ class Logcat(base_service.BaseService):
     except adb.AdbError:
       logging.warning(logpersist_warning, self)
 
-  def _is_timestamp_in_range(self, target, begin_time, end_time):
-    low = mobly_logger.logline_timestamp_comparator(begin_time, target) <= 0
-    high = mobly_logger.logline_timestamp_comparator(end_time, target) >= 0
-    return low and high
+  def _get_device_time(self) -> Optional[str]:
+    """Retrieves current timestamp from device via ADB date command."""
+    try:
+      response = self._ad.adb.shell(['date', r'+%Y-%m-%d\ %H:%M:%S.%3N'])
+      if response:
+        return response.decode('utf-8').strip()
+    except (adb.AdbError, UnicodeDecodeError):
+      self._ad.log.debug('Failed to get device timestamp.')
+    return None
+
+  def now(self) -> logcat_processor.LogcatPosition:
+    """Captures the current logcat position and device timestamp.
+
+    Creates a position marker representing the logcat stream right now to bound
+    subsequent queries or wait operations.
+
+    Examples::
+
+      start = ad.services.logcat.now()
+      ad.droid.wifiEnable()
+      lines = ad.services.logcat.get_lines('STATE_CONNECTED', since=start)
+
+    Returns:
+      A :class:`~mobly.controllers.android_device_lib.logcat_processor.LogcatPosition`
+      instance representing the current log state.
+    """
+    return logcat_processor.LogcatPosition.from_file(
+        self.adb_logcat_file_path or '',
+        timestamp=self._get_device_time(),
+    )
+
+  def get_lines(
+      self,
+      pattern: Optional[Union[str, Pattern[str]]] = None,
+      *,
+      tag: Optional[Union[str, Pattern[str], Sequence[str], Set[str]]] = None,
+      level: Optional[Union[str, Sequence[str], Set[str]]] = None,
+      since: Optional[
+          Union[logcat_processor.LogcatPosition, logcat_processor.LogLine]
+      ] = None,
+      max_lines: Optional[int] = None,
+  ) -> list[logcat_processor.LogLine]:
+    """Gets log lines from the logcat file matching the given filters.
+
+    Filters are evaluated conjunctively. At least one filter criteria
+    (``pattern``, ``tag``, ``level``, ``since``, or ``max_lines``) must be
+    specified. To retrieve the latest un-filtered logs, use :meth:`tail`
+    instead.
+
+    Examples::
+
+      # Find error logs for a specific tag
+      lines = ad.services.logcat.get_lines(tag='ActivityManager', level='E')
+
+      # Find pattern matches since a marked position
+      start = ad.services.logcat.now()
+      ad.droid.wifiEnable()
+      lines = ad.services.logcat.get_lines('WiFi connected', since=start)
+
+    Args:
+      pattern: Regular expression pattern matched against message and raw line.
+      tag: Tag string, compiled regex pattern, or collection of tags to match.
+      level: Severity level string ('V', 'D', 'I', 'W', 'E', 'F') or collection.
+      since: Optional
+        :class:`~mobly.controllers.android_device_lib.logcat_processor.LogcatPosition`
+        or
+        :class:`~mobly.controllers.android_device_lib.logcat_processor.LogLine`
+        bounding the search start.
+      max_lines: Maximum number of matching log lines to return.
+
+    Returns:
+      A list of matching
+      :class:`~mobly.controllers.android_device_lib.logcat_processor.LogLine`
+      objects in file order.
+
+    Raises:
+      ValueError: If no filter criteria are provided.
+    """
+    return self._get_processor().get_lines(
+        pattern=pattern,
+        tag=tag,
+        level=level,
+        since=since,
+        max_lines=max_lines,
+    )
+
+  def tail(
+      self,
+      num_lines: int = 100,
+      pattern: Optional[Union[str, Pattern[str]]] = None,
+      tag: Optional[Union[str, Pattern[str], Sequence[str], Set[str]]] = None,
+      level: Optional[Union[str, Sequence[str], Set[str]]] = None,
+  ) -> list[logcat_processor.LogLine]:
+    """Tails the last matching log lines from the logcat file.
+
+    Examples::
+
+      # Get the last 50 log lines
+      recent_lines = ad.services.logcat.tail(num_lines=50)
+
+      # Get the last 5 fatal errors
+      fatal_lines = ad.services.logcat.tail(num_lines=5, level='F')
+
+    Args:
+      num_lines: Number of matching lines to return from the end of the file.
+      pattern: Optional regex pattern filter.
+      tag: Optional tag filter.
+      level: Optional severity level filter.
+
+    Returns:
+      A list of the last ``num_lines`` matching
+      :class:`~mobly.controllers.android_device_lib.logcat_processor.LogLine`
+      objects.
+    """
+    return self._get_processor().tail(
+        num_lines=num_lines,
+        pattern=pattern,
+        tag=tag,
+        level=level,
+    )
+
+  def listen(
+      self,
+      pattern: Optional[Union[str, Pattern[str]]] = None,
+      tag: Optional[Union[str, Pattern[str], Sequence[str], Set[str]]] = None,
+      level: Optional[Union[str, Sequence[str], Set[str]]] = None,
+  ) -> logcat_processor.LogcatListenerContext:
+    """Listens for real-time logcat events within a scoped context manager.
+
+    Automatically captures current logcat position on entry and cleans up
+    background workers upon exiting the context.
+
+    Examples::
+
+      with ad.services.logcat.listen(tag='WifiService') as listener:
+        ad.droid.wifiEnable()
+        event = listener.get_next_event(timeout=10.0)
+        assert 'STATE_CONNECTED' in event.message
+
+    Args:
+      pattern: Optional regex pattern to filter incoming events.
+      tag: Optional tag filter.
+      level: Optional severity level filter.
+
+    Returns:
+      A
+      :class:`~mobly.controllers.android_device_lib.logcat_processor.LogcatListenerContext`
+      object managing the event queue and background stream.
+    """
+    cursor = self.now()
+    return self._get_processor().listen(
+        pattern=pattern,
+        tag=tag,
+        level=level,
+        position=cursor,
+    )
+
+  def wait_for(
+      self,
+      patterns: Sequence[Union[str, Pattern[str]]],
+      timeout_sec: float = 60.0,
+      in_order: bool = True,
+      since: Optional[
+          Union[logcat_processor.LogcatPosition, logcat_processor.LogLine]
+      ] = None,
+  ) -> list[logcat_processor.LogLine]:
+    """Waits until pattern(s) appear in logcat within the given timeout.
+
+    Examples::
+
+      # Wait for a single pattern
+      lines = ad.services.logcat.wait_for(['Bluetooth connected'], timeout_sec=10.0)
+
+      # Wait for multiple patterns in sequential order
+      steps = ['DHCP DISCOVER', 'DHCP OFFER', 'DHCP ACK']
+      lines = ad.services.logcat.wait_for(steps, in_order=True, timeout_sec=15.0)
+
+    Args:
+      patterns: Sequence of string patterns or compiled regular expressions.
+      timeout_sec: Maximum wall-clock time in seconds to wait before timing out.
+      in_order: Whether patterns must occur in the specified sequential order
+        (True) or any order (False).
+      since: Optional
+        :class:`~mobly.controllers.android_device_lib.logcat_processor.LogcatPosition`
+        or
+        :class:`~mobly.controllers.android_device_lib.logcat_processor.LogLine`
+        bounding the search start.
+
+    Returns:
+      A list of matching
+      :class:`~mobly.controllers.android_device_lib.logcat_processor.LogLine`
+      objects corresponding to each pattern in ``patterns``.
+
+    Raises:
+      LogcatTimeoutError: If matching pattern(s) are not found within
+        ``timeout_sec``.
+    """
+    return self._get_processor().wait_for(
+        patterns=patterns,
+        timeout_sec=timeout_sec,
+        in_order=in_order,
+        since=since,
+    )
 
   def create_output_excerpts(self, test_info):
-    """Convenient method for creating excerpts of adb logcat.
+    """Creates excerpts of adb logcat copied from current stream.
 
     This copies logcat lines from self.adb_logcat_file_path to an excerpt
     file, starting from the location where the previous excerpt ended.
@@ -126,7 +342,7 @@ class Logcat(base_service.BaseService):
         'w',
         encoding='utf-8',
         errors='replace',
-        # When newline is '', line endings are written without conversion.
+        # When newline is '', line endings are read without conversion.
         newline='',
     ) as out:
       # Devices may accidentally go offline during test,
@@ -186,9 +402,11 @@ class Logcat(base_service.BaseService):
         new_config,
     )
     self._config = new_config
+    self._processor = None
 
   def _open_logcat_file(self):
-    """Create a file object that points to the beginning of the logcat file.
+    """Creates a file object that points to the beginning of the logcat file.
+
     Wait for the logcat file to be created by the subprocess if it doesn't
     exist.
     """
@@ -233,7 +451,7 @@ class Logcat(base_service.BaseService):
     self._open_logcat_file()
 
   def _start(self):
-    """The actual logic of starting logcat."""
+    """Starts the actual subprocess logic of starting logcat."""
     self._enable_logpersist()
     if self._config.output_file_path:
       self._close_logcat_file()
@@ -244,6 +462,10 @@ class Logcat(base_service.BaseService):
       )
       logcat_file_path = os.path.join(self._ad.log_path, f_name)
       self.adb_logcat_file_path = logcat_file_path
+    self._processor = logcat_processor.LogcatProcessor(
+        self.adb_logcat_file_path,
+        timeout_error_cls=lambda msg: LogcatTimeoutError(self._ad, msg),
+    )
     utils.create_dir(os.path.dirname(self.adb_logcat_file_path))
     # In debugging mode of IntelijIDEA, "patch_args" remove
     # double quotes in args if starting and ending with it.
@@ -280,7 +502,7 @@ class Logcat(base_service.BaseService):
     self._last_connection_time = None
 
   def pause(self):
-    """Pauses logcat.
+    """Pauses logcat collection.
 
     Note: the service is unable to collect the logs when paused, if more
     logs are generated on the device than the device's log buffer can hold,
