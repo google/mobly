@@ -2423,7 +2423,7 @@ class BaseTestTest(unittest.TestCase):
         ValueError,
         re.escape(
             'The `max_consecutive_error` (4) for `repeat` must be '
-            'smaller than `count` (3).'
+            '<= `count` (3).'
         ),
     ):
 
@@ -2589,6 +2589,245 @@ class BaseTestTest(unittest.TestCase):
     bt_cls.run()
     self.assertEqual(repeat_count, len(bt_cls.results.executed))
     self.assertEqual(3, len(bt_cls.results.error))
+
+  def test_repeat_with_user_param_count_key(self):
+    mock_action_1 = mock.MagicMock()
+    mock_action_2 = mock.MagicMock()
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=2, count_key='repeat_key_1')
+      def test_case_1(self):
+        mock_action_1()
+
+      @base_test.repeat(count=2, count_key='repeat_key_2')
+      def test_case_2(self):
+        mock_action_2()
+
+    # When repeat_key_1 is 3 and repeat_key_2 is 5, both override their default (2).
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['repeat_key_1'] = 3
+    configs.user_params['repeat_key_2'] = 5
+    bt_cls = MockBaseTest(configs)
+    bt_cls.run()
+    self.assertEqual(8, len(bt_cls.results.passed))
+    self.assertEqual(3, mock_action_1.call_count)
+    self.assertEqual(5, mock_action_2.call_count)
+
+  def test_repeat_with_user_param_count_key_not_provided_uses_default(self):
+    mock_action_1 = mock.MagicMock()
+    mock_action_2 = mock.MagicMock()
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=3, count_key='repeat_key_1')
+      def test_case_1(self):
+        mock_action_1()
+
+      @base_test.repeat(count=4, count_key='repeat_key_2')
+      def test_case_2(self):
+        mock_action_2()
+
+    # When neither key is in user_params, both use their respective defaults (3 and 4).
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(7, len(bt_cls.results.passed))
+    self.assertEqual(3, mock_action_1.call_count)
+    self.assertEqual(4, mock_action_2.call_count)
+
+  def test_repeat_with_user_param_max_consecutive_error_key(self):
+    mock_action = mock.MagicMock(
+        side_effect=[Exception('Error 1'), Exception('Error 2'), None, None]
+    )
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(
+          count=4,
+          max_consecutive_error=3,
+          max_consecutive_error_key='custom_consec_err',
+      )
+      def test_something(self):
+        mock_action()
+
+    # Overriding max_consecutive_error to 2 aborts after 2 consecutive errors.
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['custom_consec_err'] = 2
+    bt_cls = MockBaseTest(configs)
+    bt_cls.run()
+    self.assertEqual(2, len(bt_cls.results.executed))
+    self.assertEqual(2, len(bt_cls.results.error))
+
+  def test_repeat_with_user_param_invalid_integer(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=2, count_key='custom_repeat')
+      def test_something(self):
+        pass
+
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['custom_repeat'] = 'not_a_number'
+    bt_cls = MockBaseTest(configs)
+    with self.assertRaisesRegex(
+        ValueError, 'Invalid integer in user_params\\["custom_repeat"\\]'
+    ):
+      bt_cls.run()
+
+  def test_repeat_with_user_param_max_consec_error_larger_than_count(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(
+          count=2,
+          count_key='custom_repeat',
+          max_consecutive_error=1,
+          max_consecutive_error_key='custom_consec',
+      )
+      def test_something(self):
+        pass
+
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['custom_repeat'] = 3
+    configs.user_params['custom_consec'] = 4
+    bt_cls = MockBaseTest(configs)
+    with self.assertRaisesRegex(
+        ValueError,
+        re.escape(
+            'The `max_consecutive_error` (4) for `repeat` must be <= `count` '
+            '(3) for test "test_something".'
+        ),
+    ):
+      bt_cls.run()
+
+  def test_retry_with_user_param_max_count_key(self):
+    mock_action_1 = mock.MagicMock(
+        side_effect=[
+            Exception('Fail 1'),
+            Exception('Fail 2'),
+            Exception('Fail 3'),
+            None,
+        ]
+    )
+    mock_action_2 = mock.MagicMock(side_effect=[Exception('Fail 1'), None])
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.retry(max_count=2, max_count_key='retry_key_1')
+      def test_case_1(self):
+        mock_action_1()
+
+      @base_test.retry(max_count=5, max_count_key='retry_key_2')
+      def test_case_2(self):
+        mock_action_2()
+
+    # Overriding retry_key_1 from 2 to 4 allows test_case_1 to pass on 4th attempt;
+    # overriding retry_key_2 from 5 to 3 allows test_case_2 to pass on 2nd attempt.
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['retry_key_1'] = 4
+    configs.user_params['retry_key_2'] = 3
+    bt_cls = MockBaseTest(configs)
+    bt_cls.run()
+    self.assertTrue(bt_cls.results.is_all_pass)
+    self.assertEqual(6, len(bt_cls.results.executed))
+    self.assertEqual(2, len(bt_cls.results.passed))
+
+  def test_retry_with_user_param_max_count_key_not_provided_uses_default(self):
+    mock_action_1 = mock.MagicMock(side_effect=[Exception('Fail 1'), None])
+    mock_action_2 = mock.MagicMock(
+        side_effect=[Exception('Fail 1'), Exception('Fail 2'), None]
+    )
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.retry(max_count=2, max_count_key='retry_key_1')
+      def test_case_1(self):
+        mock_action_1()
+
+      @base_test.retry(max_count=3, max_count_key='retry_key_2')
+      def test_case_2(self):
+        mock_action_2()
+
+    # When custom retry keys are not in user_params, default max_count values (2 and 3) are used.
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertTrue(bt_cls.results.is_all_pass)
+    self.assertEqual(5, len(bt_cls.results.executed))
+    self.assertEqual(2, len(bt_cls.results.passed))
+
+  def test_repeat_and_retry_with_dynamic_user_params(self):
+    mock_action_repeat = mock.MagicMock()
+    mock_action_retry = mock.MagicMock(
+        side_effect=[Exception('Fail 1'), Exception('Fail 2'), None]
+    )
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=2, count_key='repeat_count_key')
+      def test_repeat(self):
+        mock_action_repeat()
+
+      @base_test.retry(max_count=2, max_count_key='retry_count_key')
+      def test_retry(self):
+        mock_action_retry()
+
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['repeat_count_key'] = 4
+    configs.user_params['retry_count_key'] = 3
+    bt_cls = MockBaseTest(configs)
+    bt_cls.run()
+
+    self.assertTrue(bt_cls.results.is_all_pass)
+    # 4 repeat executions + 3 retry executions = 7 executions in total
+    self.assertEqual(7, len(bt_cls.results.executed))
+    self.assertEqual(5, len(bt_cls.results.passed))
+    self.assertEqual(4, mock_action_repeat.call_count)
+    self.assertEqual(3, mock_action_retry.call_count)
+
+  def test_repeat_with_user_param_count_less_than_two(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=2, count_key='custom_repeat')
+      def test_something(self):
+        pass
+
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['custom_repeat'] = 1
+    bt_cls = MockBaseTest(configs)
+    with self.assertRaisesRegex(
+        ValueError,
+        'The `count` for `repeat` must be larger than 1, got "1" for test "test_something".',
+    ):
+      bt_cls.run()
+
+  def test_retry_with_user_param_count_less_than_two(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.retry(max_count=2, max_count_key='custom_retry')
+      def test_something(self):
+        pass
+
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['custom_retry'] = 0
+    bt_cls = MockBaseTest(configs)
+    with self.assertRaisesRegex(
+        ValueError,
+        'The `max_count` for `retry` must be larger than 1, got "0" for test "test_something".',
+    ):
+      bt_cls.run()
+
+  def test_retry_with_user_param_invalid_integer(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.retry(max_count=2, max_count_key='custom_retry')
+      def test_something(self):
+        pass
+
+    configs = copy.deepcopy(self.mock_test_cls_configs)
+    configs.user_params['custom_retry'] = 'not_a_number'
+    bt_cls = MockBaseTest(configs)
+    with self.assertRaisesRegex(
+        ValueError, 'Invalid integer in user_params\\["custom_retry"\\]'
+    ):
+      bt_cls.run()
 
   def test_retry_invalid_count(self):
     with self.assertRaisesRegex(

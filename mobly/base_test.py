@@ -47,34 +47,39 @@ STAGE_NAME_CLEAN_UP = 'clean_up'
 
 # Attribute names
 ATTR_REPEAT_CNT = '_repeat_count'
+ATTR_REPEAT_CNT_KEY = '_repeat_count_key'
 ATTR_MAX_RETRY_CNT = '_max_retry_count'
+ATTR_MAX_RETRY_CNT_KEY = '_max_retry_count_key'
 ATTR_MAX_CONSEC_ERROR = '_max_consecutive_error'
+ATTR_MAX_CONSEC_ERROR_KEY = '_max_consecutive_error_key'
 
 
 class Error(Exception):
   """Raised for exceptions that occurred in BaseTestClass."""
 
 
-def repeat(count, max_consecutive_error=None):
+def repeat(
+    count: int,
+    max_consecutive_error: int | None = None,
+    *,
+    count_key: str | None = None,
+    max_consecutive_error_key: str | None = None,
+):
   """Decorator for repeating a test case multiple times.
 
   The BaseTestClass will execute the test cases annotated with this decorator
-  the specified number of time.
-
-  This decorator only stores the information needed for the repeat. It does not
-  execute the repeat.
+  the specified number of times.
 
   Args:
-    count: int, the total number of times to execute the decorated test case.
-    max_consecutive_error: int, the maximum number of consecutively failed
-      iterations allowed. If reached, the remaining iterations is abandoned.
-      By default this is not enabled.
+    count: int, default number of times to execute the decorated test case.
+    max_consecutive_error: int, maximum number of consecutively failed
+      iterations allowed. If reached, remaining iterations are abandoned.
+    count_key: str, optional user_params key to override `count` at runtime.
+    max_consecutive_error_key: str, optional user_params key to override
+      `max_consecutive_error` at runtime.
 
   Returns:
     The wrapped test function.
-
-  Raises:
-    ValueError, if the user input is invalid.
   """
   if count <= 1:
     raise ValueError(
@@ -84,12 +89,14 @@ def repeat(count, max_consecutive_error=None):
   if max_consecutive_error is not None and max_consecutive_error > count:
     raise ValueError(
         f'The `max_consecutive_error` ({max_consecutive_error}) for `repeat` '
-        f'must be smaller than `count` ({count}).'
+        f'must be <= `count` ({count}).'
     )
 
   def _outer_decorator(func):
     setattr(func, ATTR_REPEAT_CNT, count)
+    setattr(func, ATTR_REPEAT_CNT_KEY, count_key)
     setattr(func, ATTR_MAX_CONSEC_ERROR, max_consecutive_error)
+    setattr(func, ATTR_MAX_CONSEC_ERROR_KEY, max_consecutive_error_key)
 
     @functools.wraps(func)
     def _wrapper(*args):
@@ -100,25 +107,18 @@ def repeat(count, max_consecutive_error=None):
   return _outer_decorator
 
 
-def retry(max_count):
+def retry(max_count: int, *, max_count_key: str | None = None):
   """Decorator for retrying a test case until it passes.
 
   The BaseTestClass will keep executing the test cases annotated with this
-  decorator until the test passes, or the maxinum number of iterations have
-  been met.
-
-  This decorator only stores the information needed for the retry. It does not
-  execute the retry.
+  decorator until the test passes or maximum iterations have been met.
 
   Args:
-    max_count: int, the maximum number of times to execute the decorated test
-      case.
+    max_count: int, default maximum number of iterations.
+    max_count_key: str, optional user_params key to override `max_count`.
 
   Returns:
     The wrapped test function.
-
-  Raises:
-    ValueError, if the user input is invalid.
   """
   if max_count <= 1:
     raise ValueError(
@@ -127,6 +127,7 @@ def retry(max_count):
 
   def _outer_decorator(func):
     setattr(func, ATTR_MAX_RETRY_CNT, max_count)
+    setattr(func, ATTR_MAX_RETRY_CNT_KEY, max_count_key)
 
     @functools.wraps(func)
     def _wrapper(*args):
@@ -924,8 +925,11 @@ class BaseTestClass:
       # also have the retry/repeat behavior.
       for attr_name in (
           ATTR_MAX_RETRY_CNT,
+          ATTR_MAX_RETRY_CNT_KEY,
           ATTR_MAX_CONSEC_ERROR,
+          ATTR_MAX_CONSEC_ERROR_KEY,
           ATTR_REPEAT_CNT,
+          ATTR_REPEAT_CNT_KEY,
       ):
         attr = getattr(test_logic, attr_name, None)
         if attr is not None:
@@ -959,6 +963,19 @@ class BaseTestClass:
       logging.exception(
           'Exception happened when executing %s in %s.', func.__name__, self.TAG
       )
+
+  def _resolve_user_param(
+      self, default_value: int | None, param_key: str | None
+  ) -> int | None:
+    """Returns default_value unless param_key is present in self.user_params."""
+    if param_key and param_key in self.user_params:
+      try:
+        return int(self.user_params[param_key])
+      except (ValueError, TypeError) as e:
+        raise ValueError(
+            f'Invalid integer in user_params["{param_key}"]: {e}'
+        ) from e
+    return default_value
 
   def get_existing_test_names(self):
     """Gets the names of existing tests in the class.
@@ -1105,18 +1122,55 @@ class BaseTestClass:
         return setup_class_result
       # Run tests in order.
       for test_name, test_method in tests:
-        max_consecutive_error = getattr(test_method, ATTR_MAX_CONSEC_ERROR, 0)
-        repeat_count = getattr(test_method, ATTR_REPEAT_CNT, 0)
-        max_retry_count = getattr(test_method, ATTR_MAX_RETRY_CNT, 0)
-        if max_retry_count:
-          self._exec_one_test_with_retry(
-              test_name, test_method, max_retry_count
+        # 1. Resolve repeat count and max_consecutive_error
+        repeat_arg = getattr(test_method, ATTR_REPEAT_CNT, None)
+        repeat_key = getattr(test_method, ATTR_REPEAT_CNT_KEY, None)
+        repeat_cnt = self._resolve_user_param(repeat_arg, repeat_key)
+
+        if repeat_cnt is not None and repeat_cnt <= 1:
+          raise ValueError(
+              f'The `count` for `repeat` must be larger than 1, got "{repeat_cnt}" '
+              f'for test "{test_name}".'
           )
-        elif repeat_count:
+
+        consec_arg = getattr(test_method, ATTR_MAX_CONSEC_ERROR, None)
+        consec_key = getattr(test_method, ATTR_MAX_CONSEC_ERROR_KEY, None)
+        max_consec_err = self._resolve_user_param(consec_arg, consec_key)
+
+        if max_consec_err is not None:
+          if repeat_cnt is None:
+            raise ValueError(
+                f'The `max_consecutive_error` for `repeat` was set for test '
+                f'"{test_name}", but repeat count is not configured.'
+            )
+          if max_consec_err > repeat_cnt:
+            raise ValueError(
+                f'The `max_consecutive_error` ({max_consec_err}) for `repeat` '
+                f'must be <= `count` ({repeat_cnt}) for test "{test_name}".'
+            )
+
+        # 2. Resolve max retry count
+        retry_arg = getattr(test_method, ATTR_MAX_RETRY_CNT, None)
+        retry_key = getattr(test_method, ATTR_MAX_RETRY_CNT_KEY, None)
+        max_retry_cnt = self._resolve_user_param(retry_arg, retry_key)
+
+        if max_retry_cnt is not None and max_retry_cnt <= 1:
+          raise ValueError(
+              f'The `max_count` for `retry` must be larger than 1, got '
+              f'"{max_retry_cnt}" for test "{test_name}".'
+          )
+
+        # 3. Execute the test method based on resolved parameters
+        if max_retry_cnt is not None:
+          # Execute test with retry policy
+          self._exec_one_test_with_retry(test_name, test_method, max_retry_cnt)
+        elif repeat_cnt is not None:
+          # Execute test with repeat policy
           self._exec_one_test_with_repeat(
-              test_name, test_method, repeat_count, max_consecutive_error
+              test_name, test_method, repeat_cnt, max_consec_err or 0
           )
         else:
+          # Execute test as a regular single test
           self.exec_one_test(test_name, test_method)
       return self.results
     except signals.TestAbortClass as e:
