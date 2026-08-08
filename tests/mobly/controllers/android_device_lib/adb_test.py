@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import collections
+import copy
 import io
+import pickle
 import subprocess
 import unittest
 from unittest import mock
@@ -997,6 +999,54 @@ class AdbTest(unittest.TestCase):
         timeout=None,
     )
     self.assertEqual(user_id, 123)
+
+  def test_adberror_deepcopy_and_pickle(self):
+    err = adb.AdbError(['adb', 'devices'], b'stdout', b'stderr', 1, 'serial123')
+    err_copy = copy.deepcopy(err)
+    self.assertIsNot(err, err_copy)
+    self.assertIsNot(err.cmd, err_copy.cmd)
+    self.assertEqual(err.cmd, err_copy.cmd)
+    self.assertEqual(err.stdout, err_copy.stdout)
+    self.assertEqual(err.stderr, err_copy.stderr)
+    self.assertEqual(err.ret_code, err_copy.ret_code)
+    self.assertEqual(err.serial, err_copy.serial)
+    self.assertEqual(str(err), str(err_copy))
+
+    # Validate deepcopy isolation by mutating the original list
+    err.cmd.append('--extra')
+    self.assertNotEqual(err.cmd, err_copy.cmd)
+
+    err_unpickled = pickle.loads(pickle.dumps(err_copy))
+    self.assertIsNot(err_copy, err_unpickled)
+    self.assertIsNot(err_copy.cmd, err_unpickled.cmd)
+    self.assertEqual(err_copy.cmd, err_unpickled.cmd)
+    self.assertEqual(err_copy.stdout, err_unpickled.stdout)
+    self.assertEqual(err_copy.stderr, err_unpickled.stderr)
+    self.assertEqual(err_copy.ret_code, err_unpickled.ret_code)
+    self.assertEqual(err_copy.serial, err_unpickled.serial)
+    self.assertEqual(str(err_copy), str(err_unpickled))
+
+  def test_adbtimeouterror_deepcopy_and_pickle(self):
+    err = adb.AdbTimeoutError(['adb', 'logcat'], 15.5, 'serial123')
+    err_copy = copy.deepcopy(err)
+    self.assertIsNot(err, err_copy)
+    self.assertIsNot(err.cmd, err_copy.cmd)
+    self.assertEqual(err.cmd, err_copy.cmd)
+    self.assertEqual(err.timeout, err_copy.timeout)
+    self.assertEqual(err.serial, err_copy.serial)
+    self.assertEqual(str(err), str(err_copy))
+
+    # Validate deepcopy isolation by mutating the original list
+    err.cmd.append('--extra')
+    self.assertNotEqual(err.cmd, err_copy.cmd)
+
+    err_unpickled = pickle.loads(pickle.dumps(err_copy))
+    self.assertIsNot(err_copy, err_unpickled)
+    self.assertIsNot(err_copy.cmd, err_unpickled.cmd)
+    self.assertEqual(err_copy.cmd, err_unpickled.cmd)
+    self.assertEqual(err_copy.timeout, err_unpickled.timeout)
+    self.assertEqual(err_copy.serial, err_unpickled.serial)
+    self.assertEqual(str(err_copy), str(err_unpickled))
 
 
 if __name__ == '__main__':
