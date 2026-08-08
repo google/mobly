@@ -68,7 +68,7 @@ class AdbError(Error):
   """
 
   def __init__(self, cmd, stdout, stderr, ret_code, serial=''):
-    super().__init__()
+    super().__init__(cmd, stdout, stderr, ret_code, serial)
     self.cmd = cmd
     self.stdout = stdout
     self.stderr = stderr
@@ -96,7 +96,7 @@ class AdbTimeoutError(Error):
   """
 
   def __init__(self, cmd, timeout, serial=''):
-    super().__init__()
+    super().__init__(cmd, timeout, serial)
     self.cmd = cmd
     self.timeout = timeout
     self.serial = serial
