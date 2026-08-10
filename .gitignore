@@ -13,3 +13,6 @@ Gemfile.lock
 _site
 .tox/
 venv/
+docs/_build/
+docs/mobly*.rst
+docs/modules.rst
