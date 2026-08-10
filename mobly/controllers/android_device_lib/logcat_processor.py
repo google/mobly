@@ -21,8 +21,16 @@ import queue
 import re
 import threading
 import time
-from typing import Any, ClassVar, Iterator, Optional, Pattern, Sequence, Set, Union
-
+from typing import (
+    Any,
+    ClassVar,
+    Iterator,
+    Optional,
+    Pattern,
+    Sequence,
+    Set,
+    Union,
+)
 
 _LEVEL_NORM_MAP = {
     'V': 'V',
@@ -62,7 +70,7 @@ class LogcatPosition:
   def from_file(
       cls, file_path: str, timestamp: Optional[str] = None
   ) -> 'LogcatPosition':
-    """Captures a LogcatPosition snapshot of a logcat file at the current moment."""
+    """Captures a snapshot of a logcat file at the current moment."""
     try:
       file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
     except OSError:
@@ -75,7 +83,7 @@ class LogcatPosition:
 
   @staticmethod
   def _parse_timestamp(t: str) -> tuple[int, int, int, int, int, int, int]:
-    """Parses a logline timestamp into (year, month, day, hour, minute, second, microsecond)."""
+    """Parses a timestamp into (year, month, day, hr, min, sec, microsec)."""
     if not t:
       raise ValueError('Empty timestamp string')
 
@@ -158,7 +166,8 @@ class LogLine:
     position: LogcatPosition, position marker and timestamp of this log line.
     pid: int, process ID.
     tid: int, thread ID.
-    level: str, single-letter severity level ('V', 'D', 'I', 'W', 'E', 'F', 'S').
+    level: str, single-letter severity level ('V', 'D', 'I', 'W', 'E', 'F',
+      'S').
     tag: str, log tag.
     message: str, log message payload.
     raw: str, original raw log line string without line endings.
@@ -173,7 +182,8 @@ class LogLine:
   raw: str
 
   _PATTERN: ClassVar[Pattern[str]] = re.compile(
-      r'^(?P<timestamp>(?:\d{4}[-/])?\d{2}[-/]\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?)'
+      r'^(?P<timestamp>(?:\d{4}[-/])?\d{2}[-/]\d{2}\s+'
+      r'\d{2}:\d{2}:\d{2}(?:\.\d+)?)'
       r'\s+(?P<pid>\d+)'
       r'\s+(?P<tid>\d+)'
       r'\s+(?P<level>[VDIWEFSA])'
@@ -363,7 +373,7 @@ class LogcatListenerContext:
 
 
 class LogcatProcessor:
-  """Thread-safe processor for querying and streaming logcat files on the host."""
+  """Thread-safe processor for querying and streaming logcat files."""
 
   def __init__(
       self,
@@ -378,7 +388,7 @@ class LogcatProcessor:
     return self._file_path
 
   def _iter_lines(self, offset: int = 0) -> Iterator[tuple[int, LogLine]]:
-    """Yields (line_offset, LogLine) pairs from the file from the given offset."""
+    """Yields (line_offset, LogLine) pairs from file from given offset."""
     if not os.path.exists(self._file_path):
       return
     try:
@@ -447,7 +457,7 @@ class LogcatProcessor:
       tag: Optional[Union[str, Pattern[str], Sequence[str], Set[str]]] = None,
       level: Optional[Union[str, Sequence[str], Set[str]]] = None,
   ) -> list[LogLine]:
-    """Tails the last num_lines matching log lines by reading backwards from EOF."""
+    """Tails last num_lines matching log lines reading backwards from EOF."""
     if num_lines <= 0 or not os.path.exists(self._file_path):
       return []
 

@@ -135,8 +135,8 @@ class Logcat(base_service.BaseService):
       lines = ad.services.logcat.get_lines('STATE_CONNECTED', since=start)
 
     Returns:
-      A :class:`~mobly.controllers.android_device_lib.logcat_processor.LogcatPosition`
-      instance representing the current log state.
+      A :class:`logcat_processor.LogcatPosition` instance representing the
+      current log state.
     """
     return logcat_processor.LogcatPosition.from_file(
         self.adb_logcat_file_path or '',
@@ -175,11 +175,8 @@ class Logcat(base_service.BaseService):
       pattern: Regular expression pattern matched against message and raw line.
       tag: Tag string, compiled regex pattern, or collection of tags to match.
       level: Severity level string ('V', 'D', 'I', 'W', 'E', 'F') or collection.
-      since: Optional
-        :class:`~mobly.controllers.android_device_lib.logcat_processor.LogcatPosition`
-        or
-        :class:`~mobly.controllers.android_device_lib.logcat_processor.LogLine`
-        bounding the search start.
+      since: Optional :class:`logcat_processor.LogcatPosition` or
+        :class:`logcat_processor.LogLine` bounding search start.
       max_lines: Maximum number of matching log lines to return.
 
     Returns:
@@ -257,9 +254,8 @@ class Logcat(base_service.BaseService):
       level: Optional severity level filter.
 
     Returns:
-      A
-      :class:`~mobly.controllers.android_device_lib.logcat_processor.LogcatListenerContext`
-      object managing the event queue and background stream.
+      A :class:`logcat_processor.LogcatListenerContext` managing event queue
+      and background stream.
     """
     cursor = self.now()
     return self._get_processor().listen(
@@ -283,27 +279,27 @@ class Logcat(base_service.BaseService):
     Examples::
 
       # Wait for a single pattern
-      lines = ad.services.logcat.wait_for(['Bluetooth connected'], timeout_sec=10.0)
+      lines = ad.services.logcat.wait_for(
+          ['Bluetooth connected'], timeout_sec=10.0
+      )
 
       # Wait for multiple patterns in sequential order
       steps = ['DHCP DISCOVER', 'DHCP OFFER', 'DHCP ACK']
-      lines = ad.services.logcat.wait_for(steps, in_order=True, timeout_sec=15.0)
+      lines = ad.services.logcat.wait_for(
+          steps, in_order=True, timeout_sec=15.0
+      )
 
     Args:
       patterns: Sequence of string patterns or compiled regular expressions.
       timeout_sec: Maximum wall-clock time in seconds to wait before timing out.
       in_order: Whether patterns must occur in the specified sequential order
         (True) or any order (False).
-      since: Optional
-        :class:`~mobly.controllers.android_device_lib.logcat_processor.LogcatPosition`
-        or
-        :class:`~mobly.controllers.android_device_lib.logcat_processor.LogLine`
-        bounding the search start.
+      since: Optional :class:`logcat_processor.LogcatPosition` or
+        :class:`logcat_processor.LogLine` bounding search start.
 
     Returns:
-      A list of matching
-      :class:`~mobly.controllers.android_device_lib.logcat_processor.LogLine`
-      objects corresponding to each pattern in ``patterns``.
+      A list of matching :class:`logcat_processor.LogLine` objects
+      corresponding to each pattern in ``patterns``.
 
     Raises:
       LogcatTimeoutError: If matching pattern(s) are not found within
