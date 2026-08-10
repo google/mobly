@@ -223,13 +223,13 @@ def run_apidoc(_):
 
   apidoc.main(
       [
-          '-o',
-          output_dir,
-          module_dir,
           '--force',
           '--separate',
           '--module-first',
           '--no-toc',
+          '-o',
+          output_dir,
+          module_dir,
       ]
       + excludes
   )
