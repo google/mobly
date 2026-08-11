@@ -14,8 +14,11 @@
 
 import logging
 import os
+import re
 import shutil
 import tempfile
+import threading
+import time
 import unittest
 from unittest import mock
 
@@ -23,6 +26,7 @@ from mobly import records
 from mobly import runtime_test_info
 from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import adb
+from mobly.controllers.android_device_lib import logcat_processor
 from mobly.controllers.android_device_lib.services import logcat
 from tests.lib import mock_android_device
 
@@ -118,6 +122,7 @@ class LogcatTest(unittest.TestCase):
       MockAdbProxy,
   ):
     """Verifies the steps of collecting adb logcat on an AndroidDevice
+
     object, including various function calls and the expected behaviors of
     the calls.
     """
@@ -582,6 +587,7 @@ class LogcatTest(unittest.TestCase):
       MockAdbProxy,
   ):
     """Verifies the steps of collecting adb logcat on an AndroidDevice
+
     object, including various function calls and the expected behaviors of
     the calls.
     """
@@ -617,6 +623,7 @@ class LogcatTest(unittest.TestCase):
   )
   def test_instantiation(self, MockFastboot, MockAdbProxy):
     """Verifies the AndroidDevice object's basic attributes are correctly
+
     set after instantiation.
     """
     mock_serial = 1
@@ -812,6 +819,245 @@ class LogcatTest(unittest.TestCase):
     )
     logcat_service = logcat.Logcat(ad)
     logcat_service.clear_adb_log()
+
+
+SAMPLE_REALISTIC_LOGCAT = (
+    '--------- beginning of system\n'
+    '08-09 22:00:00.100  1000  1010 I SystemServer: Entered SystemServer main\n'
+    '08-09 22:00:01.200  1000  1020 I ActivityManager: Starting activity'
+    ' com.example.app/.MainActivity\n'
+    '2026-08-09 22:00:02.300  1000  1030 D WifiService: Enabling Wi-Fi'
+    ' interface wlan0\n'
+    '2026-08-09 22:00:02.500  1000  1030 I DhcpClient: DHCP DISCOVER sent on'
+    ' wlan0\n'
+    '--------- beginning of main\n'
+    '2026-08-09 22:00:02.700  2050  2050 I ExampleApp: App initialized'
+    ' successfully\n'
+    '2026-08-09 22:00:03.100  1000  1030 I DhcpClient: DHCP OFFER received from'
+    ' 192.168.1.1\n'
+    '08-09 22:00:03.400  1000  1040 W BtGatt: Connection retry count 1 for'
+    ' device AA:BB:CC:DD:EE:FF\n'
+    '2026-08-09 22:00:03.600  1000  1030 I DhcpClient: DHCP ACK received,'
+    ' assigned IP 192.168.1.50\n'
+    '08-09 22:00:04.000  1000  1020 I WifiService: Network STATE_CONNECTED on'
+    ' wlan0\n'
+    '08-09 22:00:05.150  2050  2060 E ExampleApp: Failed to connect to'
+    ' server\n'
+    '\tat com.example.app.NetworkClient.connect(NetworkClient.java:42)\n'
+    '\tat com.example.app.MainActivity.onStart(MainActivity.java:108)\n'
+    '08-09 22:00:05.800  1000  1040 F BtGatt: Fatal hardware controller error'
+)
+
+
+class LogcatServiceUserBehaviorTest(unittest.TestCase):
+  """User-facing behavior tests for Logcat service."""
+
+  def setUp(self):
+    self.tmp_dir = tempfile.mkdtemp()
+    self.log_file = os.path.join(self.tmp_dir, 'logcat.txt')
+    with open(self.log_file, 'w', encoding='utf-8') as f:
+      f.write(SAMPLE_REALISTIC_LOGCAT)
+
+    self.mock_serial = '12345'
+    self.ad = mock.MagicMock(name='AndroidDevice', serial=self.mock_serial)
+    self.ad.log = logging.getLogger('mock_ad')
+    self.ad.adb = mock.MagicMock()
+    self.ad.adb.shell.return_value = b'2026-08-09 22:00:00.000'
+
+    self.logcat_service = logcat.Logcat(self.ad)
+    self.logcat_service.adb_logcat_file_path = self.log_file
+
+  def tearDown(self):
+    self.logcat_service.stop()
+    shutil.rmtree(self.tmp_dir)
+
+  def _append_log(self, text: str):
+    with open(self.log_file, 'a', encoding='utf-8', newline='') as f:
+      f.write(text)
+
+  def test_query_logs_by_tag_level_and_pattern(self):
+    # Search for error logs
+    error_logs = self.logcat_service.get_lines(level=['E', 'F'])
+    self.assertEqual(len(error_logs), 2)
+    self.assertEqual([r.tag for r in error_logs], ['ExampleApp', 'BtGatt'])
+    self.assertTrue(error_logs[0].is_error)
+
+    # Filter logs by tag exact match
+    wifi_logs = self.logcat_service.get_lines(tag='WifiService')
+    self.assertEqual(len(wifi_logs), 2)
+    self.assertEqual(
+        [r.message for r in wifi_logs],
+        ['Enabling Wi-Fi interface wlan0', 'Network STATE_CONNECTED on wlan0'],
+    )
+
+    # Search by pattern
+    dhcp_offer = self.logcat_service.get_lines(pattern=r'DHCP OFFER.*192\.168')
+    self.assertEqual(len(dhcp_offer), 1)
+    self.assertEqual(dhcp_offer[0].tag, 'DhcpClient')
+
+  def test_tail_recent_logs(self):
+    recent_logs = self.logcat_service.tail(num_lines=3)
+    self.assertEqual(len(recent_logs), 3)
+    self.assertEqual(recent_logs[-1].tag, 'BtGatt')
+    self.assertEqual(recent_logs[-1].level, 'F')
+
+  def test_now_and_bounded_query(self):
+    # Take position marker before triggering an action
+    start = self.logcat_service.now()
+
+    # Append new logs simulating device activity after start
+    self._append_log(
+        '08-09 22:00:06.000  1000  1030 I WifiService: Disconnected from'
+        ' wlan0\n'
+    )
+
+    lines_since = self.logcat_service.get_lines(
+        pattern='Disconnected', since=start
+    )
+    self.assertEqual(len(lines_since), 1)
+    self.assertEqual(lines_since[0].tag, 'WifiService')
+    self.assertTrue(lines_since[0].position > start)
+
+    # Test passing a LogLine directly to since
+    self._append_log(
+        '08-09 22:00:07.000  1000  1030 I WifiService: Reconnected to wlan0\n'
+    )
+    reconnected_lines = self.logcat_service.get_lines(
+        pattern='Reconnected', since=lines_since[0]
+    )
+    self.assertEqual(len(reconnected_lines), 1)
+    self.assertTrue(reconnected_lines[0] > lines_since[0])
+
+  def test_wait_for_sequential_protocol_handshake(self):
+    handshake_steps = [
+        'DHCP DISCOVER',
+        'DHCP OFFER',
+        'DHCP ACK',
+        'STATE_CONNECTED',
+    ]
+    matched_lines = self.logcat_service.wait_for(
+        handshake_steps, in_order=True, timeout_sec=2.0
+    )
+    self.assertEqual(len(matched_lines), 4)
+    self.assertEqual(
+        [r.tag for r in matched_lines],
+        ['DhcpClient', 'DhcpClient', 'DhcpClient', 'WifiService'],
+    )
+    self.assertTrue(matched_lines[0] < matched_lines[1] < matched_lines[2])
+
+  def test_wait_for_timeout_when_event_does_not_occur(self):
+    with self.assertRaises(logcat.LogcatTimeoutError):
+      self.logcat_service.wait_for(
+          ['Nonexistent System Event'], timeout_sec=0.1
+      )
+
+  def test_listen_realtime_event_stream(self):
+    with self.logcat_service.listen(tag='WifiService') as listener:
+      self.assertFalse(listener.has_events())
+
+      # Simulate background service writing new logcat entry
+      self._append_log(
+          '08-09 22:00:07.000  1000  1030 I WifiService: Reconnected to wlan0\n'
+      )
+
+      event = listener.get_next_event(timeout=2.0)
+      self.assertEqual(event.tag, 'WifiService')
+      self.assertEqual(event.message, 'Reconnected to wlan0')
+      self.assertTrue(listener.has_events())
+
+  def test_features_work_across_and_after_create_output_excerpts(self):
+    # Setup mock filename generator and open logcat file for excerpt tracking
+    self.ad.generate_filename.side_effect = (
+        lambda file_type, test_info=None, extension_name=None: (
+            f'excerpt_{test_info.name}.txt' if test_info else 'logcat.txt'
+        )
+    )
+    self.logcat_service._open_logcat_file()
+
+    # 1. Take a position marker before initial action
+    start_pos = self.logcat_service.now()
+
+    # 2. Append first batch of logs during test_1
+    self._append_log(
+        '08-09 22:00:06.000  1000  1030 I WifiService: Test1 event started\n'
+    )
+    self._append_log(
+        '08-09 22:00:06.500  1000  1030 I WifiService: Test1 event finished\n'
+    )
+
+    # 3. Create excerpt for test_1
+    test_1_output = os.path.join(self.tmp_dir, 'test_1')
+    test_1_record = records.TestResultRecord('test_1')
+    test_1_record.begin_time = 100
+    test_1_record.signature = 'test_1-100'
+    test_1_info = runtime_test_info.RuntimeTestInfo(
+        'test_1', test_1_output, test_1_record
+    )
+    excerpt_1_paths = self.logcat_service.create_output_excerpts(test_1_info)
+    self.assertEqual(len(excerpt_1_paths), 1)
+    with open(excerpt_1_paths[0], 'r', encoding='utf-8') as f:
+      excerpt_1_content = f.read()
+    self.assertIn('Test1 event started', excerpt_1_content)
+    self.assertIn('Test1 event finished', excerpt_1_content)
+
+    # 4. Append second batch of logs during test_2
+    self._append_log(
+        '08-09 22:00:07.000  1000  1030 I WifiService: Test2 event started\n'
+    )
+    self._append_log(
+        '08-09 22:00:07.500  1000  1030 E ExampleApp: Test2 error encountered\n'
+    )
+
+    # 5. Verify query methods work seamlessly across excerpt boundary
+    lines_since_start = self.logcat_service.get_lines(
+        pattern='event', since=start_pos
+    )
+    self.assertEqual(len(lines_since_start), 3)
+    self.assertEqual(
+        [line.message for line in lines_since_start],
+        [
+            'Test1 event started',
+            'Test1 event finished',
+            'Test2 event started',
+        ],
+    )
+
+    # 6. Verify wait_for works after excerpt 1
+    matched = self.logcat_service.wait_for(
+        ['Test2 event started', 'Test2 error encountered'], timeout_sec=2.0
+    )
+    self.assertEqual(len(matched), 2)
+    self.assertEqual(matched[1].level, 'E')
+
+    # 7. Verify tail works after excerpt 1
+    recent = self.logcat_service.tail(num_lines=2)
+    self.assertEqual(len(recent), 2)
+    self.assertEqual(recent[-1].tag, 'ExampleApp')
+
+    # 8. Verify listen works after excerpt 1
+    with self.logcat_service.listen(tag='WifiService') as listener:
+      self._append_log(
+          '08-09 22:00:08.000  1000  1030 I WifiService: Streaming event\n'
+      )
+      event = listener.get_next_event(timeout=2.0)
+      self.assertEqual(event.message, 'Streaming event')
+
+    # 9. Create excerpt for test_2 and assert isolation from test_1
+    test_2_output = os.path.join(self.tmp_dir, 'test_2')
+    test_2_record = records.TestResultRecord('test_2')
+    test_2_record.begin_time = 200
+    test_2_record.signature = 'test_2-200'
+    test_2_info = runtime_test_info.RuntimeTestInfo(
+        'test_2', test_2_output, test_2_record
+    )
+    excerpt_2_paths = self.logcat_service.create_output_excerpts(test_2_info)
+    self.assertEqual(len(excerpt_2_paths), 1)
+    with open(excerpt_2_paths[0], 'r', encoding='utf-8') as f:
+      excerpt_2_content = f.read()
+    self.assertNotIn('Test1', excerpt_2_content)
+    self.assertIn('Test2 event started', excerpt_2_content)
+    self.assertIn('Test2 error encountered', excerpt_2_content)
+    self.assertIn('Streaming event', excerpt_2_content)
 
 
 if __name__ == '__main__':
