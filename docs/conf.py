@@ -19,6 +19,8 @@
 import os
 import sys
 
+from sphinx.ext import apidoc
+
 sys.path.insert(0, os.path.abspath(os.path.pardir))
 
 # -- General configuration ------------------------------------------------
@@ -206,3 +208,32 @@ epub_copyright = copyright
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
+
+
+def run_apidoc(_):
+  """Automatically runs sphinx-apidoc on Sphinx builder initialization."""
+  cur_dir = os.path.abspath(os.path.dirname(__file__))
+  module_dir = os.path.abspath(os.path.join(cur_dir, os.path.pardir, 'mobly'))
+  output_dir = cur_dir
+
+  excludes = [
+      os.path.join(module_dir, '*_test.py'),
+      os.path.join(module_dir, '**', '*_test.py'),
+  ]
+
+  apidoc.main(
+      [
+          '--force',
+          '--separate',
+          '--module-first',
+          '--no-toc',
+          '-o',
+          output_dir,
+          module_dir,
+      ]
+      + excludes
+  )
+
+
+def setup(app):
+  app.connect('builder-inited', run_apidoc)
