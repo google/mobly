@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import logging
 import os
 import shutil
@@ -20,7 +21,6 @@ import unittest
 from unittest import mock
 
 from mobly import logger
-import pytz
 
 
 class LoggerTest(unittest.TestCase):
@@ -34,7 +34,7 @@ class LoggerTest(unittest.TestCase):
 
   def test_epoch_to_log_line_timestamp(self):
     actual_stamp = logger.epoch_to_log_line_timestamp(
-        1469134262116, time_zone=pytz.utc
+        1469134262116, time_zone=datetime.timezone.utc
     )
     self.assertEqual('07-21 20:51:02.116', actual_stamp)
 
