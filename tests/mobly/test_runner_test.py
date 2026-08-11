@@ -21,6 +21,8 @@ import tempfile
 import unittest
 from unittest import mock
 
+from mobly import asserts
+from mobly import base_test
 from mobly import config_parser
 from mobly import records
 from mobly import signals
@@ -456,6 +458,36 @@ class TestRunnerTest(unittest.TestCase):
     test_runner._print_test_names(mock_test_class)
     mock_cls_instance._pre_run.side_effect = Exception('Something went wrong.')
     mock_cls_instance._clean_up.assert_called_once()
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(test_runner, '_find_test_class')
+  @mock.patch.object(config_parser, 'load_test_config_file')
+  def test_main_with_abort_all_failing_run(
+      self, mock_load_config, mock_find_class, mock_sys_exit
+  ):
+    mock_load_config.return_value = [self.base_mock_test_config]
+    mock_find_class.return_value = integration3_test.Integration3Test
+    test_runner.main(argv=['-c', 'dummy_config.yaml'])
+    mock_sys_exit.assert_called_once_with(1)
+
+  @mock.patch('sys.exit')
+  @mock.patch.object(test_runner, '_find_test_class')
+  @mock.patch.object(config_parser, 'load_test_config_file')
+  def test_main_with_abort_all_clean_run(
+      self, mock_load_config, mock_find_class, mock_sys_exit
+  ):
+    class CleanAbortTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        asserts.abort_all('Intentional clean abort.')
+
+      def test_1(self):
+        pass
+
+    mock_load_config.return_value = [self.base_mock_test_config]
+    mock_find_class.return_value = CleanAbortTest
+    test_runner.main(argv=['-c', 'dummy_config.yaml'])
+    mock_sys_exit.assert_not_called()
 
 
 if __name__ == '__main__':
