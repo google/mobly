@@ -22,7 +22,6 @@ import shutil
 import signal
 import socket
 import subprocess
-import sys
 import tempfile
 import threading
 import time
@@ -364,6 +363,16 @@ class UtilsTest(unittest.TestCase):
 
     self.assertIsInstance(out, str)
 
+  def test_run_command_with_text_false(self):
+    _, out, _ = utils.run_command(self.sleep_cmd(0.01), text=False)
+
+    self.assertIsInstance(out, bytes)
+
+  def test_run_command_with_text_true(self):
+    _, out, _ = utils.run_command(self.sleep_cmd(0.01), text=True)
+
+    self.assertIsInstance(out, str)
+
   def test_start_standing_subproc(self):
     try:
       p = utils.start_standing_subprocess(self.sleep_cmd(4))
@@ -487,10 +496,6 @@ class UtilsTest(unittest.TestCase):
     subprocess_a.join(timeout=1)
     mock_subprocess_a_popen.wait.assert_called_once()
 
-  @unittest.skipIf(
-      sys.version_info >= (3, 4) and sys.version_info < (3, 5),
-      'Python 3.4 does not support `None` max_workers.',
-  )
   def test_concurrent_exec_when_none_workers(self):
     def adder(a, b):
       return a + b

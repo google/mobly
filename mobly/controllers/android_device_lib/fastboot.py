@@ -75,7 +75,7 @@ class FastbootProxy:
 
   def fastboot_str(self):
     if self.serial:
-      return '{} -s {}'.format(FASTBOOT, self.serial)
+      return f'{FASTBOOT} -s {self.serial}'
     return FASTBOOT
 
   def _exec_fastboot_cmd(self, name, arg_str, timeout=DEFAULT_TIMEOUT_SEC):

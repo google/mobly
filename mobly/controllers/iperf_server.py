@@ -115,8 +115,8 @@ class IPerfServer:
 
   def __init__(self, port, log_path):
     self.port = port
-    self.log_path = os.path.join(log_path, 'iPerf{}'.format(self.port))
-    self.iperf_str = 'iperf3 -s -J -p {}'.format(port)
+    self.log_path = os.path.join(log_path, f'iPerf{self.port}')
+    self.iperf_str = f'iperf3 -s -J -p {port}'
     self.iperf_process = None
     self.log_files = []
     self.started = False
@@ -135,11 +135,9 @@ class IPerfServer:
     utils.create_dir(self.log_path)
     if tag:
       tag = tag + ','
-    out_file_name = 'IPerfServer,{},{}{}.log'.format(
-        self.port, tag, len(self.log_files)
-    )
+    out_file_name = f'IPerfServer,{self.port},{tag}{len(self.log_files)}.log'
     full_out_path = os.path.join(self.log_path, out_file_name)
-    cmd = '%s %s > %s' % (self.iperf_str, extra_args, full_out_path)
+    cmd = f'{self.iperf_str} {extra_args} > {full_out_path}'
     self.iperf_process = utils.start_standing_subprocess(cmd, shell=True)
     self.log_files.append(full_out_path)
     self.started = True

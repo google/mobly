@@ -27,7 +27,7 @@ APK_PATH = 'some/apk/path'
 class ApkUtilsTest(unittest.TestCase):
 
   def setUp(self):
-    super(ApkUtilsTest, self).setUp()
+    super().setUp()
     self.mock_device = mock.MagicMock()
     self.mock_device.adb.current_user_id = 0
 
