@@ -37,7 +37,7 @@ class Sniffer(local_base.SnifferLocalBase):
 
   def get_descriptor(self):
     """See base class documentation"""
-    return f'local-tshark-{self._interface}-ch{{}}'.format(self._interface)
+    return f'local-tshark-{self._interface}'
 
   def get_subtype(self):
     """See base class documentation"""
