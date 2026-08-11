@@ -22,6 +22,7 @@ import time
 import unittest
 from unittest import mock
 
+from mobly import asserts
 from mobly import base_suite
 from mobly import base_test
 from mobly import records
@@ -487,6 +488,102 @@ class SuiteRunnerTest(unittest.TestCase):
       """
       )
     return tmp_file_path
+
+  @mock.patch('sys.exit')
+  def test_run_suite_with_abort_all_clean_run(self, mock_sys_exit):
+    class CleanAbortSuiteTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        asserts.abort_all('Intentional clean abort in suite.')
+
+      def test_1(self):
+        pass
+
+    tmp_file_path = self._gen_tmp_config_file()
+    suite_runner.run_suite(
+        [CleanAbortSuiteTest],
+        argv=['-c', tmp_file_path, '-tb', 'SampleTestBed'],
+    )
+    mock_sys_exit.assert_not_called()
+
+  @mock.patch('sys.exit')
+  def test_run_suite_with_abort_all_failing_run(self, mock_sys_exit):
+    class FailingAbortSuiteTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        asserts.fail('Setup failed.')
+
+      def on_fail(self, record):
+        asserts.abort_all('Abort after failure.')
+
+      def test_1(self):
+        pass
+
+    tmp_file_path = self._gen_tmp_config_file()
+    suite_runner.run_suite(
+        [FailingAbortSuiteTest],
+        argv=['-c', tmp_file_path, '-tb', 'SampleTestBed'],
+    )
+    mock_sys_exit.assert_called_once_with(1)
+
+  @mock.patch('sys.exit')
+  def test_run_suite_class_with_abort_all_clean_run(self, mock_sys_exit):
+    class CleanAbortTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        asserts.abort_all('Intentional clean abort in suite class.')
+
+      def test_1(self):
+        pass
+
+    class CleanTestSuite(base_suite.BaseSuite):
+
+      def setup_suite(self, config):
+        self.add_test_class(CleanAbortTest)
+
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
+    sys.modules['__main__'].__dict__[CleanTestSuite.__name__] = CleanTestSuite
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      try:
+        suite_runner.run_suite_class()
+      finally:
+        del sys.modules['__main__'].__dict__[CleanTestSuite.__name__]
+
+    mock_sys_exit.assert_not_called()
+
+  @mock.patch('sys.exit')
+  def test_run_suite_class_with_abort_all_failing_run(self, mock_sys_exit):
+    class FailingAbortTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        asserts.fail('Setup failed in suite class.')
+
+      def on_fail(self, record):
+        asserts.abort_all('Abort after failure.')
+
+      def test_1(self):
+        pass
+
+    class FailingTestSuite(base_suite.BaseSuite):
+
+      def setup_suite(self, config):
+        self.add_test_class(FailingAbortTest)
+
+    tmp_file_path = self._gen_tmp_config_file()
+    mock_cli_args = ['test_binary', f'--config={tmp_file_path}']
+    sys.modules['__main__'].__dict__[
+        FailingTestSuite.__name__
+    ] = FailingTestSuite
+
+    with mock.patch.object(sys, 'argv', new=mock_cli_args):
+      try:
+        suite_runner.run_suite_class()
+      finally:
+        del sys.modules['__main__'].__dict__[FailingTestSuite.__name__]
+
+    mock_sys_exit.assert_called_once_with(1)
 
 
 if __name__ == '__main__':
