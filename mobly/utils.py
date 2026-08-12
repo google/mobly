@@ -397,7 +397,8 @@ def run_command(
     timeout=...,
     cwd=...,
     env=...,
-    universal_newlines: Literal[False] = ...,
+    text: Literal[False] = ...,
+    universal_newlines: Literal[False] | None = ...,
 ) -> tuple[int, bytes, bytes]:
   ...
 
@@ -411,7 +412,8 @@ def run_command(
     timeout=...,
     cwd=...,
     env=...,
-    universal_newlines: Literal[True] = ...,
+    text: Literal[True] = ...,
+    universal_newlines: Literal[True] | None = ...,
 ) -> tuple[int, str, str]:
   ...
 
@@ -424,7 +426,8 @@ def run_command(
     timeout=None,
     cwd=None,
     env=None,
-    universal_newlines=False,
+    text=False,
+    universal_newlines=None,
 ):
   """Runs a command in a subprocess.
 
@@ -452,8 +455,9 @@ def run_command(
     env: dict, a mapping that defines the environment variables for the
       new process. Default behavior is inheriting the current process'
       environment.
-    universal_newlines: bool, True to open file objects in text mode, False in
+    text: bool, True to open file objects in text mode, False in
       binary mode.
+    universal_newlines: bool, legacy alias for `text`.
 
   Returns:
     A 3-tuple of the consisting of the return code, the std output, and the
@@ -462,6 +466,8 @@ def run_command(
   Raises:
     subprocess.TimeoutExpired: The command timed out.
   """
+  if universal_newlines is not None:
+    text = universal_newlines
   if stdout is None:
     stdout = subprocess.PIPE
   if stderr is None:
@@ -473,7 +479,7 @@ def run_command(
       shell=shell,
       cwd=cwd,
       env=env,
-      text=universal_newlines,  # "text" is introdcued in Python 3.7.
+      text=text,
   )
   out, err = None, None
   try:

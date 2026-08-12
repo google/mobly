@@ -26,7 +26,7 @@ class Sniffer(local_base.SnifferLocalBase):
 
     super().__init__(config_path, logger, base_configs=base_configs)
 
-    self._executable_path = shutil.which("tcpdump")
+    self._executable_path = shutil.which('tcpdump')
     if self._executable_path is None:
       raise sniffer.SnifferError(
           "Cannot find a path to the 'tcpdump' executable"
@@ -34,20 +34,18 @@ class Sniffer(local_base.SnifferLocalBase):
 
   def get_descriptor(self):
     """See base class documentation"""
-    return "local-tcpdump-{}".format(self._interface)
+    return f'local-tcpdump-{self._interface}'
 
   def get_subtype(self):
     """See base class documentation"""
-    return "tcpdump"
+    return 'tcpdump'
 
   def _get_command_line(
       self, additional_args=None, duration=None, packet_count=None
   ):
-    cmd = "{} -i {} -w {}".format(
-        self._executable_path, self._interface, self._temp_capture_file_path
-    )
+    cmd = f'{self._executable_path} -i {self._interface} -w {self._temp_capture_file_path}'
     if packet_count is not None:
-      cmd = "{} -c {}".format(cmd, packet_count)
+      cmd = f'{cmd} -c {packet_count}'
     if additional_args is not None:
-      cmd = "{} {}".format(cmd, additional_args)
+      cmd = f'{cmd} {additional_args}'
     return cmd

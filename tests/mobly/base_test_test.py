@@ -3092,7 +3092,9 @@ class BaseTestTest(unittest.TestCase):
       except RecoverableError:
         pass
 
-    logging_patch.debug.assert_called_with('[TestClass]#stage <<< END <<<')
+    logging_patch.debug.assert_called_with(
+        base_test.TEST_STAGE_END_LOG_TEMPLATE, 'TestClass', 'stage'
+    )
 
 
 if __name__ == '__main__':

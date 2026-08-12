@@ -38,8 +38,8 @@ def create(configs):
     sniffer_subtype = c["SubType"]
     interface = c["Interface"]
     base_configs = c["BaseConfigs"]
-    module_name = "mobly.controllers.sniffer_lib.{}.{}".format(
-        sniffer_type, sniffer_subtype
+    module_name = (
+        f"mobly.controllers.sniffer_lib.{sniffer_type}.{sniffer_subtype}"
     )
     module = importlib.import_module(module_name)
     objs.append(

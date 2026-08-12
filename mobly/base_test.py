@@ -34,8 +34,8 @@ TEST_CASE_TOKEN = '[Test]'
 RESULT_LINE_TEMPLATE = TEST_CASE_TOKEN + ' %s %s'
 TEST_SELECTOR_REGEX_PREFIX = 're:'
 
-TEST_STAGE_BEGIN_LOG_TEMPLATE = '[{parent_token}]#{child_token} >>> BEGIN >>>'
-TEST_STAGE_END_LOG_TEMPLATE = '[{parent_token}]#{child_token} <<< END <<<'
+TEST_STAGE_BEGIN_LOG_TEMPLATE = '[%s]#%s >>> BEGIN >>>'
+TEST_STAGE_END_LOG_TEMPLATE = '[%s]#%s <<< END <<<'
 
 # Names of execution stages, in the order they happen during test runs.
 STAGE_NAME_PRE_RUN = 'pre_run'
@@ -195,10 +195,7 @@ class BaseTestClass:
     self.tests = []
     class_identifier = self.__class__.__name__
     if configs.test_class_name_suffix:
-      class_identifier = '%s_%s' % (
-          class_identifier,
-          configs.test_class_name_suffix,
-      )
+      class_identifier = f'{class_identifier}_{configs.test_class_name_suffix}'
     if self.TAG is None:
       self.TAG = class_identifier
     # Set params.
@@ -257,7 +254,7 @@ class BaseTestClass:
         continue
       if name not in self.user_params:
         raise Error(
-            'Missing required user param "%s" in test configuration.' % name
+            f'Missing required user param "{name}" in test configuration.'
         )
       setattr(self, name, self.user_params[name])
     for name in opt_param_names:
@@ -509,19 +506,11 @@ class BaseTestClass:
     # reference tag as the parent token instead.
     if parent_token == stage_name:
       parent_token = self.TAG
-    logging.debug(
-        TEST_STAGE_BEGIN_LOG_TEMPLATE.format(
-            parent_token=parent_token, child_token=stage_name
-        )
-    )
+    logging.debug(TEST_STAGE_BEGIN_LOG_TEMPLATE, parent_token, stage_name)
     try:
       yield
     finally:
-      logging.debug(
-          TEST_STAGE_END_LOG_TEMPLATE.format(
-              parent_token=parent_token, child_token=stage_name
-          )
-      )
+      logging.debug(TEST_STAGE_END_LOG_TEMPLATE, parent_token, stage_name)
 
   def _setup_test(self, test_name):
     """Proxy function to guarantee the base implementation of setup_test is
@@ -910,13 +899,12 @@ class BaseTestClass:
         is the corresponding UID.
     """
     self._assert_function_names_in_stack([STAGE_NAME_PRE_RUN])
-    root_msg = 'During test generation of "%s":' % test_logic.__name__
+    root_msg = f'During test generation of "{test_logic.__name__}":'
     for args in arg_sets:
       test_name = name_func(*args)
       if test_name in self.get_existing_test_names():
         raise Error(
-            '%s Test name "%s" already exists, cannot be duplicated!'
-            % (root_msg, test_name)
+            f'{root_msg} Test name "{test_name}" already exists, cannot be duplicated!'
         )
       test_func = functools.partial(test_logic, *args)
       # If the `test_logic` method is decorated by `retry` or `repeat`
@@ -1054,8 +1042,8 @@ class BaseTestClass:
   def _assert_valid_test_name(self, test_name):
     if not test_name.startswith('test_'):
       raise Error(
-          'Test method name %s does not follow naming '
-          'convention test_*, abort.' % test_name
+          f'Test method name {test_name} does not follow naming '
+          'convention test_*, abort.'
       )
 
   def _skip_remaining_tests(self, exception):
@@ -1174,11 +1162,11 @@ class BaseTestClass:
           self.exec_one_test(test_name, test_method)
       return self.results
     except signals.TestAbortClass as e:
-      e.details = 'Test class aborted due to: %s' % e.details
+      e.details = f'Test class aborted due to: {e.details}'
       self._skip_remaining_tests(e)
       return self.results
     except signals.TestAbortAll as e:
-      e.details = 'All remaining tests aborted due to: %s' % e.details
+      e.details = f'All remaining tests aborted due to: {e.details}'
       self._skip_remaining_tests(e)
       # Piggy-back test results on this exception object so we don't lose
       # results from this test class.

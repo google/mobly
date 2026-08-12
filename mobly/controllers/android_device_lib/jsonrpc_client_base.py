@@ -211,9 +211,7 @@ class JsonRpcClientBase(abc.ABC):
       # Retry using '127.0.0.1' for IPv4 enabled machines that only resolve
       # 'localhost' to '[::1]'.
       self.log.debug(
-          'Failed to connect to localhost, trying 127.0.0.1: {}'.format(
-              str(err)
-          )
+          'Failed to connect to localhost, trying 127.0.0.1: %s', err
       )
       self._conn = socket.create_connection(
           ('127.0.0.1', self.host_port), _SOCKET_CONNECTION_TIMEOUT

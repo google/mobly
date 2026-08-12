@@ -122,11 +122,11 @@ class SnifferLocalBase(sniffer.Sniffer):
           "Trying to start a sniff while another is still running!"
       )
     capture_dir = os.path.join(
-        self._logger.log_path, "Sniffer-{}".format(self._interface)
+        self._logger.log_path, f"Sniffer-{self._interface}"
     )
     os.makedirs(capture_dir, exist_ok=True)
     self._capture_file_path = os.path.join(
-        capture_dir, "capture_{}.pcap".format(logger.get_log_file_timestamp())
+        capture_dir, f"capture_{logger.get_log_file_timestamp()}.pcap"
     )
 
     self._pre_capture_config(override_configs)
