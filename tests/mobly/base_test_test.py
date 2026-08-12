@@ -2565,6 +2565,38 @@ class BaseTestTest(unittest.TestCase):
     for i, record in enumerate(bt_cls.results.passed):
       self.assertEqual(record.test_name, f'test_something_{i}')
 
+  def test_expect_no_raises_decorator_on_test_method(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @expects.expect_no_raises(message='Step 1 failed')
+      def test_step(self):
+        raise ValueError('Expected failure in step')
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(1, len(bt_cls.results.failed))
+    self.assertEqual(1, len(bt_cls.results.executed))
+    record = bt_cls.results.failed[0]
+    self.assertIn('Step 1 failed', record.details)
+    self.assertIn('Expected failure in step', record.details)
+
+  def test_expect_no_raises_decorator_on_helper_method(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @expects.expect_no_raises
+      def helper_func(self):
+        raise RuntimeError('Helper failed')
+
+      def test_method(self):
+        self.helper_func()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(1, len(bt_cls.results.failed))
+    self.assertEqual(1, len(bt_cls.results.executed))
+    record = bt_cls.results.failed[0]
+    self.assertIn('Helper failed', record.details)
+
   def test_repeat_with_consec_error_does_not_abort_repeat(self):
     repeat_count = 5
     max_consec_error = 2
