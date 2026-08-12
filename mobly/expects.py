@@ -156,9 +156,7 @@ class expect_no_raises(contextlib.ContextDecorator):
       do_something()
 
   Args:
-    message: string or callable, custom message to add to exception's `details`.
-      When used as a bare decorator (@expects.expect_no_raises), this argument
-      is the decorated function.
+    message: An optional custom message to add to the exception's `details`.
     extras: An optional field for extra information to be included in test
       result.
   """
