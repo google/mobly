@@ -38,6 +38,19 @@ class LoggerTest(unittest.TestCase):
     )
     self.assertEqual('07-21 20:51:02.116', actual_stamp)
 
+  def test_epoch_to_log_line_timestamp_pads_milliseconds(self):
+    for epoch_time, expected_stamp in [
+        (1469134262000, '07-21 20:51:02.000'),
+        (1469134262005, '07-21 20:51:02.005'),
+        (1469134262050, '07-21 20:51:02.050'),
+        (1469134262099, '07-21 20:51:02.099'),
+    ]:
+      actual_stamp = logger.epoch_to_log_line_timestamp(
+          epoch_time, time_zone=datetime.timezone.utc
+      )
+      self.assertEqual(expected_stamp, actual_stamp)
+      self.assertTrue(logger.is_valid_logline_timestamp(actual_stamp))
+
   def test_is_valid_logline_timestamp(self):
     self.assertTrue(logger.is_valid_logline_timestamp('06-21 17:44:42.336'))
 
