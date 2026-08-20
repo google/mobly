@@ -125,7 +125,7 @@ def epoch_to_log_line_timestamp(epoch_time, time_zone=None):
   """
   s, ms = divmod(epoch_time, 1000)
   d = datetime.datetime.fromtimestamp(s, tz=time_zone)
-  return d.strftime('%m-%d %H:%M:%S.') + str(ms)
+  return d.strftime('%m-%d %H:%M:%S.') + f'{ms:03d}'
 
 
 def get_log_line_timestamp(delta=None):
