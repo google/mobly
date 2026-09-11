@@ -1375,6 +1375,45 @@ class BaseTestTest(unittest.TestCase):
         'Error 1, Executed 0, Failed 0, Passed 0, Requested 3, Skipped 3',
     )
 
+    with open(self.summary_file) as summary:
+      setup_records = [
+          entry
+          for entry in yaml.safe_load_all(summary)
+          if entry.get('Test Name') == 'setup_class'
+      ]
+    self.assertEqual(len(setup_records), 1)
+    self.assertEqual(setup_records[0]['Result'], 'ERROR')
+    self.assertEqual(setup_records[0]['Details'], MSG_UNEXPECTED_EXCEPTION)
+    self.assertIsNotNone(setup_records[0]['End Time'])
+
+  def test_abort_all_in_on_fail_from_setup_class_expect(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        expects.expect_true(False, MSG_UNEXPECTED_EXCEPTION)
+
+      def test_1(self):
+        never_call()
+
+      def on_fail(self, record):
+        asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    with self.assertRaisesRegex(signals.TestAbortAll, MSG_EXPECTED_EXCEPTION):
+      bt_cls.run(test_names=['test_1'])
+    self.assertEqual(len(bt_cls.results.error), 1)
+    self.assertEqual(len(bt_cls.results.skipped), 1)
+    with open(self.summary_file) as summary:
+      setup_records = [
+          entry
+          for entry in yaml.safe_load_all(summary)
+          if entry.get('Test Name') == 'setup_class'
+      ]
+    self.assertEqual(len(setup_records), 1)
+    self.assertEqual(setup_records[0]['Result'], 'ERROR')
+    self.assertEqual(setup_records[0]['Details'], MSG_UNEXPECTED_EXCEPTION)
+    self.assertIsNotNone(setup_records[0]['End Time'])
+
   def test_abort_all_in_test(self):
     class MockBaseTest(base_test.BaseTestClass):
 
