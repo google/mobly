@@ -371,12 +371,27 @@ class BaseTestClass:
       return True
     except Exception as e:
       logging.exception('%s failed for %s.', stage_name, self.TAG)
-      record.test_error(e)
+      self._record_class_error(record, e)
+      return False
+
+  def _record_class_error(self, record, e=None, exec_on_fail=False):
+    """Finalizes a class-level error record and writes it to results/summary.
+
+    Args:
+      record: A TestResultRecord object for the class stage.
+      e: Optional exception that caused the failure.
+      exec_on_fail: bool, whether to execute `_on_fail` procedure.
+    """
+    record.test_error(e)
+    record.update_record()
+    try:
+      if exec_on_fail:
+        self._exec_procedure_func(self._on_fail, record)
+    finally:
       self.results.add_class_error(record)
       self.summary_writer.dump(
           record.to_dict(), records.TestSummaryEntryType.RECORD
       )
-      return False
 
   def pre_run(self):
     """Preprocesses that need to be done before setup_class.
@@ -414,23 +429,11 @@ class BaseTestClass:
       # Setup class failed for unknown reasons.
       # Fail the class and skip all tests.
       logging.exception('Error in %s#setup_class.', self.TAG)
-      class_record.test_error(e)
-      self.results.add_class_error(class_record)
-      self._exec_procedure_func(self._on_fail, class_record)
-      class_record.update_record()
-      self.summary_writer.dump(
-          class_record.to_dict(), records.TestSummaryEntryType.RECORD
-      )
+      self._record_class_error(class_record, e, exec_on_fail=True)
       self._skip_remaining_tests(e)
       return self.results
     if expects.recorder.has_error:
-      self._exec_procedure_func(self._on_fail, class_record)
-      class_record.test_error()
-      class_record.update_record()
-      self.summary_writer.dump(
-          class_record.to_dict(), records.TestSummaryEntryType.RECORD
-      )
-      self.results.add_class_error(class_record)
+      self._record_class_error(class_record, exec_on_fail=True)
       self._skip_remaining_tests(class_record.termination_signal.exception)
       return self.results
 
@@ -464,20 +467,10 @@ class BaseTestClass:
       raise
     except Exception as e:
       logging.exception('Error encountered in %s.', stage_name)
-      record.test_error(e)
-      record.update_record()
-      self.results.add_class_error(record)
-      self.summary_writer.dump(
-          record.to_dict(), records.TestSummaryEntryType.RECORD
-      )
+      self._record_class_error(record, e)
     else:
       if expects.recorder.has_error:
-        record.test_error()
-        record.update_record()
-        self.results.add_class_error(record)
-        self.summary_writer.dump(
-            record.to_dict(), records.TestSummaryEntryType.RECORD
-        )
+        self._record_class_error(record)
     finally:
       self._clean_up()
 
@@ -1192,9 +1185,4 @@ class BaseTestClass:
       self._record_controller_info()
       self._controller_manager.unregister_controllers()
       if expects.recorder.has_error:
-        record.test_error()
-        record.update_record()
-        self.results.add_class_error(record)
-        self.summary_writer.dump(
-            record.to_dict(), records.TestSummaryEntryType.RECORD
-        )
+        self._record_class_error(record)

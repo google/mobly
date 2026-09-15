@@ -1344,7 +1344,10 @@ class BaseTestTest(unittest.TestCase):
         'Error 0, Executed 1, Failed 1, Passed 0, Requested 3, Skipped 2',
     )
 
-  def test_abort_all_in_on_fail_from_setup_class(self):
+  @mock.patch('mobly.records.TestSummaryWriter.dump')
+  def test_abort_all_in_on_fail_from_setup_class(self, mock_dump):
+    on_fail_record_state = {}
+
     class MockBaseTest(base_test.BaseTestClass):
 
       def setup_class(self):
@@ -1360,6 +1363,8 @@ class BaseTestTest(unittest.TestCase):
         never_call()
 
       def on_fail(self, record):
+        on_fail_record_state['end_time'] = record.end_time
+        on_fail_record_state['details'] = record.details
         asserts.abort_all(MSG_EXPECTED_EXCEPTION)
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
@@ -1367,6 +1372,8 @@ class BaseTestTest(unittest.TestCase):
         signals.TestAbortAll, MSG_EXPECTED_EXCEPTION
     ) as context:
       bt_cls.run(test_names=['test_1', 'test_2', 'test_3'])
+    self.assertIsNotNone(on_fail_record_state['end_time'])
+    self.assertEqual(on_fail_record_state['details'], MSG_UNEXPECTED_EXCEPTION)
     setup_class_record = bt_cls.results.error[0]
     self.assertEqual(setup_class_record.test_name, 'setup_class')
     self.assertTrue(hasattr(context.exception, 'results'))
@@ -1374,6 +1381,50 @@ class BaseTestTest(unittest.TestCase):
         bt_cls.results.summary_str(),
         'Error 1, Executed 0, Failed 0, Passed 0, Requested 3, Skipped 3',
     )
+    setup_class_dict = mock_dump.call_args_list[1][0][0]
+    self.assertEqual(setup_class_dict['Test Name'], 'setup_class')
+    self.assertEqual(setup_class_dict['Result'], 'ERROR')
+
+  @mock.patch('mobly.records.TestSummaryWriter.dump')
+  def test_abort_all_in_on_fail_from_setup_class_with_expects(self, mock_dump):
+    on_fail_record_state = {}
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        expects.expect_true(False, MSG_UNEXPECTED_EXCEPTION)
+
+      def test_1(self):
+        never_call()
+
+      def test_2(self):
+        never_call()
+
+      def test_3(self):
+        never_call()
+
+      def on_fail(self, record):
+        on_fail_record_state['end_time'] = record.end_time
+        on_fail_record_state['details'] = record.details
+        asserts.abort_all(MSG_EXPECTED_EXCEPTION)
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    with self.assertRaisesRegex(
+        signals.TestAbortAll, MSG_EXPECTED_EXCEPTION
+    ) as context:
+      bt_cls.run(test_names=['test_1', 'test_2', 'test_3'])
+    self.assertIsNotNone(on_fail_record_state['end_time'])
+    self.assertEqual(on_fail_record_state['details'], MSG_UNEXPECTED_EXCEPTION)
+    setup_class_record = bt_cls.results.error[0]
+    self.assertEqual(setup_class_record.test_name, 'setup_class')
+    self.assertTrue(hasattr(context.exception, 'results'))
+    self.assertEqual(
+        bt_cls.results.summary_str(),
+        'Error 1, Executed 0, Failed 0, Passed 0, Requested 3, Skipped 3',
+    )
+    setup_class_dict = mock_dump.call_args_list[1][0][0]
+    self.assertEqual(setup_class_dict['Test Name'], 'setup_class')
+    self.assertEqual(setup_class_dict['Result'], 'ERROR')
 
   def test_abort_all_in_test(self):
     class MockBaseTest(base_test.BaseTestClass):
@@ -1777,6 +1828,7 @@ class BaseTestTest(unittest.TestCase):
   def test_expect_in_setup_class(self, mock_dump):
     must_call = mock.Mock()
     must_call2 = mock.Mock()
+    on_fail_record_state = {}
 
     class MockBaseTest(base_test.BaseTestClass):
 
@@ -1788,12 +1840,16 @@ class BaseTestTest(unittest.TestCase):
         pass
 
       def on_fail(self, record):
+        on_fail_record_state['end_time'] = record.end_time
+        on_fail_record_state['details'] = record.details
         must_call2('on_fail')
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
     must_call.assert_called_once_with('ha')
     must_call2.assert_called_once_with('on_fail')
+    self.assertIsNotNone(on_fail_record_state['end_time'])
+    self.assertEqual(on_fail_record_state['details'], MSG_EXPECTED_EXCEPTION)
     actual_record = bt_cls.results.error[0]
     self.assertEqual(actual_record.test_name, 'setup_class')
     self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
