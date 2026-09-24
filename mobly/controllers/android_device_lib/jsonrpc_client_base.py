@@ -56,7 +56,7 @@ import json
 import socket
 import threading
 
-from mobly.controllers.android_device_lib import callback_handler
+from mobly.controllers.android_device_lib import callback_handler_v2
 from mobly.snippet import errors
 
 # UID of the 'unknown' jsonrpc session. Will cause creation of a new session.
@@ -66,7 +66,10 @@ UNKNOWN_UID = -1
 _SOCKET_CONNECTION_TIMEOUT = 60
 
 # Maximum time to wait for a response message on the socket.
-_SOCKET_READ_TIMEOUT = callback_handler.MAX_TIMEOUT
+_SOCKET_READ_TIMEOUT = 60 * 10
+
+# The default timeout for callback handlers returned by this client.
+_CALLBACK_DEFAULT_TIMEOUT_SEC = 60 * 2
 
 # Maximum logging length of Rpc response in DEBUG level when verbose logging is
 # off.
@@ -348,12 +351,14 @@ class JsonRpcClientBase(abc.ABC):
     if result.get('callback') is not None:
       if self._event_client is None:
         self._event_client = self._start_event_client()
-      return callback_handler.CallbackHandler(
+      return callback_handler_v2.CallbackHandlerV2(
           callback_id=result['callback'],
           event_client=self._event_client,
           ret_value=result['result'],
           method_name=method,
-          ad=self._ad,
+          device=self._ad,
+          rpc_max_timeout_sec=_SOCKET_READ_TIMEOUT,
+          default_timeout_sec=_CALLBACK_DEFAULT_TIMEOUT_SEC,
       )
     return result['result']
 
