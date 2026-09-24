@@ -17,6 +17,7 @@ import socket
 import unittest
 from unittest import mock
 
+from mobly.controllers.android_device_lib import callback_handler_v2
 from mobly.controllers.android_device_lib import jsonrpc_client_base
 from tests.lib import jsonrpc_client_test_base
 
@@ -164,6 +165,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     client._event_client = mock.Mock()
 
     callback = client.some_rpc(1, 2, 3)
+    self.assertIsInstance(callback, callback_handler_v2.CallbackHandlerV2)
     self.assertEqual(callback.ret_value, 123)
     self.assertEqual(callback._id, '1-0')
 
