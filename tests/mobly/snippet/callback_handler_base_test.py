@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for mobly.snippet.callback_handler_base.CallbackHandlerBase."""
 
+import functools
 import unittest
 from unittest import mock
 
@@ -189,6 +190,24 @@ class CallbackHandlerBaseTest(unittest.TestCase):
         errors.CallbackHandlerTimeoutError, expected_msg
     ):
       handler.waitForEvent('AsyncTaskResult', some_condition, 0.01)
+
+  def test_wait_for_event_negative_with_partial_predicate(self):
+    handler = FakeCallbackHandler()
+    handler.mock_rpc_func.callEventWaitAndGetRpc = mock.Mock(
+        return_value=MOCK_RAW_EVENT
+    )
+
+    def has_secret_number(event, number):
+      return event.data['secretNumber'] == number
+
+    with self.assertRaisesRegex(
+        errors.CallbackHandlerTimeoutError, 'satisfies the predicate "partial"'
+    ):
+      handler.waitForEvent(
+          'AsyncTaskResult',
+          functools.partial(has_secret_number, number=42),
+          0.01,
+      )
 
   def test_wait_for_event_max_timeout(self):
     """waitForEvent should not raise the timeout exceed threshold error."""
