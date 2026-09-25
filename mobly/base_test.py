@@ -772,8 +772,7 @@ class BaseTestClass:
     )
     expects.recorder.reset_internal_states(tr_record)
     logging.info('%s %s', TEST_CASE_TOKEN, test_name)
-    # Did teardown_test throw an error.
-    teardown_test_failed = False
+    abort_signal = None
     try:
       try:
         try:
@@ -789,26 +788,6 @@ class BaseTestClass:
             'Exception occurred in %s.', self.current_test_info.name
         )
         raise
-      finally:
-        before_count = expects.recorder.error_count
-        try:
-          self._teardown_test(test_name)
-        except signals.TestAbortSignal:
-          raise
-        except Exception as e:
-          logging.exception(
-              'Exception occurred in %s of %s.',
-              STAGE_NAME_TEARDOWN_TEST,
-              self.current_test_info.name,
-          )
-          tr_record.test_error()
-          tr_record.add_error(STAGE_NAME_TEARDOWN_TEST, e)
-          teardown_test_failed = True
-        else:
-          # Check if anything failed by `expects`.
-          if before_count < expects.recorder.error_count:
-            tr_record.test_error()
-            teardown_test_failed = True
     except (signals.TestFailure, AssertionError) as e:
       tr_record.test_fail(e)
     except signals.TestSkip as e:
@@ -817,7 +796,7 @@ class BaseTestClass:
     except signals.TestAbortSignal as e:
       # Abort signals, pass along.
       tr_record.test_fail(e)
-      raise
+      abort_signal = e
     except signals.TestPass as e:
       # Explicit test pass.
       tr_record.test_pass(e)
@@ -825,34 +804,58 @@ class BaseTestClass:
       # Exception happened during test.
       tr_record.test_error(e)
     else:
-      # No exception is thrown from test and teardown, if `expects` has
-      # error, the test should fail with the first error in `expects`.
-      if expects.recorder.has_error and not teardown_test_failed:
+      # No exception is thrown from test, if `expects` has error, the test
+      # should fail with the first error in `expects`.
+      if expects.recorder.has_error:
         tr_record.test_fail()
       # Otherwise the test passed.
-      elif not teardown_test_failed:
+      else:
         tr_record.test_pass()
     finally:
       tr_record.update_record()
+      test_failed_or_errored = tr_record.result in (
+          records.TestResultEnums.TEST_RESULT_FAIL,
+          records.TestResultEnums.TEST_RESULT_ERROR,
+      )
       try:
-        if tr_record.result in (
-            records.TestResultEnums.TEST_RESULT_ERROR,
-            records.TestResultEnums.TEST_RESULT_FAIL,
-        ):
-          self._exec_procedure_func(self._on_fail, tr_record)
-        elif tr_record.result == records.TestResultEnums.TEST_RESULT_PASS:
-          self._exec_procedure_func(self._on_pass, tr_record)
-        elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
-          self._exec_procedure_func(self._on_skip, tr_record)
+        self._teardown_test(test_name)
+      except signals.TestAbortSignal as e:
+        if test_failed_or_errored:
+          tr_record.add_error(STAGE_NAME_TEARDOWN_TEST, e)
+        else:
+          tr_record.test_fail(e)
+        if not isinstance(abort_signal, signals.TestAbortAll):
+          abort_signal = e
+      except Exception as e:
+        logging.exception(
+            'Exception occurred in %s of %s.',
+            STAGE_NAME_TEARDOWN_TEST,
+            self.current_test_info.name,
+        )
+        tr_record.add_error(STAGE_NAME_TEARDOWN_TEST, e)
       finally:
-        logging.info(
-            RESULT_LINE_TEMPLATE, tr_record.test_name, tr_record.result
-        )
-        self.results.add_record(tr_record)
-        self.summary_writer.dump(
-            tr_record.to_dict(), records.TestSummaryEntryType.RECORD
-        )
-        self.current_test_info = None
+        tr_record.update_record()
+        try:
+          if tr_record.result in (
+              records.TestResultEnums.TEST_RESULT_ERROR,
+              records.TestResultEnums.TEST_RESULT_FAIL,
+          ):
+            self._exec_procedure_func(self._on_fail, tr_record)
+          elif tr_record.result == records.TestResultEnums.TEST_RESULT_PASS:
+            self._exec_procedure_func(self._on_pass, tr_record)
+          elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
+            self._exec_procedure_func(self._on_skip, tr_record)
+        finally:
+          logging.info(
+              RESULT_LINE_TEMPLATE, tr_record.test_name, tr_record.result
+          )
+          self.results.add_record(tr_record)
+          self.summary_writer.dump(
+              tr_record.to_dict(), records.TestSummaryEntryType.RECORD
+          )
+          self.current_test_info = None
+    if abort_signal:
+      raise abort_signal
     return tr_record
 
   def _assert_function_names_in_stack(self, expected_func_names):
