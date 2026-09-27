@@ -901,6 +901,21 @@ class LogcatServiceUserBehaviorTest(unittest.TestCase):
     self.assertEqual(recent_logs[-1].tag, 'BtGatt')
     self.assertEqual(recent_logs[-1].level, 'F')
 
+  def test_tail_position_in_large_file(self):
+    # Make the file larger than the block size tail() reads at a time.
+    self._append_log(
+        '08-09 22:00:05.000  1000  1030 I Filler: padding\n' * 2000
+    )
+    start = self.logcat_service.now()
+    self._append_log(
+        '08-09 22:00:06.000  1000  1030 I WifiService: Disconnected from'
+        ' wlan0\n'
+    )
+
+    last_line = self.logcat_service.tail(num_lines=1)[0]
+    self.assertEqual(last_line.message, 'Disconnected from wlan0')
+    self.assertTrue(last_line.position > start)
+
   def test_now_and_bounded_query(self):
     # Take position marker before triggering an action
     start = self.logcat_service.now()
