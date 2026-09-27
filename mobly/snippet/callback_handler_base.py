@@ -233,10 +233,12 @@ class CallbackHandlerBase(abc.ABC):
         return event
 
     custom_error = '' if message is None else f' Details: {message}.'
+    # Callables like functools.partial objects have no __name__.
+    predicate_name = getattr(predicate, '__name__', type(predicate).__name__)
     raise errors.CallbackHandlerTimeoutError(
         self._device,
         f'Timed out after {timeout}s waiting for an "{event_name}" event that '
-        f'satisfies the predicate "{predicate.__name__}".{custom_error}',
+        f'satisfies the predicate "{predicate_name}".{custom_error}',
     )
 
   def getAll(self, event_name):
