@@ -3401,6 +3401,76 @@ class BaseTestTest(unittest.TestCase):
     extra_error = next(iter(actual_record.extra_errors.values()))
     self.assertEqual(extra_error.details, 'expect error in teardown')
 
+  def test_private_setup_test_override_fail_by_test_signal(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def _setup_test(self, test_name):
+        asserts.fail(MSG_EXPECTED_EXCEPTION)
+        super()._setup_test(test_name)
+
+      def test_something(self):
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['test_something'])
+    self.assertEqual(len(bt_cls.results.error), 1)
+    self.assertEqual(len(bt_cls.results.failed), 0)
+    actual_record = bt_cls.results.error[0]
+    self.assertEqual(actual_record.test_name, self.mock_test_name)
+    self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+
+  def test_abort_class_in_test_and_abort_class_in_teardown_test(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_1(self):
+        asserts.abort_class('abort class in test')
+
+      def test_2(self):
+        never_call()
+
+      def teardown_test(self):
+        asserts.abort_class('abort class in teardown')
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['test_1', 'test_2'])
+    self.assertEqual(len(bt_cls.results.failed), 1)
+    self.assertEqual(len(bt_cls.results.skipped), 1)
+    failed_record = bt_cls.results.failed[0]
+    self.assertEqual(failed_record.details, 'abort class in test')
+    self.assertEqual(
+        failed_record.extra_errors['teardown_test'].details,
+        'abort class in teardown',
+    )
+    skipped_record = bt_cls.results.skipped[0]
+    self.assertEqual(
+        skipped_record.details,
+        'Test class aborted due to: abort class in test',
+    )
+
+  def test_abort_class_in_test_escalated_to_abort_all_in_teardown_test(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_1(self):
+        asserts.abort_class('abort class in test')
+
+      def test_2(self):
+        never_call()
+
+      def teardown_test(self):
+        asserts.abort_all('abort all in teardown')
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    with self.assertRaisesRegex(signals.TestAbortAll, 'abort all in teardown'):
+      bt_cls.run(test_names=['test_1', 'test_2'])
+    self.assertEqual(len(bt_cls.results.failed), 1)
+    self.assertEqual(len(bt_cls.results.skipped), 1)
+    failed_record = bt_cls.results.failed[0]
+    self.assertEqual(failed_record.details, 'abort class in test')
+    self.assertEqual(
+        failed_record.extra_errors['teardown_test'].details,
+        'abort all in teardown',
+    )
+
 
 if __name__ == '__main__':
   unittest.main()
