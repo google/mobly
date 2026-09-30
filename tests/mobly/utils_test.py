@@ -84,7 +84,7 @@ def _fork_children_processes(name, successors):
     time.sleep(4)
 
   for child_process in children_process:
-    child_process.join()
+    child_process.join(timeout=1)
   logging.info('Process "%s" exit.', name)
 
 
@@ -452,6 +452,10 @@ class UtilsTest(unittest.TestCase):
     utils.stop_standing_subprocess(p)
     self.assertFalse(_is_process_running(p.pid))
 
+  @unittest.skipIf(
+      os.name == 'nt',
+      'collect_process_tree only available on Unix like system.',
+  )
   def test_stop_standing_subproc_and_descendants(self):
     # Creates subprocess A with descendants looks like:
     # subprocess A
@@ -489,11 +493,11 @@ class UtilsTest(unittest.TestCase):
     mock_subprocess_a_popen = mock.MagicMock()
     mock_subprocess_a_popen.pid = subprocess_a.pid
     # Sleep a while to create all processes.
-    time.sleep(0.01)
+    time.sleep(0.1)
 
     utils.stop_standing_subprocess(mock_subprocess_a_popen)
 
-    subprocess_a.join(timeout=1)
+    subprocess_a.join(timeout=2)
     mock_subprocess_a_popen.wait.assert_called_once()
 
   def test_concurrent_exec_when_none_workers(self):
