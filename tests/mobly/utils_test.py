@@ -452,10 +452,6 @@ class UtilsTest(unittest.TestCase):
     utils.stop_standing_subprocess(p)
     self.assertFalse(_is_process_running(p.pid))
 
-  @unittest.skipIf(
-      os.name == 'nt',
-      'collect_process_tree only available on Unix like system.',
-  )
   def test_stop_standing_subproc_and_descendants(self):
     # Creates subprocess A with descendants looks like:
     # subprocess A
