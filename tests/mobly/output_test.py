@@ -28,6 +28,7 @@ from mobly import test_runner
 from tests.lib import mock_controller
 from tests.lib import integration_test
 from tests.lib import teardown_class_failure_test
+from tests.lib import test_isolation
 import yaml
 
 if platform.system() == 'Windows':
@@ -41,6 +42,7 @@ class OutputTest(unittest.TestCase):
   """
 
   def setUp(self):
+    test_isolation.preserve_global_state(self)
     self.tmp_dir = tempfile.mkdtemp()
     self.base_mock_test_config = config_parser.TestRunConfig()
     self.base_mock_test_config.testbed_name = 'SampleTestBed'

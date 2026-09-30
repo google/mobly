@@ -23,6 +23,7 @@ from mobly import config_parser
 from mobly import records
 from mobly import test_runner
 from tests.lib import mock_controller
+from tests.lib import test_isolation
 
 
 class TestSuiteTest(unittest.TestCase):
@@ -32,6 +33,7 @@ class TestSuiteTest(unittest.TestCase):
   """
 
   def setUp(self):
+    test_isolation.preserve_global_state(self)
     self.tmp_dir = tempfile.mkdtemp()
     self.mock_test_cls_configs = config_parser.TestRunConfig()
     self.summary_file = os.path.join(self.tmp_dir, 'summary.yaml')

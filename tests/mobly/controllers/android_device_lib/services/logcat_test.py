@@ -78,11 +78,15 @@ class LogcatTest(unittest.TestCase):
   """Tests for Logcat service and its integration with AndroidDevice."""
 
   def setUp(self):
-    # Set log_path to logging since mobly logger setup is not called.
-    if not hasattr(logging, 'log_path'):
-      setattr(logging, 'log_path', '/tmp/logs')
     # Creates a temp dir to be used by tests in this test class.
     self.tmp_dir = tempfile.mkdtemp()
+    # Set log_path to logging since mobly logger setup is not called. Scope it
+    # to this test so it never points at another test's (deleted) directory.
+    log_path_patcher = mock.patch.object(
+        logging, 'log_path', self.tmp_dir, create=True
+    )
+    log_path_patcher.start()
+    self.addCleanup(log_path_patcher.stop)
 
   def tearDown(self):
     """Removes the temp dir."""

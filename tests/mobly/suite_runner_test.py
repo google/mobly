@@ -33,6 +33,7 @@ from tests.lib import dynamic_repeat_retry_test
 from tests.lib import integration2_test
 from tests.lib import integration_test
 from tests.lib import integration_test_suite
+from tests.lib import test_isolation
 import yaml
 
 
@@ -46,6 +47,7 @@ class FakeTest1(base_test.BaseTestClass):
 class SuiteRunnerTest(unittest.TestCase):
 
   def setUp(self):
+    test_isolation.preserve_global_state(self)
     self.tmp_dir = tempfile.mkdtemp()
 
   def tearDown(self):

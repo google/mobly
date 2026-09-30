@@ -38,6 +38,10 @@ extend-exclude = '.*\/venv/.*|.*\/\.tox\/.*'
 python_classes = [ "*Test",]
 python_files = [ "*_test.py",]
 testpaths = [ "tests/mobly",]
+filterwarnings = [
+    "error::ResourceWarning",
+    "error::pytest.PytestUnraisableExceptionWarning",
+]
 
 [tool.setuptools.packages.find]
 exclude = [ "tests",]

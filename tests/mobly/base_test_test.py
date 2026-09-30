@@ -31,6 +31,7 @@ from mobly import signals
 from tests.lib import utils
 from tests.lib import mock_controller
 from tests.lib import mock_second_controller
+from tests.lib import test_isolation
 import yaml
 
 MSG_EXPECTED_EXCEPTION = 'This is an expected exception.'
@@ -51,6 +52,7 @@ class SomeError(Exception):
 class BaseTestTest(unittest.TestCase):
 
   def setUp(self):
+    test_isolation.preserve_global_state(self)
     self.tmp_dir = tempfile.mkdtemp()
     self.mock_test_cls_configs = config_parser.TestRunConfig()
     self.summary_file = os.path.join(self.tmp_dir, 'summary.yaml')

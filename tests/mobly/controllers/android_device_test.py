@@ -43,11 +43,15 @@ class AndroidDeviceTest(unittest.TestCase):
   """
 
   def setUp(self):
-    # Set log_path to logging since mobly logger setup is not called.
-    if not hasattr(logging, 'log_path'):
-      setattr(logging, 'log_path', '/tmp/logs')
     # Creates a temp dir to be used by tests in this test class.
     self.tmp_dir = tempfile.mkdtemp()
+    # Set log_path to logging since mobly logger setup is not called. Scope it
+    # to this test so it never points at another test's (deleted) directory.
+    log_path_patcher = mock.patch.object(
+        logging, 'log_path', self.tmp_dir, create=True
+    )
+    log_path_patcher.start()
+    self.addCleanup(log_path_patcher.stop)
 
   def tearDown(self):
     """Removes the temp dir."""
@@ -1347,6 +1351,7 @@ class AndroidDeviceTest(unittest.TestCase):
     ad = android_device.AndroidDevice(serial='1')
     old_path = ad.log_path
     new_log_path = tempfile.mkdtemp()
+    self.addCleanup(shutil.rmtree, new_log_path, ignore_errors=True)
     ad.log_path = new_log_path
     self.assertTrue(os.path.exists(new_log_path))
     self.assertFalse(os.path.exists(old_path))
@@ -1367,6 +1372,7 @@ class AndroidDeviceTest(unittest.TestCase):
     ad = android_device.AndroidDevice(serial='1')
     old_path = ad.log_path
     new_log_path = tempfile.mkdtemp()
+    self.addCleanup(shutil.rmtree, new_log_path, ignore_errors=True)
     ad.log_path = new_log_path
     self.assertTrue(os.path.exists(new_log_path))
     self.assertFalse(os.path.exists(old_path))
@@ -1412,6 +1418,7 @@ class AndroidDeviceTest(unittest.TestCase):
     ad = android_device.AndroidDevice(serial='1')
     ad.services.logcat.start()
     new_log_path = tempfile.mkdtemp()
+    self.addCleanup(shutil.rmtree, new_log_path, ignore_errors=True)
     expected_msg = '.* Cannot change `log_path` when there is service running.'
     with self.assertRaisesRegex(android_device.Error, expected_msg):
       ad.log_path = new_log_path
@@ -1437,6 +1444,7 @@ class AndroidDeviceTest(unittest.TestCase):
   ):
     ad = android_device.AndroidDevice(serial='1')
     new_log_path = tempfile.mkdtemp()
+    self.addCleanup(shutil.rmtree, new_log_path, ignore_errors=True)
     new_file_path = os.path.join(new_log_path, 'file.txt')
     with io.open(new_file_path, 'w', encoding='utf-8') as f:
       f.write('hahah.')
@@ -1713,8 +1721,12 @@ class AndroidDeviceTest(unittest.TestCase):
   )
   @mock.patch('mobly.utils.get_available_host_port')
   @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
   def test_AndroidDevice_snippet_cleanup(
       self,
+      stop_proc_mock,
+      start_proc_mock,
       open_logcat_mock,
       MockGetPort,
       MockSnippetClient,
@@ -1726,6 +1738,7 @@ class AndroidDeviceTest(unittest.TestCase):
     ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
     ad.unload_snippet('snippet')
     self.assertFalse(hasattr(ad, 'snippet'))
+    ad.services.stop_all()
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',

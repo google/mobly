@@ -34,6 +34,7 @@ from tests.lib import integration2_test
 from tests.lib import integration3_test
 from tests.lib import multiple_subclasses_module
 from tests.lib import terminated_test
+from tests.lib import test_isolation
 import yaml
 
 
@@ -43,6 +44,7 @@ class TestRunnerTest(unittest.TestCase):
   """
 
   def setUp(self):
+    test_isolation.preserve_global_state(self)
     self.tmp_dir = tempfile.mkdtemp()
     self.base_mock_test_config = config_parser.TestRunConfig()
     self.base_mock_test_config.testbed_name = 'SampleTestBed'
