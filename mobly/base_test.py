@@ -859,9 +859,7 @@ class BaseTestClass:
       elif tr_record.result == records.TestResultEnums.TEST_RESULT_SKIP:
         self._exec_procedure_func(self._on_skip, tr_record)
     finally:
-      logging.info(
-          RESULT_LINE_TEMPLATE, tr_record.test_name, tr_record.result
-      )
+      logging.info(RESULT_LINE_TEMPLATE, tr_record.test_name, tr_record.result)
       self.results.add_record(tr_record)
       self.summary_writer.dump(
           tr_record.to_dict(), records.TestSummaryEntryType.RECORD
