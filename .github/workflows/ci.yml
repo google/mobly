@@ -8,6 +8,7 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
