@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from concurrent import futures
+import datetime
 import io
 import logging
 import multiprocessing
@@ -105,6 +106,29 @@ class UtilsTest(unittest.TestCase):
       return ['python', '-c', 'exec("%s")' % r'\r\n'.join(python_code)]
     else:
       return ['sleep', str(wait_secs)]
+
+  def test_epoch_to_human_time_out_of_range(self):
+    for epoch_time in (10**30, -(10**30), 10**400, -(10**400)):
+      with self.subTest(epoch_time=epoch_time):
+        self.assertIsNone(utils.epoch_to_human_time(epoch_time))
+
+  def test_epoch_to_human_time_platform_errors(self):
+    for error in (ValueError, OverflowError, OSError):
+      with self.subTest(error=error):
+        with mock.patch.object(utils.datetime, 'datetime') as mock_datetime:
+          mock_datetime.fromtimestamp.side_effect = error('invalid timestamp')
+          self.assertIsNone(utils.epoch_to_human_time(1000))
+
+  def test_epoch_to_human_time_valid_and_non_integer(self):
+    epoch_time = 1600000000000
+    self.assertEqual(
+        utils.epoch_to_human_time(epoch_time),
+        datetime.datetime.fromtimestamp(epoch_time / 1000).strftime(
+            '%m-%d-%Y %H:%M:%S '
+        ),
+    )
+    for epoch_time in (None, '1000', 1000.5):
+      self.assertIsNone(utils.epoch_to_human_time(epoch_time))
 
   @unittest.skipIf(
       os.name == 'nt',

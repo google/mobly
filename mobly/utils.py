@@ -163,7 +163,7 @@ def epoch_to_human_time(epoch_time):
     try:
       d = datetime.datetime.fromtimestamp(epoch_time / 1000)
       return d.strftime('%m-%d-%Y %H:%M:%S ')
-    except ValueError:
+    except (ValueError, OverflowError, OSError):
       return None
 
 
