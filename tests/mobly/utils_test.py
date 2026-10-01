@@ -17,11 +17,13 @@ import io
 import logging
 import multiprocessing
 import os
+import pathlib
 import platform
 import shutil
 import signal
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -866,6 +868,22 @@ class UtilsTest(unittest.TestCase):
     self.assertEqual(utils.cli_cmd_to_string(cmd), "'\"adb\"' 'a b' c//")
     cmd = 'adb -s meme do something ab_cd'
     self.assertEqual(utils.cli_cmd_to_string(cmd), cmd)
+
+  def test_cli_cmd_to_string_pathlike_and_bytes(self):
+    self.assertEqual(utils.cli_cmd_to_string(pathlib.Path('adb')), 'adb')
+    self.assertEqual(utils.cli_cmd_to_string(b'adb shell'), 'adb shell')
+    self.assertEqual(
+        utils.cli_cmd_to_string([pathlib.Path('adb'), b'a b', 'shell']),
+        "adb 'a b' shell",
+    )
+
+  def test_run_command_with_pathlike_executable(self):
+    ret, out, err = utils.run_command(
+        [pathlib.Path(sys.executable), '-c', 'print("ok")'], text=True
+    )
+    self.assertEqual(ret, 0)
+    self.assertEqual(out.strip(), 'ok')
+    self.assertEqual(err, '')
 
   def test_get_settable_properties(self):
     class SomeClass:

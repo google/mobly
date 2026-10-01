@@ -668,15 +668,15 @@ def cli_cmd_to_string(args):
   """Converts a cmd arg list to string.
 
   Args:
-    args: list of strings, the arguments of a command.
+    args: A string, bytes, path-like object, or a sequence of these command
+      arguments, as accepted by subprocess.Popen.
 
   Returns:
     String representation of the command.
   """
-  if isinstance(args, str):
-    # Return directly if it's already a string.
-    return args
-  return ' '.join([shlex.quote(arg) for arg in args])
+  if isinstance(args, (str, bytes, os.PathLike)):
+    return os.fsdecode(args)
+  return ' '.join([shlex.quote(os.fsdecode(arg)) for arg in args])
 
 
 def get_settable_properties(cls):
