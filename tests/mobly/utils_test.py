@@ -25,6 +25,7 @@ import subprocess
 import tempfile
 import threading
 import time
+import types
 import unittest
 from unittest import mock
 
@@ -939,6 +940,28 @@ class UtilsTest(unittest.TestCase):
     self.assertEqual(len(subclasses), 2)
     self.assertIn(multiple_subclasses_module.Subclass1Runner, subclasses)
     self.assertIn(multiple_subclasses_module.Subclass2Runner, subclasses)
+
+  def test_find_subclasses_in_module_ignores_class_aliases(self):
+    module = types.ModuleType('aliased_test')
+    module.Test = integration_test.IntegrationTest
+    module.Alias = integration_test.IntegrationTest
+    self.assertEqual(
+        utils.find_subclasses_in_module([base_test.BaseTestClass], module),
+        [integration_test.IntegrationTest],
+    )
+    self.assertIs(
+        utils.find_subclass_in_module(base_test.BaseTestClass, module),
+        integration_test.IntegrationTest,
+    )
+
+  def test_find_subclasses_in_module_deduplicates_matching_bases(self):
+    self.assertEqual(
+        utils.find_subclasses_in_module(
+            [base_test.BaseTestClass, object, base_test.BaseTestClass],
+            integration_test,
+        ),
+        [integration_test.IntegrationTest],
+    )
 
   def test_find_subclass_in_module_when_one_subclass(self):
     subclass = utils.find_subclass_in_module(

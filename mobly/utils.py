@@ -703,14 +703,15 @@ def find_subclasses_in_module(base_classes, module):
     module: module, the module to look for the subclasses in.
 
   Returns:
-    A list of all of the subclasses found in the module.
+    A list of distinct subclasses found in the module, in discovery order.
   """
   subclasses = []
   for _, module_member in module.__dict__.items():
-    if inspect.isclass(module_member):
+    if inspect.isclass(module_member) and module_member not in subclasses:
       for base_class in base_classes:
         if issubclass(module_member, base_class):
           subclasses.append(module_member)
+          break
   return subclasses
 
 
