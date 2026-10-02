@@ -137,23 +137,6 @@ class SnippetClientV2Test(unittest.TestCase):
     self.client = snippet_client_v2.SnippetClientV2(
         MOCK_PACKAGE_NAME, device, config
     )
-    self.addCleanup(self._disarm_client_finalizer, self.client)
-
-  def _disarm_client_finalizer(self, client):
-    """Prevents the client's `__del__` from running real adb commands.
-
-    `ClientBase.__del__` calls `close_connection`, which runs
-    `adb forward --list` if `host_port` is set. The adb mocks of a test are only
-    active while the test method runs, but the client may be garbage collected
-    at any later point, e.g. in the middle of another test or at interpreter
-    shutdown. Clearing the host ports makes the finalizer a no-op.
-
-    Args:
-      client: SnippetClientV2, the client created by this test.
-    """
-    for c in (client, client._event_client):
-      if c is not None:
-        c.host_port = None
 
   def _make_client_with_extra_adb_properties(self, extra_properties):
     mock_properties = mock_android_device.DEFAULT_MOCK_PROPERTIES.copy()
@@ -1095,8 +1078,8 @@ class SnippetClientV2Test(unittest.TestCase):
     event_client = self.client._event_client
 
     self.client.stop()
-    event_client.__del__()
-    self.client.__del__()
+    event_client.close_connection()
+    self.client.close_connection()
 
     self.assertIsNone(self.client._event_client)
     self.device.adb.mock_forward_func.assert_called_once_with(
