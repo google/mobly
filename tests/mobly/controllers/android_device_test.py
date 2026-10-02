@@ -1713,8 +1713,12 @@ class AndroidDeviceTest(unittest.TestCase):
   )
   @mock.patch('mobly.utils.get_available_host_port')
   @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
   def test_AndroidDevice_snippet_cleanup(
       self,
+      stop_proc_mock,
+      start_proc_mock,
       open_logcat_mock,
       MockGetPort,
       MockSnippetClient,
@@ -1726,6 +1730,7 @@ class AndroidDeviceTest(unittest.TestCase):
     ad.load_snippet('snippet', MOCK_SNIPPET_PACKAGE_NAME)
     ad.unload_snippet('snippet')
     self.assertFalse(hasattr(ad, 'snippet'))
+    ad.services.stop_all()
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
