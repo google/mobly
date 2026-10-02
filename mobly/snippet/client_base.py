@@ -90,9 +90,6 @@ class ClientBase(abc.ABC):
     self._lock = threading.Lock()
     self._event_client = None
 
-  def __del__(self):
-    self.close_connection()
-
   def initialize(self):
     """Initializes the snippet client to interact with the remote device.
 
