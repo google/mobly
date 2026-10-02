@@ -84,10 +84,7 @@ class JsonRpcClientBaseTest(jsonrpc_client_test_base.JsonRpcClientTestBase):
     mock_conn = mock.MagicMock()
     client.clear_host_port = mock.MagicMock()
     client._conn = mock_conn
-    # Explicitly making the second side_effect noop to avoid uncaught exception
-    # when `__del__` is called after the test is done, which triggers
-    # `disconnect`.
-    mock_conn.close.side_effect = [Exception('ha'), None]
+    mock_conn.close.side_effect = Exception('ha')
     with self.assertRaisesRegex(Exception, 'ha'):
       client.disconnect()
     client.clear_host_port.assert_called_once_with()

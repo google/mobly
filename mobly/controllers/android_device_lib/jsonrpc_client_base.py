@@ -127,9 +127,6 @@ class JsonRpcClientBase(abc.ABC):
     self._event_client = None
     self.verbose_logging = True
 
-  def __del__(self):
-    self.disconnect()
-
   # Methods to be implemented by subclasses.
 
   def start_app_and_connect(self):

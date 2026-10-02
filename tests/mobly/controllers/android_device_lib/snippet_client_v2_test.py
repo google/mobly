@@ -1078,8 +1078,8 @@ class SnippetClientV2Test(unittest.TestCase):
     event_client = self.client._event_client
 
     self.client.stop()
-    event_client.__del__()
-    self.client.__del__()
+    event_client.close_connection()
+    self.client.close_connection()
 
     self.assertIsNone(self.client._event_client)
     self.device.adb.mock_forward_func.assert_called_once_with(
