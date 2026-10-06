@@ -760,6 +760,21 @@ INSTRUMENTATION_CODE: 0"""
         instrumentation_output, expected_has_error=True
     )
 
+  def test_run_instrumentation_test_with_crash_before_status_code(self):
+    instrumentation_output = """\
+INSTRUMENTATION_STATUS: class=com.my.package.test.BasicTest
+INSTRUMENTATION_STATUS: test=crashTest
+INSTRUMENTATION_RESULT: shortMsg=Process crashed.
+INSTRUMENTATION_CODE: 0"""
+    expected_executed = [
+        ('com.my.package.test.BasicTest#crashTest', signals.TestFailure),
+    ]
+    self.assert_run_instrumentation_test(
+        instrumentation_output,
+        expected_executed=expected_executed,
+        expected_has_error=True,
+    )
+
   def test_run_instrumentation_test_with_runner_teardown_crash(self):
     instrumentation_output = """\
 INSTRUMENTATION_STATUS: numtests=1

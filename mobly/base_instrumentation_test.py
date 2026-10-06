@@ -795,7 +795,7 @@ class InstrumentationTestMixin:
       instrumentation_block.set_key(
           _InstrumentationStructurePrefixes.RESULT, line
       )
-      return self._parse_result_line(
+      return self._parse_result_block_line(
           self._transition_instrumentation_block(
               instrumentation_block,
               new_state=_InstrumentationBlockStates.RESULT,
