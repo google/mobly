@@ -60,6 +60,14 @@ _STOP_CMD = (
 # The default timeout for running `_STOP_CMD`.
 _STOP_CMD_TIMEOUT_SEC = 30
 
+# The command template to list, in a single adb round trip, the packages
+# installed for a user together with all the instrumentations on the device.
+# `&&` preserves the previous failure semantics: if listing packages fails,
+# the instrumentation listing is skipped and the error is surfaced as before.
+_LIST_PACKAGES_AND_INSTRUMENTATION_CMD = (
+    'pm list packages --user {user} && pm list instrumentation'
+)
+
 # Major version of the launch and communication protocol being used by this
 # client.
 # Incrementing this means that compatibility with clients using the older
@@ -245,10 +253,16 @@ class SnippetClientV2(client_base.ClientBase):
       errors.ServerStartPreCheckError: if the server app is not installed
         for the current user.
     """
-    # Validate that the Mobly Snippet app is installed for the current user.
+    # Fetch the list of packages installed for the current user and the list
+    # of instrumentations in a single adb round trip. Every line of the output
+    # is unambiguously prefixed with either `package:` or `instrumentation:`,
+    # so the checks below can grep the combined output just like they used to
+    # grep the output of the individual commands.
     out = self._adb.shell(
-        f'pm list packages --user {self.user_id} {self.package}'
+        _LIST_PACKAGES_AND_INSTRUMENTATION_CMD.format(user=self.user_id)
     )
+
+    # Validate that the Mobly Snippet app is installed for the current user.
     if not utils.grep(f'^package:{self.package}$', out):
       raise errors.ServerStartPreCheckError(
           self._device,
@@ -256,7 +270,6 @@ class SnippetClientV2(client_base.ClientBase):
       )
 
     # Validate that the app is instrumented.
-    out = self._adb.shell('pm list instrumentation')
     matched_out = utils.grep(
         f'^instrumentation:{self.package}/{_INSTRUMENTATION_RUNNER_PACKAGE}',
         out,
@@ -273,7 +286,6 @@ class SnippetClientV2(client_base.ClientBase):
     # Validate that the instrumentation target is installed if it's not the
     # same as the snippet package.
     if target_name != self.package:
-      out = self._adb.shell(f'pm list package --user {self.user_id}')
       if not utils.grep(f'^package:{target_name}$', out):
         raise errors.ServerStartPreCheckError(
             self._device,
@@ -347,12 +359,22 @@ class SnippetClientV2(client_base.ClientBase):
 
   def _get_persisting_command(self):
     """Returns the path of a persisting command if available."""
-    for command in [_SETSID_COMMAND, _NOHUP_COMMAND]:
-      try:
-        if command in self._adb.shell(['which', command]).decode('utf-8'):
-          return command
-      except adb.AdbError:
-        continue
+    candidates = [_SETSID_COMMAND, _NOHUP_COMMAND]
+    # Probe all candidates in a single adb round trip. `which` prints the
+    # resolved path of every command it finds, one per line, and exits with a
+    # non-zero code if any of them is missing. In that case adb raises an
+    # AdbError, but the stdout attached to it still lists the commands that
+    # were found, so inspect it instead of giving up.
+    try:
+      out = self._adb.shell(['which', *candidates])
+    except adb.AdbError as e:
+      out = e.stdout
+    if isinstance(out, bytes):
+      out = out.decode('utf-8')
+    lines = (out or '').splitlines()
+    for command in candidates:
+      if any(command in line for line in lines):
+        return command
 
     self.log.warning(
         'No %s and %s commands available to launch instrument '

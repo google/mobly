@@ -166,13 +166,16 @@ def _validate_device_existence(serials):
     serials: list of strings, the serials of all the devices that are expected
       to exist.
   """
-  valid_ad_identifiers = (
-      list_adb_devices()
-      + list_adb_devices_by_usb_id()
-      + list_fastboot_devices()
-  )
+  # Check the cheapest source first and only spawn the additional
+  # `adb devices -l` / `fastboot devices` subprocesses if some serial is still
+  # unresolved. In the common case this costs a single subprocess.
+  missing = set(serials) - set(list_adb_devices())
+  if missing:
+    missing -= set(list_adb_devices_by_usb_id())
+  if missing:
+    missing -= set(list_fastboot_devices())
   for serial in serials:
-    if serial not in valid_ad_identifiers:
+    if serial in missing:
       raise Error(
           f'Android device serial "{serial}" is specified in '
           'config but is not reachable.'
@@ -534,6 +537,7 @@ class AndroidDevice:
         logging.getLogger(), {'tag': self.debug_tag}
     )
     self._build_info = None
+    self._is_rootable = None
     self._is_rebooting = False
     self.adb = adb.AdbProxy(serial)
     self.fastboot = fastboot.FastbootProxy(serial)
@@ -740,6 +744,7 @@ class AndroidDevice:
       # until the next reboot. This is relatively okay because the
       # `build_info` cache is only minimizes adb commands.
       self._build_info = None
+      self._is_rootable = None
       self._is_rebooting = False
       if self.is_rootable:
         self.root_adb()
@@ -809,19 +814,19 @@ class AndroidDevice:
       A dict with the build info of this Android device, or None if the
       device is in bootloader mode.
     """
+    if self._build_info is not None and not self._is_rebooting:
+      return self._build_info
     if self.is_bootloader:
       self.log.error('Device is in fastboot mode, could not get build info.')
       return
-    if self._build_info is None or self._is_rebooting:
-      info = {}
-      build_info = self.adb.getprops(CACHED_SYSTEM_PROPS)
-      for build_info_constant in BuildInfoConstants:
-        info[build_info_constant.build_info_key] = build_info.get(
-            build_info_constant.system_prop_key, ''
-        )
-      self._build_info = info
-      return info
-    return self._build_info
+    info = {}
+    build_info = self.adb.getprops(CACHED_SYSTEM_PROPS)
+    for build_info_constant in BuildInfoConstants:
+      info[build_info_constant.build_info_key] = build_info.get(
+          build_info_constant.system_prop_key, ''
+      )
+    self._build_info = info
+    return info
 
   @property
   def is_bootloader(self):
@@ -840,7 +845,16 @@ class AndroidDevice:
 
   @property
   def is_rootable(self):
-    return self.is_adb_detectable() and self.build_info['debuggable'] == '1'
+    """True if the device build is debuggable, i.e. `adb root` can succeed.
+
+    The result is cached alongside `build_info` and refreshed after a reboot
+    handled via `handle_reboot`.
+    """
+    if (
+        self._is_rootable is None or self._is_rebooting
+    ) and self.is_adb_detectable():
+      self._is_rootable = self.build_info['debuggable'] == '1'
+    return bool(self._is_rootable)
 
   @functools.cached_property
   def model(self):
