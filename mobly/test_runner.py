@@ -329,9 +329,7 @@ class TestRunner:
         tests_set = set(tests)
         for test_name in test_run_info.tests:
           if test_name not in tests_set:
-            raise Error(
-                'Unknown test method: %s in class %s', (test_name, test.TAG)
-            )
+            raise Error(f'Unknown test method: {test_name} in class {test.TAG}')
           test_names.append(f'{test.TAG}.{test_name}')
       else:
         test_names.extend([f'{test.TAG}.{n}' for n in tests])
