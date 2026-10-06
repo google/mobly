@@ -14,6 +14,7 @@
 
 import logging
 import re
+import shutil
 import subprocess
 import threading
 import time
@@ -114,11 +115,7 @@ def is_adb_available():
   Returns:
     True if adb binary is available in console, False otherwise.
   """
-  ret, out, err = utils.run_command('which adb', shell=True)
-  clean_out = out.decode('utf-8').strip()
-  if clean_out:
-    return True
-  return False
+  return shutil.which('adb') is not None
 
 
 def list_occupied_adb_ports():
