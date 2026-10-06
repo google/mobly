@@ -156,12 +156,15 @@ class TimestampCutoffTest(unittest.TestCase):
 
   def test_is_before_matches_compare_timestamps(self):
     for begin in self.TIMESTAMPS:
-      if not begin:
-        continue
-      cutoff = logcat_processor._TimestampCutoff(begin)
       for ts in self.TIMESTAMPS:
-        expected = LogcatPosition._compare_timestamps(ts, begin) < 0
-        self.assertEqual(cutoff.is_before(ts), expected, (ts, begin))
+        expected = bool(begin) and (
+            LogcatPosition._compare_timestamps(ts, begin) < 0
+        )
+        self.assertEqual(
+            logcat_processor._is_before(ts, begin or None),
+            expected,
+            (ts, begin),
+        )
 
 
 class _FileTestBase(unittest.TestCase):
@@ -266,8 +269,8 @@ class IterLinesTest(_FileTestBase):
     with reader:
       gen = reader.read_lines()
       next(gen)
-      self.assertTrue(reader.is_open)
-    self.assertFalse(reader.is_open)
+      self.assertIsNotNone(reader._file)
+    self.assertIsNone(reader._file)
 
 
 class LineReaderTest(_FileTestBase):
@@ -289,10 +292,10 @@ class LineReaderTest(_FileTestBase):
   def test_reader_opens_lazily_when_file_appears(self):
     with logcat_processor._LineReader(self.log_file) as reader:
       self.assertEqual(list(reader.read_lines()), [])
-      self.assertFalse(reader.is_open)
+      self.assertIsNone(reader._file)
       self._write(SAMPLE_LINES[1] + '\n')
       self.assertEqual(len(list(reader.read_lines())), 1)
-      self.assertTrue(reader.is_open)
+      self.assertIsNotNone(reader._file)
 
   def test_reader_starts_from_offset(self):
     self._write_sample()
@@ -310,7 +313,7 @@ class LineReaderTest(_FileTestBase):
     list(reader.read_lines())
     reader.close()
     reader.close()
-    self.assertFalse(reader.is_open)
+    self.assertIsNone(reader._file)
 
 
 class GetLinesTest(_FileTestBase):

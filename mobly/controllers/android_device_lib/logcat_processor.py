@@ -16,6 +16,7 @@
 import collections
 from collections.abc import Iterable
 import dataclasses
+import functools
 import os
 import queue
 import re
@@ -92,6 +93,7 @@ class LogcatPosition:
     )
 
   @staticmethod
+  @functools.lru_cache(maxsize=1024)
   def _parse_timestamp(t: str) -> tuple[int, int, int, int, int, int, int]:
     """Parses a timestamp into (year, month, day, hr, min, sec, microsec)."""
     if not t:
@@ -279,8 +281,6 @@ class _LineFilter:
   :meth:`LogLine.matches`.
   """
 
-  __slots__ = ('_regex', '_tag', '_tag_mode', '_levels', '_norm_levels')
-
   def __init__(
       self,
       pattern: Optional[Union[str, Pattern[str]]] = None,
@@ -345,42 +345,12 @@ class _LineFilter:
     return True
 
 
-class _TimestampCutoff:
-  """Pre-parsed lower timestamp bound used to skip lines older than `since`.
-
-  ``is_before(ts)`` is equivalent to
-  ``LogcatPosition._compare_timestamps(ts, begin_time) < 0`` but parses
-  ``begin_time`` only once instead of once per scanned line.
-  """
-
-  __slots__ = ('_raw', '_parsed')
-
-  def __init__(self, begin_time: str):
-    self._raw = str(begin_time)
-    try:
-      self._parsed: Optional[tuple[int, ...]] = LogcatPosition._parse_timestamp(
-          begin_time
-      )
-    except (ValueError, IndexError):
-      self._parsed = None
-
-  def is_before(self, timestamp: Optional[str]) -> bool:
-    """Returns True if `timestamp` is chronologically before the cutoff."""
-    if not timestamp:
-      # _compare_timestamps(falsy, truthy) == -1.
-      return True
-    if self._parsed is not None:
-      try:
-        p1 = LogcatPosition._parse_timestamp(timestamp)
-      except (ValueError, IndexError):
-        pass
-      else:
-        p2 = self._parsed
-        if p1[0] == 0 or p2[0] == 0:
-          p1 = (0,) + p1[1:]
-          p2 = (0,) + p2[1:]
-        return p1 < p2
-    return str(timestamp) < self._raw
+def _is_before(timestamp: Optional[str], begin_time: Optional[str]) -> bool:
+  """True if `timestamp` is chronologically before `begin_time` (if set)."""
+  return (
+      begin_time is not None
+      and LogcatPosition._compare_timestamps(timestamp, begin_time) < 0
+  )
 
 
 class _LineReader:
@@ -397,8 +367,6 @@ class _LineReader:
   held longer than necessary.
   """
 
-  __slots__ = ('_file_path', 'offset', '_file')
-
   def __init__(self, file_path: str, offset: int = 0):
     self._file_path = file_path
     self.offset = offset
@@ -409,10 +377,6 @@ class _LineReader:
 
   def __exit__(self, exc_type, exc_val, exc_tb) -> None:
     self.close()
-
-  @property
-  def is_open(self) -> bool:
-    return self._file is not None
 
   def close(self) -> None:
     """Closes the underlying file handle, if any."""
@@ -472,13 +436,12 @@ class _LineReader:
 
 def _resolve_since(
     since: Optional[Union[LogcatPosition, LogLine]],
-) -> tuple[int, Optional[_TimestampCutoff]]:
-  """Converts a `since` argument into (byte_offset, timestamp cutoff)."""
+) -> tuple[int, Optional[str]]:
+  """Converts a `since` argument into (byte_offset, begin_time)."""
   pos = since.position if isinstance(since, LogLine) else since
   offset = pos._byte_offset if pos else 0
   begin_time = pos.timestamp if pos and offset == 0 else None
-  cutoff = _TimestampCutoff(begin_time) if begin_time else None
-  return offset, cutoff
+  return offset, begin_time
 
 
 class LogcatListenerContext:
@@ -543,12 +506,7 @@ class LogcatListenerContext:
       except queue.Full:
         pass
 
-  def _listen_loop(self) -> None:
-    start_offset = (
-        self._position._byte_offset
-        if self._position
-        else LogcatPosition.from_file(self._processor.file_path)._byte_offset
-    )
+  def _listen_loop(self, start_offset: int) -> None:
     stop_event = self._stop_event
     # A single reader (and file handle) is reused for the whole listen session
     # instead of re-opening the file on every poll.
@@ -562,7 +520,16 @@ class LogcatListenerContext:
 
   def __enter__(self) -> 'LogcatListenerContext':
     self._stop_event.clear()
-    self._thread = threading.Thread(target=self._listen_loop, daemon=True)
+    # Snapshot the start offset before the thread starts so that lines
+    # appended right after `listen()` returns are not missed.
+    start_offset = (
+        self._position._byte_offset
+        if self._position
+        else LogcatPosition.from_file(self._processor.file_path)._byte_offset
+    )
+    self._thread = threading.Thread(
+        target=self._listen_loop, args=(start_offset,), daemon=True
+    )
     self._thread.start()
     return self
 
@@ -621,12 +588,12 @@ class LogcatProcessor:
           ' tail() instead.'
       )
 
-    offset, cutoff = _resolve_since(since)
+    offset, begin_time = _resolve_since(since)
     line_filter = _LineFilter(pattern=pattern, tag=tag, level=level)
 
     results: list[LogLine] = []
     for _, parsed in self._iter_lines(offset=offset):
-      if cutoff is not None and cutoff.is_before(parsed.timestamp):
+      if _is_before(parsed.timestamp, begin_time):
         continue
       if line_filter.matches(parsed):
         results.append(parsed)
@@ -726,7 +693,7 @@ class LogcatProcessor:
       return []
 
     deadline = time.perf_counter() + timeout_sec
-    offset, cutoff = _resolve_since(since)
+    offset, begin_time = _resolve_since(since)
 
     if in_order:
       matched_lines: list[LogLine] = []
@@ -742,15 +709,15 @@ class LogcatProcessor:
               self._wait_on_reader(
                   reader,
                   _LineFilter(pattern=pat),
-                  cutoff,
+                  begin_time,
                   deadline,
                   remaining,
                   pat,
               )
           )
           # Subsequent patterns continue right after the matched line; the
-          # timestamp cutoff only bounds the initial scan.
-          cutoff = None
+          # timestamp bound only applies to the initial scan.
+          begin_time = None
       return matched_lines
 
     unmatched: list[tuple[int, Union[str, Pattern[str]], _LineFilter]] = [
@@ -761,7 +728,7 @@ class LogcatProcessor:
     with _LineReader(self._file_path, offset) as reader:
       while time.perf_counter() < deadline:
         for _, parsed in reader.read_lines():
-          if cutoff is not None and cutoff.is_before(parsed.timestamp):
+          if _is_before(parsed.timestamp, begin_time):
             continue
           for entry in list(unmatched):
             if entry[2].matches(parsed):
@@ -781,7 +748,7 @@ class LogcatProcessor:
       self,
       reader: _LineReader,
       line_filter: _LineFilter,
-      cutoff: Optional[_TimestampCutoff],
+      begin_time: Optional[str],
       deadline: float,
       timeout_sec: float,
       pattern: Union[str, Pattern[str]],
@@ -789,7 +756,7 @@ class LogcatProcessor:
     """Polls `reader` until a line matches `line_filter` or `deadline` passes."""
     while time.perf_counter() < deadline:
       for _, parsed in reader.read_lines():
-        if cutoff is not None and cutoff.is_before(parsed.timestamp):
+        if _is_before(parsed.timestamp, begin_time):
           continue
         if line_filter.matches(parsed):
           return parsed
@@ -808,12 +775,12 @@ class LogcatProcessor:
   ) -> tuple[LogLine, int]:
     """Waits for a single pattern; returns (line, offset after that line)."""
     deadline = time.perf_counter() + timeout_sec
-    offset, cutoff = _resolve_since(since)
+    offset, begin_time = _resolve_since(since)
     with _LineReader(self._file_path, offset) as reader:
       matched = self._wait_on_reader(
           reader,
           _LineFilter(pattern=pattern),
-          cutoff,
+          begin_time,
           deadline,
           timeout_sec,
           pattern,
