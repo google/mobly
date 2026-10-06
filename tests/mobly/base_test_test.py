@@ -3279,6 +3279,32 @@ class BaseTestTest(unittest.TestCase):
         'abort class in teardown',
     )
 
+  def test_abort_class_in_teardown_test_preserves_expect_failure(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_1(self):
+        expects.expect_true(False, MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
+
+      def test_2(self):
+        never_call()
+
+      def teardown_test(self):
+        asserts.abort_class('abort class in teardown')
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['test_1', 'test_2'])
+    self.assertEqual(len(bt_cls.results.failed), 1)
+    self.assertEqual(len(bt_cls.results.error), 0)
+    self.assertEqual(len(bt_cls.results.skipped), 1)
+    actual_record = bt_cls.results.failed[0]
+    self.assertEqual(actual_record.test_name, 'test_1')
+    self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+    self.assertEqual(actual_record.extras, MOCK_EXTRA)
+    self.assertEqual(
+        actual_record.extra_errors['teardown_test'].details,
+        'abort class in teardown',
+    )
+
   def test_abort_all_in_teardown_test_preserves_test_failure(self):
     class MockBaseTest(base_test.BaseTestClass):
 
