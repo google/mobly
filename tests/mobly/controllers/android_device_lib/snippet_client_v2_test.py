@@ -68,6 +68,14 @@ class _MockAdbProxy(mock_android_device.MockAdbProxy):
     if f'am instrument --user 0 -w -e action stop {MOCK_SERVER_PATH}' in args:
       return b'OK (0 tests)'
 
+    # Emulate a real shell for commands chained with `&&`: run each part
+    # through the base class and concatenate their outputs.
+    if args and isinstance(args[0], str) and ' && ' in args[0]:
+      return b'\n'.join(
+          super(_MockAdbProxy, self).shell(part, **kwargs)
+          for part in args[0].split(' && ')
+      )
+
     # For other commands, hand it over to the base class.
     return super().shell(*args, **kwargs)
 
@@ -424,6 +432,11 @@ class SnippetClientV2Test(unittest.TestCase):
     """Tests that app checker runs normally when app installed correctly."""
     self._make_client()
     self.client._validate_snippet_app_on_device()
+    # Both the package and the instrumentation checks are served by a single
+    # adb shell round trip.
+    self.adb.mock_shell_func.assert_called_once_with(
+        f'pm list packages --user {MOCK_USER_ID} && pm list instrumentation'
+    )
 
   def test_check_app_installed_fail_app_not_installed(self):
     """Tests that app checker fails without installing app."""
@@ -431,6 +444,7 @@ class SnippetClientV2Test(unittest.TestCase):
     expected_msg = f'.* {MOCK_PACKAGE_NAME} is not installed.'
     with self.assertRaisesRegex(errors.ServerStartPreCheckError, expected_msg):
       self.client._validate_snippet_app_on_device()
+    self.assertEqual(self.adb.mock_shell_func.call_count, 1)
 
   def test_check_app_installed_fail_not_instrumented(self):
     """Tests that app checker fails without instrumenting app."""
@@ -440,6 +454,7 @@ class SnippetClientV2Test(unittest.TestCase):
     )
     with self.assertRaisesRegex(errors.ServerStartPreCheckError, expected_msg):
       self.client._validate_snippet_app_on_device()
+    self.assertEqual(self.adb.mock_shell_func.call_count, 1)
 
   def test_check_app_installed_fail_instrumentation_not_installed(self):
     """Tests that app checker fails without installing instrumentation."""
@@ -457,6 +472,30 @@ class SnippetClientV2Test(unittest.TestCase):
     expected_msg = '.* Instrumentation target not.installed is not installed.'
     with self.assertRaisesRegex(errors.ServerStartPreCheckError, expected_msg):
       self.client._validate_snippet_app_on_device()
+    self.assertEqual(self.adb.mock_shell_func.call_count, 1)
+
+  def test_check_app_installed_with_separate_target_package(self):
+    """Tests the checker passes with a separately installed target package.
+
+    The target package check is served by the same single adb shell call used
+    for the package and instrumentation checks.
+    """
+    self._make_client(
+        _MockAdbProxy(
+            installed_packages=['com.target.package'],
+            instrumented_packages=[
+                (
+                    MOCK_PACKAGE_NAME,
+                    snippet_client_v2._INSTRUMENTATION_RUNNER_PACKAGE,
+                    'com.target.package',
+                )
+            ],
+        )
+    )
+    self.client._validate_snippet_app_on_device()
+    self.adb.mock_shell_func.assert_called_once_with(
+        f'pm list packages --user {MOCK_USER_ID} && pm list instrumentation'
+    )
 
   def test_disable_hidden_api_normally(self):
     """Tests the disabling hidden api process works normally."""
@@ -520,7 +559,7 @@ class SnippetClientV2Test(unittest.TestCase):
         [mock.call(start_cmd_list, shell=False)],
     )
     self.assertEqual(self.client.device_port, 1234)
-    mock_adb.assert_called_with(['which', 'setsid'])
+    mock_adb.assert_called_once_with(['which', 'setsid', 'nohup'])
 
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
@@ -569,7 +608,7 @@ class SnippetClientV2Test(unittest.TestCase):
         mock_start_subprocess.call_args_list,
         [mock.call(start_cmd_list, shell=False)],
     )
-    mock_adb.assert_called_with(['which', 'setsid'])
+    mock_adb.assert_called_once_with(['which', 'setsid', 'nohup'])
     self.assertEqual(self.client.device_port, 1234)
 
   @mock.patch(
@@ -601,9 +640,8 @@ class SnippetClientV2Test(unittest.TestCase):
         mock_start_subprocess.call_args_list,
         [mock.call(start_cmd_list, shell=False)],
     )
-    mock_adb.assert_has_calls(
-        [mock.call(['which', 'setsid']), mock.call(['which', 'nohup'])]
-    )
+    # Both persisting commands are probed with a single `which` call.
+    mock_adb.assert_called_once_with(['which', 'setsid', 'nohup'])
     self.assertEqual(self.client.device_port, 1234)
 
   @mock.patch(
@@ -615,14 +653,18 @@ class SnippetClientV2Test(unittest.TestCase):
     self._make_client()
     self._mock_server_process_starting_response(mock_start_subprocess)
 
-    def _mocked_shell(arg):
-      if 'nohup' in arg:
-        return b'nohup'
-      raise adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code')
-
-    self.client._adb.shell = _mocked_shell
+    # Emulate toybox `which setsid nohup` on a device without setsid: the
+    # resolved path of nohup is printed, but the exit code is non-zero because
+    # one of the arguments was not found, so adb raises an AdbError.
+    mock_shell = mock.Mock(
+        side_effect=adb.AdbError(
+            'cmd', stdout=b'/system/bin/nohup\n', stderr=b'', ret_code=1
+        )
+    )
+    self.client._adb.shell = mock_shell
 
     self.client.start_server()
+    mock_shell.assert_called_once_with(['which', 'setsid', 'nohup'])
     start_cmd_list = [
         'adb',
         'shell',
@@ -646,13 +688,15 @@ class SnippetClientV2Test(unittest.TestCase):
     self._make_client()
     self._mock_server_process_starting_response(mock_start_subprocess)
 
-    def _mocked_shell(arg):
-      if 'setsid' in arg:
-        return b'setsid'
-      raise adb.AdbError('cmd', 'stdout', 'stderr', 'ret_code')
-
-    self.client._adb.shell = _mocked_shell
+    # Emulate toybox `which setsid nohup` on a device without nohup.
+    mock_shell = mock.Mock(
+        side_effect=adb.AdbError(
+            'cmd', stdout=b'/system/bin/setsid\n', stderr=b'', ret_code=1
+        )
+    )
+    self.client._adb.shell = mock_shell
     self.client.start_server()
+    mock_shell.assert_called_once_with(['which', 'setsid', 'nohup'])
     start_cmd_list = [
         'adb',
         'shell',
@@ -666,6 +710,58 @@ class SnippetClientV2Test(unittest.TestCase):
         [mock.call(start_cmd_list, shell=False)],
     )
     self.assertEqual(self.client.device_port, 1234)
+
+  def test_get_persisting_command_prefers_setsid_when_both_available(self):
+    """Tests setsid is preferred over nohup, probed with a single call."""
+    self._make_client()
+    mock_shell = mock.Mock(
+        return_value=b'/system/bin/setsid\n/system/bin/nohup\n'
+    )
+    self.client._adb.shell = mock_shell
+    self.assertEqual(self.client._get_persisting_command(), 'setsid')
+    mock_shell.assert_called_once_with(['which', 'setsid', 'nohup'])
+
+  def test_get_persisting_command_falls_back_to_nohup(self):
+    """Tests nohup is picked from the stdout of a failing `which` call.
+
+    toybox `which` exits with a non-zero code when any argument is missing,
+    which makes adb raise an AdbError; the resolved commands must still be
+    read from the stdout attached to the error.
+    """
+    self._make_client()
+    mock_shell = mock.Mock(
+        side_effect=adb.AdbError(
+            'cmd', stdout=b'/system/bin/nohup\n', stderr=b'', ret_code=1
+        )
+    )
+    self.client._adb.shell = mock_shell
+    self.assertEqual(self.client._get_persisting_command(), 'nohup')
+    mock_shell.assert_called_once_with(['which', 'setsid', 'nohup'])
+
+  def test_get_persisting_command_none_available(self):
+    """Tests an empty string is returned when neither command exists."""
+    self._make_client()
+    mock_shell = mock.Mock(
+        side_effect=adb.AdbError('cmd', stdout=b'', stderr=b'', ret_code=1)
+    )
+    self.client._adb.shell = mock_shell
+    self.assertEqual(self.client._get_persisting_command(), '')
+    mock_shell.assert_called_once_with(['which', 'setsid', 'nohup'])
+
+  def test_get_persisting_command_which_not_found(self):
+    """Tests an empty string is returned when `which` itself is missing."""
+    self._make_client()
+    mock_shell = mock.Mock(
+        side_effect=adb.AdbError(
+            'cmd',
+            stdout=b'',
+            stderr=b'/system/bin/sh: which: not found\n',
+            ret_code=127,
+        )
+    )
+    self.client._adb.shell = mock_shell
+    self.assertEqual(self.client._get_persisting_command(), '')
+    mock_shell.assert_called_once_with(['which', 'setsid', 'nohup'])
 
   @mock.patch(
       'mobly.controllers.android_device_lib.snippet_client_v2.'
