@@ -64,7 +64,7 @@ def create(configs):
         path_count=len(config[KEY_PATHS])
     )
     attenuation_device.model = attenuator_model
-    instances = attenuation_device.open(config[KEY_ADDRESS], config[KEY_PORT])
+    attenuation_device.open(config[KEY_ADDRESS], config[KEY_PORT])
     for idx, path_name in enumerate(config[KEY_PATHS]):
       path = AttenuatorPath(attenuation_device, idx=idx, name=path_name)
       objs.append(path)
@@ -94,7 +94,7 @@ def _validate_config(config):
   required_keys = [KEY_ADDRESS, KEY_MODEL, KEY_PORT, KEY_PATHS]
   for key in required_keys:
     if key not in config:
-      raise Error("Required key %s missing from config %s", (key, config))
+      raise Error(f"Required key {key!r} missing from config {config}")
 
 
 class AttenuatorPath:
