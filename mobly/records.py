@@ -16,7 +16,6 @@
 import copy
 import enum
 import functools
-import logging
 import threading
 import time
 import traceback
@@ -225,6 +224,8 @@ class ExceptionRecord:
   Attributes:
     exception: Exception object, the original Exception.
     type: string, type name of the exception object.
+    details: string, the `details` of a TestSignal, or the string form of a
+      regular exception.
     stacktrace: string, stacktrace of the Exception.
     extras: optional serializable, this corresponds to the
       `TestSignal.extras` field.
@@ -249,18 +250,10 @@ class ExceptionRecord:
       )
     # Populate fields based on the type of the termination signal.
     if self.is_test_signal:
-      self._set_details(e.details)
+      self.details = str(e.details)
       self.extras = e.extras
     else:
-      self._set_details(e)
-
-  def _set_details(self, content):
-    """Sets the `details` field.
-
-    Args:
-      content: the content to extract details from.
-    """
-    self.details = str(content)
+      self.details = str(e)
 
   def to_dict(self):
     result = {}

@@ -585,7 +585,7 @@ def wait_for_standing_subprocess(proc, timeout=None):
   indefinitely. See http://go/pylib/subprocess.html#subprocess.Popen.wait
 
   Args:
-    p: Subprocess to wait for.
+    proc: Subprocess to wait for.
     timeout: An integer number of seconds to wait before timing out.
   """
   proc.wait(timeout)
