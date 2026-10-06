@@ -20,7 +20,7 @@ from mobly.controllers import android_device
 from mobly.controllers.android_device_lib import jsonrpc_shell_base
 
 
-class JsonRpcClientBaseTest(unittest.TestCase):
+class JsonRpcShellBaseTest(unittest.TestCase):
   """Unit tests for mobly.controllers.android_device_lib.jsonrpc_shell_base."""
 
   @mock.patch.object(android_device, 'list_adb_devices')
