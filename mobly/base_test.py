@@ -536,26 +536,40 @@ class BaseTestClass:
     with self._log_test_stage(STAGE_NAME_TEARDOWN_TEST):
       self.teardown_test()
 
-  def _exec_teardown_test(self, test_name, tr_record):
-    """Executes _teardown_test and records any errors on the test record."""
+  def _exec_teardown_test(self, test_name, tr_record, abort_signal):
+    """Runs teardown_test after the test's own outcome has been recorded.
+
+    Anything raised by teardown_test is added to the record without
+    overwriting the result of the test body.
+
+    Args:
+      test_name: string, name of the test.
+      tr_record: records.TestResultRecord, the record of the test.
+      abort_signal: signals.TestAbortSignal or None, an abort raised by the
+        test body that still needs to be re-raised.
+
+    Returns:
+      The abort signal to re-raise once the record is finalized, or None. An
+      abort from teardown_test can escalate a pending TestAbortClass to
+      TestAbortAll but never downgrades or replaces a pending abort.
+    """
     tr_record.update_record()
-    _, active_exc, _ = sys.exc_info()
-    test_failed_or_errored = tr_record.result in (
+    test_failed = tr_record.result in (
         records.TestResultEnums.TEST_RESULT_FAIL,
         records.TestResultEnums.TEST_RESULT_ERROR,
     )
     try:
       self._teardown_test(test_name)
     except signals.TestAbortSignal as e:
-      if test_failed_or_errored:
+      if test_failed:
         tr_record.add_error(STAGE_NAME_TEARDOWN_TEST, e)
       else:
         tr_record.test_fail(e)
-      if not isinstance(active_exc, signals.TestAbortSignal) or (
+      if abort_signal is None or (
           isinstance(e, signals.TestAbortAll)
-          and not isinstance(active_exc, signals.TestAbortAll)
+          and not isinstance(abort_signal, signals.TestAbortAll)
       ):
-        raise
+        abort_signal = e
     except Exception as e:
       logging.exception(
           'Exception occurred in %s of %s.',
@@ -563,6 +577,7 @@ class BaseTestClass:
           self.current_test_info.name,
       )
       tr_record.add_error(STAGE_NAME_TEARDOWN_TEST, e)
+    return abort_signal
 
   def teardown_test(self):
     """Teardown function that will be called every time a test method has
@@ -808,40 +823,46 @@ class BaseTestClass:
     )
     expects.recorder.reset_internal_states(tr_record)
     logging.info('%s %s', TEST_CASE_TOKEN, test_name)
+    abort_signal = None
     try:
-      self._exec_setup_test(test_name)
-      test_method()
-    except (signals.TestFailure, AssertionError) as e:
-      tr_record.test_fail(e)
-    except signals.TestSkip as e:
-      # Test skipped.
-      tr_record.test_skip(e)
-    except signals.TestAbortSignal as e:
-      # Abort signals, pass along.
-      tr_record.test_fail(e)
-      raise
-    except signals.TestPass as e:
-      # Explicit test pass.
-      tr_record.test_pass(e)
-    except Exception as e:
-      # Exception happened during test.
-      logging.exception(
-          'Exception occurred in %s.', self.current_test_info.name
-      )
-      tr_record.test_error(e)
-    else:
-      # No exception is thrown from test, if `expects` has
-      # error, the test should fail with the first error in `expects`.
-      if expects.recorder.has_error:
-        tr_record.test_fail()
-      # Otherwise the test passed.
-      else:
-        tr_record.test_pass()
-    finally:
       try:
-        self._exec_teardown_test(test_name, tr_record)
+        self._exec_setup_test(test_name)
+        test_method()
+      except (signals.TestFailure, AssertionError) as e:
+        tr_record.test_fail(e)
+      except signals.TestSkip as e:
+        # Test skipped.
+        tr_record.test_skip(e)
+      except signals.TestAbortSignal as e:
+        # Record the abort now; re-raise it after teardown_test and the
+        # record are done so neither can overwrite the test's outcome.
+        tr_record.test_fail(e)
+        abort_signal = e
+      except signals.TestPass as e:
+        # Explicit test pass.
+        tr_record.test_pass(e)
+      except Exception as e:
+        # Exception happened during test.
+        logging.exception(
+            'Exception occurred in %s.', self.current_test_info.name
+        )
+        tr_record.test_error(e)
+      else:
+        # No exception is thrown from test, if `expects` has
+        # error, the test should fail with the first error in `expects`.
+        if expects.recorder.has_error:
+          tr_record.test_fail()
+        # Otherwise the test passed.
+        else:
+          tr_record.test_pass()
       finally:
-        self._exec_procedure_and_finalize_record(tr_record)
+        abort_signal = self._exec_teardown_test(
+            test_name, tr_record, abort_signal
+        )
+    finally:
+      self._exec_procedure_and_finalize_record(tr_record)
+    if abort_signal:
+      raise abort_signal
     return tr_record
 
   def _exec_procedure_and_finalize_record(self, tr_record):
