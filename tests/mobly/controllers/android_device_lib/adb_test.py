@@ -556,6 +556,14 @@ class AdbTest(unittest.TestCase):
     ):
       out = adb.AdbProxy().connect(mock_address)
 
+  @mock.patch('mobly.utils.run_command')
+  def test_connect_fail_error_fields_are_bytes(self, mock_run_command):
+    mock_run_command.return_value = (0, b'Connection refused\n', b'')
+    with self.assertRaises(adb.AdbError) as cm:
+      adb.AdbProxy().connect('localhost:1234')
+    self.assertIsInstance(cm.exception.stdout, bytes)
+    self.assertIsInstance(cm.exception.stderr, bytes)
+
   def test_getprop(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
       mock_exec_cmd.return_value = b'blah'

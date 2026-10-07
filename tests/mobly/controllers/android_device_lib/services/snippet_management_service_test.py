@@ -137,6 +137,19 @@ class SnippetManagementServiceTest(unittest.TestCase):
     )
 
   @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
+  def test_add_snippet_client_dup_name_error_names_device(self, _):
+    device = mock.MagicMock()
+    device.__repr__ = lambda _: '[AndroidDevice|serial123]'
+    manager = snippet_management_service.SnippetManagementService(device)
+    manager.add_snippet_client('foo', MOCK_PACKAGE)
+    with self.assertRaisesRegex(
+        snippet_management_service.Error,
+        r'^\[AndroidDevice\|serial123\]::Service<SnippetManagementService> Name'
+        r' "foo" is already registered',
+    ):
+      manager.add_snippet_client('foo', MOCK_PACKAGE + 'ha')
+
+  @mock.patch(SNIPPET_CLIENT_V2_CLASS_PATH)
   def test_add_snippet_client_dup_name(self, _):
     manager = snippet_management_service.SnippetManagementService(
         mock.MagicMock()
