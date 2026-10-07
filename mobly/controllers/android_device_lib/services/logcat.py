@@ -14,6 +14,7 @@
 
 import logging
 import os
+import shutil
 import time
 from typing import Any, Callable, Optional, Pattern, Sequence, Set, Union
 
@@ -24,6 +25,14 @@ from mobly.controllers.android_device_lib import logcat_processor
 from mobly.controllers.android_device_lib.services import base_service
 
 CREATE_LOGCAT_FILE_TIMEOUT_SEC = 5
+
+# Single compound device-shell command used by `_enable_logpersist`. See the
+# comments in that method for why each step exists.
+_ENABLE_LOGPERSIST_CMD = (
+    'command -v logpersist.start >/dev/null 2>&1'
+    ' && logpersist.stop --clear'
+    ' && logpersist.start'
+)
 
 
 class Error(errors.ServiceError):
@@ -96,19 +105,18 @@ class Logcat(base_service.BaseService):
         '%s encountered an error enabling persistent logs, logs may not get'
         ' saved.'
     )
-    # Android L and older versions do not have logpersist installed,
-    # so check that the logpersist scripts exists before trying to use
-    # them.
-    if not self._ad.adb.has_shell_command('logpersist.start'):
-      logging.warning(logpersist_warning, self)
-      return
-
     try:
-      # Disable adb log spam filter for rootable devices. Have to stop
-      # and clear settings first because 'start' doesn't support --clear
-      # option before Android N.
-      self._ad.adb.shell('logpersist.stop --clear')
-      self._ad.adb.shell('logpersist.start')
+      # A single compound shell command replaces three separate adb
+      # round-trips. The `&&` chaining preserves the original short-circuit
+      # semantics:
+      #   1. Android L and older versions do not have logpersist installed,
+      #      so check that the logpersist script exists before trying to use
+      #      it. If missing, nothing else runs.
+      #   2. Disable adb log spam filter for rootable devices. Have to stop
+      #      and clear settings first because 'start' doesn't support --clear
+      #      option before Android N. If stop fails, start is skipped.
+      # Any non-zero exit code surfaces as a single AdbError.
+      self._ad.adb.shell(_ENABLE_LOGPERSIST_CMD)
     except adb.AdbError:
       logging.warning(logpersist_warning, self)
 
@@ -342,12 +350,11 @@ class Logcat(base_service.BaseService):
         newline='',
     ) as out:
       # Devices may accidentally go offline during test,
-      # check not None before readline().
-      while self._adb_logcat_file_obj:
-        line = self._adb_logcat_file_obj.readline()
-        if not line:
-          break
-        out.write(line)
+      # check not None before copying.
+      if self._adb_logcat_file_obj:
+        # Copies from the current offset (where the previous excerpt ended)
+        # to EOF in large chunks instead of line-by-line in Python.
+        shutil.copyfileobj(self._adb_logcat_file_obj, out)
     self._ad.log.debug('logcat excerpt created at: %s', excerpt_file_path)
     return [excerpt_file_path]
 
