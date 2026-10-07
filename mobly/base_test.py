@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import contextlib
 import copy
 import functools
@@ -208,7 +207,7 @@ class BaseTestClass:
     self.user_params = configs.user_params
     self.results = records.TestResult()
     self.summary_writer = configs.summary_writer
-    self._generated_test_table = collections.OrderedDict()
+    self._generated_test_table = {}
     self._controller_manager = controller_manager.ControllerManager(
         class_name=self.TAG, controller_configs=configs.controller_configs
     )

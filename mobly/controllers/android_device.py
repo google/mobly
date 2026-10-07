@@ -227,7 +227,7 @@ def parse_device_list(device_list_str, key=None):
     A list of android device serial numbers.
   """
   try:
-    clean_lines = str(device_list_str, 'utf-8').strip().split('\n')
+    clean_lines = device_list_str.decode('utf-8').strip().split('\n')
   except UnicodeDecodeError:
     logging.warning('unicode decode error, origin str: %s', device_list_str)
     raise
@@ -259,7 +259,7 @@ def list_adb_devices_by_usb_id():
     none.
   """
   out = adb.AdbProxy().devices(['-l'])
-  clean_lines = str(out, 'utf-8').strip().split('\n')
+  clean_lines = out.decode('utf-8').strip().split('\n')
   results = []
   for line in clean_lines:
     tokens = line.strip().split()
@@ -1138,7 +1138,7 @@ class AndroidDevice:
       results: results have data flow information
     """
     out = self.adb.shell('iperf3 -c %s %s' % (server_host, extra_args))
-    clean_out = str(out, 'utf-8').strip().split('\n')
+    clean_out = out.decode('utf-8').strip().split('\n')
     if 'error' in clean_out[0].lower():
       return False, clean_out
     return True, clean_out

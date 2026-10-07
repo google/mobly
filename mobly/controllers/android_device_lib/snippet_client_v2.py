@@ -650,7 +650,7 @@ class SnippetClientV2(client_base.ClientBase):
       UnicodeError: if failed to decode the given bytes using encoding utf8.
     """
     try:
-      return str(response, encoding='utf8')
+      return response.decode('utf8')
     except UnicodeError:
       self.log.error(
           'Failed to decode socket response bytes using encoding utf8: %s',

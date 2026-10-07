@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module for Mobly controller management."""
-import collections
 import copy
 import logging
 import yaml
@@ -64,9 +63,7 @@ class ControllerManager:
 
   def __init__(self, class_name, controller_configs):
     # Controller object management.
-    self._controller_objects = (
-        collections.OrderedDict()
-    )  # controller_name: objects
+    self._controller_objects = {}  # controller_name: objects
     self._controller_modules = {}  # controller_name: module
     self._class_name = class_name
     self.controller_configs = controller_configs
@@ -164,7 +161,7 @@ class ControllerManager:
       logging.debug('Destroying %s.', name)
       with expects.expect_no_raises('Exception occurred destroying %s.' % name):
         module.destroy(self._controller_objects[name])
-    self._controller_objects = collections.OrderedDict()
+    self._controller_objects = {}
     self._controller_modules = {}
 
   def _create_controller_info_record(self, controller_module_name):

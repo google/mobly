@@ -15,9 +15,7 @@
 import base64
 import concurrent.futures
 import datetime
-import errno
 import inspect
-import io
 import logging
 import os
 import platform
@@ -93,14 +91,7 @@ def create_dir(path):
   Args:
     path: The path of the directory to create.
   """
-  full_path = abs_path(path)
-  if not os.path.exists(full_path):
-    try:
-      os.makedirs(full_path)
-    except OSError as e:
-      # ignore the error for dir already exist.
-      if e.errno != errno.EEXIST:
-        raise
+  os.makedirs(abs_path(path), exist_ok=True)
 
 
 def create_alias(target_path, alias_path):
@@ -215,7 +206,7 @@ def load_file_to_base64_str(f_path):
     A base64 string representing the content of the file in utf-8 encoding.
   """
   path = abs_path(f_path)
-  with io.open(path, 'rb') as f:
+  with open(path, 'rb') as f:
     f_bytes = f.read()
     base64_str = base64.b64encode(f_bytes).decode('utf-8')
     return base64_str
@@ -593,10 +584,8 @@ def wait_for_standing_subprocess(proc, timeout=None):
   and this method is called with a timeout value, then the command can hang
   indefinitely. See http://go/pylib/subprocess.html#subprocess.Popen.wait
 
-  This function does not support Python 2.
-
   Args:
-    p: Subprocess to wait for.
+    proc: Subprocess to wait for.
     timeout: An integer number of seconds to wait before timing out.
   """
   proc.wait(timeout)

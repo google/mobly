@@ -65,7 +65,6 @@ class.
     suite_runner.run_suite_class()
 """
 import argparse
-import collections
 import enum
 import inspect
 import logging
@@ -469,7 +468,7 @@ def compute_selected_tests(test_classes, selected_tests):
 
       This dict is easy to consume for `TestRunner`.
   """
-  class_to_tests = collections.OrderedDict()
+  class_to_tests = {}
   if not selected_tests:
     # No selection is needed; simply run all tests in all classes.
     for test_class in test_classes:
@@ -534,7 +533,7 @@ def _parse_raw_test_selector(selected_tests):
   """
   if selected_tests is None:
     return None
-  test_class_to_tests = collections.OrderedDict()
+  test_class_to_tests = {}
   for test in selected_tests:
     test_class_name = test
     test_name = None

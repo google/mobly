@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import str
 
 import copy
-import io
 import pprint
 import os
 import yaml
@@ -157,7 +155,7 @@ def _load_config_file(path):
   Returns:
     A dict that represents info in the config file.
   """
-  with io.open(utils.abs_path(path), 'r', encoding='utf-8') as f:
+  with open(utils.abs_path(path), 'r', encoding='utf-8') as f:
     conf = yaml.safe_load(f)
     return conf
 
