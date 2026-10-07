@@ -246,6 +246,83 @@ class AndroidDeviceTest(unittest.TestCase):
     ):
       android_device.get_instances_with_configs([config])
 
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  def test_validate_device_existence_adb_only(
+      self, mock_list_adb, mock_list_adb_usb, mock_list_fastboot
+  ):
+    """When adb resolves every serial, the usb-id and fastboot lookups (and
+    their subprocesses) are skipped entirely.
+    """
+    mock_list_adb.return_value = ['1', '2']
+    android_device._validate_device_existence(['1', '2'])
+    mock_list_adb.assert_called_once_with()
+    mock_list_adb_usb.assert_not_called()
+    mock_list_fastboot.assert_not_called()
+
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  def test_validate_device_existence_falls_back_to_usb_id(
+      self, mock_list_adb, mock_list_adb_usb, mock_list_fastboot
+  ):
+    mock_list_adb.return_value = ['1']
+    mock_list_adb_usb.return_value = ['usb:1']
+    android_device._validate_device_existence(['1', 'usb:1'])
+    mock_list_adb.assert_called_once_with()
+    mock_list_adb_usb.assert_called_once_with()
+    mock_list_fastboot.assert_not_called()
+
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  def test_validate_device_existence_falls_back_to_fastboot(
+      self, mock_list_adb, mock_list_adb_usb, mock_list_fastboot
+  ):
+    mock_list_adb.return_value = ['1']
+    mock_list_adb_usb.return_value = []
+    mock_list_fastboot.return_value = ['fb1']
+    android_device._validate_device_existence(['1', 'fb1'])
+    mock_list_adb.assert_called_once_with()
+    mock_list_adb_usb.assert_called_once_with()
+    mock_list_fastboot.assert_called_once_with()
+
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  def test_validate_device_existence_unreachable_reports_first_missing(
+      self, mock_list_adb, mock_list_adb_usb, mock_list_fastboot
+  ):
+    mock_list_adb.return_value = ['1']
+    mock_list_adb_usb.return_value = []
+    mock_list_fastboot.return_value = []
+    with self.assertRaisesRegex(
+        android_device.Error,
+        'Android device serial "2" is specified in config but is not '
+        'reachable.',
+    ):
+      android_device._validate_device_existence(['1', '2', '3'])
+    mock_list_adb.assert_called_once_with()
+    mock_list_adb_usb.assert_called_once_with()
+    mock_list_fastboot.assert_called_once_with()
+
+  @mock.patch('mobly.controllers.android_device_lib.fastboot.FastbootProxy')
+  @mock.patch('mobly.controllers.android_device_lib.adb.AdbProxy')
+  def test_validate_device_existence_single_subprocess(
+      self, mock_adb_proxy_class, mock_fastboot_proxy_class
+  ):
+    """End to end: a single `adb devices` call and nothing else when every
+    configured serial is adb-reachable.
+    """
+    mock_devices = mock_adb_proxy_class.return_value.devices
+    mock_devices.return_value = (
+        b'List of devices attached\n1\tdevice\n2\tdevice\n'
+    )
+    android_device._validate_device_existence(['1', '2'])
+    mock_devices.assert_called_once_with()
+    mock_fastboot_proxy_class.return_value.devices.assert_not_called()
+
   def test_get_devices_success_with_extra_field(self):
     ads = mock_android_device.get_mock_ads(5)
     expected_label = 'selected'
@@ -508,14 +585,21 @@ class AndroidDeviceTest(unittest.TestCase):
       return_value=mock_android_device.MockFastbootProxy('1'),
   )
   def test_AndroidDevice_build_info_cached(self, MockFastboot, MockAdbProxy):
-    """Verifies the AndroidDevice object's basic attributes are correctly
-    set after instantiation.
+    """Verifies that cached `build_info` reads issue no adb or fastboot
+    commands, and that `is_rootable` reuses the cache.
     """
     ad = android_device.AndroidDevice(serial='1')
-    _ = ad.build_info
-    _ = ad.build_info
-    _ = ad.build_info
+    with mock.patch(
+        'mobly.controllers.android_device.list_fastboot_devices',
+        return_value=[],
+    ) as mock_list_fastboot_devices:
+      _ = ad.build_info
+      _ = ad.build_info
+      _ = ad.build_info
+      self.assertTrue(ad.is_rootable)
+      self.assertTrue(ad.is_rootable)
     self.assertEqual(ad.adb.getprops_call_count, 1)
+    mock_list_fastboot_devices.assert_not_called()
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
