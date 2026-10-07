@@ -368,9 +368,7 @@ def concurrent_exec(func, param_list, max_workers=30, raise_on_exception=False):
       try:
         return_vals.append(future.result())
       except Exception as exc:  # pylint: disable=broad-except
-        logging.exception(
-            '%s generated an exception: %s', params, traceback.format_exc()
-        )
+        logging.exception('%s generated an exception.', params)
         return_vals.append(exc)
         exceptions.append(exc)
     if raise_on_exception and exceptions:
