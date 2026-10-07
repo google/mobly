@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mobly"
 version = "1.13.1"
 description = "Automation framework for special end-to-end test cases"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 dependencies = [ "portpicker", "pywin32; platform_system == \"Windows\"", "pyyaml",]
 
 [[project.maintainers]]
