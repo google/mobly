@@ -2344,6 +2344,95 @@ class BaseTestTest(unittest.TestCase):
     )
     self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
+  def test_generate_tests_many_tests_dup_test_name(self):
+    """Duplicate detection still works with many generated tests.
+
+    Covers duplicates against a statically defined test method, against a
+    test generated earlier in the same `generate_tests` call, and against a
+    test generated in a previous `generate_tests` call.
+    """
+    num_tests = 500
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def pre_run(self):
+        self.generate_tests(
+            test_logic=self.logic,
+            name_func=self.name_gen,
+            arg_sets=[(i,) for i in range(num_tests)],
+        )
+        self.generate_tests(
+            test_logic=self.logic,
+            name_func=self.name_gen,
+            arg_sets=[(i,) for i in range(num_tests, num_tests + 50)],
+        )
+
+      def name_gen(self, a):
+        return f'test_{a}'
+
+      def logic(self, a):
+        pass
+
+      def test_static(self):
+        pass
+
+    # No duplicates: all tests generated.
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(
+        set(bt_cls.get_existing_test_names()),
+        {'test_static'} | {f'test_{i}' for i in range(num_tests + 50)},
+    )
+    self.assertEqual(len(bt_cls.results.passed), num_tests + 50 + 1)
+    self.assertFalse(bt_cls.results.error)
+
+    expected_details_tmpl = (
+        'During test generation of "logic": Test name "{}" already exists'
+        ', cannot be duplicated!'
+    )
+
+    # Duplicate of a statically defined test method.
+    class MockBaseTestDupStatic(MockBaseTest):
+
+      def name_gen(self, a):
+        return 'test_static' if a == num_tests - 1 else f'test_{a}'
+
+    bt_cls = MockBaseTestDupStatic(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(bt_cls.results.error[0].test_name, 'pre_run')
+    self.assertEqual(
+        bt_cls.results.error[0].details,
+        expected_details_tmpl.format('test_static'),
+    )
+
+    # Duplicate of a test generated earlier in the same generate_tests call.
+    class MockBaseTestDupSameCall(MockBaseTest):
+
+      def name_gen(self, a):
+        return 'test_0' if a == num_tests - 1 else f'test_{a}'
+
+    bt_cls = MockBaseTestDupSameCall(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(bt_cls.results.error[0].test_name, 'pre_run')
+    self.assertEqual(
+        bt_cls.results.error[0].details,
+        expected_details_tmpl.format('test_0'),
+    )
+
+    # Duplicate of a test generated in a previous generate_tests call.
+    class MockBaseTestDupPrevCall(MockBaseTest):
+
+      def name_gen(self, a):
+        return 'test_1' if a == num_tests + 49 else f'test_{a}'
+
+    bt_cls = MockBaseTestDupPrevCall(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertEqual(bt_cls.results.error[0].test_name, 'pre_run')
+    self.assertEqual(
+        bt_cls.results.error[0].details,
+        expected_details_tmpl.format('test_1'),
+    )
+
   def test_write_user_data(self):
     content = {'a': 1}
     original_content = content.copy()

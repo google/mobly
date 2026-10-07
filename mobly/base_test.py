@@ -925,12 +925,17 @@ class BaseTestClass:
     """
     self._assert_function_names_in_stack([STAGE_NAME_PRE_RUN])
     root_msg = f'During test generation of "{test_logic.__name__}":'
+    # Compute the set of existing test names once, instead of re-scanning the
+    # class MRO for every arg set. Names generated in this call are added to
+    # the set as we go so duplicates within the same call are still caught.
+    existing_test_names = set(self.get_existing_test_names())
     for args in arg_sets:
       test_name = name_func(*args)
-      if test_name in self.get_existing_test_names():
+      if test_name in existing_test_names:
         raise Error(
             f'{root_msg} Test name "{test_name}" already exists, cannot be duplicated!'
         )
+      existing_test_names.add(test_name)
       test_func = functools.partial(test_logic, *args)
       # If the `test_logic` method is decorated by `retry` or `repeat`
       # decorators, copy the attributes added by the decorators to the
@@ -1025,6 +1030,9 @@ class BaseTestClass:
         This can only be caused by user input.
     """
     test_methods = []
+    # Lazily computed once for all plain-name selectors, instead of
+    # re-scanning the class MRO for every selector.
+    existing_test_names = None
     # Process the test name selector one by one.
     for test_name in test_names:
       if test_name.startswith(TEST_SELECTOR_REGEX_PREFIX):
@@ -1036,7 +1044,9 @@ class BaseTestClass:
         continue
       # process the selector as a regular test name string.
       self._assert_valid_test_name(test_name)
-      if test_name not in self.get_existing_test_names():
+      if existing_test_names is None:
+        existing_test_names = set(self.get_existing_test_names())
+      if test_name not in existing_test_names:
         raise Error(f'{self.TAG} does not have test method {test_name}.')
       if hasattr(self, test_name):
         test_method = getattr(self, test_name)
@@ -1081,8 +1091,13 @@ class BaseTestClass:
       exception: The exception object that was thrown to trigger the
         skip.
     """
+    # Build the set of executed test names once instead of linearly scanning
+    # the executed records for every requested test. Skip records added below
+    # go to `results.skipped`, not `results.executed`, so the set stays valid
+    # throughout the loop.
+    executed_test_names = {record.test_name for record in self.results.executed}
     for test_name in self.results.requested:
-      if not self.results.is_test_executed(test_name):
+      if test_name not in executed_test_names:
         test_record = records.TestResultRecord(test_name, self.TAG)
         test_record.test_skip(exception)
         self.results.add_record(test_record)
