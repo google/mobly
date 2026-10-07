@@ -367,9 +367,12 @@ class _LineReader:
   held longer than necessary.
   """
 
-  def __init__(self, file_path: str, offset: int = 0):
+  def __init__(
+      self, file_path: str, offset: int = 0, wait_for_newline: bool = False
+  ):
     self._file_path = file_path
     self.offset = offset
+    self._wait_for_newline = wait_for_newline
     self._file: Optional[Any] = None
 
   def __enter__(self) -> '_LineReader':
@@ -411,6 +414,12 @@ class _LineReader:
     Reading stops at the current end of file; calling this again later picks up
     data appended in the meantime. On an I/O error the handle is closed and the
     iteration ends; the next call will try to re-open the file.
+
+    With ``wait_for_newline`` the reader does not consume a trailing line that
+    has no newline yet: logcat output is block-buffered, so a poll can observe
+    a half-written line, and consuming it would split one log line into two
+    fragments that neither match a pattern. The partial line is re-read in
+    full on a later call once the rest has been flushed.
     """
     if not self._ensure_open():
       return
@@ -420,6 +429,9 @@ class _LineReader:
       while True:
         raw = f.readline()
         if not raw:
+          break
+        if self._wait_for_newline and not raw.endswith(b'\n'):
+          f.seek(offset)
           break
         line_offset = offset
         offset += len(raw)
@@ -510,7 +522,9 @@ class LogcatListenerContext:
     stop_event = self._stop_event
     # A single reader (and file handle) is reused for the whole listen session
     # instead of re-opening the file on every poll.
-    with _LineReader(self._processor.file_path, start_offset) as reader:
+    with _LineReader(
+        self._processor.file_path, start_offset, wait_for_newline=True
+    ) as reader:
       while not stop_event.is_set():
         for _, line in reader.read_lines():
           self._dispatch(line)
@@ -697,7 +711,9 @@ class LogcatProcessor:
 
     if in_order:
       matched_lines: list[LogLine] = []
-      with _LineReader(self._file_path, offset) as reader:
+      with _LineReader(
+          self._file_path, offset, wait_for_newline=True
+      ) as reader:
         for pat in patterns:
           remaining = deadline - time.perf_counter()
           if remaining <= 0:
@@ -725,7 +741,7 @@ class LogcatProcessor:
     ]
     matched_dict: dict[int, LogLine] = {}
 
-    with _LineReader(self._file_path, offset) as reader:
+    with _LineReader(self._file_path, offset, wait_for_newline=True) as reader:
       while time.perf_counter() < deadline:
         for _, parsed in reader.read_lines():
           if _is_before(parsed.timestamp, begin_time):
@@ -776,7 +792,7 @@ class LogcatProcessor:
     """Waits for a single pattern; returns (line, offset after that line)."""
     deadline = time.perf_counter() + timeout_sec
     offset, begin_time = _resolve_since(since)
-    with _LineReader(self._file_path, offset) as reader:
+    with _LineReader(self._file_path, offset, wait_for_newline=True) as reader:
       matched = self._wait_on_reader(
           reader,
           _LineFilter(pattern=pattern),

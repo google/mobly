@@ -17,6 +17,7 @@ import os
 import re
 import shutil
 import tempfile
+import threading
 import time
 import unittest
 
@@ -314,6 +315,51 @@ class LineReaderTest(_FileTestBase):
     reader.close()
     reader.close()
     self.assertIsNone(reader._file)
+
+  def test_reader_consumes_partial_last_line_by_default(self):
+    line = SAMPLE_LINES[1]
+    split = line.index('main')
+    self._write(line[:split])
+    with logcat_processor._LineReader(self.log_file) as reader:
+      got = list(reader.read_lines())
+      self.assertEqual(len(got), 1)
+      self.assertEqual(got[0][1].raw, line[:split])
+      self.assertEqual(reader.offset, split)
+
+  def test_reader_waits_for_newline_on_partial_last_line(self):
+    line = SAMPLE_LINES[1]
+    split = line.index('main')
+    self._write(line[:split])
+    with logcat_processor._LineReader(
+        self.log_file, wait_for_newline=True
+    ) as reader:
+      self.assertEqual(list(reader.read_lines()), [])
+      self.assertEqual(reader.offset, 0)
+      self._write(line[split:] + '\n', mode='a')
+      got = list(reader.read_lines())
+      self.assertEqual(len(got), 1)
+      self.assertEqual(got[0][1].raw, line)
+      self.assertEqual(got[0][0], len(line) + 1)
+
+
+class PartialLineWaitForTest(_FileTestBase):
+
+  def test_wait_for_matches_line_split_across_writes(self):
+    line = SAMPLE_LINES[1]
+    split = line.index('Entered')
+    self._write(line[:split])
+
+    def append_rest():
+      time.sleep(0.2)
+      self._write(line[split:] + '\n', mode='a')
+
+    t = threading.Thread(target=append_rest)
+    t.start()
+    try:
+      matched = self.processor.wait_for(['Entered main'], timeout_sec=2)
+    finally:
+      t.join()
+    self.assertEqual(matched[0].raw, line)
 
 
 class GetLinesTest(_FileTestBase):
