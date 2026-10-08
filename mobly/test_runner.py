@@ -254,6 +254,8 @@ class TestRunner:
       self._logger_start_time = None
       self._start_counter = None
       self._end_counter = None
+      self.begin_time = None
+      self.end_time = None
       self.root_output_path = log_dir
 
     def generate_test_run_log_path(self):
@@ -287,6 +289,7 @@ class TestRunner:
       This is used to calculate the total elapsed time of the test run.
       """
       self._start_counter = time.perf_counter()
+      self.begin_time = utils.get_current_epoch_time()
 
     def set_end_point(self):
       """Sets the end point of a test run.
@@ -294,6 +297,7 @@ class TestRunner:
       This is used to calculate the total elapsed time of the test run.
       """
       self._end_counter = time.perf_counter()
+      self.end_time = utils.get_current_epoch_time()
 
     @property
     def run_id(self):
@@ -309,6 +313,19 @@ class TestRunner:
       if self._start_counter is None or self._end_counter is None:
         return None
       return self._end_counter - self._start_counter
+
+    def timing_dict(self):
+      """Gets the wall-clock span of the test run as a dictionary.
+
+      Returns:
+        A dict with the epoch-millisecond `Begin Time` and `End Time` of the
+        run, using the same keys as test records. Values are None if the
+        corresponding point has not been set yet.
+      """
+      return {
+          records.TestResultEnums.RECORD_BEGIN_TIME: self.begin_time,
+          records.TestResultEnums.RECORD_END_TIME: self.end_time,
+      }
 
   def get_full_test_names(self):
     """Returns the names of all tests that will be run in this test runner.
@@ -519,10 +536,14 @@ class TestRunner:
           logging.warning('Abort all subsequent test classes. Reason: %s', e)
           raise
     finally:
-      summary_writer.dump(
-          self.results.summary_dict(), records.TestSummaryEntryType.SUMMARY
-      )
       self._test_run_metadata.set_end_point()
+      summary_writer.dump(
+          {
+              **self.results.summary_dict(),
+              **self._test_run_metadata.timing_dict(),
+          },
+          records.TestSummaryEntryType.SUMMARY,
+      )
       # Show the test run summary.
       summary_lines = [
           f'Summary for test run {self._test_run_metadata.run_id}:',
