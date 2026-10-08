@@ -432,6 +432,19 @@ class ServiceManagerTest(unittest.TestCase):
     aliases = manager.list_live_services()
     self.assertEqual(aliases, [])
 
+  def test_list_live_services_does_not_record_expects_errors(self):
+    manager = service_manager.ServiceManager(mock.MagicMock())
+    manager.register('mock_service1', MockService)
+    with mock.patch.object(
+        MockService,
+        'is_alive',
+        new_callable=mock.PropertyMock,
+        side_effect=RuntimeError('boom'),
+    ):
+      with self.assertRaisesRegex(RuntimeError, 'boom'):
+        manager.list_live_services()
+    self.assertEqual(expects.recorder.error_count, 0)
+
   def test_start_services(self):
     manager = service_manager.ServiceManager(mock.MagicMock())
     manager.register('mock_service1', MockService, start_service=False)

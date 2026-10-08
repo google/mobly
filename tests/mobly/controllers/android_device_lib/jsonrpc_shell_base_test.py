@@ -49,6 +49,20 @@ class JsonRpcShellBaseTest(unittest.TestCase):
 
   @mock.patch.object(android_device, 'list_adb_devices')
   @mock.patch.object(android_device, 'get_instances')
+  @mock.patch.object(os, 'environ', new={})
+  def test_load_device_no_instance_raises_error(
+      self, mock_get_instances, mock_list_adb_devices
+  ):
+    mock_list_adb_devices.return_value = ['1234']
+    mock_get_instances.return_value = []
+    json_shell = jsonrpc_shell_base.JsonRpcShellBase()
+    with self.assertRaisesRegex(
+        jsonrpc_shell_base.Error, 'Expected exactly one device for "1234"'
+    ):
+      json_shell.load_device(serial='1234')
+
+  @mock.patch.object(android_device, 'list_adb_devices')
+  @mock.patch.object(android_device, 'get_instances')
   @mock.patch.object(os, 'environ', new={'ANDROID_SERIAL': '1234'})
   def test_load_device_when_android_serial(
       self, mock_get_instances, mock_list_adb_devices

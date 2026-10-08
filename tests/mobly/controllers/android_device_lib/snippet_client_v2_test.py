@@ -925,6 +925,30 @@ class SnippetClientV2Test(unittest.TestCase):
       'mobly.controllers.android_device_lib.snippet_client_v2.'
       'utils.start_standing_subprocess'
   )
+  def test_start_server_error_message_keeps_output_before_start_line(
+      self, mock_start_standing_subprocess
+  ):
+    """Output discarded before and after SNIPPET START is both reported."""
+    self._make_client()
+    self._mock_server_process_starting_response(
+        mock_start_standing_subprocess,
+        resp_lines=[
+            b'junk before start\n',
+            b'SNIPPET START, PROTOCOL 1 0\n',
+            b'junk after start\n',
+            b'INSTRUMENTATION_RESULT: shortMsg=Process crashed.',
+        ],
+    )
+    with self.assertRaisesRegex(
+        errors.ServerStartProtocolError,
+        r'junk before start\njunk after start',
+    ):
+      self.client.start_server()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
   def test_start_server_no_valid_line(self, mock_start_standing_subprocess):
     """Tests that starting server process reports unknown protocol message."""
     self._make_client()
