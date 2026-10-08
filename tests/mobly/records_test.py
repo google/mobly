@@ -522,6 +522,23 @@ class RecordsTest(unittest.TestCase):
     self.assertDictEqual(er.to_dict(), new_er.to_dict())
     self.assertEqual(er.type, 'RecordTestRecursiveError')
 
+  def test_result_record_deepcopy_deep_parent_chain(self):
+    """Verifies deepcopy on TestResultRecord handles long parent chains."""
+    previous_record = None
+    for i in range(500):
+      record = records.TestResultRecord(f'{self.tn}_{i}')
+      record.test_begin()
+      record.test_pass()
+      if previous_record is not None:
+        record.retry_parent = previous_record
+        record.parent = (previous_record, records.TestParentType.REPEAT)
+      previous_record = record
+    copied_record = copy.deepcopy(previous_record)
+    self.assertIsNot(copied_record, previous_record)
+    self.assertDictEqual(copied_record.to_dict(), previous_record.to_dict())
+    self.assertEqual(copied_record.parent, previous_record.parent)
+    self.assertIs(copied_record.retry_parent, previous_record.retry_parent)
+
   def test_add_controller_info_record(self):
     tr = records.TestResult()
     self.assertFalse(tr.controller_info)
