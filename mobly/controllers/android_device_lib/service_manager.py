@@ -149,13 +149,11 @@ class ServiceManager:
     Returns:
       list of strings, the aliases of the services that are running.
     """
-    aliases = []
-    self.for_each(
-        lambda service: aliases.append(service.alias)
+    return [
+        service.alias
+        for service in self._service_objects.values()
         if service.is_alive
-        else None
-    )
-    return aliases
+    ]
 
   def create_output_excerpts_all(self, test_info):
     """Creates output excerpts from all services.

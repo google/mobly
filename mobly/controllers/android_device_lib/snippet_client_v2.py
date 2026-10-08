@@ -428,7 +428,6 @@ class SnippetClientV2(client_base.ClientBase):
       errors.ServerStartError: If EOF is reached without any protocol lines
         being read.
     """
-    self._server_start_stdout = []
     while True:
       line = self._proc.stdout.readline().decode('utf-8')
       if not line:
