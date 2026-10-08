@@ -65,7 +65,6 @@ class.
     suite_runner.run_suite_class()
 """
 import argparse
-import collections
 import enum
 import inspect
 import logging
@@ -246,14 +245,16 @@ def _find_suite_class():
         'No suite class found in the __main__ module, trying to find it in the '
         'module of the caller of suite_runner.run_suite_class method.'
     )
-    stacks = inspect.stack()
-    if len(stacks) < 2:
+    # Use context=0 to avoid reading source lines for every frame; only the
+    # frame object itself is needed below.
+    stacks = inspect.stack(0)
+    if len(stacks) < 3:
       logging.debug(
           'Failed to get the caller stack of run_suite_class. Got stacks: %s',
           stacks,
       )
     else:
-      run_suite_class_caller_frame_info = inspect.stack()[2]
+      run_suite_class_caller_frame_info = stacks[2]
       caller_frame = run_suite_class_caller_frame_info.frame
       module = inspect.getmodule(caller_frame)
       if module is None:
@@ -467,7 +468,7 @@ def compute_selected_tests(test_classes, selected_tests):
 
       This dict is easy to consume for `TestRunner`.
   """
-  class_to_tests = collections.OrderedDict()
+  class_to_tests = {}
   if not selected_tests:
     # No selection is needed; simply run all tests in all classes.
     for test_class in test_classes:
@@ -532,7 +533,7 @@ def _parse_raw_test_selector(selected_tests):
   """
   if selected_tests is None:
     return None
-  test_class_to_tests = collections.OrderedDict()
+  test_class_to_tests = {}
   for test in selected_tests:
     test_class_name = test
     test_name = None

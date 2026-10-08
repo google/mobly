@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Mobly documentation build configuration file, created by
 # sphinx-quickstart on Wed Feb 22 11:40:14 2017.

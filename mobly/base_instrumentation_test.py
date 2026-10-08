@@ -954,16 +954,13 @@ class InstrumentationTestMixin:
       TestError if the instrumentation run crashed or if parsing the
         output failed.
     """
-    # Dictionary hack to allow overwriting the instrumentation_block in the
-    # parse_instrumentation closure
-    instrumentation_block = [_InstrumentationBlock(prefix=prefix)]
+    instrumentation_block = _InstrumentationBlock(prefix=prefix)
 
     def parse_instrumentation(raw_line):
+      nonlocal instrumentation_block
       line = raw_line.rstrip().decode('utf-8')
       logging.info(line)
-      instrumentation_block[0] = self._parse_line(
-          instrumentation_block[0], line
-      )
+      instrumentation_block = self._parse_line(instrumentation_block, line)
 
     device.adb.instrument(
         package=package,
@@ -972,7 +969,7 @@ class InstrumentationTestMixin:
         handler=parse_instrumentation,
     )
 
-    return self._finish_parsing(instrumentation_block[0])
+    return self._finish_parsing(instrumentation_block)
 
 
 class BaseInstrumentationTestClass(

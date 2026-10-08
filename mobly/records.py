@@ -13,12 +13,9 @@
 # limitations under the License.
 """This module has classes for test result collection, and test result output."""
 
-import collections
 import copy
 import enum
 import functools
-import io
-import logging
 import threading
 import time
 import traceback
@@ -148,15 +145,13 @@ class TestSummaryWriter:
     Raises:
       recoreds.Error: An invalid entry type is passed in.
     """
-    new_content = copy.deepcopy(content)
-    new_content['Type'] = entry_type.value
+    # A shallow copy is sufficient: we only add a top-level key and
+    # yaml.safe_dump does not mutate the content.
+    new_content = {**content, 'Type': entry_type.value}
     # Both user code and Mobly code can trigger this dump, hence the lock.
     with self._lock:
-      # For Python3, setting the encoding on yaml.safe_dump does not work
-      # because Python3 file descriptors set an encoding by default, which
-      # PyYAML uses instead of the encoding on yaml.safe_dump. So, the
-      # encoding has to be set on the open call instead.
-      with io.open(self._path, 'a', encoding='utf-8') as f:
+      # PyYAML writes using the stream's encoding, so set it on `open`.
+      with open(self._path, 'a', encoding='utf-8') as f:
         # Use safe_dump here to avoid language-specific tags in final
         # output.
         yaml.safe_dump(
@@ -229,6 +224,8 @@ class ExceptionRecord:
   Attributes:
     exception: Exception object, the original Exception.
     type: string, type name of the exception object.
+    details: string, the `details` of a TestSignal, or the string form of a
+      regular exception.
     stacktrace: string, stacktrace of the Exception.
     extras: optional serializable, this corresponds to the
       `TestSignal.extras` field.
@@ -253,24 +250,10 @@ class ExceptionRecord:
       )
     # Populate fields based on the type of the termination signal.
     if self.is_test_signal:
-      self._set_details(e.details)
+      self.details = str(e.details)
       self.extras = e.extras
     else:
-      self._set_details(e)
-
-  def _set_details(self, content):
-    """Sets the `details` field.
-
-    Args:
-      content: the content to extract details from.
-    """
-    try:
-      self.details = str(content)
-    except UnicodeEncodeError:
-      # We should never hit this in Py3, But if this happens, record
-      # an encoded version of the content for users to handle.
-      logging.error('Unable to decode "%s" in Py3, encoding in utf-8.', content)
-      self.details = content.encode('utf-8')
+      self.details = str(e)
 
   def to_dict(self):
     result = {}
@@ -330,7 +313,7 @@ class TestResultRecord:
       of a test. This is the test result record of the previous iteration.
       Parsers can use this field to construct the chain of execution for each test.
     termination_signal: ExceptionRecord, the main exception of the test.
-    extra_errors: OrderedDict, all exceptions occurred during the entire
+    extra_errors: dict, all exceptions occurred during the entire
       test lifecycle. The order of occurrence is preserved.
     result: TestResultEnum.TEST_RESULT_*, PASS/FAIL/SKIP.
   """
@@ -345,7 +328,7 @@ class TestResultRecord:
     self.retry_parent = None
     self.parent = None
     self.termination_signal = None
-    self.extra_errors = collections.OrderedDict()
+    self.extra_errors = {}
     self.result = None
 
   @property
@@ -421,7 +404,8 @@ class TestResultRecord:
     # If no termination signal is provided, use the first exception
     # occurred as the termination signal.
     if not self.termination_signal and self.extra_errors:
-      _, self.termination_signal = self.extra_errors.popitem(last=False)
+      first_position = next(iter(self.extra_errors))
+      self.termination_signal = self.extra_errors.pop(first_position)
 
   def test_pass(self, e=None):
     """To mark the test as passed in this record.
