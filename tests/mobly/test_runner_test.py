@@ -433,6 +433,19 @@ class TestRunnerTest(unittest.TestCase):
     self.assertIn('IntegrationTest.test_hello_world', results)
     self.assertEqual(len(results), 1)
 
+  def test_get_full_test_names_unknown_test(self):
+    config = self.base_mock_test_config.copy()
+    tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
+    with tr.mobly_logger():
+      tr.add_test_class(
+          config, integration_test.IntegrationTest, tests=['test_nope']
+      )
+    with self.assertRaisesRegex(
+        test_runner.Error,
+        '^Unknown test method: test_nope in class IntegrationTest$',
+    ):
+      tr.get_full_test_names()
+
   def test_get_full_test_names_test_list_empty(self):
     """Verifies that calling get_test_names with empty test list works properly."""
     config = self.base_mock_test_config.copy()

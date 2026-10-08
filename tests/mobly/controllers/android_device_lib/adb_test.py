@@ -82,19 +82,15 @@ class AdbTest(unittest.TestCase):
     mock_proc.returncode = 0
     return mock_popen
 
-  @mock.patch('mobly.utils.run_command')
-  def test_is_adb_available(self, mock_run_command):
-    mock_run_command.return_value = (
-        0,
-        '/usr/local/bin/adb\n'.encode('utf-8'),
-        ''.encode('utf-8'),
-    )
+  @mock.patch('shutil.which', return_value='/usr/local/bin/adb')
+  def test_is_adb_available(self, mock_which):
     self.assertTrue(adb.is_adb_available())
+    mock_which.assert_called_once_with('adb')
 
-  @mock.patch('mobly.utils.run_command')
-  def test_is_adb_available_negative(self, mock_run_command):
-    mock_run_command.return_value = (0, ''.encode('utf-8'), ''.encode('utf-8'))
+  @mock.patch('shutil.which', return_value=None)
+  def test_is_adb_available_negative(self, mock_which):
     self.assertFalse(adb.is_adb_available())
+    mock_which.assert_called_once_with('adb')
 
   @mock.patch('mobly.utils.run_command')
   def test_exec_cmd_no_timeout_success(self, mock_run_command):
@@ -555,6 +551,14 @@ class AdbTest(unittest.TestCase):
         adb.AdbError, 'Error executing adb cmd "connect localhost:1234".'
     ):
       out = adb.AdbProxy().connect(mock_address)
+
+  @mock.patch('mobly.utils.run_command')
+  def test_connect_fail_error_fields_are_bytes(self, mock_run_command):
+    mock_run_command.return_value = (0, b'Connection refused\n', b'')
+    with self.assertRaises(adb.AdbError) as cm:
+      adb.AdbProxy().connect('localhost:1234')
+    self.assertIsInstance(cm.exception.stdout, bytes)
+    self.assertIsInstance(cm.exception.stderr, bytes)
 
   def test_getprop(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:

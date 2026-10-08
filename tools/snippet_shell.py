@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.4
+#!/usr/bin/env python3
 #
 # Copyright 2016 Google Inc.
 #
@@ -22,7 +22,7 @@ service.
 Usage:
 $ snippet_shell com.my.package.snippets
 >>> s.mySnippet('example')
-u'You said: example'
+'You said: example'
 """
 
 import argparse

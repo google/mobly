@@ -14,7 +14,6 @@
 """Module for the manager of services."""
 # TODO(xpconanfan: move the device errors to a more generic location so
 # other device controllers like iOS can share it.
-import collections
 import inspect
 
 from mobly import expects
@@ -34,7 +33,7 @@ class ServiceManager:
   """
 
   def __init__(self, device):
-    self._service_objects = collections.OrderedDict()
+    self._service_objects = {}
     self._device = device
 
   def has_service_by_name(self, name):
@@ -150,13 +149,11 @@ class ServiceManager:
     Returns:
       list of strings, the aliases of the services that are running.
     """
-    aliases = []
-    self.for_each(
-        lambda service: aliases.append(service.alias)
+    return [
+        service.alias
+        for service in self._service_objects.values()
         if service.is_alive
-        else None
-    )
-    return aliases
+    ]
 
   def create_output_excerpts_all(self, test_info):
     """Creates output excerpts from all services.
@@ -226,9 +223,7 @@ class ServiceManager:
 
     Services will be stopped in the reverse order they were registered.
     """
-    # OrdereDict#items does not return a sequence in Python 3.4, so we have
-    # to do a list conversion here.
-    for alias, service in reversed(list(self._service_objects.items())):
+    for alias, service in reversed(self._service_objects.items()):
       if service.is_alive:
         with expects.expect_no_raises('Failed to stop service "%s".' % alias):
           service.stop()
@@ -238,9 +233,7 @@ class ServiceManager:
 
     Services will be paused in the reverse order they were registered.
     """
-    # OrdereDict#items does not return a sequence in Python 3.4, so we have
-    # to do a list conversion here.
-    for alias, service in reversed(list(self._service_objects.items())):
+    for alias, service in reversed(self._service_objects.items()):
       with expects.expect_no_raises('Failed to pause service "%s".' % alias):
         service.pause()
 

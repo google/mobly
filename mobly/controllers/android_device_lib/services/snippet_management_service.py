@@ -35,7 +35,6 @@ class SnippetManagementService(base_service.BaseService):
   def __init__(self, device, configs=None):
     del configs  # Unused param.
     self._device = device
-    self._is_alive = False
     self._snippet_clients = {}
     super().__init__(device)
 
@@ -75,7 +74,7 @@ class SnippetManagementService(base_service.BaseService):
     # Should not load snippet with the same name more than once.
     if name in self._snippet_clients:
       raise Error(
-          self,
+          self._device,
           f'Name "{name}" is already registered with package'
           f' "{self._snippet_clients[name].package}" for user ID'
           f' {self._snippet_clients[name].user_id}, the same name'
@@ -89,9 +88,8 @@ class SnippetManagementService(base_service.BaseService):
     )
     for snippet_name, client in self._snippet_clients.items():
       if new_client.identifier == client.identifier:
-        del new_client
         raise Error(
-            self,
+            self._device,
             f'Snippet "{client.package}" has already been registered for user'
             f' id {client.user_id} under name "{snippet_name}". The same'
             ' package cannot be registered again for the same user.',

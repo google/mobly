@@ -14,6 +14,7 @@
 
 import logging
 import re
+import shutil
 import subprocess
 import threading
 import time
@@ -114,11 +115,7 @@ def is_adb_available():
   Returns:
     True if adb binary is available in console, False otherwise.
   """
-  ret, out, err = utils.run_command('which adb', shell=True)
-  clean_out = out.decode('utf-8').strip()
-  if clean_out:
-    return True
-  return False
+  return shutil.which('adb') is not None
 
 
 def list_occupied_adb_ports():
@@ -133,7 +130,7 @@ def list_occupied_adb_ports():
     A list of integers representing occupied host ports.
   """
   out = AdbProxy().forward('--list')
-  clean_lines = str(out, 'utf-8').strip().split('\n')
+  clean_lines = out.decode('utf-8').strip().split('\n')
   used_ports = []
   for line in clean_lines:
     tokens = line.split(' tcp:')
@@ -374,7 +371,7 @@ class AdbProxy:
     )
     if PATTERN_ADB_CONNECT_SUCCESS.match(stdout.decode('utf-8')) is None:
       raise AdbError(
-          cmd=f'connect {address}', stdout=stdout, stderr='', ret_code=0
+          cmd=f'connect {address}', stdout=stdout, stderr=b'', ret_code=0
       )
     return stdout
 
