@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import copy
 import functools
 import io
@@ -1473,6 +1474,90 @@ class BaseTestTest(unittest.TestCase):
     self.assertIn(
         'Exception: This is an expected exception.', actual_record.stacktrace
     )
+
+  def test_uncaught_base_exception_is_recorded_as_error(self):
+    """A BaseException that is not a process-exit signal errors the test only.
+
+    Mirrors unittest/pytest: e.g. asyncio.CancelledError leaking from a
+    library should not abort the whole run.
+    """
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_func(self):
+        raise asyncio.CancelledError(MSG_EXPECTED_EXCEPTION)
+
+      def test_func2(self):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['test_func', 'test_func2'])
+    actual_record = bt_cls.results.error[0]
+    self.assertEqual(actual_record.test_name, 'test_func')
+    self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+    self.assertIn('CancelledError', actual_record.stacktrace)
+    # The remaining test still ran.
+    self.assertEqual(bt_cls.results.passed[0].test_name, 'test_func2')
+    expected_summary = (
+        'Error 1, Executed 2, Failed 0, Passed 1, Requested 2, Skipped 0'
+    )
+    self.assertEqual(bt_cls.results.summary_str(), expected_summary)
+
+  def test_base_exception_in_setup_class_is_recorded(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        raise asyncio.CancelledError(MSG_EXPECTED_EXCEPTION)
+
+      def test_func(self):
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    actual_record = bt_cls.results.error[0]
+    self.assertEqual(actual_record.test_name, 'setup_class')
+    self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+    skipped_record = bt_cls.results.skipped[0]
+    self.assertEqual(skipped_record.test_name, 'test_func')
+
+  def test_base_exception_in_teardown_test_is_recorded(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def teardown_test(self):
+        raise asyncio.CancelledError(MSG_EXPECTED_EXCEPTION)
+
+      def test_func(self):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    actual_record = bt_cls.results.error[0]
+    self.assertEqual(actual_record.test_name, 'test_func')
+    self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
+    self.assertFalse(actual_record.extra_errors)
+
+  def test_keyboard_interrupt_still_propagates(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_func(self):
+        raise KeyboardInterrupt()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    with self.assertRaises(KeyboardInterrupt):
+      bt_cls.run()
+
+  def test_system_exit_still_propagates(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        raise SystemExit(1)
+
+      def test_func(self):
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    with self.assertRaises(SystemExit):
+      bt_cls.run()
 
   def test_fail(self):
     class MockBaseTest(base_test.BaseTestClass):

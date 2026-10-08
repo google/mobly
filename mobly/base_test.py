@@ -44,6 +44,13 @@ STAGE_NAME_TEARDOWN_TEST = 'teardown_test'
 STAGE_NAME_TEARDOWN_CLASS = 'teardown_class'
 STAGE_NAME_CLEAN_UP = 'clean_up'
 
+# Exceptions that must never be swallowed by the test lifecycle: they signal
+# that the whole process should stop, not that a test errored. Every other
+# BaseException subclass (e.g. asyncio.CancelledError, BaseExceptionGroup) is
+# recorded as a test error so that the remaining tests still run, consistent
+# with unittest and pytest.
+_UNCATCHABLE_EXCEPTIONS = (KeyboardInterrupt, SystemExit, GeneratorExit)
+
 # Attribute names
 ATTR_REPEAT_CNT = '_repeat_count'
 ATTR_REPEAT_CNT_KEY = '_repeat_count_key'
@@ -368,7 +375,9 @@ class BaseTestClass:
       with self._log_test_stage(stage_name):
         self.pre_run()
       return True
-    except Exception as e:
+    except _UNCATCHABLE_EXCEPTIONS:
+      raise
+    except BaseException as e:  # pylint: disable=broad-except
       logging.exception('%s failed for %s.', stage_name, self.TAG)
       self._record_class_error(record, e)
       return False
@@ -424,7 +433,9 @@ class BaseTestClass:
     except signals.TestAbortSignal:
       # Throw abort signals to outer try block for handling.
       raise
-    except Exception as e:
+    except _UNCATCHABLE_EXCEPTIONS:
+      raise
+    except BaseException as e:  # pylint: disable=broad-except
       # Setup class failed for unknown reasons.
       # Fail the class and skip all tests.
       logging.exception('Error in %s#setup_class.', self.TAG)
@@ -464,7 +475,9 @@ class BaseTestClass:
     except signals.TestAbortAll as e:
       setattr(e, 'results', self.results)
       raise
-    except Exception as e:
+    except _UNCATCHABLE_EXCEPTIONS:
+      raise
+    except BaseException as e:  # pylint: disable=broad-except
       logging.exception('Error encountered in %s.', stage_name)
       self._record_class_error(record, e)
     else:
@@ -569,7 +582,9 @@ class BaseTestClass:
           and not isinstance(abort_signal, signals.TestAbortAll)
       ):
         abort_signal = e
-    except Exception as e:
+    except _UNCATCHABLE_EXCEPTIONS:
+      raise
+    except BaseException as e:  # pylint: disable=broad-except
       logging.exception(
           'Exception occurred in %s of %s.',
           STAGE_NAME_TEARDOWN_TEST,
@@ -681,7 +696,9 @@ class BaseTestClass:
         func(copy.deepcopy(tr_record))
       except signals.TestAbortSignal:
         raise
-      except Exception as e:
+      except _UNCATCHABLE_EXCEPTIONS:
+        raise
+      except BaseException as e:  # pylint: disable=broad-except
         logging.exception(
             'Exception happened when executing %s for %s.',
             procedure_name,
@@ -840,7 +857,9 @@ class BaseTestClass:
       except signals.TestPass as e:
         # Explicit test pass.
         tr_record.test_pass(e)
-      except Exception as e:
+      except _UNCATCHABLE_EXCEPTIONS:
+        raise
+      except BaseException as e:  # pylint: disable=broad-except
         # Exception happened during test.
         logging.exception(
             'Exception occurred in %s.', self.current_test_info.name
@@ -976,7 +995,9 @@ class BaseTestClass:
       return func(*args)
     except signals.TestAbortAll:
       raise
-    except Exception:
+    except _UNCATCHABLE_EXCEPTIONS:
+      raise
+    except BaseException:  # pylint: disable=broad-except
       logging.exception(
           'Exception happened when executing %s in %s.', func.__name__, self.TAG
       )
