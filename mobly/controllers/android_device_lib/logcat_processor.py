@@ -52,6 +52,16 @@ _LEVEL_NORM_MAP = {
     'SILENT': 'S',
 }
 
+# Splits a timestamp into its date and time halves ("MM-DD HH:MM:SS.mmm").
+_TIMESTAMP_SPLIT_RE = re.compile(r'[\sT]+')
+# Splits the date half into its numeric elements ("2026-08-09" or "08/09").
+_DATE_SPLIT_RE = re.compile(r'[-/]')
+
+# Encoding used for all logcat file reads. Mirrors the text-mode arguments the
+# logcat service uses when it opens the same file.
+_ENCODING = 'utf-8'
+_ENCODING_ERRORS = 'replace'
+
 
 @dataclasses.dataclass(frozen=True)
 class LogcatPosition:
@@ -87,8 +97,8 @@ class LogcatPosition:
     if not t:
       raise ValueError('Empty timestamp string')
 
-    date_part, time_part = re.split(r'[\sT]+', t.strip(), maxsplit=1)
-    date_elements = [int(x) for x in re.split(r'[-/]', date_part)]
+    date_part, time_part = _TIMESTAMP_SPLIT_RE.split(t.strip(), maxsplit=1)
+    date_elements = [int(x) for x in _DATE_SPLIT_RE.split(date_part)]
     if len(date_elements) == 3:
       year, month, day = date_elements
     elif len(date_elements) == 2:
@@ -232,31 +242,7 @@ class LogLine:
       level: Optional[Union[str, Sequence[str], Set[str]]] = None,
   ) -> bool:
     """Checks if this log line matches the given pattern, tag, and/or level."""
-    if pattern is not None:
-      regex = re.compile(pattern) if isinstance(pattern, str) else pattern
-      if not (regex.search(self.message) or regex.search(self.raw)):
-        return False
-
-    if tag is not None:
-      if isinstance(tag, str):
-        if self.tag != tag:
-          return False
-      elif hasattr(tag, 'search'):
-        if not tag.search(self.tag):
-          return False
-      elif isinstance(tag, Iterable) and self.tag not in tag:
-        return False
-
-    if level is not None:
-      levels = {level} if isinstance(level, str) else set(level)
-      norm_levels = {
-          _LEVEL_NORM_MAP.get(str(l).upper(), str(l).upper()) for l in levels
-      }
-      self_norm = _LEVEL_NORM_MAP.get(self.level.upper(), self.level.upper())
-      if self.level not in levels and self_norm not in norm_levels:
-        return False
-
-    return True
+    return _LineFilter(pattern=pattern, tag=tag, level=level).matches(self)
 
   @property
   def is_error(self) -> bool:
@@ -284,6 +270,228 @@ class LogLine:
     return self.position >= other.position
 
 
+class _LineFilter:
+  """Pre-normalised (pattern, tag, level) filter applied to many LogLines.
+
+  Normalising the criteria once (compiling the regex, building the level sets)
+  and reusing the result is much cheaper than doing it per line, which matters
+  when scanning large logcat files. The matching semantics are identical to
+  :meth:`LogLine.matches`.
+  """
+
+  def __init__(
+      self,
+      pattern: Optional[Union[str, Pattern[str]]] = None,
+      tag: Optional[Union[str, Pattern[str], Sequence[str], Set[str]]] = None,
+      level: Optional[Union[str, Sequence[str], Set[str]]] = None,
+  ):
+    self._regex: Optional[Pattern[str]] = None
+    if pattern is not None:
+      self._regex = re.compile(pattern) if isinstance(pattern, str) else pattern
+
+    # _tag_mode: None (no filter), 'eq', 'search', 'in' or 'noop' (an object
+    # that is neither a str, a regex nor an Iterable never filters anything).
+    self._tag_mode: Optional[str] = None
+    self._tag: Any = tag
+    if tag is not None:
+      if isinstance(tag, str):
+        self._tag_mode = 'eq'
+      elif hasattr(tag, 'search'):
+        self._tag_mode = 'search'
+      elif isinstance(tag, Iterable):
+        self._tag_mode = 'in'
+        try:
+          self._tag = frozenset(tag)
+        except TypeError:
+          self._tag = tuple(tag)
+      else:
+        self._tag_mode = 'noop'
+
+    self._levels: Optional[frozenset[Any]] = None
+    self._norm_levels: Optional[frozenset[str]] = None
+    if level is not None:
+      levels = {level} if isinstance(level, str) else set(level)
+      self._levels = frozenset(levels)
+      self._norm_levels = frozenset(
+          _LEVEL_NORM_MAP.get(str(l).upper(), str(l).upper()) for l in levels
+      )
+
+  def matches(self, line: LogLine) -> bool:
+    """Returns True if the line satisfies every configured criterion."""
+    regex = self._regex
+    if regex is not None and not (
+        regex.search(line.message) or regex.search(line.raw)
+    ):
+      return False
+
+    tag_mode = self._tag_mode
+    if tag_mode == 'eq':
+      if line.tag != self._tag:
+        return False
+    elif tag_mode == 'search':
+      if not self._tag.search(line.tag):
+        return False
+    elif tag_mode == 'in':
+      if line.tag not in self._tag:
+        return False
+
+    if self._levels is not None:
+      self_norm = _LEVEL_NORM_MAP.get(line.level.upper(), line.level.upper())
+      if line.level not in self._levels and self_norm not in self._norm_levels:
+        return False
+
+    return True
+
+
+class _TimeBound:
+  """A lower timestamp bound whose own timestamp is parsed exactly once.
+
+  ``since=`` filtering compares every scanned line against the same bound, so
+  parsing the bound up front avoids re-parsing it per line. The comparison
+  semantics are identical to :meth:`LogcatPosition._compare_timestamps`.
+  """
+
+  def __init__(self, begin_time: str):
+    self._begin_time = begin_time
+    self._parsed: Optional[tuple[int, ...]] = None
+    try:
+      self._parsed = LogcatPosition._parse_timestamp(begin_time)
+    except (ValueError, IndexError):
+      pass
+
+  def is_before(self, timestamp: Optional[str]) -> bool:
+    """True if `timestamp` is chronologically before this bound."""
+    if not timestamp:
+      return True
+    p2 = self._parsed
+    if p2 is not None:
+      try:
+        p1 = LogcatPosition._parse_timestamp(timestamp)
+      except (ValueError, IndexError):
+        p1 = None
+      if p1 is not None:
+        if p1[0] == 0 or p2[0] == 0:
+          p1 = (0,) + p1[1:]
+          p2 = (0,) + p2[1:]
+        return p1 < p2
+    return str(timestamp) < str(self._begin_time)
+
+
+def _is_before(timestamp: Optional[str], bound: Optional[_TimeBound]) -> bool:
+  """True if `timestamp` is chronologically before `bound` (if set)."""
+  return bound is not None and bound.is_before(timestamp)
+
+
+class _LineReader:
+  """Incrementally reads parsed LogLines from a (possibly growing) file.
+
+  The file is opened lazily in binary mode and the handle is kept open across
+  successive :meth:`read_lines` calls, so that polling loops do not pay for an
+  ``open()`` on every iteration. Byte offsets are tracked by summing the length
+  of each raw line, which is both exact and far cheaper than text-mode
+  ``tell()``; the offsets are therefore directly comparable with the ones
+  computed by :meth:`LogcatProcessor.tail`.
+
+  Always use as a context manager (or call :meth:`close`) so the handle is not
+  held longer than necessary.
+  """
+
+  def __init__(
+      self, file_path: str, offset: int = 0, wait_for_newline: bool = False
+  ):
+    self._file_path = file_path
+    self.offset = offset
+    self._wait_for_newline = wait_for_newline
+    self._file: Optional[Any] = None
+
+  def __enter__(self) -> '_LineReader':
+    return self
+
+  def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    self.close()
+
+  def close(self) -> None:
+    """Closes the underlying file handle, if any."""
+    f, self._file = self._file, None
+    if f is not None:
+      try:
+        f.close()
+      except OSError:
+        pass
+
+  def _ensure_open(self) -> bool:
+    if self._file is not None:
+      return True
+    if not os.path.exists(self._file_path):
+      return False
+    try:
+      f = open(self._file_path, 'rb')
+    except OSError:
+      return False
+    try:
+      if self.offset > 0:
+        f.seek(self.offset)
+    except OSError:
+      f.close()
+      return False
+    self._file = f
+    return True
+
+  def read_lines(self) -> Iterator[tuple[int, LogLine]]:
+    """Yields (offset_after_line, LogLine) for every new parseable line.
+
+    Reading stops at the current end of file; calling this again later picks up
+    data appended in the meantime. On an I/O error the handle is closed and the
+    iteration ends; the next call will try to re-open the file.
+
+    With ``wait_for_newline`` the reader does not consume a trailing line that
+    has no newline yet: logcat output is block-buffered, so a poll can observe
+    a half-written line, and consuming it would split one log line into two
+    fragments that neither match a pattern. The partial line is re-read in
+    full on a later call once the rest has been flushed. Consequently, if the
+    writer dies without terminating its last line, that line is never yielded
+    by a ``wait_for_newline`` reader (one-shot :meth:`LogcatProcessor.get_lines`
+    and :meth:`LogcatProcessor.tail` still return it).
+    """
+    if not self._ensure_open():
+      return
+    f = self._file
+    offset = self.offset
+    try:
+      while True:
+        raw = f.readline()
+        if not raw:
+          break
+        if self._wait_for_newline and not raw.endswith(b'\n'):
+          f.seek(offset)
+          break
+        line_offset = offset
+        offset += len(raw)
+        self.offset = offset
+        parsed = LogLine.from_string(
+            raw.decode(_ENCODING, _ENCODING_ERRORS), byte_offset=line_offset
+        )
+        if parsed is not None:
+          yield offset, parsed
+    except OSError:
+      self.close()
+      return
+
+
+def _resolve_since(
+    since: Optional[Union[LogcatPosition, LogLine]],
+) -> tuple[int, Optional[_TimeBound]]:
+  """Converts a `since` argument into (byte_offset, lower time bound).
+
+  The time bound is only used when the position carries no byte offset; a
+  position with an offset is already exact.
+  """
+  pos = since.position if isinstance(since, LogLine) else since
+  offset = pos._byte_offset if pos else 0
+  begin_time = pos.timestamp if pos and offset == 0 else None
+  return offset, _TimeBound(begin_time) if begin_time else None
+
+
 class LogcatListenerContext:
   """Context manager for listening to real-time logcat events."""
 
@@ -301,6 +509,7 @@ class LogcatListenerContext:
     self._pattern = pattern
     self._tag = tag
     self._level = level
+    self._filter = _LineFilter(pattern=pattern, tag=tag, level=level)
     self._position = (
         position.position if isinstance(position, LogLine) else position
     )
@@ -337,7 +546,7 @@ class LogcatListenerContext:
       )
 
   def _dispatch(self, line: LogLine) -> None:
-    if line.matches(pattern=self._pattern, tag=self._tag, level=self._level):
+    if self._filter.matches(line):
       with self._lock:
         self._events.append(line)
       try:
@@ -345,23 +554,32 @@ class LogcatListenerContext:
       except queue.Full:
         pass
 
-  def _listen_loop(self) -> None:
-    current_offset = (
+  def _listen_loop(self, start_offset: int) -> None:
+    stop_event = self._stop_event
+    # A single reader (and file handle) is reused for the whole listen session
+    # instead of re-opening the file on every poll.
+    with _LineReader(
+        self._processor.file_path, start_offset, wait_for_newline=True
+    ) as reader:
+      while not stop_event.is_set():
+        for _, line in reader.read_lines():
+          self._dispatch(line)
+          if stop_event.is_set():
+            break
+        stop_event.wait(0.05)
+
+  def __enter__(self) -> 'LogcatListenerContext':
+    self._stop_event.clear()
+    # Snapshot the start offset before the thread starts so that lines
+    # appended right after `listen()` returns are not missed.
+    start_offset = (
         self._position._byte_offset
         if self._position
         else LogcatPosition.from_file(self._processor.file_path)._byte_offset
     )
-    while not self._stop_event.is_set():
-      for offset, line in self._processor._iter_lines(offset=current_offset):
-        current_offset = offset
-        self._dispatch(line)
-        if self._stop_event.is_set():
-          break
-      time.sleep(0.05)
-
-  def __enter__(self) -> 'LogcatListenerContext':
-    self._stop_event.clear()
-    self._thread = threading.Thread(target=self._listen_loop, daemon=True)
+    self._thread = threading.Thread(
+        target=self._listen_loop, args=(start_offset,), daemon=True
+    )
     self._thread.start()
     return self
 
@@ -388,26 +606,14 @@ class LogcatProcessor:
     return self._file_path
 
   def _iter_lines(self, offset: int = 0) -> Iterator[tuple[int, LogLine]]:
-    """Yields (line_offset, LogLine) pairs from file from given offset."""
-    if not os.path.exists(self._file_path):
-      return
-    try:
-      with open(
-          self._file_path, 'r', encoding='utf-8', errors='replace', newline=''
-      ) as f:
-        if offset > 0:
-          f.seek(offset)
-        while True:
-          line_offset = f.tell()
-          line = f.readline()
-          if not line:
-            break
-          current_offset = f.tell()
-          parsed = LogLine.from_string(line, byte_offset=line_offset)
-          if parsed is not None:
-            yield current_offset, parsed
-    except OSError:
-      return
+    """Yields (offset_after_line, LogLine) pairs from file from given offset.
+
+    The file is read in binary mode and byte offsets are derived from the raw
+    line lengths, so they match the offsets produced by :meth:`tail`. Lines are
+    decoded as UTF-8 with replacement of undecodable bytes.
+    """
+    with _LineReader(self._file_path, offset) as reader:
+      yield from reader.read_lines()
 
   def get_lines(
       self,
@@ -432,19 +638,14 @@ class LogcatProcessor:
           ' tail() instead.'
       )
 
-    pos = since.position if isinstance(since, LogLine) else since
-    offset = pos._byte_offset if pos else 0
-    begin_time = pos.timestamp if pos and offset == 0 else None
+    offset, begin_time = _resolve_since(since)
+    line_filter = _LineFilter(pattern=pattern, tag=tag, level=level)
 
     results: list[LogLine] = []
     for _, parsed in self._iter_lines(offset=offset):
-      if (
-          begin_time
-          and LogcatPosition._compare_timestamps(parsed.timestamp, begin_time)
-          < 0
-      ):
+      if _is_before(parsed.timestamp, begin_time):
         continue
-      if parsed.matches(pattern=pattern, tag=tag, level=level):
+      if line_filter.matches(parsed):
         results.append(parsed)
         if max_lines is not None and len(results) >= max_lines:
           break
@@ -463,6 +664,7 @@ class LogcatProcessor:
 
     buf: collections.deque[LogLine] = collections.deque()
     block_size = 64 * 1024  # 64KB chunks
+    line_filter = _LineFilter(pattern=pattern, tag=tag, level=level)
 
     try:
       with open(self._file_path, 'rb') as f:
@@ -473,7 +675,6 @@ class LogcatProcessor:
 
         remaining = file_size
         remainder = b''
-        lines_to_process: list[tuple[int, bytes]] = []
 
         while remaining > 0 and len(buf) < num_lines:
           read_size = min(block_size, remaining)
@@ -494,17 +695,17 @@ class LogcatProcessor:
             current_offset = 0
 
           # Calculate offsets and parse lines in reverse order within this block
-          block_lines: list[tuple[int, LogLine]] = []
+          block_lines: list[LogLine] = []
           for line_bytes in lines_chunk:
             line_offset = current_offset
             current_offset += len(line_bytes) + 1  # count \n byte
-            line_str = line_bytes.decode('utf-8', errors='replace')
+            line_str = line_bytes.decode(_ENCODING, _ENCODING_ERRORS)
             parsed = LogLine.from_string(line_str, byte_offset=line_offset)
             if parsed is not None:
-              block_lines.append((line_offset, parsed))
+              block_lines.append(parsed)
 
-          for _, parsed in reversed(block_lines):
-            if parsed.matches(pattern=pattern, tag=tag, level=level):
+          for parsed in reversed(block_lines):
+            if line_filter.matches(parsed):
               buf.appendleft(parsed)
               if len(buf) >= num_lines:
                 break
@@ -542,54 +743,80 @@ class LogcatProcessor:
       return []
 
     deadline = time.perf_counter() + timeout_sec
+    offset, begin_time = _resolve_since(since)
 
     if in_order:
       matched_lines: list[LogLine] = []
-      current_since = since
-      for pat in patterns:
-        remaining = deadline - time.perf_counter()
-        if remaining <= 0:
-          raise self._timeout_error_cls(
-              f'Timed out after {timeout_sec}s waiting for in-order pattern:'
-              f' {pat!r}'
+      with _LineReader(
+          self._file_path, offset, wait_for_newline=True
+      ) as reader:
+        for pat in patterns:
+          remaining = deadline - time.perf_counter()
+          if remaining <= 0:
+            raise self._timeout_error_cls(
+                f'Timed out after {timeout_sec}s waiting for in-order pattern:'
+                f' {pat!r}'
+            )
+          matched_lines.append(
+              self._wait_on_reader(
+                  reader,
+                  _LineFilter(pattern=pat),
+                  begin_time,
+                  deadline,
+                  remaining,
+                  pat,
+              )
           )
-        matched, next_offset = self._wait_for_single(
-            pattern=pat,
-            timeout_sec=remaining,
-            since=current_since,
-        )
-        matched_lines.append(matched)
-        current_since = LogcatPosition(_byte_offset=next_offset)
+          # Subsequent patterns continue right after the matched line; the
+          # timestamp bound only applies to the initial scan.
+          begin_time = None
       return matched_lines
 
-    unmatched = list(enumerate(patterns))
+    unmatched: list[tuple[int, Union[str, Pattern[str]], _LineFilter]] = [
+        (idx, pat, _LineFilter(pattern=pat)) for idx, pat in enumerate(patterns)
+    ]
     matched_dict: dict[int, LogLine] = {}
-    pos = since.position if isinstance(since, LogLine) else since
-    offset = pos._byte_offset if pos else 0
-    begin_time = pos.timestamp if pos and offset == 0 else None
-    scan_offset = offset
 
-    while time.perf_counter() < deadline:
-      for current_offset, parsed in self._iter_lines(offset=scan_offset):
-        scan_offset = current_offset
-        if (
-            begin_time
-            and LogcatPosition._compare_timestamps(parsed.timestamp, begin_time)
-            < 0
-        ):
-          continue
-        for idx, pat in list(unmatched):
-          if parsed.matches(pattern=pat):
-            matched_dict[idx] = parsed
-            unmatched.remove((idx, pat))
-        if not unmatched:
-          return [matched_dict[i] for i in range(len(patterns))]
-      time.sleep(0.1)
+    with _LineReader(self._file_path, offset, wait_for_newline=True) as reader:
+      while time.perf_counter() < deadline:
+        for _, parsed in reader.read_lines():
+          if _is_before(parsed.timestamp, begin_time):
+            continue
+          for entry in list(unmatched):
+            if entry[2].matches(parsed):
+              matched_dict[entry[0]] = parsed
+              unmatched.remove(entry)
+          if not unmatched:
+            return [matched_dict[i] for i in range(len(patterns))]
+        time.sleep(0.1)
 
-    remaining_patterns = [pat for _, pat in unmatched]
+    remaining_patterns = [pat for _, pat, _ in unmatched]
     raise self._timeout_error_cls(
         f'Timed out after {timeout_sec}s waiting for patterns:'
         f' {remaining_patterns!r}'
+    )
+
+  def _wait_on_reader(
+      self,
+      reader: _LineReader,
+      line_filter: _LineFilter,
+      begin_time: Optional[_TimeBound],
+      deadline: float,
+      timeout_sec: float,
+      pattern: Union[str, Pattern[str]],
+  ) -> LogLine:
+    """Polls `reader` until a line matches `line_filter` or `deadline` passes."""
+    while time.perf_counter() < deadline:
+      for _, parsed in reader.read_lines():
+        if _is_before(parsed.timestamp, begin_time):
+          continue
+        if line_filter.matches(parsed):
+          return parsed
+      time.sleep(0.1)
+
+    raise self._timeout_error_cls(
+        f'Timed out after {timeout_sec}s waiting for logcat pattern:'
+        f' {pattern!r}'
     )
 
   def _wait_for_single(
@@ -598,26 +825,16 @@ class LogcatProcessor:
       timeout_sec: float = 60.0,
       since: Optional[Union[LogcatPosition, LogLine]] = None,
   ) -> tuple[LogLine, int]:
+    """Waits for a single pattern; returns (line, offset after that line)."""
     deadline = time.perf_counter() + timeout_sec
-    pos = since.position if isinstance(since, LogLine) else since
-    offset = pos._byte_offset if pos else 0
-    begin_time = pos.timestamp if pos and offset == 0 else None
-    scan_offset = offset
-
-    while time.perf_counter() < deadline:
-      for current_offset, parsed in self._iter_lines(offset=scan_offset):
-        scan_offset = current_offset
-        if (
-            begin_time
-            and LogcatPosition._compare_timestamps(parsed.timestamp, begin_time)
-            < 0
-        ):
-          continue
-        if parsed.matches(pattern=pattern):
-          return parsed, current_offset
-      time.sleep(0.1)
-
-    raise self._timeout_error_cls(
-        f'Timed out after {timeout_sec}s waiting for logcat pattern:'
-        f' {pattern!r}'
-    )
+    offset, begin_time = _resolve_since(since)
+    with _LineReader(self._file_path, offset, wait_for_newline=True) as reader:
+      matched = self._wait_on_reader(
+          reader,
+          _LineFilter(pattern=pattern),
+          begin_time,
+          deadline,
+          timeout_sec,
+          pattern,
+      )
+      return matched, reader.offset
