@@ -16,7 +16,6 @@
 import collections
 from collections.abc import Iterable
 import dataclasses
-import functools
 import os
 import queue
 import re
@@ -93,7 +92,6 @@ class LogcatPosition:
     )
 
   @staticmethod
-  @functools.lru_cache(maxsize=1024)
   def _parse_timestamp(t: str) -> tuple[int, int, int, int, int, int, int]:
     """Parses a timestamp into (year, month, day, hr, min, sec, microsec)."""
     if not t:
@@ -345,12 +343,43 @@ class _LineFilter:
     return True
 
 
-def _is_before(timestamp: Optional[str], begin_time: Optional[str]) -> bool:
-  """True if `timestamp` is chronologically before `begin_time` (if set)."""
-  return (
-      begin_time is not None
-      and LogcatPosition._compare_timestamps(timestamp, begin_time) < 0
-  )
+class _TimeBound:
+  """A lower timestamp bound whose own timestamp is parsed exactly once.
+
+  ``since=`` filtering compares every scanned line against the same bound, so
+  parsing the bound up front avoids re-parsing it per line. The comparison
+  semantics are identical to :meth:`LogcatPosition._compare_timestamps`.
+  """
+
+  def __init__(self, begin_time: str):
+    self._begin_time = begin_time
+    self._parsed: Optional[tuple[int, ...]] = None
+    try:
+      self._parsed = LogcatPosition._parse_timestamp(begin_time)
+    except (ValueError, IndexError):
+      pass
+
+  def is_before(self, timestamp: Optional[str]) -> bool:
+    """True if `timestamp` is chronologically before this bound."""
+    if not timestamp:
+      return True
+    p2 = self._parsed
+    if p2 is not None:
+      try:
+        p1 = LogcatPosition._parse_timestamp(timestamp)
+      except (ValueError, IndexError):
+        p1 = None
+      if p1 is not None:
+        if p1[0] == 0 or p2[0] == 0:
+          p1 = (0,) + p1[1:]
+          p2 = (0,) + p2[1:]
+        return p1 < p2
+    return str(timestamp) < str(self._begin_time)
+
+
+def _is_before(timestamp: Optional[str], bound: Optional[_TimeBound]) -> bool:
+  """True if `timestamp` is chronologically before `bound` (if set)."""
+  return bound is not None and bound.is_before(timestamp)
 
 
 class _LineReader:
@@ -419,7 +448,10 @@ class _LineReader:
     has no newline yet: logcat output is block-buffered, so a poll can observe
     a half-written line, and consuming it would split one log line into two
     fragments that neither match a pattern. The partial line is re-read in
-    full on a later call once the rest has been flushed.
+    full on a later call once the rest has been flushed. Consequently, if the
+    writer dies without terminating its last line, that line is never yielded
+    by a ``wait_for_newline`` reader (one-shot :meth:`LogcatProcessor.get_lines`
+    and :meth:`LogcatProcessor.tail` still return it).
     """
     if not self._ensure_open():
       return
@@ -448,12 +480,16 @@ class _LineReader:
 
 def _resolve_since(
     since: Optional[Union[LogcatPosition, LogLine]],
-) -> tuple[int, Optional[str]]:
-  """Converts a `since` argument into (byte_offset, begin_time)."""
+) -> tuple[int, Optional[_TimeBound]]:
+  """Converts a `since` argument into (byte_offset, lower time bound).
+
+  The time bound is only used when the position carries no byte offset; a
+  position with an offset is already exact.
+  """
   pos = since.position if isinstance(since, LogLine) else since
   offset = pos._byte_offset if pos else 0
   begin_time = pos.timestamp if pos and offset == 0 else None
-  return offset, begin_time
+  return offset, _TimeBound(begin_time) if begin_time else None
 
 
 class LogcatListenerContext:
@@ -764,7 +800,7 @@ class LogcatProcessor:
       self,
       reader: _LineReader,
       line_filter: _LineFilter,
-      begin_time: Optional[str],
+      begin_time: Optional[_TimeBound],
       deadline: float,
       timeout_sec: float,
       pattern: Union[str, Pattern[str]],

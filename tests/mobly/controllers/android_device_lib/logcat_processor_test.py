@@ -157,12 +157,13 @@ class TimestampCutoffTest(unittest.TestCase):
 
   def test_is_before_matches_compare_timestamps(self):
     for begin in self.TIMESTAMPS:
+      bound = logcat_processor._TimeBound(begin) if begin else None
       for ts in self.TIMESTAMPS:
         expected = bool(begin) and (
             LogcatPosition._compare_timestamps(ts, begin) < 0
         )
         self.assertEqual(
-            logcat_processor._is_before(ts, begin or None),
+            logcat_processor._is_before(ts, bound),
             expected,
             (ts, begin),
         )
@@ -493,8 +494,6 @@ class WaitForTest(_FileTestBase):
           )
       )
 
-    import threading  # pylint: disable=g-import-not-at-top
-
     t = threading.Thread(target=_wait)
     t.start()
     time.sleep(0.3)
@@ -507,8 +506,6 @@ class WaitForTest(_FileTestBase):
   def test_wait_for_file_created_after_start(self):
     with self.assertRaises(TimeoutError):
       self.processor.wait_for(['x'], timeout_sec=0.2)
-    import threading  # pylint: disable=g-import-not-at-top
-
     results = []
     t = threading.Thread(
         target=lambda: results.extend(
