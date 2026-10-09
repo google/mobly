@@ -2110,6 +2110,50 @@ class AndroidDeviceTest(unittest.TestCase):
       raised = True
     self.assertTrue(raised, 'did not raise an exception when parsing gbk bytes')
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_handle_reboot_custom_timeout(
+      self,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    ad = android_device.AndroidDevice(serial='1')
+    with mock.patch.object(ad, 'wait_for_boot_completion') as mock_wait:
+      with ad.handle_reboot(boot_completion_timeout=120):
+        pass
+    mock_wait.assert_called_once_with(timeout=120)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_reboot_custom_timeout(
+      self,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    ad = android_device.AndroidDevice(serial='1')
+    with mock.patch.object(ad, 'wait_for_boot_completion') as mock_wait:
+      ad.reboot(boot_completion_timeout=60)
+    mock_wait.assert_called_once_with(timeout=60)
+
+  def test_AndroidDevice_getattr_without_services(self):
+    ad = android_device.AndroidDevice.__new__(android_device.AndroidDevice)
+    with self.assertRaisesRegex(AttributeError, 'services'):
+      _ = ad.services
+    with self.assertRaisesRegex(AttributeError, 'nonexistent_attr'):
+      _ = ad.nonexistent_attr
+
 
 if __name__ == '__main__':
   unittest.main()
