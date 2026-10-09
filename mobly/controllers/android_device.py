@@ -1200,7 +1200,8 @@ class AndroidDevice:
 
     Args:
       timeout: float, the number of seconds to wait for boot completion before
-        timing out.
+        timing out. This has no effect when the device is in bootloader mode,
+        since this method does not wait for boot completion in that case.
 
     Raises:
       Error: Waiting for completion timed out.
