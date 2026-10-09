@@ -52,7 +52,8 @@ MOCK_OPTIONS_INSTRUMENTATION_COMMAND = (
 )
 
 # Mock root command outputs.
-MOCK_ROOT_SUCCESS_OUTPUT = 'adbd is already running as root'
+MOCK_ROOT_SUCCESS_OUTPUT = b'adbd is already running as root'
+MOCK_ROOT_REFUSED_OUTPUT = b'adbd cannot run as root in production builds\n'
 MOCK_ROOT_ERROR_OUTPUT = 'adb: unable to connect for root: closed'.encode(
     'utf-8'
 )
@@ -851,6 +852,24 @@ class AdbTest(unittest.TestCase):
         ['adb', 'root'], shell=False, timeout=5, stderr=None
     )
     self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
+
+  @mock.patch('time.sleep', return_value=mock.MagicMock())
+  @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+  def test_root_raises_adb_error_when_adbd_refuses_root(
+      self, mock_exec_cmd, mock_sleep
+  ):
+    """`adb root` exits 0 when adbd refuses, so stdout must be inspected."""
+    mock_exec_cmd.return_value = MOCK_ROOT_REFUSED_OUTPUT
+    with self.assertRaises(adb.AdbError) as context:
+      adb.AdbProxy('1').root()
+    self.assertEqual(context.exception.stdout, MOCK_ROOT_REFUSED_OUTPUT)
+    self.assertEqual(context.exception.ret_code, 0)
+    self.assertEqual(context.exception.serial, '1')
+    # A refusal is deterministic, so it must not be retried.
+    mock_exec_cmd.assert_called_once_with(
+        ['adb', '-s', '1', 'root'], shell=False, timeout=5, stderr=None
+    )
+    mock_sleep.assert_not_called()
 
   @mock.patch('time.sleep', return_value=mock.MagicMock())
   @mock.patch.object(adb.AdbProxy, '_exec_cmd')
