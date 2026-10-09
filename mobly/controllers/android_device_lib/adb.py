@@ -33,9 +33,6 @@ ADB_PORT_LOCK = threading.Lock()
 ADB_ROOT_RETRY_ATTEMPTS = 3
 ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC = 10
 ADB_ROOT_ATTEMPT_TIMEOUT_SEC = 5
-# Printed to stdout (with exit code 0) when adbd refuses to restart as root,
-# e.g. "adbd cannot run as root in production builds".
-ADB_ROOT_REFUSED_MSG = b'cannot run as root'
 
 # Qualified class name of the default instrumentation test runner.
 DEFAULT_INSTRUMENTATION_RUNNER = (
@@ -532,23 +529,17 @@ class AdbProxy:
     for root: closed` is raised when executing `adb root` immediately after
     the device is booted to OS.
 
-    Note that `adb root` exits with code 0 even when adbd refuses to restart
-    as root (e.g. "adbd cannot run as root in production builds"). This method
-    detects that case from stdout and raises AdbError instead of silently
-    returning.
-
     Returns:
       A string that is the stdout of root command.
 
     Raises:
-      AdbError: If the command exit code is not 0, or if adbd refused to run
-        as root.
+      AdbError: If the command exit code is not 0.
       AdbTimeoutError: If the command timed out.
     """
     retry_interval = ADB_ROOT_RETRY_ATTEMPT_INTERVAL_SEC
     for attempt in range(ADB_ROOT_RETRY_ATTEMPTS):
       try:
-        out = self._exec_adb_cmd(
+        return self._exec_adb_cmd(
             'root',
             args=None,
             shell=False,
@@ -556,32 +547,23 @@ class AdbProxy:
             stderr=None,
         )
       except (AdbError, AdbTimeoutError) as e:
-        if attempt + 1 >= ADB_ROOT_RETRY_ATTEMPTS:
-          raise
-        retry_reason = (
-            f'Error "{e.stderr.decode("utf-8").strip()}" occurred'
-            if isinstance(e, AdbError)
-            else f'it timed out after {e.timeout} seconds'
-        )
-        logging.debug(
-            'Retry the command "%s" since %s.',
-            utils.cli_cmd_to_string(e.cmd),
-            retry_reason,
-        )
-        # Buffer between "adb root" commands.
-        time.sleep(retry_interval)
-        retry_interval *= 2
-        continue
-      if ADB_ROOT_REFUSED_MSG in out:
-        # adbd refuses deterministically, so there is no point retrying.
-        raise AdbError(
-            cmd=[ADB, 'root'],
-            stdout=out,
-            stderr=b'',
-            ret_code=0,
-            serial=self.serial,
-        )
-      return out
+        if attempt + 1 < ADB_ROOT_RETRY_ATTEMPTS:
+          retry_reason = (
+              f'Error "{e.stderr.decode("utf-8").strip()}" occurred'
+              if isinstance(e, AdbError)
+              else f'it timed out after {e.timeout} seconds'
+          )
+          logging.debug(
+              'Retry the command "%s" since %s.',
+              utils.cli_cmd_to_string(e.cmd),
+              retry_reason,
+          )
+
+          # Buffer between "adb root" commands.
+          time.sleep(retry_interval)
+          retry_interval *= 2
+        else:
+          raise e
 
   def __getattr__(self, name):
     def adb_call(args=None, shell=False, timeout=None, stderr=None) -> bytes:

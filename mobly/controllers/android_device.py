@@ -952,11 +952,26 @@ class AndroidDevice:
 
     If executed on a production build, adb will not be switched to root
     mode per security restrictions.
+
+    Note that `adb root` exits with code 0 even when adbd refuses to restart
+    as root (e.g. "adbd cannot run as root in production builds"), and the
+    exact message varies across OEMs. So instead of relying on the command's
+    exit code or output, this method verifies the outcome by checking whether
+    adb is actually running as root afterwards.
+
+    Raises:
+      DeviceError: If adb is not running as root after `adb root`.
     """
-    self.adb.root()
+    out = self.adb.root()
+    self.log.debug('Output of `adb root`: %s', out)
     # `root` causes the device to temporarily disappear from adb.
     # So we need to wait for the device to come back before proceeding.
     self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
+    if not self.is_adb_root:
+      raise DeviceError(
+          self,
+          'Failed to switch adb to root mode. Output of `adb root`: %s' % out,
+      )
 
   def _root_adb_on_init(self):
     """Runs `adb root` on rootable builds according to `root_on_init`."""
@@ -964,7 +979,7 @@ class AndroidDevice:
       return
     try:
       self.root_adb()
-    except (adb.AdbError, adb.AdbTimeoutError) as e:
+    except (DeviceError, adb.AdbError, adb.AdbTimeoutError) as e:
       if self.root_on_init == ROOT_ON_INIT_STRICT:
         raise
       self.log.warning(
