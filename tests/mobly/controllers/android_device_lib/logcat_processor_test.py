@@ -503,6 +503,27 @@ class WaitForTest(_FileTestBase):
     self.assertFalse(t.is_alive())
     self.assertEqual([l.message for l in results], ['Entered again', 'Later'])
 
+  def test_wait_for_unordered_skips_lines_before_since_timestamp(self):
+    self._write_sample()
+    # A timestamp-only position (no byte offset) forces the unordered scan to
+    # filter by time instead of seeking.
+    since = LogcatPosition(timestamp='08-09 22:00:05.000', _byte_offset=0)
+    results = self.processor.wait_for(
+        ['BtGatt', 'ExampleApp'], in_order=False, since=since, timeout_sec=2.0
+    )
+    self.assertEqual(
+        [l.message for l in results],
+        ['Fatal controller error', 'Failed to connect'],
+    )
+
+  def test_wait_for_unordered_times_out_when_only_stale_lines_match(self):
+    self._write_sample()
+    since = LogcatPosition(timestamp='08-09 22:00:06.000', _byte_offset=0)
+    with self.assertRaises(TimeoutError):
+      self.processor.wait_for(
+          ['Entered main'], in_order=False, since=since, timeout_sec=0.3
+      )
+
   def test_wait_for_file_created_after_start(self):
     with self.assertRaises(TimeoutError):
       self.processor.wait_for(['x'], timeout_sec=0.2)
@@ -556,6 +577,23 @@ class ListenTest(_FileTestBase):
       time.sleep(0.2)
       self._write('08-09 22:00:08.000  1000  1030 I Tag: hello\n')
       self.assertEqual(listener.get_next_event(timeout=2.0).message, 'hello')
+
+  def test_listen_loop_stops_mid_batch_when_stopped_during_dispatch(self):
+    self._write_sample()
+    listener = self.processor.listen(tag='WifiService|BtGatt|ExampleApp')
+    dispatched = []
+    original_dispatch = listener._dispatch
+
+    def _dispatch_then_stop(line):
+      original_dispatch(line)
+      dispatched.append(line)
+      listener._stop_event.set()
+
+    listener._dispatch = _dispatch_then_stop
+    # Run the loop synchronously over a file that already holds a multi-line
+    # batch; it must bail out after the first dispatched line.
+    listener._listen_loop(0)
+    self.assertEqual(len(dispatched), 1)
 
   def test_listen_timeout_message(self):
     self._write_sample()
