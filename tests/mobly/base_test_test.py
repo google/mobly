@@ -3388,6 +3388,21 @@ class BaseTestTest(unittest.TestCase):
       self.assertEqual(record.test_name, f'test_something_{i}')
       self.assertEqual(record.uid, 'some-uid')
 
+  def test_repeat_large_count(self):
+    repeat_count = 200
+
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=repeat_count)
+      def test_something(self):
+        pass
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run()
+    self.assertTrue(bt_cls.results.is_all_pass)
+    self.assertEqual(repeat_count, len(bt_cls.results.passed))
+    self.assertEqual(0, len(bt_cls.results.error))
+
   def test_log_stage_always_logs_end_statement(self):
     instance = base_test.BaseTestClass(self.mock_test_cls_configs)
     instance.current_test_info = mock.Mock()

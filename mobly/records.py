@@ -523,6 +523,29 @@ class TestResultRecord:
     t = utils.epoch_to_human_time(self.begin_time)
     return f'{t} {self.test_name} {self.result}'
 
+  def __deepcopy__(self, memo):
+    """Overrides deepcopy to avoid deep recursion across parent chains."""
+    result = TestResultRecord(self.test_name, self.test_class)
+    memo[id(self)] = result
+    result.begin_time = self.begin_time
+    result.end_time = self.end_time
+    result.uid = self.uid
+    result.signature = self.signature
+    result.retry_parent = (
+        memo.get(id(self.retry_parent), self.retry_parent)
+        if self.retry_parent
+        else None
+    )
+    result.parent = (
+        (memo.get(id(self.parent[0]), self.parent[0]), self.parent[1])
+        if self.parent
+        else None
+    )
+    result.termination_signal = copy.deepcopy(self.termination_signal, memo)
+    result.extra_errors = copy.deepcopy(self.extra_errors, memo)
+    result.result = self.result
+    return result
+
   def to_dict(self):
     """Gets a dictionary representating the content of this class.
 
