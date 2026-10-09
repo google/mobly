@@ -2125,7 +2125,7 @@ class AndroidDeviceTest(unittest.TestCase):
   ):
     ad = android_device.AndroidDevice(serial='1')
     with mock.patch.object(ad, 'wait_for_boot_completion') as mock_wait:
-      with ad.handle_reboot(timeout=120):
+      with ad.handle_reboot(boot_completion_timeout=120):
         pass
     mock_wait.assert_called_once_with(timeout=120)
 
@@ -2144,7 +2144,7 @@ class AndroidDeviceTest(unittest.TestCase):
   ):
     ad = android_device.AndroidDevice(serial='1')
     with mock.patch.object(ad, 'wait_for_boot_completion') as mock_wait:
-      ad.reboot(timeout=60)
+      ad.reboot(boot_completion_timeout=60)
     mock_wait.assert_called_once_with(timeout=60)
 
   def test_AndroidDevice_getattr_without_services(self):

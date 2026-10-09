@@ -709,7 +709,9 @@ class AndroidDevice:
     self.fastboot.serial = new_serial
 
   @contextlib.contextmanager
-  def handle_reboot(self, timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND):
+  def handle_reboot(
+      self, boot_completion_timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND
+  ):
     """Properly manage the service life cycle when the device needs to
     temporarily disconnect.
 
@@ -720,8 +722,9 @@ class AndroidDevice:
     For sample usage, see self.reboot().
 
     Args:
-      timeout: float, the number of seconds to wait for boot completion before
-        timing out.
+      boot_completion_timeout: float, the number of seconds to wait for the
+        device to finish booting after the context exits. This only bounds the
+        boot completion wait, not the code executed inside the context.
     """
     live_service_names = self.services.list_live_services()
     self.services.stop_all()
@@ -736,7 +739,7 @@ class AndroidDevice:
     try:
       yield
     finally:
-      self.wait_for_boot_completion(timeout=timeout)
+      self.wait_for_boot_completion(timeout=boot_completion_timeout)
       # On boot completion, invalidate the `build_info` cache since any
       # value it had from before boot completion is potentially invalid.
       # If the value gets set after the final invalidation and before
@@ -1188,7 +1191,9 @@ class AndroidDevice:
       return True
     return False
 
-  def reboot(self, timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND):
+  def reboot(
+      self, boot_completion_timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND
+  ):
     """Reboots the device.
 
     Generally one should use this method to reboot the device instead of
@@ -1199,9 +1204,10 @@ class AndroidDevice:
     and the services restored.
 
     Args:
-      timeout: float, the number of seconds to wait for boot completion before
-        timing out. This has no effect when the device is in bootloader mode,
-        since this method does not wait for boot completion in that case.
+      boot_completion_timeout: float, the number of seconds to wait for the
+        device to finish booting. This has no effect when the device is in
+        bootloader mode, since this method does not wait for boot completion
+        in that case.
 
     Raises:
       Error: Waiting for completion timed out.
@@ -1209,7 +1215,7 @@ class AndroidDevice:
     if self.is_bootloader:
       self.fastboot.reboot()
       return
-    with self.handle_reboot(timeout=timeout):
+    with self.handle_reboot(boot_completion_timeout=boot_completion_timeout):
       self.adb.reboot()
 
   def __getattr__(self, name):
