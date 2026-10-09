@@ -542,6 +542,28 @@ class RecordsTest(unittest.TestCase):
 
     self.assertEqual(test_uid_helper.uid, 'some-uuid')
 
+  def test_test_class_info_record(self):
+    record = records.TestClassInfoRecord('SomeTestClass')
+    self.assertEqual(
+        record.to_dict(),
+        {
+            records.TestResultEnums.RECORD_CLASS: 'SomeTestClass',
+            records.TestResultEnums.RECORD_BEGIN_TIME: None,
+            records.TestResultEnums.RECORD_END_TIME: None,
+        },
+    )
+    record.class_begin()
+    record.class_end()
+    d = record.to_dict()
+    self.assertIsInstance(d[records.TestResultEnums.RECORD_BEGIN_TIME], int)
+    self.assertIsInstance(d[records.TestResultEnums.RECORD_END_TIME], int)
+    self.assertLessEqual(
+        d[records.TestResultEnums.RECORD_BEGIN_TIME],
+        d[records.TestResultEnums.RECORD_END_TIME],
+    )
+    # Must be serializable by the summary writer.
+    yaml.safe_dump(d)
+
 
 if __name__ == '__main__':
   unittest.main()

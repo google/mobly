@@ -133,7 +133,7 @@ class TestRunnerTest(unittest.TestCase):
     )
     with io.open(summary_path, 'r', encoding='utf-8') as f:
       summary_entries = list(yaml.safe_load_all(f))
-    self.assertEqual(len(summary_entries), 4)
+    self.assertEqual(len(summary_entries), 5)
     # Verify the first entry is the list of test names.
     self.assertEqual(
         summary_entries[0]['Type'],
@@ -147,7 +147,30 @@ class TestRunnerTest(unittest.TestCase):
         records.TestSummaryEntryType.CONTROLLER_INFO.value,
     )
     self.assertEqual(
-        summary_entries[3]['Type'], records.TestSummaryEntryType.SUMMARY.value
+        summary_entries[3]['Type'],
+        records.TestSummaryEntryType.TEST_CLASS_INFO.value,
+    )
+    self.assertEqual(
+        summary_entries[3][records.TestResultEnums.RECORD_CLASS],
+        'IntegrationTest',
+    )
+    self.assertIsInstance(
+        summary_entries[3][records.TestResultEnums.RECORD_BEGIN_TIME], int
+    )
+    self.assertIsInstance(
+        summary_entries[3][records.TestResultEnums.RECORD_END_TIME], int
+    )
+    self.assertEqual(
+        summary_entries[4]['Type'], records.TestSummaryEntryType.SUMMARY.value
+    )
+    # The run span encloses the class span.
+    self.assertLessEqual(
+        summary_entries[4][records.TestResultEnums.RECORD_BEGIN_TIME],
+        summary_entries[3][records.TestResultEnums.RECORD_BEGIN_TIME],
+    )
+    self.assertGreaterEqual(
+        summary_entries[4][records.TestResultEnums.RECORD_END_TIME],
+        summary_entries[3][records.TestResultEnums.RECORD_END_TIME],
     )
 
   def test_run(self):

@@ -95,6 +95,10 @@ class TestSummaryEntryType(enum.Enum):
   # This can be added at any point in the test, so do not assume the location
   # of these entries in the summary file.
   USER_DATA = 'UserData'
+  # Information on the execution of a test class, e.g. when the class began
+  # and ended (including setup_class and teardown_class). Dumped once per test
+  # class after the class finishes.
+  TEST_CLASS_INFO = 'TestClassInfo'
 
 
 class TestSummaryWriter:
@@ -212,6 +216,42 @@ class ControllerInfoRecord:
     result[self.KEY_CONTROLLER_NAME] = self.controller_name
     result[self.KEY_CONTROLLER_INFO] = self.controller_info
     result[self.KEY_TIMESTAMP] = self.timestamp
+    return result
+
+  def __repr__(self):
+    return str(self.to_dict())
+
+
+class TestClassInfoRecord:
+  """A record describing the execution of a test class.
+
+  Captures the wall-clock span of the whole class, including `setup_class`
+  and `teardown_class`, which is not derivable from the individual test
+  records. Times are epoch milliseconds, consistent with `TestResultRecord`.
+  """
+
+  KEY_TEST_CLASS = TestResultEnums.RECORD_CLASS
+  KEY_BEGIN_TIME = TestResultEnums.RECORD_BEGIN_TIME
+  KEY_END_TIME = TestResultEnums.RECORD_END_TIME
+
+  def __init__(self, test_class):
+    self.test_class = test_class
+    self.begin_time = None
+    self.end_time = None
+
+  def class_begin(self):
+    """Marks the beginning of the test class execution."""
+    self.begin_time = utils.get_current_epoch_time()
+
+  def class_end(self):
+    """Marks the end of the test class execution."""
+    self.end_time = utils.get_current_epoch_time()
+
+  def to_dict(self):
+    result = {}
+    result[self.KEY_TEST_CLASS] = self.test_class
+    result[self.KEY_BEGIN_TIME] = self.begin_time
+    result[self.KEY_END_TIME] = self.end_time
     return result
 
   def __repr__(self):

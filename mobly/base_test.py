@@ -1125,8 +1125,14 @@ class BaseTestClass:
       The test results object of this class.
     """
     logging.log_path = self.log_path
+    class_info = records.TestClassInfoRecord(self.TAG)
+    class_info.class_begin()
     # Executes pre-setup procedures, like generating test methods.
     if not self._pre_run():
+      class_info.class_end()
+      self.summary_writer.dump(
+          class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
+      )
       return self.results
     logging.info('==========> %s <==========', self.TAG)
     # Devise the actual test methods to run in the test class.
@@ -1213,6 +1219,10 @@ class BaseTestClass:
       raise e
     finally:
       self._teardown_class()
+      class_info.class_end()
+      self.summary_writer.dump(
+          class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
+      )
       logging.info(
           'Summary for test class %s: %s', self.TAG, self.results.summary_str()
       )
