@@ -138,6 +138,28 @@ class AndroidDeviceTest(unittest.TestCase):
     for actual_ad, expected_serial in zip(actual_ads, ['1', '2', 'usb:1']):
       self.assertEqual(actual_ad.serial, expected_serial)
 
+  @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+  def test_list_adb_devices_by_usb_id(self, mock_exec_cmd):
+    mock_exec_cmd.return_value = (
+        b'List of devices attached\n'
+        b'1234567890   device usb:1-4 product:p model:m device:d\n'
+        b'0987654321   offline usb:1-5 product:p model:m device:d\n'
+        b'emulator-5554   device product:sdk model:sdk device:generic\n'
+        b'\n'
+    )
+    self.assertEqual(
+        android_device.list_adb_devices_by_usb_id(),
+        ['usb:1-4', 'product:sdk'],
+    )
+    mock_exec_cmd.assert_called_once_with(
+        ['adb', 'devices', '-l'], shell=False, timeout=None, stderr=None
+    )
+
+  @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+  def test_list_adb_devices_by_usb_id_no_devices(self, mock_exec_cmd):
+    mock_exec_cmd.return_value = b'List of devices attached\n\n'
+    self.assertEqual(android_device.list_adb_devices_by_usb_id(), [])
+
   def test_create_with_empty_config(self):
     expected_msg = android_device.ANDROID_DEVICE_EMPTY_CONFIG_MSG
     with self.assertRaisesRegex(android_device.Error, expected_msg):
