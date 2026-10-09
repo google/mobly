@@ -197,4 +197,76 @@ class expect_no_raises(contextlib.ContextDecorator):
     return False
 
 
+class _ExpectRaisesContext:
+  """Context manager backing `expect_raises` and `expect_raises_regex`.
+
+  Delegates the matching logic to `asserts._AssertRaisesContext` and converts
+  the hard `TestFailure` it raises into a recorded (soft) error.
+  """
+
+  def __init__(self, expected_exception, expected_regex=None, extras=None):
+    self._context = asserts._AssertRaisesContext(
+        expected_exception, expected_regex, extras=extras
+    )
+    self.exception = None
+
+  def __enter__(self):
+    self._context.__enter__()
+    return self
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    try:
+      handled = self._context.__exit__(exc_type, exc_val, exc_tb)
+    except signals.TestFailure as e:
+      logging.exception(e.details)
+      recorder.add_error(e)
+      return True
+    self.exception = getattr(self._context, 'exception', None)
+    return handled
+
+
+def expect_raises(expected_exception, extras=None):
+  """Expects an exception is raised in a context, otherwise fail the test.
+
+  This is the soft counterpart of `asserts.assert_raises`: if no exception is
+  raised, the error is recorded and the test is marked as fail after its
+  execution finishes, instead of aborting immediately. If an exception is
+  raised but not of the expected type, the exception is let through.
+
+  This should only be used as a context manager:
+    with expects.expect_raises(Exception):
+      func()
+
+  Args:
+    expected_exception: An exception class that is expected to be raised.
+    extras: An optional field for extra information to be included in test
+      result.
+  """
+  return _ExpectRaisesContext(expected_exception, extras=extras)
+
+
+def expect_raises_regex(expected_exception, expected_regex, extras=None):
+  """Expects an exception matching a regex is raised, otherwise fail the test.
+
+  This is the soft counterpart of `asserts.assert_raises_regex`: if no
+  exception is raised, or an exception of the expected type is raised but its
+  message does not match `expected_regex`, the error is recorded and the test
+  is marked as fail after its execution finishes, instead of aborting
+  immediately. If an exception is raised but not of the expected type, the
+  exception is let through.
+
+  This should only be used as a context manager:
+    with expects.expect_raises_regex(Exception, 'some message'):
+      func()
+
+  Args:
+    expected_exception: An exception class that is expected to be raised.
+    expected_regex: A regex string or compiled pattern that the exception's
+      message is expected to match.
+    extras: An optional field for extra information to be included in test
+      result.
+  """
+  return _ExpectRaisesContext(expected_exception, expected_regex, extras)
+
+
 recorder = _ExpectErrorRecorder(DEFAULT_TEST_RESULT_RECORD)

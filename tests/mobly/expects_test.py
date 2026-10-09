@@ -132,6 +132,71 @@ class ExpectsTest(unittest.TestCase):
     self.assertEqual(sample_func.__name__, 'sample_func')
     self.assertEqual(sample_func.__doc__, 'Sample documentation.')
 
+  def test_expect_raises_pass(self):
+    with expects.expect_raises(ValueError) as cm:
+      raise ValueError('boom')
+    self.assertFalse(expects.recorder.has_error)
+    self.assertIsInstance(cm.exception, ValueError)
+
+  def test_expect_raises_pass_with_subclass(self):
+    with expects.expect_raises(Exception):
+      raise ValueError('boom')
+    self.assertFalse(expects.recorder.has_error)
+
+  def test_expect_raises_not_raised_fail(self):
+    with expects.expect_raises(ValueError, extras='extra_info'):
+      pass
+    self.assertTrue(expects.recorder.has_error)
+    self.assertEqual(expects.recorder.error_count, 1)
+    err = list(self.record.extra_errors.values())[0]
+    self.assertEqual(err.extras, 'extra_info')
+    self.assertIn('ValueError not raised', err.details)
+
+  def test_expect_raises_unexpected_type_propagates(self):
+    with self.assertRaises(KeyError):
+      with expects.expect_raises(ValueError):
+        raise KeyError('unexpected')
+    self.assertFalse(expects.recorder.has_error)
+
+  def test_expect_raises_regex_pass(self):
+    with expects.expect_raises_regex(ValueError, r'bo+m') as cm:
+      raise ValueError('boom')
+    self.assertFalse(expects.recorder.has_error)
+    self.assertIsInstance(cm.exception, ValueError)
+
+  def test_expect_raises_regex_mismatch_fail(self):
+    with expects.expect_raises_regex(
+        ValueError, 'expected message', extras='extra_info'
+    ):
+      raise ValueError('actual message')
+    self.assertTrue(expects.recorder.has_error)
+    self.assertEqual(expects.recorder.error_count, 1)
+    err = list(self.record.extra_errors.values())[0]
+    self.assertEqual(err.extras, 'extra_info')
+    self.assertIn('expected message', err.details)
+    self.assertIn('actual message', err.details)
+
+  def test_expect_raises_regex_not_raised_fail(self):
+    with expects.expect_raises_regex(ValueError, 'anything'):
+      pass
+    self.assertTrue(expects.recorder.has_error)
+    self.assertEqual(expects.recorder.error_count, 1)
+    err = list(self.record.extra_errors.values())[0]
+    self.assertIn('ValueError not raised', err.details)
+
+  def test_expect_raises_regex_unexpected_type_propagates(self):
+    with self.assertRaises(KeyError):
+      with expects.expect_raises_regex(ValueError, 'anything'):
+        raise KeyError('unexpected')
+    self.assertFalse(expects.recorder.has_error)
+
+  def test_expect_raises_multiple_errors_recorded(self):
+    with expects.expect_raises(ValueError):
+      pass
+    with expects.expect_raises_regex(ValueError, 'nope'):
+      raise ValueError('yes')
+    self.assertEqual(expects.recorder.error_count, 2)
+
 
 if __name__ == '__main__':
   unittest.main()
