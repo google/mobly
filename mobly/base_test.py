@@ -845,6 +845,11 @@ class BaseTestClass:
         self._exec_setup_test(test_name)
         test_method()
       except (signals.TestFailure, AssertionError) as e:
+        # Log the failure with its traceback so the test log is enough to
+        # debug the failure without opening test_summary.yaml.
+        logging.exception(
+            'Exception occurred in %s.', self.current_test_info.name
+        )
         tr_record.test_fail(e)
       except signals.TestSkip as e:
         # Test skipped.
