@@ -1654,6 +1654,21 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
     self.assertEqual(actual_record.extras, MOCK_EXTRA)
 
+  def test_fail_is_logged_with_traceback(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_func(self):
+        asserts.fail(MSG_EXPECTED_EXCEPTION)
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    with self.assertLogs(level='ERROR') as logs:
+      bt_cls.run(test_names=['test_func'])
+    self.assertEqual(len(bt_cls.results.failed), 1)
+    output = '\n'.join(logs.output)
+    self.assertIn('Exception occurred in test_func.', output)
+    self.assertIn('Traceback (most recent call last)', output)
+    self.assertIn(MSG_EXPECTED_EXCEPTION, output)
+
   def test_assert_true(self):
     class MockBaseTest(base_test.BaseTestClass):
 
