@@ -282,6 +282,11 @@ class BaseTestClass:
 
     .. code-block:: python
 
+      MOBLY_CONTROLLER_CONFIG_NAME = 'MyController'
+        [Required] The key under which this controller's configs are
+        listed in the test bed config, e.g. 'AndroidDevice'. Only used
+        to look up the configs passed to `create`.
+
       def create(configs):
         [Required] Creates controller objects from configurations.
 
