@@ -341,7 +341,7 @@ class LogcatTest(unittest.TestCase):
 
     # Set up the logcat instance.
     mock_serial = '1'
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, root_on_init='never')
     get_timestamp_mock.return_value = '123'
     configs = logcat.Config(clear_log=True)
     logcat_service = logcat.Logcat(ad, configs)
@@ -432,7 +432,7 @@ class LogcatTest(unittest.TestCase):
 
     # Set up the logcat instance.
     mock_serial = '1'
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, root_on_init='never')
     get_timestamp_mock.return_value = '123'
     configs = logcat.Config(clear_log=True)
     logcat_service = logcat.Logcat(ad, configs)
@@ -647,7 +647,7 @@ class LogcatTest(unittest.TestCase):
         'ro.build.type': 'userdebug',
         'ro.debuggable': '1',
     }
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, root_on_init='never')
     logcat_service = logcat.Logcat(ad)
     with self.assertNoLogs(level=logging.WARNING):
       logcat_service._enable_logpersist()
@@ -716,7 +716,7 @@ class LogcatTest(unittest.TestCase):
         'ro.debuggable': '1',
     }
     mock_adb_proxy.shell.side_effect = MOCK_LOGPERSIST_START_MISSING_ADB_ERROR
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, root_on_init='never')
     logcat_service = logcat.Logcat(ad)
     with self.assertLogs(level=logging.WARNING) as cm:
       logcat_service._enable_logpersist()
@@ -745,7 +745,7 @@ class LogcatTest(unittest.TestCase):
         'ro.debuggable': '1',
     }
     mock_adb_proxy.shell.side_effect = MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, root_on_init='never')
     logcat_service = logcat.Logcat(ad)
     with self.assertLogs(level=logging.WARNING) as cm:
       logcat_service._enable_logpersist()

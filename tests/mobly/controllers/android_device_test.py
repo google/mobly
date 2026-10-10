@@ -240,8 +240,28 @@ class AndroidDeviceTest(unittest.TestCase):
     mock_list_adb_usb.return_value = []
     configs = [{'serial': '1'}, {'serial': '2'}]
     android_device.get_instances_with_configs(configs)
-    mock_ad_class.assert_any_call('1')
-    mock_ad_class.assert_any_call('2')
+    mock_ad_class.assert_any_call('1', root_on_init='strict')
+    mock_ad_class.assert_any_call('2', root_on_init='strict')
+
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.AndroidDevice')
+  def test_get_instances_with_configs_root_on_init(
+      self, mock_ad_class, mock_list_adb_usb, mock_list_adb, mock_list_fastboot
+  ):
+    mock_list_fastboot.return_value = []
+    mock_list_adb.return_value = ['1', '2']
+    mock_list_adb_usb.return_value = []
+    configs = [
+        {'serial': '1', 'root_on_init': 'never', 'label': 'a'},
+        {'serial': '2'},
+    ]
+    android_device.get_instances_with_configs(configs)
+    mock_ad_class.assert_any_call('1', root_on_init='never')
+    mock_ad_class.assert_any_call('2', root_on_init='strict')
+    # `root_on_init` is consumed by the constructor, not `load_config`.
+    mock_ad_class.return_value.load_config.assert_any_call({'label': 'a'})
 
   def test_get_instances_with_configs_invalid_config(self):
     config = {'something': 'random'}
@@ -688,6 +708,190 @@ class AndroidDeviceTest(unittest.TestCase):
   ):
     ad = android_device.AndroidDevice(serial='1')
     self.assertFalse(ad.is_rootable)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch.object(android_device.AndroidDevice, 'root_adb')
+  def test_AndroidDevice_root_on_init_default_strict_roots(
+      self, mock_root_adb, MockFastboot, MockAdbProxy
+  ):
+    ad = android_device.AndroidDevice(serial='1')
+    self.assertEqual(ad.root_on_init, 'strict')
+    mock_root_adb.assert_called_once_with()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch.object(android_device.AndroidDevice, 'root_adb')
+  def test_AndroidDevice_root_on_init_strict_raises_on_root_failure(
+      self, mock_root_adb, MockFastboot, MockAdbProxy
+  ):
+    mock_root_adb.side_effect = android_device.DeviceError(
+        mock.MagicMock(), 'Failed to switch adb to root mode.'
+    )
+    with self.assertRaises(android_device.DeviceError):
+      android_device.AndroidDevice(serial='1', root_on_init='strict')
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch.object(android_device.AndroidDevice, 'root_adb')
+  def test_AndroidDevice_root_on_init_ignore_error_warns_on_root_failure(
+      self, mock_root_adb, MockFastboot, MockAdbProxy
+  ):
+    mock_root_adb.side_effect = android_device.DeviceError(
+        mock.MagicMock(), 'Failed to switch adb to root mode.'
+    )
+    with self.assertLogs(level='WARNING') as logs:
+      ad = android_device.AndroidDevice(serial='1', root_on_init='ignore_error')
+    self.assertEqual(ad.root_on_init, 'ignore_error')
+    mock_root_adb.assert_called_once_with()
+    self.assertTrue(
+        any('Failed to switch adb to root mode' in l for l in logs.output)
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch.object(android_device.AndroidDevice, 'root_adb')
+  def test_AndroidDevice_root_on_init_never_skips_root(
+      self, mock_root_adb, MockFastboot, MockAdbProxy
+  ):
+    ad = android_device.AndroidDevice(serial='1', root_on_init='never')
+    self.assertTrue(ad.is_rootable)
+    mock_root_adb.assert_not_called()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_root_on_init_invalid_value(
+      self, MockFastboot, MockAdbProxy
+  ):
+    with self.assertRaisesRegex(
+        android_device.DeviceError, 'Invalid value "sometimes" for root_on_init'
+    ):
+      android_device.AndroidDevice(serial='1', root_on_init='sometimes')
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(android_device.AndroidDevice, 'root_adb')
+  def test_AndroidDevice_root_on_init_never_skips_root_after_reboot(
+      self,
+      mock_root_adb,
+      open_logcat_mock,
+      stop_proc_mock,
+      start_proc_mock,
+      MockFastboot,
+      MockAdbProxy,
+  ):
+    ad = android_device.AndroidDevice(serial='1', root_on_init='never')
+    with ad.handle_reboot():
+      pass
+    mock_root_adb.assert_not_called()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(android_device.AndroidDevice, 'root_adb')
+  def test_AndroidDevice_root_on_init_ignore_error_after_reboot(
+      self,
+      mock_root_adb,
+      open_logcat_mock,
+      stop_proc_mock,
+      start_proc_mock,
+      MockFastboot,
+      MockAdbProxy,
+  ):
+    ad = android_device.AndroidDevice(serial='1', root_on_init='ignore_error')
+    mock_root_adb.side_effect = android_device.DeviceError(
+        mock.MagicMock(), 'Failed to switch adb to root mode.'
+    )
+    with self.assertLogs(level='WARNING'):
+      with ad.handle_reboot():
+        pass
+    self.assertEqual(mock_root_adb.call_count, 2)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_root_adb_success(self, MockFastboot, MockAdbProxy):
+    ad = android_device.AndroidDevice(serial='1')
+    ad.adb.root = mock.MagicMock(return_value=b'restarting adbd as root')
+    ad.adb.wait_for_device = mock.MagicMock()
+    ad.root_adb()
+    ad.adb.root.assert_called_once_with()
+    ad.adb.wait_for_device.assert_called_once()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_root_adb_raises_when_adbd_refuses_root(
+      self, MockFastboot, MockAdbProxy
+  ):
+    """`adb root` exits 0 when adbd refuses, so the outcome must be verified."""
+    ad = android_device.AndroidDevice(serial='1')
+    refused = b'adbd cannot run as root in production builds'
+    ad.adb.root = mock.MagicMock(return_value=refused)
+    ad.adb.wait_for_device = mock.MagicMock()
+    ad.adb.shell = mock.MagicMock(return_value=b'2000')
+    with self.assertRaisesRegex(
+        android_device.DeviceError, 'Failed to switch adb to root mode'
+    ) as context:
+      ad.root_adb()
+    self.assertIn(refused.decode('utf-8'), str(context.exception))
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -1297,7 +1501,7 @@ class AndroidDeviceTest(unittest.TestCase):
 
     get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
     mock_serial = '1'
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, root_on_init='never')
     full_pic_paths = ad.take_screenshot(self.tmp_dir, all_displays=True)
     self.assertEqual(
         full_pic_paths,
@@ -1347,7 +1551,7 @@ class AndroidDeviceTest(unittest.TestCase):
 
     get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
     mock_serial = '1'
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, root_on_init='never')
     full_pic_paths = ad.take_screenshot(self.tmp_dir, all_displays=True)
     self.assertEqual(
         full_pic_paths,
@@ -1395,7 +1599,7 @@ class AndroidDeviceTest(unittest.TestCase):
 
     get_log_file_timestamp_mock.return_value = '07-22-2019_17-53-34-450'
     mock_serial = '1'
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, root_on_init='never')
     full_pic_paths = ad.take_screenshot(self.tmp_dir, all_displays=True)
     self.assertEqual(
         full_pic_paths,
