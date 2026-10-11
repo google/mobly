@@ -255,6 +255,22 @@ class AndroidDeviceTest(unittest.TestCase):
   @mock.patch('mobly.controllers.android_device.list_adb_devices')
   @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
   @mock.patch('mobly.controllers.android_device.AndroidDevice')
+  def test_get_instances_with_configs_skips_optional_device_on_init_error(
+      self, mock_ad_class, mock_list_adb_usb, mock_list_adb, mock_list_fastboot
+  ):
+    mock_list_fastboot.return_value = []
+    mock_list_adb.return_value = ['1', '2']
+    mock_list_adb_usb.return_value = []
+    mock_ad = mock.MagicMock()
+    mock_ad_class.side_effect = [Exception('Something went wrong.'), mock_ad]
+    configs = [{'serial': '1', 'required': False}, {'serial': '2'}]
+    ads = android_device.get_instances_with_configs(configs)
+    self.assertEqual(ads, [mock_ad])
+
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.AndroidDevice')
   def test_get_instances_with_configsdo_not_exist(
       self, mock_ad_class, mock_list_adb_usb, mock_list_adb, mock_list_fastboot
   ):

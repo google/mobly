@@ -332,7 +332,7 @@ def get_instances_with_configs(configs):
     except Exception:
       if is_required:
         raise
-      ad.log.exception('Skipping this optional device due to error.')
+      logging.exception('Skipping optional device %s due to error.', serial)
       continue
     results.append(ad)
   return results
