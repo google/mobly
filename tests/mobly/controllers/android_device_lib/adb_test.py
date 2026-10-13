@@ -560,6 +560,17 @@ class AdbTest(unittest.TestCase):
     self.assertIsInstance(cm.exception.stdout, bytes)
     self.assertIsInstance(cm.exception.stderr, bytes)
 
+  @mock.patch('mobly.utils.run_command')
+  def test_connect_ignores_disconnect_error(self, mock_run_command):
+    mock_address = 'localhost:1234'
+    mock_run_command.side_effect = [
+        (1, b'', b'error: no such device'),
+        (0, f'connected to {mock_address}'.encode('utf-8'), b''),
+    ]
+    out = adb.AdbProxy().connect(mock_address)
+    self.assertEqual('connected to localhost:1234', out.decode('utf-8'))
+    self.assertEqual(mock_run_command.call_count, 2)
+
   def test_getprop(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
       mock_exec_cmd.return_value = b'blah'
@@ -935,6 +946,29 @@ class AdbTest(unittest.TestCase):
     self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
     self.assertEqual(mock_sleep.call_count, 1)
     mock_sleep.assert_called_with(10)
+
+  @mock.patch('time.sleep', return_value=mock.MagicMock())
+  @mock.patch.object(adb.AdbProxy, 'connect')
+  @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+  def test_root_tcp_reconnect_on_retry(
+      self, mock_exec_cmd, mock_connect, mock_sleep
+  ):
+    tcp_serial = 'localhost:1234'
+    mock_exec_cmd.side_effect = [
+        adb.AdbError('adb root', '', MOCK_ROOT_ERROR_OUTPUT, 1),
+        adb.AdbError('adb root', '', MOCK_ROOT_ERROR_OUTPUT, 1),
+        MOCK_ROOT_SUCCESS_OUTPUT,
+    ]
+    mock_connect.side_effect = [
+        adb.AdbError('connect localhost:1234', b'', b'', 0),
+        b'connected to localhost:1234',
+    ]
+    output = adb.AdbProxy(tcp_serial).root()
+    self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
+    mock_connect.assert_has_calls(
+        [mock.call(tcp_serial), mock.call(tcp_serial)]
+    )
+    self.assertEqual(mock_sleep.call_count, 2)
 
   def test_has_shell_command_called_correctly(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:

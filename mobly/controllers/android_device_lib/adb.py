@@ -354,8 +354,23 @@ class AdbProxy:
     # Multi-user is not supported in SDK < 21, only user 0 exists.
     return 0
 
+  def disconnect(self, address) -> bytes:
+    """Executes the `adb disconnect` command.
+
+    Args:
+      address: string, the address of the Android instance to disconnect from.
+
+    Returns:
+      The stdout content.
+    """
+    return self._exec_adb_cmd(
+        'disconnect', address, shell=False, timeout=None, stderr=None
+    )
+  
   def connect(self, address) -> bytes:
     """Executes the `adb connect` command with proper status checking.
+
+    Disconnects first to flush any stale or zombie socket states on the ADB server.
 
     Args:
       address: string, the address of the Android instance to connect to.
@@ -366,6 +381,12 @@ class AdbProxy:
     Raises:
       AdbError: if the connection failed.
     """
+    # Flush any stale/zombie socket states before connecting
+    try:
+      self.disconnect(address)
+    except AdbError:
+      pass
+
     stdout = self._exec_adb_cmd(
         'connect', address, shell=False, timeout=None, stderr=None
     )
@@ -561,6 +582,18 @@ class AdbProxy:
 
           # Buffer between "adb root" commands.
           time.sleep(retry_interval)
+          if ':' in self.serial:
+            try:
+              logging.debug(
+                  'Reconnecting TCP device %s before root retry...', self.serial
+              )
+              self.connect(self.serial)
+            except AdbError as connect_err:
+              logging.debug(
+                  'Reconnecting to %s during root retry failed: %s',
+                  self.serial,
+                  connect_err,
+              )
           retry_interval *= 2
         else:
           raise e
