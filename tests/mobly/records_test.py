@@ -567,6 +567,17 @@ class RecordsTest(unittest.TestCase):
             records.TestResultEnums.RECORD_CLASS: 'SomeTestClass',
             records.TestResultEnums.RECORD_BEGIN_TIME: None,
             records.TestResultEnums.RECORD_END_TIME: None,
+            records.TestResultEnums.RECORD_RESULT: None,
+            'Requested': 0,
+            'Executed': 0,
+            'Passed': 0,
+            'Failed': 0,
+            'Skipped': 0,
+            'Error': 0,
+            records.TestResultEnums.RECORD_DETAILS: None,
+            records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE: None,
+            records.TestResultEnums.RECORD_STACKTRACE: None,
+            records.TestResultEnums.RECORD_EXTRAS: None,
         },
     )
     record.class_begin()
@@ -574,12 +585,102 @@ class RecordsTest(unittest.TestCase):
     d = record.to_dict()
     self.assertIsInstance(d[records.TestResultEnums.RECORD_BEGIN_TIME], int)
     self.assertIsInstance(d[records.TestResultEnums.RECORD_END_TIME], int)
+    self.assertEqual(
+        d[records.TestResultEnums.RECORD_RESULT],
+        records.TestResultEnums.TEST_RESULT_PASS,
+    )
     self.assertLessEqual(
         d[records.TestResultEnums.RECORD_BEGIN_TIME],
         d[records.TestResultEnums.RECORD_END_TIME],
     )
     # Must be serializable by the summary writer.
     yaml.safe_dump(d)
+
+  def test_test_class_info_record_with_results_and_signals(self):
+    # 1. Class with a setup_class error surfaces the class error details.
+    tr = records.TestResult()
+    tr.requested = ['test_a', 'test_b']
+    cls_err = records.TestResultRecord('setup_class', 'SomeTestClass')
+    cls_err.test_begin()
+    cls_err.test_error(RuntimeError('setup boom'))
+    tr.add_class_error(cls_err)
+    skip_rec = records.TestResultRecord('test_a', 'SomeTestClass')
+    skip_rec.test_skip(signals.TestSkip('skipped'))
+    tr.add_record(skip_rec)
+
+    info = records.TestClassInfoRecord('SomeTestClass')
+    info.class_begin()
+    info.class_end(results=tr)
+    d = info.to_dict()
+    self.assertEqual(
+        d[records.TestResultEnums.RECORD_RESULT],
+        records.TestResultEnums.TEST_RESULT_ERROR,
+    )
+    self.assertEqual(d['Requested'], 2)
+    self.assertEqual(d['Executed'], 0)
+    self.assertEqual(d['Skipped'], 1)
+    self.assertEqual(d['Error'], 1)
+    self.assertEqual(d[records.TestResultEnums.RECORD_DETAILS], 'setup boom')
+    self.assertEqual(
+        d[records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE],
+        'RuntimeError',
+    )
+
+    # 2. Class cleanly aborted via TestAbortClass with 0 passed tests -> SKIP.
+    tr_abort = records.TestResult()
+    tr_abort.requested = ['test_a']
+    tr_abort.add_record(skip_rec)
+    info_abort = records.TestClassInfoRecord('SomeTestClass')
+    info_abort.class_begin()
+    info_abort.class_end(
+        results=tr_abort,
+        e=signals.TestAbortClass('device not supported', extras={'k': 'v'}),
+    )
+    d_abort = info_abort.to_dict()
+    self.assertEqual(
+        d_abort[records.TestResultEnums.RECORD_RESULT],
+        records.TestResultEnums.TEST_RESULT_SKIP,
+    )
+    self.assertEqual(
+        d_abort[records.TestResultEnums.RECORD_DETAILS], 'device not supported'
+    )
+    self.assertEqual(
+        d_abort[records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE],
+        'TestAbortClass',
+    )
+    self.assertEqual(d_abort[records.TestResultEnums.RECORD_EXTRAS], {'k': 'v'})
+
+    # 3. Class with a failed test -> FAIL.
+    tr_fail = records.TestResult()
+    tr_fail.requested = ['test_a']
+    fail_rec = records.TestResultRecord('test_a', 'SomeTestClass')
+    fail_rec.test_begin()
+    fail_rec.test_fail(signals.TestFailure('assertion failed'))
+    tr_fail.add_record(fail_rec)
+    info_fail = records.TestClassInfoRecord('SomeTestClass')
+    info_fail.class_begin()
+    info_fail.class_end(results=tr_fail)
+    self.assertEqual(
+        info_fail.to_dict()[records.TestResultEnums.RECORD_RESULT],
+        records.TestResultEnums.TEST_RESULT_FAIL,
+    )
+
+    # 4. Class terminated by an unhandled ValueError -> ERROR.
+    info_exc = records.TestClassInfoRecord('SomeTestClass')
+    info_exc.class_begin()
+    info_exc.class_end(results=records.TestResult(), e=ValueError('bad repeat'))
+    d_exc = info_exc.to_dict()
+    self.assertEqual(
+        d_exc[records.TestResultEnums.RECORD_RESULT],
+        records.TestResultEnums.TEST_RESULT_ERROR,
+    )
+    self.assertEqual(
+        d_exc[records.TestResultEnums.RECORD_DETAILS], 'bad repeat'
+    )
+    self.assertEqual(
+        d_exc[records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE],
+        'ValueError',
+    )
 
 
 if __name__ == '__main__':

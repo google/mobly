@@ -359,9 +359,10 @@ class BaseTestClass:
     # Collect controller information and write to test result.
     for record in self._controller_manager.get_controller_info_records():
       self.results.add_controller_info_record(record)
-      self.summary_writer.dump(
-          record.to_dict(), records.TestSummaryEntryType.CONTROLLER_INFO
-      )
+      if self.summary_writer:
+        self.summary_writer.dump(
+            record.to_dict(), records.TestSummaryEntryType.CONTROLLER_INFO
+        )
 
   def _pre_run(self):
     """Proxy function to guarantee the base implementation of `pre_run` is
@@ -376,9 +377,13 @@ class BaseTestClass:
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
         stage_name, self.log_path, record
     )
+    expects.recorder.reset_internal_states(record)
     try:
       with self._log_test_stage(stage_name):
         self.pre_run()
+      if expects.recorder.has_error:
+        self._record_class_error(record)
+        return False
       return True
     except _UNCATCHABLE_EXCEPTIONS:
       raise
@@ -402,9 +407,10 @@ class BaseTestClass:
         self._exec_procedure_func(self._on_fail, record)
     finally:
       self.results.add_class_error(record)
-      self.summary_writer.dump(
-          record.to_dict(), records.TestSummaryEntryType.RECORD
-      )
+      if self.summary_writer:
+        self.summary_writer.dump(
+            record.to_dict(), records.TestSummaryEntryType.RECORD
+        )
 
   def pre_run(self):
     """Preprocesses that need to be done before setup_class.
@@ -435,8 +441,8 @@ class BaseTestClass:
     try:
       with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
         self.setup_class()
-    except signals.TestAbortSignal:
-      # Throw abort signals to outer try block for handling.
+    except (signals.TestAbortSignal, signals.TestSkip):
+      # Throw abort/skip signals to outer try block for handling.
       raise
     except _UNCATCHABLE_EXCEPTIONS:
       raise
@@ -1158,29 +1164,28 @@ class BaseTestClass:
     logging.log_path = self.log_path
     class_info = records.TestClassInfoRecord(self.TAG)
     class_info.class_begin()
-    # Executes pre-setup procedures, like generating test methods.
-    if not self._pre_run():
-      class_info.class_end()
-      self.summary_writer.dump(
-          class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
-      )
-      return self.results
-    logging.info('==========> %s <==========', self.TAG)
-    # Devise the actual test methods to run in the test class.
-    if not test_names:
-      if self.tests:
-        # Specified by run list in class.
-        test_names = list(self.tests)
-      else:
-        # No test method specified by user, execute all in test class.
-        test_names = self.get_existing_test_names()
-    self.results.requested = test_names
-    self.summary_writer.dump(
-        self.results.requested_test_names_dict(),
-        records.TestSummaryEntryType.TEST_NAME_LIST,
-    )
-    tests = self._get_test_methods(test_names)
+    setup_class_reached = False
+    class_termination_error = None
     try:
+      # Executes pre-setup procedures, like generating test methods.
+      if not self._pre_run():
+        return self.results
+      logging.info('==========> %s <==========', self.TAG)
+      # Devise the actual test methods to run in the test class.
+      if not test_names:
+        if self.tests:
+          # Specified by run list in class.
+          test_names = list(self.tests)
+        else:
+          # No test method specified by user, execute all in test class.
+          test_names = self.get_existing_test_names()
+      self.results.requested = test_names
+      self.summary_writer.dump(
+          self.results.requested_test_names_dict(),
+          records.TestSummaryEntryType.TEST_NAME_LIST,
+      )
+      tests = self._get_test_methods(test_names)
+      setup_class_reached = True
       setup_class_result = self._setup_class()
       if setup_class_result:
         return setup_class_result
@@ -1237,26 +1242,47 @@ class BaseTestClass:
           # Execute test as a regular single test
           self.exec_one_test(test_name, test_method)
       return self.results
+    except signals.TestSkip as e:
+      class_termination_error = e
+      self._skip_remaining_tests(e)
+      return self.results
     except signals.TestAbortClass as e:
       e.details = f'Test class aborted due to: {e.details}'
+      class_termination_error = e
       self._skip_remaining_tests(e)
       return self.results
     except signals.TestAbortAll as e:
       e.details = f'All remaining tests aborted due to: {e.details}'
+      class_termination_error = e
       self._skip_remaining_tests(e)
       # Piggy-back test results on this exception object so we don't lose
       # results from this test class.
       setattr(e, 'results', self.results)
       raise e
+    except BaseException as e:
+      class_termination_error = e
+      raise
     finally:
-      self._teardown_class()
-      class_info.class_end()
-      self.summary_writer.dump(
-          class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
-      )
-      logging.info(
-          'Summary for test class %s: %s', self.TAG, self.results.summary_str()
-      )
+      try:
+        if setup_class_reached:
+          self._teardown_class()
+        else:
+          self._clean_up()
+      except BaseException as e:
+        if class_termination_error is None:
+          class_termination_error = e
+        raise
+      finally:
+        class_info.class_end(results=self.results, e=class_termination_error)
+        if self.summary_writer:
+          self.summary_writer.dump(
+              class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
+          )
+        logging.info(
+            'Summary for test class %s: %s',
+            self.TAG,
+            self.results.summary_str(),
+        )
 
   def _clean_up(self):
     """The final stage of a test class execution."""

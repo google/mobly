@@ -99,6 +99,8 @@ class TestSummaryEntryType(enum.Enum):
   # and ended (including setup_class and teardown_class). Dumped once per test
   # class after the class finishes.
   TEST_CLASS_INFO = 'TestClassInfo'
+  # Information on the execution of a test suite.
+  SUITE_INFO = 'SuiteInfo'
 
 
 class TestSummaryWriter:
@@ -227,31 +229,136 @@ class TestClassInfoRecord:
 
   Captures the wall-clock span of the whole class, including `setup_class`
   and `teardown_class`, which is not derivable from the individual test
-  records. Times are epoch milliseconds, consistent with `TestResultRecord`.
+  records, as well as the per-class summary counts and any class-level
+  termination signal. Times are epoch milliseconds, consistent with
+  `TestResultRecord`.
   """
 
   KEY_TEST_CLASS = TestResultEnums.RECORD_CLASS
   KEY_BEGIN_TIME = TestResultEnums.RECORD_BEGIN_TIME
   KEY_END_TIME = TestResultEnums.RECORD_END_TIME
+  KEY_RESULT = TestResultEnums.RECORD_RESULT
+  KEY_REQUESTED = 'Requested'
+  KEY_EXECUTED = 'Executed'
+  KEY_PASSED = 'Passed'
+  KEY_FAILED = 'Failed'
+  KEY_SKIPPED = 'Skipped'
+  KEY_ERROR = 'Error'
+  KEY_DETAILS = TestResultEnums.RECORD_DETAILS
+  KEY_TERMINATION_SIGNAL_TYPE = TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE
+  KEY_STACKTRACE = TestResultEnums.RECORD_STACKTRACE
+  KEY_EXTRAS = TestResultEnums.RECORD_EXTRAS
 
   def __init__(self, test_class):
     self.test_class = test_class
     self.begin_time = None
     self.end_time = None
+    self.result = None
+    self.requested = 0
+    self.executed = 0
+    self.passed = 0
+    self.failed = 0
+    self.skipped = 0
+    self.error = 0
+    self.termination_signal = None
+
+  @property
+  def details(self):
+    if self.termination_signal:
+      return self.termination_signal.details
+
+  @property
+  def termination_signal_type(self):
+    if self.termination_signal:
+      return self.termination_signal.type
+
+  @property
+  def stacktrace(self):
+    if self.termination_signal:
+      return self.termination_signal.stacktrace
+
+  @property
+  def extras(self):
+    if self.termination_signal:
+      return self.termination_signal.extras
 
   def class_begin(self):
     """Marks the beginning of the test class execution."""
     self.begin_time = utils.get_current_epoch_time()
 
-  def class_end(self):
-    """Marks the end of the test class execution."""
+  def class_end(self, results=None, e=None):
+    """Marks the end of the test class execution.
+
+    Args:
+      results: Optional `TestResult` object for this test class.
+      e: Optional exception or `TestSignal` that terminated the class.
+    """
     self.end_time = utils.get_current_epoch_time()
+    if e is not None:
+      self.termination_signal = ExceptionRecord(e)
+    if results is not None:
+      summary = results.summary_dict()
+      self.requested = summary[self.KEY_REQUESTED]
+      self.executed = summary[self.KEY_EXECUTED]
+      self.passed = summary[self.KEY_PASSED]
+      self.failed = summary[self.KEY_FAILED]
+      self.skipped = summary[self.KEY_SKIPPED]
+      self.error = summary[self.KEY_ERROR]
+      if self.termination_signal is None and results.error:
+        executed_ids = {id(r) for r in results.executed}
+        for err_record in results.error:
+          if (
+              id(err_record) not in executed_ids
+              and err_record.termination_signal is not None
+          ):
+            self.termination_signal = copy.deepcopy(
+                err_record.termination_signal
+            )
+            break
+    if e is not None and not isinstance(
+        e, (signals.TestAbortSignal, signals.TestSkip, signals.TestPass)
+    ):
+      if isinstance(e, (signals.TestFailure, AssertionError)):
+        self.result = TestResultEnums.TEST_RESULT_FAIL
+      else:
+        self.result = TestResultEnums.TEST_RESULT_ERROR
+    elif results is not None:
+      if not results.is_all_pass:
+        retried_ids = results._get_eventually_passing_retry_record_ids()
+        has_error = any(id(r) not in retried_ids for r in results.error)
+        self.result = (
+            TestResultEnums.TEST_RESULT_ERROR
+            if has_error
+            else TestResultEnums.TEST_RESULT_FAIL
+        )
+      elif len(results.passed) == 0 and (
+          isinstance(e, (signals.TestAbortSignal, signals.TestSkip))
+          or len(results.skipped) > 0
+      ):
+        self.result = TestResultEnums.TEST_RESULT_SKIP
+      else:
+        self.result = TestResultEnums.TEST_RESULT_PASS
+    elif isinstance(e, (signals.TestAbortSignal, signals.TestSkip)):
+      self.result = TestResultEnums.TEST_RESULT_SKIP
+    else:
+      self.result = TestResultEnums.TEST_RESULT_PASS
 
   def to_dict(self):
     result = {}
     result[self.KEY_TEST_CLASS] = self.test_class
     result[self.KEY_BEGIN_TIME] = self.begin_time
     result[self.KEY_END_TIME] = self.end_time
+    result[self.KEY_RESULT] = self.result
+    result[self.KEY_REQUESTED] = self.requested
+    result[self.KEY_EXECUTED] = self.executed
+    result[self.KEY_PASSED] = self.passed
+    result[self.KEY_FAILED] = self.failed
+    result[self.KEY_SKIPPED] = self.skipped
+    result[self.KEY_ERROR] = self.error
+    result[self.KEY_DETAILS] = self.details
+    result[self.KEY_TERMINATION_SIGNAL_TYPE] = self.termination_signal_type
+    result[self.KEY_STACKTRACE] = self.stacktrace
+    result[self.KEY_EXTRAS] = copy.deepcopy(self.extras)
     return result
 
   def __repr__(self):
@@ -695,6 +802,16 @@ class TestResult:
         return True
     return False
 
+  def _get_eventually_passing_retry_record_ids(self):
+    """Returns object IDs of non-passing retry iterations that eventually passed."""
+    retried_ids = set()
+    for record in self.passed:
+      r = record
+      while r.parent is not None and r.parent[1] == TestParentType.RETRY:
+        retried_ids.add(id(r.parent[0]))
+        r = r.parent[0]
+    return retried_ids
+
   def _count_eventually_passing_retries(self):
     """Counts the number of retry iterations that eventually passed.
 
@@ -706,13 +823,7 @@ class TestResult:
       Int, the number that should be subtracted from the result altering error
       counts.
     """
-    count = 0
-    for record in self.passed:
-      r = record
-      while r.parent is not None and r.parent[1] == TestParentType.RETRY:
-        count += 1
-        r = r.parent[0]
-    return count
+    return len(self._get_eventually_passing_retry_record_ids())
 
   @property
   def is_all_pass(self):
