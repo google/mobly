@@ -264,23 +264,21 @@ class TestClassInfoRecord:
 
   @property
   def details(self):
-    if self.termination_signal:
-      return self.termination_signal.details
+    return self.termination_signal.details if self.termination_signal else None
 
   @property
   def termination_signal_type(self):
-    if self.termination_signal:
-      return self.termination_signal.type
+    return self.termination_signal.type if self.termination_signal else None
 
   @property
   def stacktrace(self):
-    if self.termination_signal:
-      return self.termination_signal.stacktrace
+    return (
+        self.termination_signal.stacktrace if self.termination_signal else None
+    )
 
   @property
   def extras(self):
-    if self.termination_signal:
-      return self.termination_signal.extras
+    return self.termination_signal.extras if self.termination_signal else None
 
   def class_begin(self):
     """Marks the beginning of the test class execution."""

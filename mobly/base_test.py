@@ -1269,7 +1269,9 @@ class BaseTestClass:
         else:
           self._clean_up()
       except BaseException as e:
-        if class_termination_error is None:
+        if class_termination_error is None or isinstance(
+            class_termination_error, (signals.TestAbortClass, signals.TestSkip)
+        ):
           class_termination_error = e
         raise
       finally:
