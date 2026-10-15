@@ -575,7 +575,7 @@ class RecordsTest(unittest.TestCase):
         },
     )
     record.class_begin()
-    record.class_end()
+    record.class_end(records.TestResult())
     d = record.to_dict()
     self.assertIsInstance(d[records.TestResultEnums.RECORD_BEGIN_TIME], int)
     self.assertIsInstance(d[records.TestResultEnums.RECORD_END_TIME], int)

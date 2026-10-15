@@ -1164,7 +1164,7 @@ class BaseTestClass:
     class_info.class_begin()
     # Executes pre-setup procedures, like generating test methods.
     if not self._pre_run():
-      class_info.class_end(results=self.results)
+      class_info.class_end(self.results)
       self.summary_writer.dump(
           class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
       )
@@ -1266,13 +1266,11 @@ class BaseTestClass:
       try:
         self._teardown_class()
       except BaseException as e:
-        if class_termination_error is None or isinstance(
-            class_termination_error, (signals.TestAbortClass, signals.TestSkip)
-        ):
-          class_termination_error = e
+        # Whatever escapes teardown is what the caller sees terminate the class.
+        class_termination_error = e
         raise
       finally:
-        class_info.class_end(results=self.results, e=class_termination_error)
+        class_info.class_end(self.results, class_termination_error)
         self.summary_writer.dump(
             class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
         )
