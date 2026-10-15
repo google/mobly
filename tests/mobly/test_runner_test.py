@@ -161,10 +161,6 @@ class TestRunnerTest(unittest.TestCase):
         summary_entries[3][records.TestResultEnums.RECORD_END_TIME], int
     )
     self.assertEqual(
-        summary_entries[3][records.TestResultEnums.RECORD_RESULT],
-        records.TestResultEnums.TEST_RESULT_PASS,
-    )
-    self.assertEqual(
         summary_entries[4]['Type'], records.TestSummaryEntryType.SUMMARY.value
     )
     # The run span encloses the class span.

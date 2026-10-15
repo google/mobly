@@ -1164,7 +1164,7 @@ class BaseTestClass:
     class_info.class_begin()
     # Executes pre-setup procedures, like generating test methods.
     if not self._pre_run():
-      class_info.class_end(self.results)
+      class_info.class_end()
       self.summary_writer.dump(
           class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
       )
@@ -1266,7 +1266,7 @@ class BaseTestClass:
         class_termination_error = e
         raise
       finally:
-        class_info.class_end(self.results, class_termination_error)
+        class_info.class_end(class_termination_error)
         self.summary_writer.dump(
             class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
         )

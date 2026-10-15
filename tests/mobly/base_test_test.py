@@ -1149,11 +1149,26 @@ class BaseTestTest(unittest.TestCase):
         never_call()
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
-    bt_cls.run(test_names=['test_1', 'test_2', 'test_3'])
+    with mock.patch.object(bt_cls.summary_writer, 'dump') as mock_dump:
+      bt_cls.run(test_names=['test_1', 'test_2', 'test_3'])
     self.assertEqual(len(bt_cls.results.skipped), 3)
     self.assertEqual(
         bt_cls.results.summary_str(),
         'Error 0, Executed 0, Failed 0, Passed 0, Requested 3, Skipped 3',
+    )
+    # The abort signal is recorded as the class's termination signal.
+    class_info = next(
+        call.args[0]
+        for call in mock_dump.call_args_list
+        if call.args[1] == records.TestSummaryEntryType.TEST_CLASS_INFO
+    )
+    self.assertEqual(
+        class_info[records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE],
+        'TestAbortClass',
+    )
+    self.assertIn(
+        MSG_EXPECTED_EXCEPTION,
+        class_info[records.TestResultEnums.RECORD_DETAILS],
     )
 
   def test_abort_class_in_setup_test(self):

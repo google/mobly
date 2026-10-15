@@ -227,50 +227,29 @@ class TestClassInfoRecord:
 
   Captures the wall-clock span of the whole class, including `setup_class`
   and `teardown_class`, which is not derivable from the individual test
-  records, the overall result of the class, and the signal that terminated
-  the class early, if any. Times are epoch milliseconds, consistent with
-  `TestResultRecord`.
+  records, and the signal that terminated the class early, if any. Times are
+  epoch milliseconds, consistent with `TestResultRecord`.
   """
 
   def __init__(self, test_class):
     self.test_class = test_class
     self.begin_time = None
     self.end_time = None
-    self.result = None
     self.termination_signal = None
 
   def class_begin(self):
     """Marks the beginning of the test class execution."""
     self.begin_time = utils.get_current_epoch_time()
 
-  def class_end(self, results, e=None):
+  def class_end(self, e=None):
     """Marks the end of the test class execution.
 
     Args:
-      results: The `TestResult` of the class.
-      e: The exception or `TestSignal` that terminated the class early, if
-        any. Without one, the first class-stage error (`pre_run`,
-        `setup_class`, `teardown_class`) becomes the termination signal.
+      e: The exception or `TestSignal` that terminated the class early, if any.
     """
     self.end_time = utils.get_current_epoch_time()
     if e is not None:
       self.termination_signal = ExceptionRecord(e)
-    else:
-      # Class-stage errors are the error records that are not executed tests.
-      for record in results.error:
-        if record not in results.executed:
-          self.termination_signal = record.termination_signal
-          break
-    if not results.is_all_pass:
-      self.result = (
-          TestResultEnums.TEST_RESULT_ERROR
-          if results.error
-          else TestResultEnums.TEST_RESULT_FAIL
-      )
-    elif results.passed or not results.skipped:
-      self.result = TestResultEnums.TEST_RESULT_PASS
-    else:
-      self.result = TestResultEnums.TEST_RESULT_SKIP
 
   def to_dict(self):
     signal = self.termination_signal
@@ -278,7 +257,6 @@ class TestClassInfoRecord:
         TestResultEnums.RECORD_CLASS: self.test_class,
         TestResultEnums.RECORD_BEGIN_TIME: self.begin_time,
         TestResultEnums.RECORD_END_TIME: self.end_time,
-        TestResultEnums.RECORD_RESULT: self.result,
         TestResultEnums.RECORD_DETAILS: signal.details if signal else None,
         TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE: (
             signal.type if signal else None
