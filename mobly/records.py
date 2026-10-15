@@ -229,21 +229,14 @@ class TestClassInfoRecord:
 
   Captures the wall-clock span of the whole class, including `setup_class`
   and `teardown_class`, which is not derivable from the individual test
-  records, as well as the per-class summary counts and any class-level
-  termination signal. Times are epoch milliseconds, consistent with
-  `TestResultRecord`.
+  records, as well as the class result and any class-level termination
+  signal. Times are epoch milliseconds, consistent with `TestResultRecord`.
   """
 
   KEY_TEST_CLASS = TestResultEnums.RECORD_CLASS
   KEY_BEGIN_TIME = TestResultEnums.RECORD_BEGIN_TIME
   KEY_END_TIME = TestResultEnums.RECORD_END_TIME
   KEY_RESULT = TestResultEnums.RECORD_RESULT
-  KEY_REQUESTED = 'Requested'
-  KEY_EXECUTED = 'Executed'
-  KEY_PASSED = 'Passed'
-  KEY_FAILED = 'Failed'
-  KEY_SKIPPED = 'Skipped'
-  KEY_ERROR = 'Error'
   KEY_DETAILS = TestResultEnums.RECORD_DETAILS
   KEY_TERMINATION_SIGNAL_TYPE = TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE
   KEY_STACKTRACE = TestResultEnums.RECORD_STACKTRACE
@@ -254,12 +247,6 @@ class TestClassInfoRecord:
     self.begin_time = None
     self.end_time = None
     self.result = None
-    self.requested = 0
-    self.executed = 0
-    self.passed = 0
-    self.failed = 0
-    self.skipped = 0
-    self.error = 0
     self.termination_signal = None
 
   @property
@@ -295,13 +282,6 @@ class TestClassInfoRecord:
     if e is not None:
       self.termination_signal = ExceptionRecord(e)
     if results is not None:
-      summary = results.summary_dict()
-      self.requested = summary[self.KEY_REQUESTED]
-      self.executed = summary[self.KEY_EXECUTED]
-      self.passed = summary[self.KEY_PASSED]
-      self.failed = summary[self.KEY_FAILED]
-      self.skipped = summary[self.KEY_SKIPPED]
-      self.error = summary[self.KEY_ERROR]
       if self.termination_signal is None and results.error:
         executed_ids = {id(r) for r in results.executed}
         for err_record in results.error:
@@ -347,12 +327,6 @@ class TestClassInfoRecord:
     result[self.KEY_BEGIN_TIME] = self.begin_time
     result[self.KEY_END_TIME] = self.end_time
     result[self.KEY_RESULT] = self.result
-    result[self.KEY_REQUESTED] = self.requested
-    result[self.KEY_EXECUTED] = self.executed
-    result[self.KEY_PASSED] = self.passed
-    result[self.KEY_FAILED] = self.failed
-    result[self.KEY_SKIPPED] = self.skipped
-    result[self.KEY_ERROR] = self.error
     result[self.KEY_DETAILS] = self.details
     result[self.KEY_TERMINATION_SIGNAL_TYPE] = self.termination_signal_type
     result[self.KEY_STACKTRACE] = self.stacktrace

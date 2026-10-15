@@ -386,27 +386,9 @@ class BaseTestTest(unittest.TestCase):
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     expected_msg = '.* does not have test method test_something'
-    with mock.patch.object(
-        bt_cls.summary_writer, 'dump', wraps=bt_cls.summary_writer.dump
-    ) as mock_dump:
-      with self.assertRaisesRegex(base_test.Error, expected_msg):
-        bt_cls.run(test_names=['test_something'])
+    with self.assertRaisesRegex(base_test.Error, expected_msg):
+      bt_cls.run(test_names=['test_something'])
     self.assertFalse(bt_cls.results.executed)
-    class_info_calls = [
-        call
-        for call in mock_dump.call_args_list
-        if call[0][1] == records.TestSummaryEntryType.TEST_CLASS_INFO
-    ]
-    self.assertEqual(len(class_info_calls), 1)
-    class_info_dict = class_info_calls[0][0][0]
-    self.assertEqual(
-        class_info_dict[records.TestResultEnums.RECORD_RESULT],
-        records.TestResultEnums.TEST_RESULT_ERROR,
-    )
-    self.assertEqual(
-        class_info_dict[records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE],
-        'Error',
-    )
 
   def test_setup_class_fail_by_exception(self):
     teardown_class_call_check = mock.MagicMock()

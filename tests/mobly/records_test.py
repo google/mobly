@@ -568,12 +568,6 @@ class RecordsTest(unittest.TestCase):
             records.TestResultEnums.RECORD_BEGIN_TIME: None,
             records.TestResultEnums.RECORD_END_TIME: None,
             records.TestResultEnums.RECORD_RESULT: None,
-            'Requested': 0,
-            'Executed': 0,
-            'Passed': 0,
-            'Failed': 0,
-            'Skipped': 0,
-            'Error': 0,
             records.TestResultEnums.RECORD_DETAILS: None,
             records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE: None,
             records.TestResultEnums.RECORD_STACKTRACE: None,
@@ -616,10 +610,6 @@ class RecordsTest(unittest.TestCase):
         d[records.TestResultEnums.RECORD_RESULT],
         records.TestResultEnums.TEST_RESULT_ERROR,
     )
-    self.assertEqual(d['Requested'], 2)
-    self.assertEqual(d['Executed'], 0)
-    self.assertEqual(d['Skipped'], 1)
-    self.assertEqual(d['Error'], 1)
     self.assertEqual(d[records.TestResultEnums.RECORD_DETAILS], 'setup boom')
     self.assertEqual(
         d[records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE],
