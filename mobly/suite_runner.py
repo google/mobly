@@ -329,9 +329,7 @@ def _dump_suite_info(suite_record, log_path):
   """Dumps the suite info record to test summary file."""
   summary_path = os.path.join(log_path, records.OUTPUT_FILE_SUMMARY)
   summary_writer = records.TestSummaryWriter(summary_path)
-  summary_writer.dump(
-      suite_record.to_dict(), records.TestSummaryEntryType.SUITE_INFO
-  )
+  summary_writer.dump(suite_record.to_dict(), TestSummaryEntryType.SUITE_INFO)
 
 
 def run_suite_class(argv=None):
@@ -363,22 +361,20 @@ def run_suite_class(argv=None):
   console_level = logging.DEBUG if cli_args.verbose else logging.INFO
   ok = False
   with runner.mobly_logger(console_level=console_level) as log_path:
-    suite_record.suite_begin()
     try:
       suite.setup_suite(config.copy())
       try:
+        suite_record.suite_begin()
         runner.run()
         ok = runner.results.is_all_pass
       except signals.TestAbortAll:
         ok = runner.results.is_all_pass
     finally:
-      try:
-        suite.teardown_suite()
-      finally:
-        suite_record.suite_end()
-        suite_record.suite_run_display_name = suite.get_suite_run_display_name()
-        suite_record.extras = suite.get_suite_info().copy()
-        _dump_suite_info(suite_record, log_path)
+      suite.teardown_suite()
+      suite_record.suite_end()
+      suite_record.suite_run_display_name = suite.get_suite_run_display_name()
+      suite_record.extras = suite.get_suite_info().copy()
+      _dump_suite_info(suite_record, log_path)
   if not ok:
     sys.exit(1)
 

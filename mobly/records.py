@@ -99,8 +99,6 @@ class TestSummaryEntryType(enum.Enum):
   # and ended (including setup_class and teardown_class). Dumped once per test
   # class after the class finishes.
   TEST_CLASS_INFO = 'TestClassInfo'
-  # Information on the execution of a test suite.
-  SUITE_INFO = 'SuiteInfo'
 
 
 class TestSummaryWriter:
