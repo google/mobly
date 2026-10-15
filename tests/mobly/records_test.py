@@ -655,15 +655,11 @@ class RecordsTest(unittest.TestCase):
         records.TestResultEnums.TEST_RESULT_FAIL,
     )
 
-    # 4. Class terminated by an unhandled ValueError -> ERROR.
+    # 4. An exception terminating the class is recorded as the signal.
     info_exc = records.TestClassInfoRecord('SomeTestClass')
     info_exc.class_begin()
     info_exc.class_end(results=records.TestResult(), e=ValueError('bad repeat'))
     d_exc = info_exc.to_dict()
-    self.assertEqual(
-        d_exc[records.TestResultEnums.RECORD_RESULT],
-        records.TestResultEnums.TEST_RESULT_ERROR,
-    )
     self.assertEqual(
         d_exc[records.TestResultEnums.RECORD_DETAILS], 'bad repeat'
     )

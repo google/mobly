@@ -234,15 +234,6 @@ class TestClassInfoRecord:
   `TestResultRecord`.
   """
 
-  KEY_TEST_CLASS = TestResultEnums.RECORD_CLASS
-  KEY_BEGIN_TIME = TestResultEnums.RECORD_BEGIN_TIME
-  KEY_END_TIME = TestResultEnums.RECORD_END_TIME
-  KEY_RESULT = TestResultEnums.RECORD_RESULT
-  KEY_DETAILS = TestResultEnums.RECORD_DETAILS
-  KEY_TERMINATION_SIGNAL_TYPE = TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE
-  KEY_STACKTRACE = TestResultEnums.RECORD_STACKTRACE
-  KEY_EXTRAS = TestResultEnums.RECORD_EXTRAS
-
   def __init__(self, test_class):
     self.test_class = test_class
     self.begin_time = None
@@ -272,17 +263,13 @@ class TestClassInfoRecord:
         if record not in results.executed:
           self.termination_signal = record.termination_signal
           break
-    aborted = isinstance(e, (signals.TestAbortSignal, signals.TestSkip))
-    if e is not None and not aborted:
-      self.result = TestResultEnums.TEST_RESULT_ERROR
-    elif not results.is_all_pass:
-      retried = results._eventually_passing_retries()
+    if not results.is_all_pass:
       self.result = (
           TestResultEnums.TEST_RESULT_ERROR
-          if any(r not in retried for r in results.error)
+          if results.error
           else TestResultEnums.TEST_RESULT_FAIL
       )
-    elif results.passed or not (results.skipped or aborted):
+    elif results.passed or not results.skipped:
       self.result = TestResultEnums.TEST_RESULT_PASS
     else:
       self.result = TestResultEnums.TEST_RESULT_SKIP
@@ -290,14 +277,20 @@ class TestClassInfoRecord:
   def to_dict(self):
     signal = self.termination_signal
     return {
-        self.KEY_TEST_CLASS: self.test_class,
-        self.KEY_BEGIN_TIME: self.begin_time,
-        self.KEY_END_TIME: self.end_time,
-        self.KEY_RESULT: self.result,
-        self.KEY_DETAILS: signal.details if signal else None,
-        self.KEY_TERMINATION_SIGNAL_TYPE: signal.type if signal else None,
-        self.KEY_STACKTRACE: signal.stacktrace if signal else None,
-        self.KEY_EXTRAS: copy.deepcopy(signal.extras) if signal else None,
+        TestResultEnums.RECORD_CLASS: self.test_class,
+        TestResultEnums.RECORD_BEGIN_TIME: self.begin_time,
+        TestResultEnums.RECORD_END_TIME: self.end_time,
+        TestResultEnums.RECORD_RESULT: self.result,
+        TestResultEnums.RECORD_DETAILS: signal.details if signal else None,
+        TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE: (
+            signal.type if signal else None
+        ),
+        TestResultEnums.RECORD_STACKTRACE: (
+            signal.stacktrace if signal else None
+        ),
+        TestResultEnums.RECORD_EXTRAS: (
+            copy.deepcopy(signal.extras) if signal else None
+        ),
     }
 
   def __repr__(self):
@@ -741,29 +734,24 @@ class TestResult:
         return True
     return False
 
-  def _eventually_passing_retries(self):
-    """Returns the non-passing retry iterations of tests that eventually passed.
+  def _count_eventually_passing_retries(self):
+    """Counts the number of retry iterations that eventually passed.
 
     If a test is retried and eventually passed, all the associated non-passing
     iterations should not be considered when devising the final state of the
     test run.
-    """
-    retried = []
-    for record in self.passed:
-      r = record
-      while r.parent is not None and r.parent[1] == TestParentType.RETRY:
-        retried.append(r.parent[0])
-        r = r.parent[0]
-    return retried
-
-  def _count_eventually_passing_retries(self):
-    """Counts the number of retry iterations that eventually passed.
 
     Returns:
       Int, the number that should be subtracted from the result altering error
       counts.
     """
-    return len(self._eventually_passing_retries())
+    count = 0
+    for record in self.passed:
+      r = record
+      while r.parent is not None and r.parent[1] == TestParentType.RETRY:
+        count += 1
+        r = r.parent[0]
+    return count
 
   @property
   def is_all_pass(self):

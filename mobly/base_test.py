@@ -439,8 +439,8 @@ class BaseTestClass:
     try:
       with self._log_test_stage(STAGE_NAME_SETUP_CLASS):
         self.setup_class()
-    except (signals.TestAbortSignal, signals.TestSkip):
-      # Throw abort/skip signals to outer try block for handling.
+    except signals.TestAbortSignal:
+      # Throw abort signals to outer try block for handling.
       raise
     except _UNCATCHABLE_EXCEPTIONS:
       raise
@@ -1241,10 +1241,6 @@ class BaseTestClass:
         else:
           # Execute test as a regular single test
           self.exec_one_test(test_name, test_method)
-      return self.results
-    except signals.TestSkip as e:
-      class_termination_error = e
-      self._skip_remaining_tests(e)
       return self.results
     except signals.TestAbortClass as e:
       e.details = f'Test class aborted due to: {e.details}'

@@ -1156,44 +1156,6 @@ class BaseTestTest(unittest.TestCase):
         'Error 0, Executed 0, Failed 0, Passed 0, Requested 3, Skipped 3',
     )
 
-  def test_skip_in_setup_class(self):
-    class MockBaseTest(base_test.BaseTestClass):
-
-      def setup_class(self):
-        asserts.skip(MSG_EXPECTED_EXCEPTION, extras=MOCK_EXTRA)
-
-      def test_1(self):
-        never_call()
-
-      def test_2(self):
-        never_call()
-
-    bt_cls = MockBaseTest(self.mock_test_cls_configs)
-    with mock.patch.object(
-        bt_cls.summary_writer, 'dump', wraps=bt_cls.summary_writer.dump
-    ) as mock_dump:
-      bt_cls.run(test_names=['test_1', 'test_2'])
-    self.assertEqual(len(bt_cls.results.skipped), 2)
-    self.assertEqual(len(bt_cls.results.error), 0)
-    self.assertEqual(bt_cls.results.skipped[0].details, MSG_EXPECTED_EXCEPTION)
-    self.assertEqual(bt_cls.results.skipped[0].extras, MOCK_EXTRA)
-    class_info_dict = [
-        call[0][0]
-        for call in mock_dump.call_args_list
-        if call[0][1] == records.TestSummaryEntryType.TEST_CLASS_INFO
-    ][0]
-    self.assertEqual(
-        class_info_dict[records.TestResultEnums.RECORD_RESULT],
-        records.TestResultEnums.TEST_RESULT_SKIP,
-    )
-    self.assertEqual(
-        class_info_dict[records.TestResultEnums.RECORD_DETAILS],
-        MSG_EXPECTED_EXCEPTION,
-    )
-    self.assertEqual(
-        class_info_dict[records.TestResultEnums.RECORD_EXTRAS], MOCK_EXTRA
-    )
-
   def test_abort_class_in_setup_test(self):
     class MockBaseTest(base_test.BaseTestClass):
 
