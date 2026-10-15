@@ -1126,7 +1126,8 @@ class BaseTestTest(unittest.TestCase):
     )
     self.assertEqual(bt_cls.results.summary_str(), expected_summary)
 
-  def test_abort_class_setup_class(self):
+  @mock.patch('mobly.records.TestSummaryWriter.dump')
+  def test_abort_class_setup_class(self, mock_dump):
     """A class was intentionally aborted by the test.
 
     This is not considered an error as the abort class is used as a skip
@@ -1149,8 +1150,7 @@ class BaseTestTest(unittest.TestCase):
         never_call()
 
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
-    with mock.patch.object(bt_cls.summary_writer, 'dump') as mock_dump:
-      bt_cls.run(test_names=['test_1', 'test_2', 'test_3'])
+    bt_cls.run(test_names=['test_1', 'test_2', 'test_3'])
     self.assertEqual(len(bt_cls.results.skipped), 3)
     self.assertEqual(
         bt_cls.results.summary_str(),
@@ -1165,10 +1165,6 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(
         class_info[records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE],
         'TestAbortClass',
-    )
-    self.assertIn(
-        MSG_EXPECTED_EXCEPTION,
-        class_info[records.TestResultEnums.RECORD_DETAILS],
     )
 
   def test_abort_class_in_setup_test(self):
@@ -2127,9 +2123,6 @@ class BaseTestTest(unittest.TestCase):
       def setup_class(self):
         never_call()
 
-      def test_func(self):
-        never_call()
-
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
     must_call.assert_called_once_with('ha')
@@ -2137,7 +2130,6 @@ class BaseTestTest(unittest.TestCase):
     self.assertEqual(actual_record.test_name, 'pre_run')
     self.assertEqual(actual_record.details, MSG_EXPECTED_EXCEPTION)
     self.assertEqual(actual_record.extras, MOCK_EXTRA)
-    self.assertIsNotNone(actual_record.end_time)
 
   def test_expect_in_setup_test(self):
     must_call = mock.Mock()

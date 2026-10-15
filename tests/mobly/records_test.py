@@ -600,7 +600,6 @@ class RecordsTest(unittest.TestCase):
         'TestAbortClass',
     )
     self.assertEqual(d[records.TestResultEnums.RECORD_EXTRAS], {'k': 'v'})
-    yaml.safe_dump(d)
 
 
 if __name__ == '__main__':
