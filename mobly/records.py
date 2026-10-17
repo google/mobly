@@ -227,32 +227,47 @@ class TestClassInfoRecord:
 
   Captures the wall-clock span of the whole class, including `setup_class`
   and `teardown_class`, which is not derivable from the individual test
-  records. Times are epoch milliseconds, consistent with `TestResultRecord`.
+  records, and the signal that terminated the class early, if any. Times are
+  epoch milliseconds, consistent with `TestResultRecord`.
   """
-
-  KEY_TEST_CLASS = TestResultEnums.RECORD_CLASS
-  KEY_BEGIN_TIME = TestResultEnums.RECORD_BEGIN_TIME
-  KEY_END_TIME = TestResultEnums.RECORD_END_TIME
 
   def __init__(self, test_class):
     self.test_class = test_class
     self.begin_time = None
     self.end_time = None
+    self.termination_signal = None
 
   def class_begin(self):
     """Marks the beginning of the test class execution."""
     self.begin_time = utils.get_current_epoch_time()
 
-  def class_end(self):
-    """Marks the end of the test class execution."""
+  def class_end(self, e=None):
+    """Marks the end of the test class execution.
+
+    Args:
+      e: The exception or `TestSignal` that terminated the class early, if any.
+    """
     self.end_time = utils.get_current_epoch_time()
+    if e is not None:
+      self.termination_signal = ExceptionRecord(e)
 
   def to_dict(self):
-    result = {}
-    result[self.KEY_TEST_CLASS] = self.test_class
-    result[self.KEY_BEGIN_TIME] = self.begin_time
-    result[self.KEY_END_TIME] = self.end_time
-    return result
+    signal = self.termination_signal
+    return {
+        TestResultEnums.RECORD_CLASS: self.test_class,
+        TestResultEnums.RECORD_BEGIN_TIME: self.begin_time,
+        TestResultEnums.RECORD_END_TIME: self.end_time,
+        TestResultEnums.RECORD_DETAILS: signal.details if signal else None,
+        TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE: (
+            signal.type if signal else None
+        ),
+        TestResultEnums.RECORD_STACKTRACE: (
+            signal.stacktrace if signal else None
+        ),
+        TestResultEnums.RECORD_EXTRAS: (
+            copy.deepcopy(signal.extras) if signal else None
+        ),
+    }
 
   def __repr__(self):
     return str(self.to_dict())

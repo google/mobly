@@ -567,6 +567,10 @@ class RecordsTest(unittest.TestCase):
             records.TestResultEnums.RECORD_CLASS: 'SomeTestClass',
             records.TestResultEnums.RECORD_BEGIN_TIME: None,
             records.TestResultEnums.RECORD_END_TIME: None,
+            records.TestResultEnums.RECORD_DETAILS: None,
+            records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE: None,
+            records.TestResultEnums.RECORD_STACKTRACE: None,
+            records.TestResultEnums.RECORD_EXTRAS: None,
         },
     )
     record.class_begin()
@@ -580,6 +584,22 @@ class RecordsTest(unittest.TestCase):
     )
     # Must be serializable by the summary writer.
     yaml.safe_dump(d)
+
+  def test_test_class_info_record_with_termination_signal(self):
+    record = records.TestClassInfoRecord('SomeTestClass')
+    record.class_begin()
+    record.class_end(
+        signals.TestAbortClass('device not supported', extras={'k': 'v'})
+    )
+    d = record.to_dict()
+    self.assertEqual(
+        d[records.TestResultEnums.RECORD_DETAILS], 'device not supported'
+    )
+    self.assertEqual(
+        d[records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE],
+        'TestAbortClass',
+    )
+    self.assertEqual(d[records.TestResultEnums.RECORD_EXTRAS], {'k': 'v'})
 
 
 if __name__ == '__main__':

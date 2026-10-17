@@ -376,9 +376,13 @@ class BaseTestClass:
     self.current_test_info = runtime_test_info.RuntimeTestInfo(
         stage_name, self.log_path, record
     )
+    expects.recorder.reset_internal_states(record)
     try:
       with self._log_test_stage(stage_name):
         self.pre_run()
+      if expects.recorder.has_error:
+        self._record_class_error(record)
+        return False
       return True
     except _UNCATCHABLE_EXCEPTIONS:
       raise
@@ -1180,6 +1184,7 @@ class BaseTestClass:
         records.TestSummaryEntryType.TEST_NAME_LIST,
     )
     tests = self._get_test_methods(test_names)
+    class_termination_error = None
     try:
       setup_class_result = self._setup_class()
       if setup_class_result:
@@ -1239,24 +1244,37 @@ class BaseTestClass:
       return self.results
     except signals.TestAbortClass as e:
       e.details = f'Test class aborted due to: {e.details}'
+      class_termination_error = e
       self._skip_remaining_tests(e)
       return self.results
     except signals.TestAbortAll as e:
       e.details = f'All remaining tests aborted due to: {e.details}'
+      class_termination_error = e
       self._skip_remaining_tests(e)
       # Piggy-back test results on this exception object so we don't lose
       # results from this test class.
       setattr(e, 'results', self.results)
       raise e
+    except BaseException as e:
+      class_termination_error = e
+      raise
     finally:
-      self._teardown_class()
-      class_info.class_end()
-      self.summary_writer.dump(
-          class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
-      )
-      logging.info(
-          'Summary for test class %s: %s', self.TAG, self.results.summary_str()
-      )
+      try:
+        self._teardown_class()
+      except BaseException as e:
+        # Whatever escapes teardown is what the caller sees terminate the class.
+        class_termination_error = e
+        raise
+      finally:
+        class_info.class_end(class_termination_error)
+        self.summary_writer.dump(
+            class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
+        )
+        logging.info(
+            'Summary for test class %s: %s',
+            self.TAG,
+            self.results.summary_str(),
+        )
 
   def _clean_up(self):
     """The final stage of a test class execution."""
