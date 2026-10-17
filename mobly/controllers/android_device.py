@@ -67,6 +67,20 @@ CACHED_SYSTEM_PROPS = [
 # during `create`. Default is True.
 KEY_DEVICE_REQUIRED = 'required'
 DEFAULT_VALUE_DEVICE_REQUIRED = True
+# Controls whether and how Mobly runs `adb root` when an AndroidDevice is
+# created and after a reboot handled via `handle_reboot`. Only applies to
+# rootable (debuggable) builds. Allowed values:
+#   'strict': run `adb root` and raise if it fails. This is the default.
+#   'ignore_error': run `adb root`, log a warning and continue if it fails.
+#   'never': do not run `adb root` automatically at all.
+KEY_ROOT_ON_INIT = 'root_on_init'
+ROOT_ON_INIT_STRICT = 'strict'
+ROOT_ON_INIT_IGNORE_ERROR = 'ignore_error'
+ROOT_ON_INIT_NEVER = 'never'
+ROOT_ON_INIT_VALUES = frozenset(
+    (ROOT_ON_INIT_STRICT, ROOT_ON_INIT_IGNORE_ERROR, ROOT_ON_INIT_NEVER)
+)
+DEFAULT_VALUE_ROOT_ON_INIT = ROOT_ON_INIT_STRICT
 # If True, logcat collection will not be started during `create`.
 # Default is False.
 KEY_SKIP_LOGCAT = 'skip_logcat'
@@ -295,7 +309,9 @@ def get_instances(serials):
 
   results = []
   for s in serials:
-    results.append(AndroidDevice(s))
+    ad = AndroidDevice(s)
+    ad._root_adb_on_init()
+    results.append(ad)
   return results
 
 
@@ -329,6 +345,7 @@ def get_instances_with_configs(configs):
     try:
       ad = AndroidDevice(serial)
       ad.load_config(c)
+      ad._root_adb_on_init()
     except Exception:
       if is_required:
         raise
@@ -541,8 +558,6 @@ class AndroidDevice:
     self._is_rebooting = False
     self.adb = adb.AdbProxy(serial)
     self.fastboot = fastboot.FastbootProxy(serial)
-    if self.is_rootable:
-      self.root_adb()
     self.services = service_manager.ServiceManager(self)
     self.services.register(
         SERVICE_NAME_LOGCAT, logcat.Logcat, start_service=False
@@ -753,8 +768,7 @@ class AndroidDevice:
       self._build_info = None
       self._is_rootable = None
       self._is_rebooting = False
-      if self.is_rootable:
-        self.root_adb()
+      self._root_adb_on_init()
     self.services.start_services(live_service_names)
 
   @contextlib.contextmanager
@@ -932,11 +946,60 @@ class AndroidDevice:
 
     If executed on a production build, adb will not be switched to root
     mode per security restrictions.
+
+    Note that `adb root` exits with code 0 even when adbd refuses to restart
+    as root (e.g. "adbd cannot run as root in production builds"), and the
+    exact message varies across OEMs. So instead of relying on the command's
+    exit code or output, this method verifies the outcome by checking whether
+    adb is actually running as root afterwards.
+
+    Raises:
+      DeviceError: If adb is not running as root after `adb root`.
     """
-    self.adb.root()
+    out = self.adb.root()
+    self.log.debug('Output of `adb root`: %s', out)
     # `root` causes the device to temporarily disappear from adb.
     # So we need to wait for the device to come back before proceeding.
     self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
+    if not self.is_adb_root:
+      raise DeviceError(
+          self,
+          'Failed to switch adb to root mode. Output of `adb root`: %s' % out,
+      )
+
+  def _root_adb_on_init(self):
+    """Runs `adb root` on rootable builds according to `root_on_init`."""
+    root_on_init = getattr(self, KEY_ROOT_ON_INIT, DEFAULT_VALUE_ROOT_ON_INIT)
+    if root_on_init not in ROOT_ON_INIT_VALUES:
+      raise DeviceError(
+          self,
+          'Invalid value "%s" for %s, expected one of %s.'
+          % (root_on_init, KEY_ROOT_ON_INIT, sorted(ROOT_ON_INIT_VALUES)),
+      )
+    if root_on_init == ROOT_ON_INIT_NEVER:
+      self.log.debug(
+          'Skipping automatic adb root because %s is "%s".',
+          KEY_ROOT_ON_INIT,
+          root_on_init,
+      )
+      return
+    if not self.is_rootable:
+      self.log.debug(
+          'Skipping automatic adb root because build is not rootable.'
+      )
+      return
+    try:
+      self.root_adb()
+    except (DeviceError, adb.AdbError, adb.AdbTimeoutError) as e:
+      if root_on_init == ROOT_ON_INIT_STRICT:
+        raise
+      self.log.warning(
+          'Failed to switch adb to root mode, continuing without root since '
+          '%s is "%s". Error: %s',
+          KEY_ROOT_ON_INIT,
+          root_on_init,
+          e,
+      )
 
   def load_snippet(self, name, package, config=None):
     """Starts the snippet apk with the given package name and connects.
