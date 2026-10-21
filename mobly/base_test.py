@@ -1183,7 +1183,14 @@ class BaseTestClass:
         self.results.requested_test_names_dict(),
         records.TestSummaryEntryType.TEST_NAME_LIST,
     )
-    tests = self._get_test_methods(test_names)
+    try:
+      tests = self._get_test_methods(test_names)
+    except Error as e:
+      class_info.class_end(e)
+      self.summary_writer.dump(
+          class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
+      )
+      raise
     class_termination_error = None
     try:
       setup_class_result = self._setup_class()
