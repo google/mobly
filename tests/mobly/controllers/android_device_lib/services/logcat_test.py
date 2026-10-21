@@ -471,6 +471,188 @@ class LogcatTest(unittest.TestCase):
 
     logcat_service.stop()
 
+  def _make_restart_logcat_service(self, MockAdbProxy, boot_ids):
+    """Creates a started Logcat service whose device reports `boot_ids`.
+
+    Args:
+      MockAdbProxy: the patched AdbProxy class.
+      boot_ids: list of values returned by successive boot id reads; a value of
+        None makes the read fail with AdbError.
+
+    Returns:
+      A tuple of (logcat_service, expected_log_path, expected_adb_cmd_fmt).
+    """
+    boot_id_iter = iter(boot_ids)
+
+    def _shell(cmd, *args, **kwargs):
+      if cmd == logcat._BOOT_ID_CMD:
+        boot_id = next(boot_id_iter)
+        if boot_id is None:
+          raise adb.AdbError(cmd, b'', b'Device is disconnected', 1)
+        return boot_id.encode('utf-8')
+      return b''
+
+    adb_instance = MockAdbProxy.return_value
+    adb_instance.shell = mock.MagicMock(side_effect=_shell)
+    ad = android_device.AndroidDevice(serial='1')
+    logcat_service = logcat.Logcat(ad, logcat.Config(clear_log=True))
+    logcat_service.start()
+    expected_log_path = os.path.join(
+        logging.log_path,
+        'AndroidDevice%s' % ad.serial,
+        'logcat,%s,fakemodel,123.txt' % ad.serial,
+    )
+    adb_cmd_fmt = ' "adb" -s %s logcat -v threadtime %s  >> "%s" '
+    return logcat_service, expected_log_path, adb_cmd_fmt
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log'
+  )
+  @mock.patch('mobly.logger.get_log_file_timestamp', return_value='123')
+  def test_restart_after_reboot_keeps_boot_logs(
+      self,
+      get_timestamp_mock,
+      clear_adb_mock,
+      open_logcat_mock,
+      stop_proc_mock,
+      start_proc_mock,
+      create_dir_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    """A restart after a reboot must not clear or skip the boot-time logs.
+
+    This is the `AndroidDevice.handle_reboot` flow: `stop()` before the
+    reboot and `start()` once the device has booted. The boot id changes, so
+    the service dumps the whole (fresh) device buffer instead of clearing it
+    and following from the most recent line only.
+    """
+    logcat_service, log_path, adb_cmd_fmt = self._make_restart_logcat_service(
+        MockAdbProxy, boot_ids=['boot-1', 'boot-2']
+    )
+    # Fresh start: buffer cleared, follow from the most recent line.
+    clear_adb_mock.assert_called_once_with()
+    start_proc_mock.assert_called_with(
+        adb_cmd_fmt % ('1', '-T "1"', log_path), shell=True
+    )
+    clear_adb_mock.reset_mock()
+
+    logcat_service.stop()
+    logcat_service.start()
+
+    # Restart after reboot: buffer kept and dumped in full.
+    clear_adb_mock.assert_not_called()
+    start_proc_mock.assert_called_with(
+        adb_cmd_fmt % ('1', '', log_path), shell=True
+    )
+    self.assertEqual(logcat_service.adb_logcat_file_path, log_path)
+    logcat_service.stop()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log'
+  )
+  @mock.patch('mobly.logger.get_log_file_timestamp', return_value='123')
+  def test_restart_without_reboot_clears_log(
+      self,
+      get_timestamp_mock,
+      clear_adb_mock,
+      open_logcat_mock,
+      stop_proc_mock,
+      start_proc_mock,
+      create_dir_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    """A stop/start on the same boot behaves like a fresh start."""
+    logcat_service, log_path, adb_cmd_fmt = self._make_restart_logcat_service(
+        MockAdbProxy, boot_ids=['boot-1', 'boot-1']
+    )
+    clear_adb_mock.reset_mock()
+
+    logcat_service.stop()
+    logcat_service.start()
+
+    clear_adb_mock.assert_called_once_with()
+    start_proc_mock.assert_called_with(
+        adb_cmd_fmt % ('1', '-T "1"', log_path), shell=True
+    )
+    logcat_service.stop()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
+  @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log'
+  )
+  @mock.patch('mobly.logger.get_log_file_timestamp', return_value='123')
+  def test_restart_with_unreadable_boot_id_clears_log(
+      self,
+      get_timestamp_mock,
+      clear_adb_mock,
+      open_logcat_mock,
+      stop_proc_mock,
+      start_proc_mock,
+      create_dir_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    """If the boot id cannot be read, fall back to the fresh-start behavior."""
+    logcat_service, log_path, adb_cmd_fmt = self._make_restart_logcat_service(
+        MockAdbProxy, boot_ids=['boot-1', None, 'boot-3']
+    )
+    clear_adb_mock.reset_mock()
+
+    # Boot id read fails on this start: cannot tell, so clear as configured.
+    logcat_service.stop()
+    logcat_service.start()
+    clear_adb_mock.assert_called_once_with()
+    start_proc_mock.assert_called_with(
+        adb_cmd_fmt % ('1', '-T "1"', log_path), shell=True
+    )
+    clear_adb_mock.reset_mock()
+
+    # No previous boot id to compare against on the next start either.
+    logcat_service.stop()
+    logcat_service.start()
+    clear_adb_mock.assert_called_once_with()
+    start_proc_mock.assert_called_with(
+        adb_cmd_fmt % ('1', '-T "1"', log_path), shell=True
+    )
+    logcat_service.stop()
+
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
       return_value=mock_android_device.MockAdbProxy('1'),
