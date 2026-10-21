@@ -380,7 +380,8 @@ class BaseTestTest(unittest.TestCase):
     bt_cls = MockBaseTest(self.mock_test_cls_configs)
     bt_cls.run()
 
-  def test_missing_requested_test_func(self):
+  @mock.patch('mobly.records.TestSummaryWriter.dump')
+  def test_missing_requested_test_func(self, mock_dump):
     class MockBaseTest(base_test.BaseTestClass):
       pass
 
@@ -389,6 +390,18 @@ class BaseTestTest(unittest.TestCase):
     with self.assertRaisesRegex(base_test.Error, expected_msg):
       bt_cls.run(test_names=['test_something'])
     self.assertFalse(bt_cls.results.executed)
+    class_info = next(
+        call.args[0]
+        for call in mock_dump.call_args_list
+        if call.args[1] == records.TestSummaryEntryType.TEST_CLASS_INFO
+    )
+    self.assertEqual(
+        class_info[records.TestResultEnums.RECORD_TERMINATION_SIGNAL_TYPE],
+        'Error',
+    )
+    self.assertRegex(
+        class_info[records.TestResultEnums.RECORD_DETAILS], expected_msg
+    )
 
   def test_setup_class_fail_by_exception(self):
     teardown_class_call_check = mock.MagicMock()
