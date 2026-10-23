@@ -696,7 +696,9 @@ def find_subclasses_in_module(base_classes, module):
   for _, module_member in module.__dict__.items():
     if inspect.isclass(module_member):
       for base_class in base_classes:
-        if issubclass(module_member, base_class):
+        if module_member is not base_class and issubclass(
+            module_member, base_class
+        ):
           subclasses.append(module_member)
   return subclasses
 
