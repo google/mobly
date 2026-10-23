@@ -71,6 +71,11 @@ DEFAULT_VALUE_DEVICE_REQUIRED = True
 # Default is False.
 KEY_SKIP_LOGCAT = 'skip_logcat'
 DEFAULT_VALUE_SKIP_LOGCAT = False
+# If True, `adb root` will not be run automatically on rootable (debuggable)
+# builds when the device is created and after a reboot handled via
+# `handle_reboot`. Default is False.
+KEY_SKIP_ROOT = 'skip_root'
+DEFAULT_VALUE_SKIP_ROOT = False
 SERVICE_NAME_LOGCAT = 'logcat'
 
 # Default name for bug reports taken without a specified test name.
@@ -326,8 +331,9 @@ def get_instances_with_configs(configs):
   for c in configs:
     serial = c.pop('serial')
     is_required = c.get(KEY_DEVICE_REQUIRED, True)
+    skip_root = c.pop(KEY_SKIP_ROOT, DEFAULT_VALUE_SKIP_ROOT)
     try:
-      ad = AndroidDevice(serial)
+      ad = AndroidDevice(serial, skip_root=skip_root)
       ad.load_config(c)
     except Exception:
       if is_required:
@@ -523,9 +529,12 @@ class AndroidDevice:
       via fastboot.
     services: ServiceManager, the manager of long-running services on the
       device.
+    skip_root: bool, if True, `adb root` is not run automatically on rootable
+      builds at creation time and after a reboot handled via `handle_reboot`.
+      Settable via the `skip_root` controller config key.
   """
 
-  def __init__(self, serial=''):
+  def __init__(self, serial='', skip_root=DEFAULT_VALUE_SKIP_ROOT):
     self._serial = str(serial)
     # logging.log_path only exists when this is used in an Mobly test run.
     _log_path_base = utils.abs_path(getattr(logging, 'log_path', '/tmp/logs'))
@@ -541,8 +550,8 @@ class AndroidDevice:
     self._is_rebooting = False
     self.adb = adb.AdbProxy(serial)
     self.fastboot = fastboot.FastbootProxy(serial)
-    if self.is_rootable:
-      self.root_adb()
+    self.skip_root = skip_root
+    self._root_adb_if_allowed()
     self.services = service_manager.ServiceManager(self)
     self.services.register(
         SERVICE_NAME_LOGCAT, logcat.Logcat, start_service=False
@@ -753,8 +762,7 @@ class AndroidDevice:
       self._build_info = None
       self._is_rootable = None
       self._is_rebooting = False
-      if self.is_rootable:
-        self.root_adb()
+      self._root_adb_if_allowed()
     self.services.start_services(live_service_names)
 
   @contextlib.contextmanager
@@ -932,11 +940,38 @@ class AndroidDevice:
 
     If executed on a production build, adb will not be switched to root
     mode per security restrictions.
+
+    Note that `adb root` exits with code 0 even when adbd refuses to restart
+    as root (e.g. "adbd cannot run as root in production builds"), so the
+    outcome is verified by checking whether adb is actually running as root
+    afterwards instead of relying on the command's output.
+
+    Returns:
+      True if adb is running as root after this call, False otherwise.
     """
-    self.adb.root()
+    out = self.adb.root()
     # `root` causes the device to temporarily disappear from adb.
     # So we need to wait for the device to come back before proceeding.
     self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
+    if self.is_adb_root:
+      return True
+    self.log.warning(
+        '`adb root` did not take effect, continuing without root. Output: %s',
+        out,
+    )
+    return False
+
+  def _root_adb_if_allowed(self):
+    """Runs `root_adb` on rootable builds unless `skip_root` is set.
+
+    Called automatically at creation time and after a reboot handled via
+    `handle_reboot`.
+    """
+    if self.skip_root:
+      self.log.debug('Skipping automatic adb root because skip_root is set.')
+      return
+    if self.is_rootable:
+      self.root_adb()
 
   def load_snippet(self, name, package, config=None):
     """Starts the snippet apk with the given package name and connects.
