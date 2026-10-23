@@ -240,8 +240,26 @@ class AndroidDeviceTest(unittest.TestCase):
     mock_list_adb_usb.return_value = []
     configs = [{'serial': '1'}, {'serial': '2'}]
     android_device.get_instances_with_configs(configs)
-    mock_ad_class.assert_any_call('1')
-    mock_ad_class.assert_any_call('2')
+    mock_ad_class.assert_any_call('1', skip_root=False)
+    mock_ad_class.assert_any_call('2', skip_root=False)
+
+  @mock.patch('mobly.controllers.android_device.list_fastboot_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices')
+  @mock.patch('mobly.controllers.android_device.list_adb_devices_by_usb_id')
+  @mock.patch('mobly.controllers.android_device.AndroidDevice')
+  def test_get_instances_with_configs_skip_root(
+      self, mock_ad_class, mock_list_adb_usb, mock_list_adb, mock_list_fastboot
+  ):
+    mock_list_fastboot.return_value = []
+    mock_list_adb.return_value = ['1']
+    mock_list_adb_usb.return_value = []
+    configs = [{'serial': '1', 'skip_root': True, 'foo': 'bar'}]
+    android_device.get_instances_with_configs(configs)
+    mock_ad_class.assert_called_once_with('1', skip_root=True)
+    # `skip_root` is consumed by the constructor, not `load_config`.
+    mock_ad_class.return_value.load_config.assert_called_once_with(
+        {'foo': 'bar'}
+    )
 
   def test_get_instances_with_configs_invalid_config(self):
     config = {'something': 'random'}
@@ -263,7 +281,7 @@ class AndroidDeviceTest(unittest.TestCase):
     mock_list_adb_usb.return_value = []
     mock_ad = mock.MagicMock()
 
-    def _make_ad(serial):
+    def _make_ad(serial, skip_root=False):
       if serial == '1':
         raise Exception('Something went wrong.')
       return mock_ad
@@ -293,7 +311,7 @@ class AndroidDeviceTest(unittest.TestCase):
     mock_list_adb_usb.return_value = []
     mock_ad = mock.MagicMock()
 
-    def _make_ad(serial):
+    def _make_ad(serial, skip_root=False):
       if serial == '2':
         raise Exception('Something went wrong.')
       return mock_ad
@@ -748,6 +766,87 @@ class AndroidDeviceTest(unittest.TestCase):
   ):
     ad = android_device.AndroidDevice(serial='1')
     self.assertFalse(ad.is_rootable)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_init_roots_rootable_device(
+      self, MockFastboot, MockAdbProxy
+  ):
+    MockAdbProxy.return_value.root = mock.MagicMock(return_value=b'')
+    ad = android_device.AndroidDevice(serial='1')
+    self.assertFalse(ad.skip_root)
+    ad.adb.root.assert_called_once_with()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy(
+          '1',
+          mock_properties={
+              'ro.build.id': 'AB42',
+              'ro.build.type': 'user',
+              'ro.debuggable': '0',
+          },
+      ),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_init_does_not_root_user_device(
+      self, MockFastboot, MockAdbProxy
+  ):
+    MockAdbProxy.return_value.root = mock.MagicMock()
+    ad = android_device.AndroidDevice(serial='1')
+    ad.adb.root.assert_not_called()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_init_honors_skip_root(
+      self, MockFastboot, MockAdbProxy
+  ):
+    MockAdbProxy.return_value.root = mock.MagicMock()
+    ad = android_device.AndroidDevice(serial='1', skip_root=True)
+    self.assertTrue(ad.skip_root)
+    ad.adb.root.assert_not_called()
+    # Explicit rooting still works when requested by the user.
+    self.assertTrue(ad.root_adb())
+    ad.adb.root.assert_called_once_with()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_root_adb_warns_when_adbd_refuses_root(
+      self, MockFastboot, MockAdbProxy
+  ):
+    ad = android_device.AndroidDevice(serial='1', skip_root=True)
+    ad.adb.root = mock.MagicMock(
+        return_value=b'adbd cannot run as root in production builds'
+    )
+    ad.adb.shell = mock.MagicMock(return_value=b'2000')
+    with mock.patch.object(ad, 'log') as mock_log:
+      self.assertFalse(ad.root_adb())
+    ad.adb.root.assert_called_once_with()
+    mock_log.warning.assert_called_once()
+    self.assertIn(
+        'adbd cannot run as root', mock_log.warning.call_args[0][-1].decode()
+    )
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -2035,6 +2134,28 @@ class AndroidDeviceTest(unittest.TestCase):
       self.assertFalse(ad.services.mock_service.resume_called)
     self.assertTrue(ad.services.is_any_alive)
     self.assertFalse(ad.services.mock_service.resume_called)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_AndroidDevice_handle_reboot_roots_unless_skip_root(
+      self, FastbootProxy, MockAdbProxy
+  ):
+    ad = android_device.AndroidDevice(serial='1')
+    ad.adb.root = mock.MagicMock(return_value=b'')
+    with ad.handle_reboot():
+      pass
+    ad.adb.root.assert_called_once_with()
+    ad.adb.root.reset_mock()
+    ad.skip_root = True
+    with ad.handle_reboot():
+      pass
+    ad.adb.root.assert_not_called()
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',

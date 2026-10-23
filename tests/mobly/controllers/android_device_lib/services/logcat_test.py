@@ -829,7 +829,7 @@ class LogcatTest(unittest.TestCase):
         'ro.build.type': 'userdebug',
         'ro.debuggable': '1',
     }
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, skip_root=True)
     logcat_service = logcat.Logcat(ad)
     with self.assertNoLogs(level=logging.WARNING):
       logcat_service._enable_logpersist()
@@ -871,7 +871,7 @@ class LogcatTest(unittest.TestCase):
         'ro.build.type': 'user',
         'ro.debuggable': '0',
     }
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, skip_root=True)
     logcat_service = logcat.Logcat(ad)
     logcat_service._enable_logpersist()
     mock_adb_proxy.shell.assert_not_called()
@@ -898,7 +898,7 @@ class LogcatTest(unittest.TestCase):
         'ro.debuggable': '1',
     }
     mock_adb_proxy.shell.side_effect = MOCK_LOGPERSIST_START_MISSING_ADB_ERROR
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, skip_root=True)
     logcat_service = logcat.Logcat(ad)
     with self.assertLogs(level=logging.WARNING) as cm:
       logcat_service._enable_logpersist()
@@ -927,7 +927,7 @@ class LogcatTest(unittest.TestCase):
         'ro.debuggable': '1',
     }
     mock_adb_proxy.shell.side_effect = MOCK_LOGPERSIST_STOP_MISSING_ADB_ERROR
-    ad = android_device.AndroidDevice(serial=mock_serial)
+    ad = android_device.AndroidDevice(serial=mock_serial, skip_root=True)
     logcat_service = logcat.Logcat(ad)
     with self.assertLogs(level=logging.WARNING) as cm:
       logcat_service._enable_logpersist()
