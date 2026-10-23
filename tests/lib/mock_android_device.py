@@ -108,7 +108,7 @@ class MockAdbProxy:
 
   def shell(self, params, timeout=None):
     if params == 'id -u':
-      return b'root'
+      return b'0'
     elif params == 'bugreportz':
       if self.fail_br:
         return b'OMG I died!\n'
