@@ -34,6 +34,10 @@ _ENABLE_LOGPERSIST_CMD = (
     ' && logpersist.start'
 )
 
+# Unique per kernel boot; used to detect that the device rebooted between a
+# `stop()` and the next `start()` of this service.
+_BOOT_ID_CMD = 'cat /proc/sys/kernel/random/boot_id'
+
 
 class Error(errors.ServiceError):
   """Root error type for logcat service."""
@@ -80,6 +84,9 @@ class Logcat(base_service.BaseService):
     self.adb_logcat_file_path = None
     self._processor = None
     self._last_connection_time = None
+    # Kernel boot id observed by the most recent `start()`; None until the
+    # service has started once (or if the id could not be read).
+    self._boot_id = None
     # Logcat service uses a single config obj, using singular internal
     # name: `_config`.
     self._config = configs if configs else Config()
@@ -128,6 +135,16 @@ class Logcat(base_service.BaseService):
         return response.decode('utf-8').strip()
     except (adb.AdbError, UnicodeDecodeError):
       self._ad.log.debug('Failed to get device timestamp.')
+    return None
+
+  def _get_boot_id(self) -> Optional[str]:
+    """Returns the device's current kernel boot id, or None if unavailable."""
+    try:
+      response = self._ad.adb.shell(_BOOT_ID_CMD)
+      if response:
+        return response.decode('utf-8').strip() or None
+    except (adb.AdbError, UnicodeDecodeError):
+      self._ad.log.debug('Failed to get device boot id.')
     return None
 
   def now(self) -> logcat_processor.LogcatPosition:
@@ -441,6 +458,14 @@ class Logcat(base_service.BaseService):
     """Starts a standing adb logcat collection.
 
     The collection runs in a separate subprocess and saves logs in a file.
+
+    When the service is restarted after the device rebooted (e.g. by
+    `AndroidDevice.handle_reboot`), the device's log buffer only holds lines
+    produced since boot and nothing from it has been collected yet. In that
+    case the buffer is not cleared, regardless of `Config.clear_log`, and the
+    new `adb logcat` process dumps the whole buffer before following, so that
+    logs emitted during boot (before `sys.boot_completed`) end up in
+    `adb_logcat_file_path` and are visible to `get_lines`, `wait_for`, etc.
     """
     if self._ad.is_bootloader:
       self._ad.log.warning(
@@ -448,13 +473,30 @@ class Logcat(base_service.BaseService):
       )
       return
     self._assert_not_running()
-    if self._config.clear_log:
+    boot_id = self._get_boot_id()
+    rebooted = (
+        self._boot_id is not None
+        and boot_id is not None
+        and boot_id != self._boot_id
+    )
+    self._boot_id = boot_id
+    if rebooted:
+      self._ad.log.debug(
+          '[LogcatService] Device rebooted since the last start; keeping the'
+          ' boot-time logs instead of clearing the buffer.'
+      )
+    elif self._config.clear_log:
       self.clear_adb_log()
-    self._start()
+    self._start(dump_buffer=rebooted)
     self._open_logcat_file()
 
-  def _start(self):
-    """Starts the actual subprocess logic of starting logcat."""
+  def _start(self, dump_buffer=False):
+    """Starts the actual subprocess logic of starting logcat.
+
+    Args:
+      dump_buffer: bool, if True the whole device log buffer is dumped before
+        following new output, instead of only the most recent line.
+    """
     self._enable_logpersist()
     if self._config.output_file_path:
       self._close_logcat_file()
@@ -474,14 +516,19 @@ class Logcat(base_service.BaseService):
     # double quotes in args if starting and ending with it.
     # Add spaces at beginning and at last to fix this issue.
     if self._last_connection_time is not None:
-      t_argument_value = self._last_connection_time
+      # Resuming: pick up everything logged since the service was paused.
+      t_argument = '-T "%s"' % self._last_connection_time
       self._last_connection_time = None
+    elif dump_buffer:
+      # Restarting after a reboot: the buffer only holds this boot's logs.
+      t_argument = ''
     else:
-      t_argument_value = '1'
-    cmd = ' "%s" -s %s logcat -v threadtime -T "%s" %s >> "%s" ' % (
+      # Fresh start: follow from the most recent line only.
+      t_argument = '-T "1"'
+    cmd = ' "%s" -s %s logcat -v threadtime %s %s >> "%s" ' % (
         adb.ADB,
         self._ad.serial,
-        t_argument_value,
+        t_argument,
         self._config.logcat_params,
         self.adb_logcat_file_path,
     )
