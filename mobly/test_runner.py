@@ -16,6 +16,7 @@ import argparse
 import contextlib
 import logging
 import os
+import re
 import signal
 import sys
 import time
@@ -345,9 +346,14 @@ class TestRunner:
         # If tests is provided, verify that all tests exist in the class.
         tests_set = set(tests)
         for test_name in test_run_info.tests:
-          if test_name not in tests_set:
+          if test_name.startswith(base_test.TEST_SELECTOR_REGEX_PREFIX):
+            regex = test_name.removeprefix(base_test.TEST_SELECTOR_REGEX_PREFIX)
+            matches = [name for name in tests if re.fullmatch(regex, name)]
+          else:
+            matches = [test_name] if test_name in tests_set else []
+          if not matches:
             raise Error(f'Unknown test method: {test_name} in class {test.TAG}')
-          test_names.append(f'{test.TAG}.{test_name}')
+          test_names.extend(f'{test.TAG}.{name}' for name in matches)
       else:
         test_names.extend([f'{test.TAG}.{n}' for n in tests])
 
