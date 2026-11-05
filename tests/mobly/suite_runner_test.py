@@ -429,6 +429,21 @@ class SuiteRunnerTest(unittest.TestCase):
     ]
     mock_print.assert_has_calls(calls)
 
+  @mock.patch('builtins.print')
+  def test_print_test_names_for_suites_with_regex_selector(self, mock_print):
+    class FakeTestSuite(base_suite.BaseSuite):
+
+      def setup_suite(self, config):
+        self.add_test_class(FakeTest1, tests=['re:test_.*'])
+
+    suite_runner._print_test_names_for_suite(FakeTestSuite)
+    mock_print.assert_has_calls(
+        [
+            mock.call('==========> FakeTest1 <=========='),
+            mock.call('FakeTest1.test_a'),
+        ]
+    )
+
   def test_print_test_names(self):
     mock_test_class = mock.MagicMock()
     mock_cls_instance = mock.MagicMock()

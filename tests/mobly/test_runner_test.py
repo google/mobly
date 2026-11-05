@@ -469,6 +469,30 @@ class TestRunnerTest(unittest.TestCase):
     ):
       tr.get_full_test_names()
 
+  def test_get_full_test_names_regex_selector(self):
+    config = self.base_mock_test_config.copy()
+    tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
+    with tr.mobly_logger():
+      tr.add_test_class(
+          config, integration_test.IntegrationTest, tests=['re:test_hello.*']
+      )
+
+    results = tr.get_full_test_names()
+    self.assertEqual(results, ['IntegrationTest.test_hello_world'])
+
+  def test_get_full_test_names_regex_selector_no_match(self):
+    config = self.base_mock_test_config.copy()
+    tr = test_runner.TestRunner(self.log_dir, self.testbed_name)
+    with tr.mobly_logger():
+      tr.add_test_class(
+          config, integration_test.IntegrationTest, tests=['re:test_hello']
+      )
+    with self.assertRaisesRegex(
+        test_runner.Error,
+        '^Unknown test method: re:test_hello in class IntegrationTest$',
+    ):
+      tr.get_full_test_names()
+
   def test_get_full_test_names_test_list_empty(self):
     """Verifies that calling get_test_names with empty test list works properly."""
     config = self.base_mock_test_config.copy()
