@@ -1042,6 +1042,10 @@ class AndroidDevice:
     if begin_time is None:
       begin_time = mobly_logger.get_log_file_timestamp()
 
+    # In case device restarted, wait for boot completion before probing
+    # bugreportz or querying device properties.
+    self.wait_for_boot_completion()
+
     new_br = True
     try:
       stdout = self.adb.shell('bugreportz -v').decode('utf-8')
@@ -1060,8 +1064,6 @@ class AndroidDevice:
     if new_br:
       filename = filename.replace('.txt', '.zip')
     full_out_path = os.path.join(br_path, filename)
-    # in case device restarted, wait for adb interface to return
-    self.wait_for_boot_completion()
     self.log.debug('Start taking bugreport.')
     if new_br:
       out = self.adb.shell('bugreportz', timeout=timeout).decode('utf-8')
