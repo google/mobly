@@ -14,7 +14,6 @@
 
 import logging
 import os
-import shutil
 import time
 from typing import Any, Callable, Optional, Pattern, Sequence, Set, Union
 
@@ -80,9 +79,9 @@ class Logcat(base_service.BaseService):
     super().__init__(android_device, configs)
     self._ad = android_device
     self._adb_logcat_process = None
-    self._adb_logcat_file_obj = None
     self.adb_logcat_file_path = None
     self._processor = None
+    self._excerpt_copier = None
     self._last_connection_time = None
     # Kernel boot id observed by the most recent `start()`; None until the
     # service has started once (or if the id could not be read).
@@ -100,6 +99,18 @@ class Logcat(base_service.BaseService):
           timeout_error_cls=lambda msg: LogcatTimeoutError(self._ad, msg),
       )
     return self._processor
+
+  def _ensure_excerpt_copier(self) -> Optional[utils.IncrementalFileCopier]:
+    if not self.adb_logcat_file_path:
+      return None
+    if (
+        self._excerpt_copier is None
+        or self._excerpt_copier.source_path != self.adb_logcat_file_path
+    ):
+      self._excerpt_copier = utils.IncrementalFileCopier(
+          self.adb_logcat_file_path, ignore_existing_content=True
+      )
+    return self._excerpt_copier
 
   def _enable_logpersist(self):
     """Attempts to enable logpersist daemon to persist logs."""
@@ -358,20 +369,12 @@ class Logcat(base_service.BaseService):
         self.OUTPUT_FILE_TYPE, test_info, 'txt'
     )
     excerpt_file_path = os.path.join(dest_path, filename)
-    with open(
-        excerpt_file_path,
-        'w',
-        encoding='utf-8',
-        errors='replace',
-        # When newline is '', line endings are read without conversion.
-        newline='',
-    ) as out:
-      # Devices may accidentally go offline during test,
-      # check not None before copying.
-      if self._adb_logcat_file_obj:
-        # Copies from the current offset (where the previous excerpt ended)
-        # to EOF in large chunks instead of line-by-line in Python.
-        shutil.copyfileobj(self._adb_logcat_file_obj, out)
+    copier = self._ensure_excerpt_copier()
+    if copier is not None:
+      copier.copy_new(excerpt_file_path)
+    else:
+      with open(excerpt_file_path, 'wb'):
+        pass
     self._ad.log.debug('logcat excerpt created at: %s', excerpt_file_path)
     return [excerpt_file_path]
 
@@ -424,35 +427,15 @@ class Logcat(base_service.BaseService):
     self._config = new_config
     self._processor = None
 
-  def _open_logcat_file(self):
-    """Creates a file object that points to the beginning of the logcat file.
-
-    Wait for the logcat file to be created by the subprocess if it doesn't
-    exist.
-    """
-    if not self._adb_logcat_file_obj:
-      deadline = time.perf_counter() + CREATE_LOGCAT_FILE_TIMEOUT_SEC
-      while not os.path.exists(self.adb_logcat_file_path):
-        if time.perf_counter() > deadline:
-          raise Error(
-              self._ad, 'Timeout while waiting for logcat file to be created.'
-          )
-        time.sleep(1)
-      self._adb_logcat_file_obj = open(
-          self.adb_logcat_file_path,  # pytype: disable=wrong-arg-types
-          'r',
-          encoding='utf-8',
-          errors='replace',
-          # When newline is '', line endings are read without conversion.
-          newline='',
-      )
-      self._adb_logcat_file_obj.seek(0, os.SEEK_END)
-
-  def _close_logcat_file(self):
-    """Closes and resets the logcat file object, if it exists."""
-    if self._adb_logcat_file_obj:
-      self._adb_logcat_file_obj.close()
-      self._adb_logcat_file_obj = None
+  def _wait_for_logcat_file(self):
+    """Waits for the logcat file to be created by the subprocess."""
+    deadline = time.perf_counter() + CREATE_LOGCAT_FILE_TIMEOUT_SEC
+    while not os.path.exists(self.adb_logcat_file_path):
+      if time.perf_counter() > deadline:
+        raise Error(
+            self._ad, 'Timeout while waiting for logcat file to be created.'
+        )
+      time.sleep(1)
 
   def start(self):
     """Starts a standing adb logcat collection.
@@ -488,7 +471,7 @@ class Logcat(base_service.BaseService):
     elif self._config.clear_log:
       self.clear_adb_log()
     self._start(dump_buffer=rebooted)
-    self._open_logcat_file()
+    self._wait_for_logcat_file()
 
   def _start(self, dump_buffer=False):
     """Starts the actual subprocess logic of starting logcat.
@@ -499,7 +482,6 @@ class Logcat(base_service.BaseService):
     """
     self._enable_logpersist()
     if self._config.output_file_path:
-      self._close_logcat_file()
       self.adb_logcat_file_path = self._config.output_file_path
     if not self.adb_logcat_file_path:
       f_name = self._ad.generate_filename(
@@ -507,6 +489,7 @@ class Logcat(base_service.BaseService):
       )
       logcat_file_path = os.path.join(self._ad.log_path, f_name)
       self.adb_logcat_file_path = logcat_file_path
+    self._ensure_excerpt_copier()
     self._processor = logcat_processor.LogcatProcessor(
         self.adb_logcat_file_path,
         timeout_error_cls=lambda msg: LogcatTimeoutError(self._ad, msg),
@@ -537,7 +520,6 @@ class Logcat(base_service.BaseService):
 
   def stop(self):
     """Stops the adb logcat service."""
-    self._close_logcat_file()
     self._stop()
 
   def _stop(self):

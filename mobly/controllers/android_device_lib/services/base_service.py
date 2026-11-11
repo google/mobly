@@ -110,7 +110,9 @@ class BaseService(abc.ABC):
     service to the call to `create_output_excerpts`.
 
     Use `AndroidDevice#generate_filename` to get the proper filenames for
-    excerpts.
+    excerpts. Services that stream output into an append-only host file can use
+    :class:`~mobly.utils.IncrementalFileCopier` to copy newly appended content
+    on each call.
 
     This is usually called at the end of: `setup_class`, `teardown_test`,
     or `teardown_class`.
