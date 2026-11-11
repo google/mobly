@@ -753,9 +753,23 @@ class AndroidDevice:
       self._build_info = None
       self._is_rootable = None
       self._is_rebooting = False
-      if self.is_rootable:
-        self.root_adb()
-    self.services.start_services(live_service_names)
+      root_err = None
+      try:
+        if self.is_rootable:
+          self.root_adb()
+      except Exception as err:  # pylint: disable=broad-except
+        root_err = err
+        raise
+      finally:
+        if root_err is None:
+          self.services.start_services(live_service_names)
+        else:
+          try:
+            self.services.start_services(live_service_names)
+          except Exception:  # pylint: disable=broad-except
+            self.log.exception(
+                'Failed to restart services after root_adb failure.'
+            )
 
   @contextlib.contextmanager
   def handle_usb_disconnect(self):
@@ -927,6 +941,27 @@ class AndroidDevice:
       setattr(self, k, v)
       self.add_device_info(k, v)
 
+  def _wait_for_device_after_root(self):
+    """Waits for adb to return after `adb root`, reconnecting TCP if stuck."""
+    if adb.is_tcp_device(self.serial):
+      try:
+        self.adb.wait_for_device(timeout=adb.ADB_ROOT_ATTEMPT_TIMEOUT_SEC)
+        return
+      except (adb.AdbError, adb.AdbTimeoutError):
+        self.log.debug(
+            'TCP adb transport offline after `adb root`; reconnecting %s.',
+            self.serial,
+        )
+        with contextlib.suppress(adb.AdbError, adb.AdbTimeoutError):
+          self.adb.disconnect(
+              self.serial, timeout=adb.ADB_ROOT_ATTEMPT_TIMEOUT_SEC
+          )
+        with contextlib.suppress(adb.AdbError, adb.AdbTimeoutError):
+          self.adb.connect(
+              self.serial, timeout=adb.ADB_ROOT_ATTEMPT_TIMEOUT_SEC
+          )
+    self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
+
   def root_adb(self):
     """Change adb to root mode for this device if allowed.
 
@@ -936,7 +971,7 @@ class AndroidDevice:
     self.adb.root()
     # `root` causes the device to temporarily disappear from adb.
     # So we need to wait for the device to come back before proceeding.
-    self.adb.wait_for_device(timeout=DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND)
+    self._wait_for_device_after_root()
 
   def load_snippet(self, name, package, config=None):
     """Starts the snippet apk with the given package name and connects.
