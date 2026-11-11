@@ -1306,6 +1306,55 @@ class AndroidDeviceTest(unittest.TestCase):
       return_value=mock_android_device.MockFastbootProxy('1'),
   )
   @mock.patch('mobly.utils.create_dir')
+  def test_AndroidDevice_take_bug_report_waits_for_boot_before_probing(
+      self, create_dir_mock, FastbootProxy, MockAdbProxy
+  ):
+    """Verifies take_bug_report waits for boot completion before bugreportz."""
+    ad = android_device.AndroidDevice(serial='1')
+    booted = False
+    orig_shell = ad.adb.shell
+
+    def _wait_for_boot():
+      nonlocal booted
+      booted = True
+
+    def _shell_requiring_boot(params, timeout=None):
+      if not booted:
+        raise adb.AdbError(
+            ['adb', 'shell', params], b'', b'device offline', 1, '1'
+        )
+      return orig_shell(params, timeout=timeout)
+
+    with (
+        mock.patch.object(
+            ad, 'wait_for_boot_completion', side_effect=_wait_for_boot
+        ) as mock_wait,
+        mock.patch.object(ad.adb, 'shell', side_effect=_shell_requiring_boot),
+    ):
+      output_path = ad.take_bug_report(
+          test_name='test_something', begin_time='sometime'
+      )
+
+    mock_wait.assert_called_once_with()
+    expected_path = os.path.join(
+        logging.log_path, 'AndroidDevice%s' % ad.serial, 'BugReports'
+    )
+    self.assertEqual(
+        output_path,
+        os.path.join(
+            expected_path, 'bugreport,test_something,1,fakemodel,sometime.zip'
+        ),
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.logger.get_log_file_timestamp')
   def test_AndroidDevice_take_screenshot(
       self,
