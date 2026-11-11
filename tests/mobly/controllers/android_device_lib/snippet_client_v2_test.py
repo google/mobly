@@ -14,8 +14,12 @@
 """Unit tests for mobly.controllers.android_device_lib.snippet_client_v2."""
 
 import socket
+import sys
+import threading
 import unittest
 from unittest import mock
+
+from mobly import utils
 
 from mobly.controllers.android_device_lib import adb
 from mobly.controllers.android_device_lib import errors as android_device_lib_errors
@@ -2046,6 +2050,152 @@ class SnippetClientV2Test(unittest.TestCase):
     mock_send_handshake_func.assert_called_once_with(
         3, snippet_client_v2.ConnectionHandshakeCommand.CONTINUE
     )
+
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
+  def test_start_server_timeout_before_protocol_line(
+      self, mock_start_standing_subprocess, mock_stop_standing_subprocess
+  ):
+    """Tests start_server times out cleanly when instrumentation hangs."""
+    unblock = threading.Event()
+    mock_stop_standing_subprocess.side_effect = lambda proc: unblock.set()
+    lines = iter([b'ActivityManager: user locked\n'])
+
+    def _readline():
+      try:
+        return next(lines)
+      except StopIteration:
+        unblock.wait(5)
+        return b''
+
+    mock_proc = mock_start_standing_subprocess.return_value
+    mock_proc.stdout.readline.side_effect = _readline
+
+    config = snippet_client_v2.Config(server_start_timeout_sec=0.05)
+    self._make_client(config=config)
+    with self.assertRaisesRegex(
+        errors.ServerStartError,
+        r'Timed out after 0\.05s waiting for snippet server '
+        rf'{MOCK_PACKAGE_NAME} to start\.'
+        r'[\s\S]*ActivityManager: user locked',
+    ):
+      self.client.start_server()
+
+    mock_stop_standing_subprocess.assert_called_once_with(mock_proc)
+    self.assertIsNone(self.client._proc)
+
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
+  def test_start_server_timeout_before_port_line(
+      self, mock_start_standing_subprocess, mock_stop_standing_subprocess
+  ):
+    """Tests start_server times out when server never reports a port."""
+    unblock = threading.Event()
+    mock_stop_standing_subprocess.side_effect = lambda proc: unblock.set()
+    lines = iter([b'SNIPPET START, PROTOCOL 1 0\n'])
+
+    def _readline():
+      try:
+        return next(lines)
+      except StopIteration:
+        unblock.wait(5)
+        return b''
+
+    mock_proc = mock_start_standing_subprocess.return_value
+    mock_proc.stdout.readline.side_effect = _readline
+
+    config = snippet_client_v2.Config(server_start_timeout_sec=0.05)
+    self._make_client(config=config)
+    with self.assertRaisesRegex(
+        errors.ServerStartError,
+        r'Timed out after 0\.05s waiting for snippet server '
+        rf'{MOCK_PACKAGE_NAME} to start\.',
+    ):
+      self.client.start_server()
+
+    mock_stop_standing_subprocess.assert_called_once_with(mock_proc)
+    self.assertIsNone(self.client._proc)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'adb.list_occupied_adb_ports',
+      return_value=[],
+  )
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
+  def test_initialize_timeout_stops_subprocess_once(
+      self, mock_start_standing_subprocess, mock_stop_standing_subprocess, _
+  ):
+    """Tests initialize() cleans up without stopping the subprocess twice."""
+    unblock = threading.Event()
+    mock_stop_standing_subprocess.side_effect = lambda proc: unblock.set()
+    mock_proc = mock_start_standing_subprocess.return_value
+    mock_proc.stdout.readline.side_effect = lambda: (unblock.wait(5), b'')[1]
+
+    config = snippet_client_v2.Config(server_start_timeout_sec=0.05)
+    self._make_client(config=config)
+    with self.assertRaisesRegex(
+        errors.ServerStartError,
+        r'Timed out after 0\.05s waiting for snippet server',
+    ):
+      self.client.initialize()
+
+    mock_stop_standing_subprocess.assert_called_once_with(mock_proc)
+    self.adb.mock_shell_func.assert_any_call(
+        f'am instrument --user {MOCK_USER_ID} -w -e action stop '
+        f'{MOCK_SERVER_PATH}',
+        timeout=mock.ANY,
+    )
+
+  def test_start_server_timeout_with_real_subprocess(self):
+    """Verifies real standing subprocess unblocks readline across platforms."""
+    config = snippet_client_v2.Config(server_start_timeout_sec=0.1)
+    self._make_client(config=config)
+    with mock.patch.object(
+        self.client,
+        '_run_adb_cmd',
+        side_effect=lambda cmd: utils.start_standing_subprocess(
+            [sys.executable, '-c', 'import time; time.sleep(30)'], shell=False
+        ),
+    ):
+      with self.assertRaisesRegex(
+          errors.ServerStartError,
+          r'Timed out after 0\.1s waiting for snippet server '
+          rf'{MOCK_PACKAGE_NAME} to start\.',
+      ):
+        self.client.start_server()
+    self.assertIsNone(self.client._proc)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.'
+      'utils.start_standing_subprocess'
+  )
+  def test_start_server_timeout_validation_and_none(
+      self, mock_start_subprocess
+  ):
+    """Tests invalid timeout values raise ValueError and None disables timer."""
+    for bad_timeout in (0, -5):
+      config = snippet_client_v2.Config(server_start_timeout_sec=bad_timeout)
+      self._make_client(config=config)
+      with self.assertRaisesRegex(
+          ValueError, 'server_start_timeout_sec must be positive'
+      ):
+        self.client.start_server()
+
+    config = snippet_client_v2.Config(server_start_timeout_sec=None)
+    self._make_client(config=config)
+    self._mock_server_process_starting_response(mock_start_subprocess)
+    self.client.start_server()
+    self.assertEqual(self.client.device_port, 1234)
 
 
 if __name__ == '__main__':
