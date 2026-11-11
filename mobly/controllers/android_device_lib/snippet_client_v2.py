@@ -742,9 +742,14 @@ class SnippetClientV2(client_base.ClientBase):
         the device side.
     """
     self.log.debug('Stopping snippet client %s.', str(self))
-    self.close_connection()
-    self._stop_server()
-    self._destroy_event_client()
+    try:
+      self.close_connection()
+      self._stop_server()
+    finally:
+      # Always destroy the event client, even if the steps above fail.
+      # Otherwise a stale event client would be reused if this client is
+      # initialized again.
+      self._destroy_event_client()
     self.log.debug('Snippet client %s stopped.', str(self))
 
   def close_connection(self):

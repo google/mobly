@@ -1173,6 +1173,93 @@ class SnippetClientV2Test(unittest.TestCase):
       'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
       return_value=[12345],
   )
+  @mock.patch.object(_MockAdbProxy, 'shell', return_value=b'Closed with error.')
+  @mock.patch.object(
+      snippet_client_v2.SnippetClientV2, 'create_socket_connection'
+  )
+  @mock.patch.object(
+      snippet_client_v2.SnippetClientV2, 'send_handshake_request'
+  )
+  def test_stop_with_event_client_and_device_side_error(
+      self,
+      mock_send_handshake_func,
+      mock_create_socket_conn_func,
+      mock_adb_shell,
+      _,
+  ):
+    """Tests the event client is destroyed when server stop throws an error."""
+    del mock_send_handshake_func
+    del mock_create_socket_conn_func
+    self._make_client()
+    self.client.host_port = 12345
+    self.client.device_port = 45678
+    self.client._conn = mock.Mock()
+    self.client._create_event_client()
+    event_client = self.client._event_client
+    event_client_conn = mock.Mock()
+    event_client._conn = event_client_conn
+
+    with self.assertRaisesRegex(
+        android_device_lib_errors.DeviceError, 'Closed with error'
+    ):
+      self.client.stop()
+
+    mock_adb_shell.assert_called_once_with(
+        f'am instrument --user {MOCK_USER_ID} -w -e action stop '
+        f'{MOCK_SERVER_PATH}',
+        timeout=mock.ANY,
+    )
+    event_client_conn.close.assert_called_once_with()
+    self.assertIsNone(event_client._conn)
+    self.assertIsNone(self.client._event_client)
+    self.device.adb.mock_forward_func.assert_called_once_with(
+        ['--remove', 'tcp:12345']
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
+      return_value=[12345],
+  )
+  @mock.patch.object(
+      snippet_client_v2.SnippetClientV2, 'create_socket_connection'
+  )
+  @mock.patch.object(
+      snippet_client_v2.SnippetClientV2, 'send_handshake_request'
+  )
+  def test_stop_with_event_client_and_conn_close_error(
+      self,
+      mock_send_handshake_func,
+      mock_create_socket_conn_func,
+      _,
+  ):
+    """Tests the event client is destroyed when socket close throws an error."""
+    del mock_send_handshake_func
+    del mock_create_socket_conn_func
+    self._make_client()
+    self.client.host_port = 12345
+    self.client.device_port = 45678
+    snippet_client_conn = mock.Mock()
+    snippet_client_conn.close.side_effect = OSError('Closed with error')
+    self.client._conn = snippet_client_conn
+    self.client._create_event_client()
+    event_client = self.client._event_client
+    event_client_conn = mock.Mock()
+    event_client._conn = event_client_conn
+
+    with self.assertRaisesRegex(OSError, 'Closed with error'):
+      self.client.stop()
+
+    event_client_conn.close.assert_called_once_with()
+    self.assertIsNone(event_client._conn)
+    self.assertIsNone(self.client._event_client)
+    self.device.adb.mock_forward_func.assert_called_once_with(
+        ['--remove', 'tcp:12345']
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.snippet_client_v2.adb.list_occupied_adb_ports',
+      return_value=[12345],
+  )
   @mock.patch('mobly.utils.stop_standing_subprocess')
   @mock.patch.object(
       snippet_client_v2.SnippetClientV2, 'create_socket_connection'
