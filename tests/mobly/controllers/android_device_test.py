@@ -1565,7 +1565,7 @@ class AndroidDeviceTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   def test_AndroidDevice_change_log_path_with_service(
       self,
       open_logcat_mock,
@@ -1647,7 +1647,7 @@ class AndroidDeviceTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   def test_AndroidDevice_update_serial_with_service_running(
       self,
       open_logcat_mock,
@@ -1878,7 +1878,7 @@ class AndroidDeviceTest(unittest.TestCase):
       'mobly.controllers.android_device_lib.snippet_client_v2.SnippetClientV2'
   )
   @mock.patch('mobly.utils.get_available_host_port')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
   def test_AndroidDevice_snippet_cleanup(
@@ -1938,7 +1938,7 @@ class AndroidDeviceTest(unittest.TestCase):
   )
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   def test_AndroidDevice_handle_usb_disconnect(
       self,
       open_logcat_mock,
@@ -1992,7 +1992,7 @@ class AndroidDeviceTest(unittest.TestCase):
   )
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   def test_AndroidDevice_handle_reboot(
       self,
       open_logcat_mock,
@@ -2046,7 +2046,7 @@ class AndroidDeviceTest(unittest.TestCase):
   )
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   def test_AndroidDevice_handle_reboot_changes_build_info(
       self,
       open_logcat_mock,
@@ -2074,7 +2074,7 @@ class AndroidDeviceTest(unittest.TestCase):
   )
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   def test_AndroidDevice_handle_reboot_changes_build_info_with_caching(
       self,
       open_logcat_mock,

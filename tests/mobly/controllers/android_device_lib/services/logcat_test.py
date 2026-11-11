@@ -109,7 +109,7 @@ class LogcatTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   @mock.patch('mobly.logger.get_log_file_timestamp')
   def test_start_and_stop(
       self,
@@ -188,7 +188,7 @@ class LogcatTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   def test_update_config(
       self,
       open_logcat_mock,
@@ -231,7 +231,7 @@ class LogcatTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   def test_update_config_while_running(
       self,
       open_logcat_mock,
@@ -305,7 +305,7 @@ class LogcatTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   @mock.patch(
       'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
       return_value=mock_android_device.MockAdbProxy('1'),
@@ -399,7 +399,7 @@ class LogcatTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   @mock.patch(
       'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log',
       return_value=mock_android_device.MockAdbProxy('1'),
@@ -516,7 +516,7 @@ class LogcatTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   @mock.patch(
       'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log'
   )
@@ -571,7 +571,7 @@ class LogcatTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   @mock.patch(
       'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log'
   )
@@ -613,7 +613,7 @@ class LogcatTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   @mock.patch(
       'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log'
   )
@@ -677,14 +677,23 @@ class LogcatTest(unittest.TestCase):
   ):
     mock_serial = '1'
     ad = android_device.AndroidDevice(serial=mock_serial)
-    logcat_service = logcat.Logcat(ad)
+    preexisting_path = os.path.join(
+        self.tmp_dir, f'logcat,{mock_serial},fakemodel,base.txt'
+    )
+    NOT_IN_EXCERPT = 'Not in excerpt.\n'
+    with open(preexisting_path, 'w', newline='') as f:
+      f.write(NOT_IN_EXCERPT)
+    logcat_service = logcat.Logcat(
+        ad, logcat.Config(output_file_path=preexisting_path)
+    )
     logcat_service._start()
 
     def _write_logcat_file_and_assert_excerpts_exists(
         logcat_file_content, test_begin_time, test_name
     ):
-      with open(logcat_service.adb_logcat_file_path, 'a', newline='') as f:
-        f.write(logcat_file_content)
+      if logcat_file_content:
+        with open(logcat_service.adb_logcat_file_path, 'a', newline='') as f:
+          f.write(logcat_file_content)
       test_output_dir = os.path.join(self.tmp_dir, test_name)
       mock_record = records.TestResultRecord(test_name)
       mock_record.begin_time = test_begin_time
@@ -708,13 +717,6 @@ class LogcatTest(unittest.TestCase):
       self.assertTrue(os.path.exists(expected_path))
       return expected_path
 
-    # Generate logs before the file pointer is created.
-    # This message will not be captured in the excerpt.
-    NOT_IN_EXCERPT = 'Not in excerpt.\n'
-    with open(logcat_service.adb_logcat_file_path, 'a', newline='') as f:
-      f.write(NOT_IN_EXCERPT)
-    # With the file pointer created, generate logs and make an excerpt.
-    logcat_service._open_logcat_file()
     # Both CR and LF should be preserved no matter the operating system.
     FILE_CONTENT = 'Some log.\r\nAnother log.\n'
     expected_path1 = _write_logcat_file_and_assert_excerpts_exists(
@@ -733,15 +735,197 @@ class LogcatTest(unittest.TestCase):
     )
     self.AssertFileContains(FILE_CONTENT, expected_path2)
     self.AssertFileDoesNotContain(FILE_CONTENT, expected_path1)
-    # Simulate devices accidentally go offline, logcat service stopped.
+    # Logs written before `stop()` are still clipped, and a subsequent excerpt
+    # with no new logs is empty.
+    PRE_STOP_CONTENT = 'Logs before stop\n'
+    with open(logcat_service.adb_logcat_file_path, 'a', newline='') as f:
+      f.write(PRE_STOP_CONTENT)
     logcat_service.stop()
-    FILE_CONTENT = 'Whatever logs\n'
     expected_path3 = _write_logcat_file_and_assert_excerpts_exists(
-        logcat_file_content=FILE_CONTENT,
+        logcat_file_content='',
         test_begin_time=789,
-        test_name='test_offline',
+        test_name='test_stopped',
     )
-    self.assertEqual(os.stat(expected_path3).st_size, 0)
+    self.AssertFileContains(PRE_STOP_CONTENT, expected_path3)
+    expected_path4 = _write_logcat_file_and_assert_excerpts_exists(
+        logcat_file_content='',
+        test_begin_time=999,
+        test_name='test_stopped_empty',
+    )
+    self.assertEqual(os.stat(expected_path4).st_size, 0)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.start_standing_subprocess')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log'
+  )
+  def test_create_output_excerpts_preserves_logs_across_reboot_restart(
+      self,
+      clear_adb_mock,
+      stop_proc_mock,
+      start_proc_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    """Logs written before and during a mid-test reboot stay in the excerpt."""
+    ad = android_device.AndroidDevice(serial='1')
+    ad.log_path = self.tmp_dir
+    boot_ids = iter(['boot-1', 'boot-2'])
+    ad.adb.shell = mock.MagicMock(
+        side_effect=lambda cmd, *a, **kw: (
+            next(boot_ids).encode('utf-8')
+            if cmd == logcat._BOOT_ID_CMD
+            else b''
+        )
+    )
+    logcat_service = logcat.Logcat(ad)
+    starts = 0
+
+    def _fake_start_proc(cmd, shell=False):
+      nonlocal starts
+      starts += 1
+      with open(
+          logcat_service.adb_logcat_file_path, 'a', encoding='utf-8', newline=''
+      ) as f:
+        if starts == 1:
+          f.write('Initial startup line.\n')
+        else:
+          f.write('Boot dump line before wait.\n')
+      return 'process'
+
+    start_proc_mock.side_effect = _fake_start_proc
+
+    def _make_test_info(name, begin_time):
+      out_dir = os.path.join(self.tmp_dir, name)
+      rec = records.TestResultRecord(name)
+      rec.begin_time = begin_time
+      rec.signature = f'{name}-{begin_time}'
+      return runtime_test_info.RuntimeTestInfo(name, out_dir, rec)
+
+    logcat_service.start()
+    with open(
+        logcat_service.adb_logcat_file_path, 'a', encoding='utf-8', newline=''
+    ) as f:
+      f.write('Setup class log.\n')
+    setup_excerpt = logcat_service.create_output_excerpts(
+        _make_test_info('setup_class', 100)
+    )[0]
+    self.AssertFileContains('Initial startup line.\n', setup_excerpt)
+    self.AssertFileContains('Setup class log.\n', setup_excerpt)
+
+    # Test logs before reboot, then handle_reboot stops and restarts logcat.
+    with open(
+        logcat_service.adb_logcat_file_path, 'a', encoding='utf-8', newline=''
+    ) as f:
+      f.write('Pre-reboot test log.\n')
+    logcat_service.stop()
+    logcat_service.start()
+    with open(
+        logcat_service.adb_logcat_file_path, 'a', encoding='utf-8', newline=''
+    ) as f:
+      f.write('Post-reboot test log.\n')
+
+    reboot_excerpt = logcat_service.create_output_excerpts(
+        _make_test_info('test_reboot', 200)
+    )[0]
+    self.AssertFileDoesNotContain('Setup class log.\n', reboot_excerpt)
+    self.AssertFileContains('Pre-reboot test log.\n', reboot_excerpt)
+    self.AssertFileContains('Boot dump line before wait.\n', reboot_excerpt)
+    self.AssertFileContains('Post-reboot test log.\n', reboot_excerpt)
+
+    # Next test excerpt starts after `test_reboot` ended.
+    with open(
+        logcat_service.adb_logcat_file_path, 'a', encoding='utf-8', newline=''
+    ) as f:
+      f.write('Next test log.\n')
+    next_excerpt = logcat_service.create_output_excerpts(
+        _make_test_info('test_next', 300)
+    )[0]
+    self.AssertFileDoesNotContain('Pre-reboot test log.\n', next_excerpt)
+    self.AssertFileDoesNotContain('Post-reboot test log.\n', next_excerpt)
+    self.AssertFileContains('Next test log.\n', next_excerpt)
+    logcat_service.stop()
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  def test_create_output_excerpts_when_never_started(
+      self, FastbootProxy, MockAdbProxy
+  ):
+    ad = android_device.AndroidDevice(serial='1')
+    logcat_service = logcat.Logcat(ad)
+    rec = records.TestResultRecord('test_unstarted')
+    rec.begin_time = 100
+    rec.signature = 'test_unstarted-100'
+    info = runtime_test_info.RuntimeTestInfo(
+        'test_unstarted', os.path.join(self.tmp_dir, 'test_unstarted'), rec
+    )
+    excerpt_path = logcat_service.create_output_excerpts(info)[0]
+    self.assertEqual(os.stat(excerpt_path).st_size, 0)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('1'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('1'),
+  )
+  @mock.patch('mobly.utils.start_standing_subprocess')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch(
+      'mobly.controllers.android_device_lib.services.logcat.Logcat.clear_adb_log'
+  )
+  def test_create_output_excerpts_resets_when_output_file_path_changes(
+      self,
+      clear_adb_mock,
+      stop_proc_mock,
+      start_proc_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    ad = android_device.AndroidDevice(serial='1')
+    file1 = os.path.join(self.tmp_dir, 'log1.txt')
+    file2 = os.path.join(self.tmp_dir, 'log2.txt')
+    with open(file1, 'w', encoding='utf-8', newline='') as f:
+      f.write('Old file1 header.\n')
+    with open(file2, 'w', encoding='utf-8', newline='') as f:
+      f.write('Pre-existing file2 content.\n')
+    start_proc_mock.return_value = 'process'
+
+    logcat_service = logcat.Logcat(ad, logcat.Config(output_file_path=file1))
+    logcat_service.start()
+    with open(file1, 'a', encoding='utf-8', newline='') as f:
+      f.write('File1 test log.\n')
+    logcat_service.stop()
+    logcat_service.update_config(logcat.Config(output_file_path=file2))
+    logcat_service.start()
+    with open(file2, 'a', encoding='utf-8', newline='') as f:
+      f.write('File2 test log.\n')
+
+    rec = records.TestResultRecord('test_reconfig')
+    rec.begin_time = 100
+    rec.signature = 'test_reconfig-100'
+    info = runtime_test_info.RuntimeTestInfo(
+        'test_reconfig', os.path.join(self.tmp_dir, 'test_reconfig'), rec
+    )
+    excerpt_path = logcat_service.create_output_excerpts(info)[0]
+    self.AssertFileDoesNotContain('Pre-existing file2 content.\n', excerpt_path)
+    self.AssertFileContains('File2 test log.\n', excerpt_path)
+    logcat_service.stop()
 
   @mock.patch(
       'mobly.controllers.android_device_lib.adb.AdbProxy',
@@ -754,7 +938,7 @@ class LogcatTest(unittest.TestCase):
   @mock.patch('mobly.utils.create_dir')
   @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
   @mock.patch('mobly.utils.stop_standing_subprocess')
-  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  @mock.patch.object(logcat.Logcat, '_wait_for_logcat_file')
   @mock.patch('mobly.logger.get_log_file_timestamp')
   def test_take_logcat_with_extra_params(
       self,
@@ -1119,7 +1303,7 @@ class LogcatServiceUserBehaviorTest(unittest.TestCase):
             f'excerpt_{test_info.name}.txt' if test_info else 'logcat.txt'
         )
     )
-    self.logcat_service._open_logcat_file()
+    self.logcat_service._ensure_excerpt_copier()
 
     # 1. Take a position marker before initial action
     start_pos = self.logcat_service.now()

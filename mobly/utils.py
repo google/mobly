@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import base64
+import codecs
 import concurrent.futures
 import datetime
 import inspect
@@ -22,6 +23,7 @@ import platform
 import random
 import re
 import shlex
+import shutil
 import signal
 import string
 import subprocess
@@ -721,3 +723,135 @@ def find_subclass_in_module(base_class, module):
         % (base_class.__name__, [subclass.__name__ for subclass in subclasses])
     )
   return subclasses[0]
+
+
+class IncrementalFileCopier:
+  """Incrementally copies newly appended data from a growing file.
+
+  `IncrementalFileCopier` tracks a source file path and a read byte offset so
+  callers can repeatedly copy only the bytes appended since the previous call —
+  for example, splitting a continuous serial, SSH, daemon, or telemetry output
+  stream into per-step, per-phase, or per-test files.
+
+  No file descriptor is kept open between calls, so the copier requires no
+  explicit cleanup and does not interfere with external processes appending to,
+  rotating, or recreating the source file.
+
+  Examples:
+    Copy newly appended output after each step into separate files::
+
+      copier = utils.IncrementalFileCopier('/tmp/serial_console.log')
+      run_step_one()
+      copier.copy_new('/tmp/step_1_serial.log')
+      run_step_two()
+      copier.copy_new('/tmp/step_2_serial.log')
+
+    Attach to an existing file while skipping content written earlier::
+
+      copier = utils.IncrementalFileCopier(
+          '/var/log/daemon.log', ignore_existing_content=True
+      )
+      trigger_action()
+      copier.copy_new('/tmp/action_daemon.log')
+
+    Copy newly appended chunks of a binary stream without text decoding::
+
+      copier = utils.IncrementalFileCopier('/tmp/hci_snoop.bin', encoding=None)
+      copier.copy_new('/tmp/segment_1.bin')
+  """
+
+  def __init__(
+      self,
+      source_path: str | os.PathLike[str],
+      ignore_existing_content: bool = False,
+      encoding: str | None = 'utf-8',
+      errors: str = 'replace',
+  ) -> None:
+    """Initializes an `IncrementalFileCopier` for `source_path`.
+
+    Args:
+      source_path: Path to the file to read from. The file does not need to
+        exist yet when the copier is created.
+      ignore_existing_content: If True, initializes the read offset to the
+        current size of `source_path` so pre-existing content is skipped. If
+        False, starts reading from byte 0.
+      encoding: Text encoding used to decode and write copied content, or None
+        to copy raw bytes without decoding.
+      errors: Error handling scheme passed to the incremental decoder when
+        `encoding` is set (for example, `'replace'`, `'ignore'`, or `'strict'`).
+    """
+    self._source_path = os.fspath(source_path)
+    self._encoding = encoding
+    self._errors = errors
+    self._offset = self._current_size() if ignore_existing_content else 0
+
+  @property
+  def source_path(self) -> str:
+    """Path of the source file tracked by this copier."""
+    return self._source_path
+
+  @property
+  def offset(self) -> int:
+    """Current byte offset from which the next `copy_new` call will read."""
+    return self._offset
+
+  def _current_size(self) -> int:
+    try:
+      return os.path.getsize(self._source_path)
+    except OSError:
+      return 0
+
+  def advance_to_end(self) -> None:
+    """Advances `offset` to the current end of `source_path`.
+
+    Any uncopied bytes currently in `source_path` will be skipped by subsequent
+    `copy_new` calls.
+    """
+    self._offset = self._current_size()
+
+  def reset(self) -> None:
+    """Resets `offset` to 0 so the next call reads from the start of the file."""
+    self._offset = 0
+
+  def copy_new(self, dest_path: str | os.PathLike[str]) -> int:
+    """Copies content appended to `source_path` since the last call.
+
+    Parent directories of `dest_path` are created automatically. If
+    `source_path` does not exist yet, an empty file is created at `dest_path`.
+    If `source_path` was truncated or recreated smaller than `offset`, `offset`
+    resets to 0 before reading. When `encoding` is set, original line endings
+    (`\\n` and `\\r\\n`) are preserved verbatim.
+
+    Args:
+      dest_path: Destination file path for the newly appended data.
+
+    Returns:
+      The number of source bytes read from `source_path`.
+    """
+    dest_str = os.fspath(dest_path)
+    parent_dir = os.path.dirname(dest_str)
+    if parent_dir:
+      create_dir(parent_dir)
+    if not os.path.exists(self._source_path):
+      with open(dest_str, 'wb'):
+        pass
+      return 0
+    with open(self._source_path, 'rb') as src:
+      if os.fstat(src.fileno()).st_size < self._offset:
+        self._offset = 0
+      start_offset = self._offset
+      src.seek(start_offset)
+      if self._encoding is None:
+        with open(dest_str, 'wb') as dst:
+          shutil.copyfileobj(src, dst)
+      else:
+        decoder = codecs.getincrementaldecoder(self._encoding)(
+            errors=self._errors
+        )
+        with open(dest_str, 'w', encoding=self._encoding, newline='') as dst:
+          while chunk := src.read(65536):
+            dst.write(decoder.decode(chunk, final=False))
+          if tail := decoder.decode(b'', final=True):
+            dst.write(tail)
+      self._offset = src.tell()
+      return self._offset - start_offset

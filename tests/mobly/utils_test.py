@@ -974,6 +974,89 @@ class UtilsTest(unittest.TestCase):
           base_test.BaseTestClass, multiple_subclasses_module
       )
 
+  def test_incremental_file_copier_ignore_existing(self):
+    src = os.path.join(self.tmp_dir, 'source.log')
+    with open(src, 'w', encoding='utf-8', newline='') as f:
+      f.write('pre-existing\n')
+    copier = utils.IncrementalFileCopier(src, ignore_existing_content=True)
+    self.assertEqual(copier.source_path, src)
+    self.assertEqual(copier.offset, len(b'pre-existing\n'))
+
+    with open(src, 'a', encoding='utf-8', newline='') as f:
+      f.write('chunk1\r\nline2\n')
+    out1 = os.path.join(self.tmp_dir, 'out', 'step1.log')
+    self.assertEqual(copier.copy_new(out1), len(b'chunk1\r\nline2\n'))
+    with open(out1, 'r', encoding='utf-8', newline='') as f:
+      self.assertEqual(f.read(), 'chunk1\r\nline2\n')
+
+    with open(src, 'a', encoding='utf-8', newline='') as f:
+      f.write('chunk2\n')
+    out2 = os.path.join(self.tmp_dir, 'out', 'step2.log')
+    self.assertEqual(copier.copy_new(out2), len(b'chunk2\n'))
+    with open(out2, 'r', encoding='utf-8', newline='') as f:
+      self.assertEqual(f.read(), 'chunk2\n')
+
+    # Subsequent copy with no new data creates an empty file and returns 0.
+    out3 = os.path.join(self.tmp_dir, 'out', 'step3.log')
+    self.assertEqual(copier.copy_new(out3), 0)
+    self.assertEqual(os.path.getsize(out3), 0)
+
+  def test_incremental_file_copier_default_reads_from_start_and_missing_source(
+      self,
+  ):
+    missing = os.path.join(self.tmp_dir, 'missing.log')
+    copier = utils.IncrementalFileCopier(missing)
+    self.assertEqual(copier.offset, 0)
+    empty_out = os.path.join(self.tmp_dir, 'empty.log')
+    self.assertEqual(copier.copy_new(empty_out), 0)
+    self.assertEqual(os.path.getsize(empty_out), 0)
+
+    with open(missing, 'wb') as f:
+      f.write(b'hello \xff world\n')
+    out_invalid_utf8 = os.path.join(self.tmp_dir, 'utf8.log')
+    self.assertEqual(
+        copier.copy_new(out_invalid_utf8), len(b'hello \xff world\n')
+    )
+    with open(out_invalid_utf8, 'r', encoding='utf-8', newline='') as f:
+      self.assertEqual(f.read(), 'hello \ufffd world\n')
+
+    # Default `ignore_existing_content=False` reads existing content from byte 0.
+    default_copier = utils.IncrementalFileCopier(missing)
+    full_out = os.path.join(self.tmp_dir, 'full.log')
+    default_copier.copy_new(full_out)
+    with open(full_out, 'r', encoding='utf-8', newline='') as f:
+      self.assertEqual(f.read(), 'hello \ufffd world\n')
+
+  def test_incremental_file_copier_binary_mode_reset_and_truncation(self):
+    src = os.path.join(self.tmp_dir, 'binary.bin')
+    with open(src, 'wb') as f:
+      f.write(b'\x00\xff\xfe\r\n')
+    copier = utils.IncrementalFileCopier(src, encoding=None)
+    bin1 = os.path.join(self.tmp_dir, 'bin1.bin')
+    self.assertEqual(copier.copy_new(bin1), 5)
+    with open(bin1, 'rb') as f:
+      self.assertEqual(f.read(), b'\x00\xff\xfe\r\n')
+
+    # `reset()` rewinds offset back to 0.
+    copier.reset()
+    self.assertEqual(copier.offset, 0)
+    bin2 = os.path.join(self.tmp_dir, 'bin2.bin')
+    self.assertEqual(copier.copy_new(bin2), 5)
+    with open(bin2, 'rb') as f:
+      self.assertEqual(f.read(), b'\x00\xff\xfe\r\n')
+
+    # `advance_to_end()` skips new uncopied bytes, and truncating below offset
+    # resets offset to 0.
+    with open(src, 'ab') as f:
+      f.write(b'skipped bytes that make file longer')
+    copier.advance_to_end()
+    with open(src, 'wb') as f:
+      f.write(b'short')
+    bin3 = os.path.join(self.tmp_dir, 'bin3.bin')
+    self.assertEqual(copier.copy_new(bin3), 5)
+    with open(bin3, 'rb') as f:
+      self.assertEqual(f.read(), b'short')
+
 
 if __name__ == '__main__':
   unittest.main()
