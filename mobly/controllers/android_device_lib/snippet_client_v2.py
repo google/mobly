@@ -18,6 +18,7 @@ import enum
 import json
 import re
 import socket
+import threading
 
 from mobly import utils
 from mobly.controllers.android_device_lib import adb
@@ -97,6 +98,10 @@ _NOHUP_COMMAND = 'nohup'
 # in the snippet server.
 UNKNOWN_UID = -1
 
+# Maximum time to wait for the snippet server instrumentation to report its
+# listening port during `start_server`.
+_SERVER_START_TIMEOUT_SEC = 60.0
+
 # Maximum time to wait for the socket to open on the device.
 _SOCKET_CONNECTION_TIMEOUT = 60
 
@@ -121,6 +126,9 @@ class Config:
     user_id: The user id under which to launch the snippet process.
     am_cmd_prefix: An optional prefix string prepended directly before the `am`
       command (e.g. `'CLASSPATH=/data/local/tmp/app.apk'` or `'env ...'`).
+    server_start_timeout_sec: Maximum seconds to wait for the snippet server to
+      start and report its listening port before aborting, or `None` for no
+      timeout.
   """
 
   am_instrument_options: dict[str, str] = dataclasses.field(
@@ -128,6 +136,7 @@ class Config:
   )
   user_id: int | None = None
   am_cmd_prefix: str | None = None
+  server_start_timeout_sec: float | None = _SERVER_START_TIMEOUT_SEC
 
 
 class ConnectionHandshakeCommand(enum.Enum):
@@ -309,11 +318,18 @@ class SnippetClientV2(client_base.ClientBase):
     output and sets it to self.device_port.
 
     Raises:
+      ValueError: if `Config.server_start_timeout_sec` is not positive.
       errors.ServerStartProtocolError: if the protocol reported by the server
         startup process is unknown.
-      errors.ServerStartError: if failed to start the server or process the
-        server output.
+      errors.ServerStartError: if failed to start the server, timed out waiting
+        for startup, or failed to process the server output.
     """
+    timeout = self._config.server_start_timeout_sec
+    if timeout is not None and timeout <= 0:
+      raise ValueError(
+          f'server_start_timeout_sec must be positive, got {timeout}.'
+      )
+
     persists_shell_cmd = self._get_persisting_command()
     self.log.debug(
         'Snippet server for %s is using protocol %d.%d',
@@ -330,24 +346,79 @@ class SnippetClientV2(client_base.ClientBase):
     )
     if self._config.am_cmd_prefix:
       cmd = f'{self._config.am_cmd_prefix.strip()} {cmd}'
-    self._proc = self._run_adb_cmd(cmd)
-
-    # Check protocol version and get the device port
+    proc = self._run_adb_cmd(cmd)
+    self._proc = proc
     self._server_start_stdout = []
-    line = self._read_protocol_line()
-    match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$', line)
-    if not match or int(match.group(1)) != _PROTOCOL_MAJOR_VERSION:
-      raise errors.ServerStartProtocolError(self._device, line)
 
-    line = self._read_protocol_line()
-    match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
-    if not match:
-      message = _SNIPPET_SERVER_START_ERROR_DEBUG_TIP.format(
-          instrumentation_result=line,
-          server_start_stdout='\n'.join(self._server_start_stdout),
-      )
-      raise errors.ServerStartProtocolError(self._device, message)
-    self.device_port = int(match.group(1))
+    state_lock = threading.Lock()
+    completed = False
+    timed_out = False
+    timer = None
+    if timeout is not None:
+
+      def _on_timeout():
+        nonlocal timed_out
+        with state_lock:
+          if completed:
+            return
+          timed_out = True
+        try:
+          utils.stop_standing_subprocess(proc)
+        except Exception:  # pylint: disable=broad-except
+          self.log.debug(
+              'Error stopping timed-out snippet server subprocess.',
+              exc_info=True,
+          )
+
+      timer = threading.Timer(timeout, _on_timeout)
+      timer.daemon = True
+      timer.start()
+
+    try:
+      # Check protocol version and get the device port
+      line = self._read_protocol_line()
+      match = re.match('^SNIPPET START, PROTOCOL ([0-9]+) ([0-9]+)$', line)
+      if not match or int(match.group(1)) != _PROTOCOL_MAJOR_VERSION:
+        raise errors.ServerStartProtocolError(self._device, line)
+
+      line = self._read_protocol_line()
+      match = re.match('^SNIPPET SERVING, PORT ([0-9]+)$', line)
+      if not match:
+        message = _SNIPPET_SERVER_START_ERROR_DEBUG_TIP.format(
+            instrumentation_result=line,
+            server_start_stdout='\n'.join(self._server_start_stdout),
+        )
+        raise errors.ServerStartProtocolError(self._device, message)
+      with state_lock:
+        if not timed_out:
+          completed = True
+          self.device_port = int(match.group(1))
+    except Exception as err:
+      if timer is not None:
+        timer.cancel()
+        if timed_out:
+          timer.join()
+          self._proc = None
+          raise self._build_start_timeout_error(timeout) from err
+      raise
+    finally:
+      if timer is not None:
+        timer.cancel()
+
+    if timed_out:
+      timer.join()
+      self._proc = None
+      raise self._build_start_timeout_error(timeout)
+
+  def _build_start_timeout_error(self, timeout):
+    msg = (
+        f'Timed out after {timeout}s waiting for snippet server '
+        f'{self.package} to start.'
+    )
+    if self._server_start_stdout:
+      stdout_str = '\n'.join(self._server_start_stdout)
+      msg = f'{msg}\nServer process stdout:\n{stdout_str}'
+    return errors.ServerStartError(self._device, msg)
 
   def _run_adb_cmd(self, cmd):
     """Starts a long-running adb subprocess and returns it immediately."""
