@@ -936,6 +936,118 @@ class AdbTest(unittest.TestCase):
     self.assertEqual(mock_sleep.call_count, 1)
     mock_sleep.assert_called_with(10)
 
+  def test_is_tcp_device(self):
+    self.assertTrue(adb.is_tcp_device('localhost:14016'))
+    self.assertTrue(adb.is_tcp_device('127.0.0.1:5555'))
+    self.assertTrue(adb.is_tcp_device('[::1]:5555'))
+    self.assertFalse(adb.is_tcp_device(''))
+    self.assertFalse(adb.is_tcp_device('HT75B1A00123'))
+    self.assertFalse(adb.is_tcp_device('emulator-5554'))
+    self.assertFalse(adb.is_tcp_device('usb:1-2'))
+    self.assertFalse(adb.is_tcp_device(':5555'))
+    self.assertFalse(adb.is_tcp_device('localhost:abc'))
+
+  @mock.patch('time.sleep', return_value=mock.MagicMock())
+  @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+  def test_root_tcp_device_reconnects_after_timeout(
+      self, mock_exec_cmd, mock_sleep
+  ):
+    serial = 'localhost:14016'
+    mock_exec_cmd.side_effect = [
+        adb.AdbTimeoutError(['adb', '-s', serial, 'root'], 5, serial),
+        adb.AdbError(
+            ['adb', '-s', serial, 'disconnect', serial],
+            b'',
+            b"error: no such device 'localhost:14016'\n",
+            1,
+            serial,
+        ),
+        f'connected to {serial}\n'.encode('utf-8'),
+        b'',
+        MOCK_ROOT_SUCCESS_OUTPUT,
+    ]
+    output = adb.AdbProxy(serial).root()
+    self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
+    self.assertEqual(
+        mock_exec_cmd.call_args_list,
+        [
+            mock.call(
+                ['adb', '-s', serial, 'root'],
+                shell=False,
+                timeout=5,
+                stderr=None,
+            ),
+            mock.call(
+                ['adb', '-s', serial, 'disconnect', serial],
+                shell=False,
+                timeout=5,
+                stderr=None,
+            ),
+            mock.call(
+                ['adb', '-s', serial, 'connect', serial],
+                shell=False,
+                timeout=5,
+                stderr=None,
+            ),
+            mock.call(
+                ['adb', '-s', serial, 'wait-for-device'],
+                shell=False,
+                timeout=5,
+                stderr=None,
+            ),
+            mock.call(
+                ['adb', '-s', serial, 'root'],
+                shell=False,
+                timeout=5,
+                stderr=None,
+            ),
+        ],
+    )
+    mock_sleep.assert_called_once_with(10)
+
+  @mock.patch('time.sleep', return_value=mock.MagicMock())
+  @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+  def test_root_tcp_device_continues_retry_when_reconnect_fails(
+      self, mock_exec_cmd, mock_sleep
+  ):
+    serial = 'localhost:14016'
+    offline_err = adb.AdbError(
+        ['adb', '-s', serial, 'root'],
+        b'',
+        b'adb: unable to connect for root: device offline\n',
+        1,
+        serial,
+    )
+    mock_exec_cmd.side_effect = [
+        offline_err,
+        b'',
+        b'Connection refused\n',
+        offline_err,
+        b'',
+        f'connected to {serial}\n'.encode('utf-8'),
+        b'',
+        MOCK_ROOT_SUCCESS_OUTPUT,
+    ]
+    output = adb.AdbProxy(serial).root()
+    self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
+    self.assertEqual(mock_sleep.call_args_list, [mock.call(10), mock.call(20)])
+
+  @mock.patch('time.sleep', return_value=mock.MagicMock())
+  @mock.patch.object(adb.AdbProxy, '_exec_cmd')
+  def test_root_usb_bus_serial_does_not_reconnect_tcp(
+      self, mock_exec_cmd, mock_sleep
+  ):
+    serial = 'usb:1-2'
+    mock_exec_cmd.side_effect = [
+        adb.AdbError(
+            ['adb', '-s', serial, 'root'], b'', MOCK_ROOT_ERROR_OUTPUT, 1
+        ),
+        MOCK_ROOT_SUCCESS_OUTPUT,
+    ]
+    output = adb.AdbProxy(serial).root()
+    self.assertEqual(output, MOCK_ROOT_SUCCESS_OUTPUT)
+    self.assertEqual(mock_exec_cmd.call_count, 2)
+
   def test_has_shell_command_called_correctly(self):
     with mock.patch.object(adb.AdbProxy, '_exec_cmd') as mock_exec_cmd:
       mock_exec_cmd.return_value = MOCK_DEFAULT_COMMAND_OUTPUT

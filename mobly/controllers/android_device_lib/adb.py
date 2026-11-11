@@ -118,6 +118,14 @@ def is_adb_available():
   return shutil.which('adb') is not None
 
 
+def is_tcp_device(serial: str) -> bool:
+  """Returns True if `serial` identifies a `host:port` TCP adb endpoint."""
+  if not serial or serial.startswith('usb:'):
+    return False
+  host, sep, port = serial.rpartition(':')
+  return bool(sep and host and port.isdigit())
+
+
 def list_occupied_adb_ports():
   """Lists all the host ports occupied by adb forward.
 
@@ -354,20 +362,22 @@ class AdbProxy:
     # Multi-user is not supported in SDK < 21, only user 0 exists.
     return 0
 
-  def connect(self, address) -> bytes:
+  def connect(self, address, timeout=None) -> bytes:
     """Executes the `adb connect` command with proper status checking.
 
     Args:
       address: string, the address of the Android instance to connect to.
+      timeout: float, optional number of seconds to wait before timing out.
 
     Returns:
       The stdout content.
 
     Raises:
       AdbError: if the connection failed.
+      AdbTimeoutError: if the command timed out.
     """
     stdout = self._exec_adb_cmd(
-        'connect', address, shell=False, timeout=None, stderr=None
+        'connect', address, shell=False, timeout=timeout, stderr=None
     )
     if PATTERN_ADB_CONNECT_SUCCESS.match(stdout.decode('utf-8')) is None:
       raise AdbError(
@@ -521,16 +531,46 @@ class AdbProxy:
           'shell', instrumentation_command, shell=False, handler=handler
       )
 
+  def _reconnect_tcp_device(self) -> None:
+    """Re-establishes a TCP adb transport that went offline."""
+    logging.debug('Reconnecting TCP adb transport for %s.', self.serial)
+    try:
+      self._exec_adb_cmd(
+          'disconnect',
+          self.serial,
+          shell=False,
+          timeout=ADB_ROOT_ATTEMPT_TIMEOUT_SEC,
+          stderr=None,
+      )
+    except (AdbError, AdbTimeoutError):
+      pass
+    try:
+      self.connect(self.serial, timeout=ADB_ROOT_ATTEMPT_TIMEOUT_SEC)
+      self._exec_adb_cmd(
+          'wait-for-device',
+          args=None,
+          shell=False,
+          timeout=ADB_ROOT_ATTEMPT_TIMEOUT_SEC,
+          stderr=None,
+      )
+    except (AdbError, AdbTimeoutError) as err:
+      logging.debug(
+          'TCP adb reconnect for %s did not succeed: %s', self.serial, err
+      )
+
   def root(self) -> bytes:
     """Enables ADB root mode on the device.
 
     This method will retry to execute the command `adb root` when an
     AdbError occurs, since sometimes the error `adb: unable to connect
     for root: closed` is raised when executing `adb root` immediately after
-    the device is booted to OS.
+    the device is booted to OS. For TCP-connected devices (`host:port`),
+    retrying `adb root` alone cannot recover a severed TCP transport left
+    `offline`, so the transport is disconnected and reconnected before
+    retrying.
 
     Returns:
-      A string that is the stdout of root command.
+      A byte string that is the stdout of root command.
 
     Raises:
       AdbError: If the command exit code is not 0.
@@ -562,6 +602,8 @@ class AdbProxy:
           # Buffer between "adb root" commands.
           time.sleep(retry_interval)
           retry_interval *= 2
+          if is_tcp_device(self.serial):
+            self._reconnect_tcp_device()
         else:
           raise e
 

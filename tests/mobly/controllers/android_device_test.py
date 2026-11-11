@@ -2229,6 +2229,114 @@ class AndroidDeviceTest(unittest.TestCase):
       ad.reboot(boot_completion_timeout=60)
     mock_wait.assert_called_once_with(timeout=60)
 
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('localhost:14016'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('localhost:14016'),
+  )
+  def test_AndroidDevice_root_adb_reconnects_tcp_when_wait_times_out(
+      self, FastbootProxy, MockAdbProxy
+  ):
+    serial = 'localhost:14016'
+    ad = android_device.AndroidDevice(serial=serial)
+    ad.adb.root = mock.MagicMock(return_value=b'restarting adbd as root\n')
+    ad.adb.disconnect = mock.MagicMock(
+        side_effect=adb.AdbError(
+            ['adb', 'disconnect'], b'', b'error: no such device\n', 1, serial
+        )
+    )
+    ad.adb.connect = mock.MagicMock(
+        return_value=f'connected to {serial}\n'.encode('utf-8')
+    )
+    ad.adb.wait_for_device = mock.MagicMock(
+        side_effect=[
+            adb.AdbTimeoutError(['adb', 'wait-for-device'], 5, serial),
+            b'',
+        ]
+    )
+
+    ad.root_adb()
+
+    ad.adb.disconnect.assert_called_once_with(
+        serial, timeout=adb.ADB_ROOT_ATTEMPT_TIMEOUT_SEC
+    )
+    ad.adb.connect.assert_called_once_with(
+        serial, timeout=adb.ADB_ROOT_ATTEMPT_TIMEOUT_SEC
+    )
+    self.assertEqual(
+        ad.adb.wait_for_device.call_args_list,
+        [
+            mock.call(timeout=adb.ADB_ROOT_ATTEMPT_TIMEOUT_SEC),
+            mock.call(
+                timeout=android_device.DEFAULT_TIMEOUT_BOOT_COMPLETION_SECOND
+            ),
+        ],
+    )
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('localhost:14016'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('localhost:14016'),
+  )
+  @mock.patch('mobly.utils.start_standing_subprocess', return_value='process')
+  @mock.patch('mobly.utils.stop_standing_subprocess')
+  @mock.patch.object(logcat.Logcat, '_open_logcat_file')
+  def test_AndroidDevice_handle_reboot_restarts_services_when_root_adb_raises(
+      self,
+      open_logcat_mock,
+      stop_proc_mock,
+      start_proc_mock,
+      FastbootProxy,
+      MockAdbProxy,
+  ):
+    ad = android_device.AndroidDevice(serial='localhost:14016')
+    ad.services.start_all()
+    root_err = adb.AdbError(
+        ['adb', 'root'],
+        b'',
+        b'adb: unable to connect for root: device offline\n',
+        1,
+    )
+    with mock.patch.object(ad, 'root_adb', side_effect=root_err):
+      with self.assertRaises(adb.AdbError) as ctx:
+        with ad.handle_reboot():
+          self.assertFalse(ad.services.is_any_alive)
+    self.assertIs(ctx.exception, root_err)
+    self.assertTrue(ad.services.is_any_alive)
+
+  @mock.patch(
+      'mobly.controllers.android_device_lib.adb.AdbProxy',
+      return_value=mock_android_device.MockAdbProxy('localhost:14016'),
+  )
+  @mock.patch(
+      'mobly.controllers.android_device_lib.fastboot.FastbootProxy',
+      return_value=mock_android_device.MockFastbootProxy('localhost:14016'),
+  )
+  def test_AndroidDevice_handle_reboot_preserves_root_error_on_service_error(
+      self, FastbootProxy, MockAdbProxy
+  ):
+    ad = android_device.AndroidDevice(serial='localhost:14016')
+    root_err = adb.AdbError(['adb', 'root'], b'', b'device offline\n', 1)
+    with (
+        mock.patch.object(ad, 'root_adb', side_effect=root_err),
+        mock.patch.object(
+            ad.services,
+            'start_services',
+            side_effect=RuntimeError('service start failed'),
+        ) as mock_start_services,
+    ):
+      with self.assertRaises(adb.AdbError) as ctx:
+        with ad.handle_reboot():
+          pass
+    self.assertIs(ctx.exception, root_err)
+    mock_start_services.assert_called_once()
+
   def test_AndroidDevice_getattr_without_services(self):
     ad = android_device.AndroidDevice.__new__(android_device.AndroidDevice)
     with self.assertRaisesRegex(AttributeError, 'services'):
