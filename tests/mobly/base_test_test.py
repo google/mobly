@@ -1268,6 +1268,99 @@ class BaseTestTest(unittest.TestCase):
         'Error 0, Executed 2, Failed 1, Passed 1, Requested 3, Skipped 1',
     )
 
+  def test_abort_class_in_test_does_not_skip_a_skipped_test_again(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_1(self):
+        asserts.skip('skip test_1')
+
+      def test_2(self):
+        asserts.abort_class(MSG_EXPECTED_EXCEPTION)
+
+      def test_3(self):
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['test_1', 'test_2', 'test_3'])
+    self.assertEqual(
+        [(r.test_name, r.details) for r in bt_cls.results.skipped],
+        [
+            ('test_1', 'skip test_1'),
+            ('test_3', f'Test class aborted due to: {MSG_EXPECTED_EXCEPTION}'),
+        ],
+    )
+    self.assertEqual(
+        bt_cls.results.summary_str(),
+        'Error 0, Executed 1, Failed 1, Passed 0, Requested 3, Skipped 2',
+    )
+    with io.open(self.summary_file, 'r', encoding='utf-8') as f:
+      recorded_test_names = [
+          c[records.TestResultEnums.RECORD_NAME]
+          for c in yaml.safe_load_all(f)
+          if c['Type'] == records.TestSummaryEntryType.RECORD.value
+      ]
+    self.assertEqual(recorded_test_names, ['test_1', 'test_2', 'test_3'])
+
+  def test_abort_class_in_test_after_repeated_test(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      @base_test.repeat(count=2)
+      def test_1(self):
+        pass
+
+      def test_2(self):
+        asserts.abort_class(MSG_EXPECTED_EXCEPTION)
+
+      def test_3(self):
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['test_1', 'test_2', 'test_3'])
+    self.assertEqual(
+        [r.test_name for r in bt_cls.results.passed], ['test_1_0', 'test_1_1']
+    )
+    self.assertEqual([r.test_name for r in bt_cls.results.skipped], ['test_3'])
+    self.assertEqual(
+        bt_cls.results.summary_str(),
+        'Error 0, Executed 3, Failed 1, Passed 2, Requested 3, Skipped 1',
+    )
+
+  def test_abort_class_in_test_with_regex_selector(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def test_1(self):
+        pass
+
+      def test_2(self):
+        asserts.abort_class(MSG_EXPECTED_EXCEPTION)
+
+      def test_3(self):
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['re:test_.*'])
+    self.assertEqual(bt_cls.results.passed[0].test_name, 'test_1')
+    self.assertEqual(bt_cls.results.failed[0].test_name, 'test_2')
+    self.assertEqual([r.test_name for r in bt_cls.results.skipped], ['test_3'])
+
+  def test_setup_class_fail_with_regex_selector_skips_matched_tests(self):
+    class MockBaseTest(base_test.BaseTestClass):
+
+      def setup_class(self):
+        raise Exception(MSG_EXPECTED_EXCEPTION)
+
+      def test_1(self):
+        never_call()
+
+      def test_2(self):
+        never_call()
+
+    bt_cls = MockBaseTest(self.mock_test_cls_configs)
+    bt_cls.run(test_names=['re:test_.*'])
+    self.assertEqual(
+        [r.test_name for r in bt_cls.results.skipped], ['test_1', 'test_2']
+    )
+
   def test_abort_all_in_setup_class(self):
     class MockBaseTest(base_test.BaseTestClass):
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 import contextlib
 import copy
 import functools
@@ -215,6 +216,9 @@ class BaseTestClass:
     self.results = records.TestResult()
     self.summary_writer = configs.summary_writer
     self._generated_test_table = {}
+    # Names of the tests selected for the current run that have not started
+    # executing yet, in execution order.
+    self._pending_test_names = collections.deque()
     self._controller_manager = controller_manager.ControllerManager(
         class_name=self.TAG, controller_configs=configs.controller_configs
     )
@@ -1116,28 +1120,25 @@ class BaseTestClass:
       )
 
   def _skip_remaining_tests(self, exception):
-    """Marks any requested test that has not been executed in a class as
-    skipped.
+    """Marks the selected tests in a class that have not started as skipped.
 
     This is useful for handling abort class signal.
+
+    Tests that already started are not marked, even if they were skipped,
+    repeated or retried, since they already have their own records.
 
     Args:
       exception: The exception object that was thrown to trigger the
         skip.
     """
-    # Build the set of executed test names once instead of linearly scanning
-    # the executed records for every requested test. Skip records added below
-    # go to `results.skipped`, not `results.executed`, so the set stays valid
-    # throughout the loop.
-    executed_test_names = {record.test_name for record in self.results.executed}
-    for test_name in self.results.requested:
-      if test_name not in executed_test_names:
-        test_record = records.TestResultRecord(test_name, self.TAG)
-        test_record.test_skip(exception)
-        self.results.add_record(test_record)
-        self.summary_writer.dump(
-            test_record.to_dict(), records.TestSummaryEntryType.RECORD
-        )
+    while self._pending_test_names:
+      test_name = self._pending_test_names.popleft()
+      test_record = records.TestResultRecord(test_name, self.TAG)
+      test_record.test_skip(exception)
+      self.results.add_record(test_record)
+      self.summary_writer.dump(
+          test_record.to_dict(), records.TestSummaryEntryType.RECORD
+      )
 
   def run(self, test_names=None):
     """Runs tests within a test class.
@@ -1191,6 +1192,11 @@ class BaseTestClass:
           class_info.to_dict(), records.TestSummaryEntryType.TEST_CLASS_INFO
       )
       raise
+    # Use the resolved test names, not the raw selectors, so `re:` selectors
+    # are expanded to the actual tests.
+    self._pending_test_names = collections.deque(
+        test_name for test_name, _ in tests
+    )
     class_termination_error = None
     try:
       setup_class_result = self._setup_class()
@@ -1198,6 +1204,9 @@ class BaseTestClass:
         return setup_class_result
       # Run tests in order.
       for test_name, test_method in tests:
+        # From here on the test produces its own records, so it is no longer
+        # pending.
+        self._pending_test_names.popleft()
         # 1. Resolve repeat count and max_consecutive_error
         repeat_arg = getattr(test_method, ATTR_REPEAT_CNT, None)
         repeat_key = getattr(test_method, ATTR_REPEAT_CNT_KEY, None)
